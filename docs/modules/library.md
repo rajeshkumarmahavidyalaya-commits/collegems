@@ -1,0 +1,202 @@
+# The library module — the pattern every module copies
+
+The library is small enough to read in one sitting and complete enough to
+exercise every layer: migration + RLS, Zod schemas, server actions, a
+DataTable list, a detail page, create/edit forms, an atomic multi-row
+operation, and integration tests including cross-tenant leakage.
+
+Copy this shape. Where you deviate, have a reason.
+
+## File map
+
+```
+supabase/migrations/0015_library_module.sql   tables, RLS, audit triggers, RPCs
+supabase/migrations/0016_seed_library_demo.sql  demo data
+src/lib/validations/library.ts                Zod schemas (the contract)
+src/app/(app)/library/actions.ts              server actions (the data layer)
+src/app/(app)/library/issue-book-dialog.tsx   a shared action component
+src/app/(app)/library/books/
+  page.tsx            server page: header + permission gate + table
+  books-table.tsx     client: DataTable + TanStack Query
+  book-form.tsx       client: shared create/edit form
+  new/page.tsx        create route
+  [id]/page.tsx       detail: facts, availability, issue history
+  [id]/edit/page.tsx  edit route
+src/app/(app)/library/members/                list + table
+src/app/(app)/library/issues/                 list + table + return action
+tests/library/library-flow.test.ts            business-rule integration tests
+```
+
+## 1. Migration first
+
+Every table gets `tenant_id`, RLS enabled, and policies in the same migration
+that creates it — never "add RLS later". Three policy shapes recur:
+
+```sql
+-- Everyone in the tenant can read the catalog.
+create policy "tenant members view books" on public.books
+  for select to authenticated
+  using (tenant_id = ( select public.current_tenant_id() ));
+
+-- Only the roles that own the module can write.
+create policy "librarians manage books" on public.books
+  for all to authenticated
+  using (
+    tenant_id = ( select public.current_tenant_id() )
+    and ( select public.current_role_code() ) in ('admin', 'librarian')
+  )
+  with check ( /* same predicate */ );
+
+-- Row ownership: a member sees their own records.
+create policy "members view own book_issues" on public.book_issues
+  for select to authenticated
+  using (
+    tenant_id = ( select public.current_tenant_id() )
+    and member_id in (
+      select m.id from public.members m
+      where m.student_id = ( select up.student_id from public.user_profiles up where up.id = ( select auth.uid() ) )
+         or m.staff_id   = ( select up.staff_id   from public.user_profiles up where up.id = ( select auth.uid() ) )
+    )
+  );
+```
+
+**Always wrap `auth.uid()` and the helper functions in `( select … )`.**
+Postgres then evaluates them once per query instead of once per row. On a
+300-row table it does not matter; on attendance it will.
+
+Then attach the audit trigger:
+
+```sql
+create trigger audit_books after insert or update or delete on public.books
+  for each row execute function public.audit_row_change();
+```
+
+## 2. Atomic operations belong in Postgres
+
+`supabase-js` cannot open a transaction, so "check availability, decrement it,
+insert the issue" as three client calls can interleave and oversubscribe a
+book. It is one function instead:
+
+```sql
+create or replace function public.library_issue_book(
+  p_book_id uuid, p_member_id uuid, p_due_at date default (current_date + interval '14 days')
+) returns public.book_issues
+language plpgsql
+set search_path = public
+as $$ … select … for update; … $$;
+```
+
+Notes that generalise:
+
+- **`SECURITY INVOKER`** (the default — don't write `SECURITY DEFINER` here).
+  The function runs as the calling librarian, so their RLS policies still
+  decide whether the write is allowed. The function only adds atomicity.
+- `select … for update` takes the row lock before the availability check.
+- It resolves the session itself via `current_session_id()` — the client never
+  supplies it.
+- Business rules that must always hold (borrowing cap, "no copies available")
+  live here, not only in the UI.
+- `revoke all … from public, anon; grant execute … to authenticated;`
+
+## 3. Zod schema is the contract
+
+`src/lib/validations/library.ts` is imported by both the form and the server
+action, so they cannot drift.
+
+Avoid `z.coerce.number()` in form schemas — it makes the schema's input type
+`unknown`, which breaks the react-hook-form resolver's generics. Keep the
+schema `z.number()` and convert in the field (`TextField type="number"`
+already does).
+
+## 4. Server actions return a result, not an exception
+
+```ts
+export type ActionResult<T = void> =
+  | { ok: true; data: T }
+  | { ok: false; error: string; fieldErrors?: Record<string, string[]> };
+```
+
+Every mutation: parse with Zod → act → `revalidatePath` → return. Expected
+failures (validation, a unique violation, a business rule) are **values**, so
+the form can map `fieldErrors` back onto fields. Only genuine bugs throw.
+
+List actions take a `ListParams` (`pageIndex`, `pageSize`, `sortBy`,
+`sortDesc`, `search`, filters) and return `{ rows, total }`. Sortable columns
+are whitelisted server-side:
+
+```ts
+const BOOK_SORT_COLUMNS = new Set(["title", "author", "total_copies", …]);
+const orderColumn = sortBy && BOOK_SORT_COLUMNS.has(sortBy) ? sortBy : "title";
+```
+
+Never interpolate a client-supplied column name into `.order()`.
+
+## 5. Pages: server shell, client table
+
+The `page.tsx` is a Server Component that fetches what it needs for the header
+and the permission gate, then renders a client table component:
+
+```tsx
+const [ctx, categories, canManage] = await Promise.all([
+  getUserContext(), listCategories(), hasPermission("library.manage"),
+]);
+```
+
+`canManage` decides whether the "Add book" button renders. It is **not** the
+security boundary — the RLS policy is. Both exist on purpose.
+
+The client component owns pagination/sort/filter state and feeds it to
+TanStack Query with `placeholderData: keepPreviousData`, so paging doesn't
+flash empty. The DataTable handles skeleton / empty / error states; you supply
+the copy:
+
+```tsx
+emptyTitle={search ? "No books match those filters" : "No books in the catalog yet"}
+emptyDescription={search ? "Try a different search term." : "Add the first book to start lending."}
+emptyAction={canManage ? <Button asChild><Link href="/library/books/new">Add a book</Link></Button> : undefined}
+```
+
+An empty state that only says "No data" is a bug. Say why it's empty and what
+to do about it — and only offer the action to someone allowed to take it.
+
+## 6. Forms
+
+One component serves create and edit (`book-form.tsx`), switching on whether a
+record was passed. It wires:
+
+- `useForm` + `zodResolver` with the shared schema
+- `<ErrorSummary>` — focusable, links each message to its field by `name`
+- `useUnsavedChangesGuard(isDirty)` — warns on tab close; Cancel confirms
+- server `fieldErrors` mapped back with `form.setError`
+- a toast for the outcome, then `router.push` to the detail page
+
+## 7. Tests
+
+`tests/library/library-flow.test.ts` covers the rules that live in the
+database, against the real database:
+
+- issuing decrements `available_copies` and stamps `session_id`
+- returning restores the copy and closes the issue
+- a book cannot be returned twice
+- the borrowing cap is enforced
+- **a librarian in tenant B cannot issue a tenant A book**
+
+That last one is the pattern to copy for every module: prove the boundary from
+the outside, with a real signed-in client, not by reading the policy and
+believing it.
+
+## Checklist for the next module
+
+- [ ] Migration creates tables **with** `tenant_id`, RLS, and policies
+- [ ] `( select … )` wrapping on every `auth.uid()` / helper call in a policy
+- [ ] Audit trigger attached to each new table
+- [ ] Covering index on every foreign key
+- [ ] Session-scoped (`session_id`) if the table is transactional
+- [ ] Multi-row writes wrapped in a `SECURITY INVOKER` Postgres function
+- [ ] Zod schema shared by form and action
+- [ ] Actions return `ActionResult`; sortable columns whitelisted
+- [ ] Permission codes added to `reference.permissions` + granted to roles
+- [ ] List uses DataTable with designed empty/loading/error states
+- [ ] Cross-tenant test extended to the new tables
+- [ ] `design-system/schoolos/MASTER.md` + page override read before UI work
+- [ ] ui-ux-pro-max pre-delivery checklist run against every new screen

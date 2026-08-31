@@ -1,36 +1,62 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# SchoolOS
 
-## Getting Started
+Multi-tenant school ERP. Next.js 15 (App Router) + Supabase (Postgres, Auth,
+Storage, Edge Functions) + Tailwind v4 + shadcn/ui.
 
-First, run the development server:
+Tenant isolation is enforced by Postgres Row Level Security reading the JWT —
+not by application code. Read [CLAUDE.md](./CLAUDE.md) before changing
+anything; it is the working agreement, not a summary.
+
+## Getting started
 
 ```bash
+npm install
+cp .env.example .env.local     # fill in your Supabase URL + publishable key
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Commands
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+| Command | What it does |
+|---|---|
+| `npm run dev` | Dev server |
+| `npm run build` | Production build |
+| `npm run typecheck` | `tsc --noEmit` |
+| `npm run lint` | ESLint |
+| `npm test` | Vitest integration suite (needs `.env.test.local`) |
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+The tests hit a real Supabase project through real RLS policies, and need two
+admin logins in two *different* tenants — that is what the cross-tenant
+leakage suite proves.
 
-## Learn More
+## Database
 
-To learn more about Next.js, take a look at the following resources:
+Migrations in `supabase/migrations/`, applied in numeric order. They are
+immutable once applied: add a new one, never edit an applied file.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+After any migration, regenerate types into
+`src/lib/supabase/database.types.ts`.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Docs
 
-## Deploy on Vercel
+| Document | What's in it |
+|---|---|
+| [CLAUDE.md](./CLAUDE.md) | Architecture rules, conventions, UI workflow |
+| [docs/domain/erd.md](./docs/domain/erd.md) | Full schema + the roadmap it's shaped for |
+| [docs/modules/library.md](./docs/modules/library.md) | The pattern every module copies |
+| [docs/design/decisions.md](./docs/design/decisions.md) | Palette, type, spacing — and why |
+| `design-system/schoolos/MASTER.md` | Source of truth for all UI values |
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## What exists today
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- Multi-tenant foundation: tenants, academic sessions, people/students/
+  guardians/staff, enrolments, class levels, sections, roles, permission
+  matrix, invitations, user profiles, audit log, jobs queue, settings
+- RLS on every table, with row-ownership rules for teachers, parents, students
+- Library module end-to-end as the reference implementation
+- App shell: role-driven nav, breadcrumbs, ⌘K command palette, theme toggle
+- DataTable and form primitives
+- Dashboard with KPIs and charts
+
+Everything else in `docs/domain/erd.md` under "Roadmap" is deliberately not
+built yet.
