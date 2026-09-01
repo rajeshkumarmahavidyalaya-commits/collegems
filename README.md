@@ -61,6 +61,7 @@ After any migration, regenerate types into
 - Fees: append-only ledger, gapless receipt numbers, reversals, collection screen
 - Fee counter: keyboard-first data entry (receive, raise dues, discount/fine,
   refund) plus a day book for reconciling the drawer
+- Printable per-student invoices, itemised, on a configurable school letterhead
 - Razorpay payment links, settled into the ledger by a signature-verified
   webhook (needs keys on the Edge Functions before it does anything)
 - Invoice email queued to a school-configured address — **queue only, no

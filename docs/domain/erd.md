@@ -251,8 +251,11 @@ Receipt numbering was split for the same reason: `fees_next_document_number_for(
 tenant, session, kind)` does the work and `fees_next_document_number(kind)` is a
 JWT-resolving wrapper, so the counter and the gateway draw from one counter row.
 
-`fees_queue_invoice_email` writes a `jobs` row of type `invoice_email`.
-**Nothing consumes it** — no mail provider is connected, by choice.
+`fees_queue_invoice_email` writes a `jobs` row of type `invoice_email`, carrying the invoice **lines**, what has been paid against it, the guardian and a
+school block — so the eventual sender can produce an itemised bill rather than a
+bare total. **Nothing consumes it** — no mail provider is connected, by choice.
+
+`settings['school.profile']` holds the letterhead (address, phone, email, website) that printed invoices carry; `tenants` has only a name.
 
 See [docs/modules/fees.md](../modules/fees.md).
 

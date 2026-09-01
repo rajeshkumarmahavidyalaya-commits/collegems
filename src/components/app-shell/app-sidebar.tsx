@@ -112,6 +112,7 @@ export function DesktopSidebar({
 }) {
   return (
     <aside
+      data-print="hide"
       className={cn(
         "hidden shrink-0 border-r border-sidebar-border transition-[width] duration-200 lg:flex lg:flex-col",
         collapsed ? "w-16" : "w-64",

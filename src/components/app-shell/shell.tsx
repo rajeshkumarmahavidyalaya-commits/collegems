@@ -69,7 +69,10 @@ export function AppShell({
       </Sheet>
 
       <div className="flex min-h-svh flex-1 flex-col">
-        <header className="sticky top-0 z-20 flex h-14 items-center gap-2 border-b bg-background/95 px-3 backdrop-blur supports-[backdrop-filter]:bg-background/80 sm:px-4">
+        <header
+          data-print="hide"
+          className="sticky top-0 z-20 flex h-14 items-center gap-2 border-b bg-background/95 px-3 backdrop-blur supports-[backdrop-filter]:bg-background/80 sm:px-4"
+        >
           <Button
             variant="ghost"
             size="icon"

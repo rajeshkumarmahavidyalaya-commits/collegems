@@ -5,6 +5,7 @@ import {
   ClipboardCheck,
   GraduationCap,
   BookOpenCheck,
+  FileText,
   IndianRupee,
   LayoutDashboard,
   ListChecks,
@@ -70,6 +71,12 @@ export const NAV_GROUPS: NavGroup[] = [
         title: "Balances",
         href: "/fees",
         icon: BarChart3,
+        roles: ["admin", "accountant"],
+      },
+      {
+        title: "Invoices",
+        href: "/fees/invoices",
+        icon: FileText,
         roles: ["admin", "accountant"],
       },
       {

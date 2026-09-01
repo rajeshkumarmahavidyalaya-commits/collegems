@@ -194,3 +194,47 @@
     scroll-behavior: auto !important;
   }
 }
+
+/* ---------------------------------------------------------------------------
+   Print
+   ---------------------------------------------------------------------------
+   A fee invoice is handed to a parent, so it has to come out of a printer
+   looking like a document and not like a screenshot of an app. Anything marked
+   `data-print="hide"` (the sidebar, the page header, action buttons) is
+   dropped, and the sheet itself loses its card chrome and prints on white --
+   the app's dark mode must not put a black rectangle through a school's toner.
+   Backgrounds are forced light rather than inherited from the theme. */
+@media print {
+  [data-print="hide"] {
+    display: none !important;
+  }
+
+  html,
+  body {
+    background: #ffffff !important;
+    color: #000000 !important;
+  }
+
+  main {
+    padding: 0 !important;
+  }
+
+  [data-print="sheet"] {
+    max-width: none !important;
+    margin: 0 !important;
+    border: 0 !important;
+    box-shadow: none !important;
+    background: #ffffff !important;
+    color: #000000 !important;
+  }
+
+  /* Keep a line item and its amount together across a page break. */
+  [data-print="sheet"] tr,
+  [data-print="keep"] {
+    break-inside: avoid;
+  }
+
+  @page {
+    margin: 14mm;
+  }
+}

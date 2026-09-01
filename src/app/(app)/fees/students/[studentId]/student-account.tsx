@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
   Ban,
@@ -12,6 +13,7 @@ import {
   Link2,
   Loader2,
   Mail,
+  Printer,
   Undo2,
 } from "lucide-react";
 import { toast } from "sonner";
@@ -381,7 +383,14 @@ export function StudentAccountView({
               <Card key={invoice.id} className={cn(invoice.status === "cancelled" && "opacity-70")}>
                 <CardHeader className="flex flex-row flex-wrap items-start justify-between gap-2">
                   <div>
-                    <CardTitle className="font-mono text-base">{invoice.invoiceNumber}</CardTitle>
+                    <CardTitle className="font-mono text-base">
+                      <Link
+                        href={`/fees/invoices/${invoice.id}`}
+                        className="underline-offset-4 hover:underline"
+                      >
+                        {invoice.invoiceNumber}
+                      </Link>
+                    </CardTitle>
                     <CardDescription>
                       Issued {formatDate(invoice.issueDate)} · due {formatDate(invoice.dueDate)}
                     </CardDescription>
@@ -398,6 +407,12 @@ export function StudentAccountView({
                     <span className="font-mono font-medium tabular-nums">
                       {formatMoney(invoice.total)}
                     </span>
+                    <Button size="sm" variant="outline" asChild>
+                      <Link href={`/fees/invoices/${invoice.id}`}>
+                        <Printer className="size-4" aria-hidden="true" />
+                        Open
+                      </Link>
+                    </Button>
                     {invoiceEmailEnabled && invoice.status === "issued" && (
                       <Button
                         size="sm"

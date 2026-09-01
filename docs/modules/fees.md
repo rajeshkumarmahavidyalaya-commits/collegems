@@ -391,6 +391,48 @@ while it is unset. Both switches ship **off**; no migration enables either.
 
 Connecting a provider is a consumer of this queue, not a change to it.
 
+
+## The invoice document
+
+`/fees/invoices/[id]` — one student's bill, laid out as a document rather than
+a screen, and printable.
+
+A total on its own is a **demand**; a family cannot check it. So the sheet
+shows every line the school charged, every payment credited against that
+invoice, and the arithmetic between them.
+
+**`paid` counts only entries allocated to this invoice.** Money paid on account
+reduces what the family owes overall but is not evidence that *this* bill was
+settled, and the sheet says so in words where it would otherwise look like an
+omission. An invoice that quietly credits unallocated money is the kind of
+document a parent brings back to the counter to argue about.
+
+**Printing** is real, not a screenshot. `@media print` in `globals.css` drops
+everything marked `data-print="hide"` (sidebar, page header, buttons) and
+strips the card chrome from `data-print="sheet"`, forcing light colours — the
+app's dark mode must not push a black rectangle through a school's toner. Line
+items and the totals block carry `break-inside: avoid` so a bill does not split
+mid-figure across pages.
+
+**`school.profile`** (migration `0030`) is the letterhead: address, phone,
+email, website, edited under *Fee setup → Payments & email*. `tenants` holds
+only a name, and a fee invoice with no address on it is not something a school
+can hand over. When it is unset the sheet says so on screen — and says nothing
+at all on paper.
+
+`/fees/invoices` lists every bill for the session, filtered by status, with the
+invoice number linking straight to the printable sheet.
+
+### The queued email is itemised too
+
+The `invoice_email` job payload used to carry `total` and nothing else, so
+whatever eventually sends it could only have written *"you owe ₹15,000"*. It
+now carries the lines, what has been paid against the invoice, the guardian's
+name and address, and the school block — so the message can be a bill without
+the sender going back to the database for any of it.
+
+(Still nothing drains that queue. See below.)
+
 ## Known, deliberate gaps
 
 - **The gateway path has never run end to end.** Every guarantee around it is
@@ -410,9 +452,12 @@ Connecting a provider is a consumer of this queue, not a change to it.
   members now book into this ledger (migration `0026`); staff members have no
   fee account, so theirs stay on `book_issues.fine_amount` and are settled
   outside this module. See `docs/modules/library.md`.
-- **No receipt printing or PDF.** The receipt number and every field a receipt
-  needs are stored, and the counter shows the number to read back — but there is
-  no printable receipt or PDF.
+- **Invoices print; receipts do not.** There is a printable invoice document,
+  but a receipt is still only a number read back at the counter. The data for
+  one is all stored.
+- **Printing is the browser's, not a generated PDF.** Good enough to hand over
+  and to "save as PDF", but there is no server-rendered file to attach to an
+  email — which is what the mail sender will want when it exists.
 - **The day book is per-tenant, not per-clerk.** `recorded_by` is on every
   entry, so a per-user cash-up is a filter away, but the screen does not offer
   it yet.

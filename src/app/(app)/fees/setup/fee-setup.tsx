@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { CreditCard, FileText, Loader2, Mail, Plus, Trash2 } from "lucide-react";
+import { Building2, CreditCard, FileText, Loader2, Mail, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -41,6 +41,7 @@ import {
   saveFeeHead,
   saveFeeIntegrationSettings,
   saveFeeStructure,
+  saveSchoolProfile,
   type FeeIntegrationSettings,
 } from "../actions";
 
@@ -74,6 +75,7 @@ export function FeeSetup({
   classLevels,
   sections,
   integrations,
+  schoolProfile,
   canManageSettings,
 }: {
   feeHeads: FeeHead[];
@@ -81,6 +83,7 @@ export function FeeSetup({
   classLevels: { id: string; name: string }[];
   sections: { id: string; label: string }[];
   integrations: FeeIntegrationSettings;
+  schoolProfile: SchoolProfile;
   canManageSettings: boolean;
 }) {
   const router = useRouter();
@@ -259,7 +262,10 @@ export function FeeSetup({
 
         {canManageSettings && (
           <TabsContent value="integrations" className="mt-4">
-            <IntegrationSettings settings={integrations} onDone={() => router.refresh()} />
+            <div className="flex flex-col gap-4">
+              <SchoolProfileCard profile={schoolProfile} onDone={() => router.refresh()} />
+              <IntegrationSettings settings={integrations} onDone={() => router.refresh()} />
+            </div>
           </TabsContent>
         )}
       </Tabs>
@@ -706,5 +712,107 @@ function IntegrationSettings({
         </Button>
       </div>
     </div>
+  );
+}
+
+
+export type SchoolProfile = {
+  addressLine1: string;
+  addressLine2: string;
+  city: string;
+  state: string;
+  postalCode: string;
+  phone: string;
+  email: string;
+  website: string;
+};
+
+/**
+ * The letterhead. `tenants` holds only a name, and a fee invoice with no
+ * address or contact on it is not something a school can hand to a parent —
+ * so this is what turns the printed bill into a document.
+ */
+function SchoolProfileCard({
+  profile,
+  onDone,
+}: {
+  profile: SchoolProfile;
+  onDone: () => void;
+}) {
+  const [form, setForm] = useState(profile);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const dirty = (Object.keys(profile) as (keyof SchoolProfile)[]).some(
+    (k) => form[k] !== profile[k],
+  );
+
+  function field(key: keyof SchoolProfile, label: string, type = "text") {
+    return (
+      <div className="flex flex-col gap-1.5">
+        <Label htmlFor={`school-${key}`}>{label}</Label>
+        <Input
+          id={`school-${key}`}
+          type={type}
+          value={form[key]}
+          onChange={(e) => setForm({ ...form, [key]: e.target.value })}
+        />
+      </div>
+    );
+  }
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2 text-base">
+          <Building2 className="size-4" aria-hidden="true" />
+          School details on invoices
+        </CardTitle>
+        <CardDescription>
+          Printed at the top of every fee invoice. A bill with no address on it is not one a family
+          can act on.
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="flex flex-col gap-4">
+        {error && (
+          <Alert variant="destructive">
+            <AlertTitle>Not saved</AlertTitle>
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
+        )}
+
+        <div className="grid gap-4 sm:grid-cols-2">
+          {field("addressLine1", "Address line 1")}
+          {field("addressLine2", "Address line 2")}
+          {field("city", "City")}
+          {field("state", "State")}
+          {field("postalCode", "PIN code")}
+          {field("phone", "Phone", "tel")}
+          {field("email", "Email", "email")}
+          {field("website", "Website", "url")}
+        </div>
+
+        <div>
+          <Button
+            disabled={!dirty || saving}
+            onClick={async () => {
+              setSaving(true);
+              setError(null);
+              const result = await saveSchoolProfile(form);
+              setSaving(false);
+              if (!result.ok) {
+                setError(result.error);
+                return;
+              }
+              toast.success("School details saved");
+              onDone();
+            }}
+          >
+            {saving && <Loader2 className="size-4 animate-spin" aria-hidden="true" />}
+            Save school details
+          </Button>
+        </div>
+      </CardContent>
+    </Card>
   );
 }

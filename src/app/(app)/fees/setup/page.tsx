@@ -6,6 +6,7 @@ import { listSections } from "../../students/actions";
 import { hasPermission } from "@/lib/auth/permissions";
 import {
   getFeeIntegrationSettings,
+  getSchoolProfile,
   listClassLevels,
   listFeeHeads,
   listFeeStructures,
@@ -15,7 +16,16 @@ import { FeeSetup } from "./fee-setup";
 export const metadata = { title: "Fee setup" };
 
 export default async function FeeSetupPage() {
-  const [ctx, feeHeads, structures, classLevels, sections, integrations, canManageSettings] =
+  const [
+    ctx,
+    feeHeads,
+    structures,
+    classLevels,
+    sections,
+    integrations,
+    canManageSettings,
+    schoolProfile,
+  ] =
     await Promise.all([
       getUserContext(),
       listFeeHeads(),
@@ -24,6 +34,7 @@ export default async function FeeSetupPage() {
       listSections(),
       getFeeIntegrationSettings(),
       hasPermission("settings.manage"),
+      getSchoolProfile(),
     ]);
 
   return (
@@ -50,6 +61,7 @@ export default async function FeeSetupPage() {
         classLevels={classLevels}
         sections={sections}
         integrations={integrations}
+        schoolProfile={schoolProfile}
         canManageSettings={canManageSettings}
       />
     </div>

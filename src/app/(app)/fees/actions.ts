@@ -995,3 +995,332 @@ export async function queueInvoiceEmail(invoiceId: string): Promise<ActionResult
   const payload = data!.payload as { to?: string };
   return { ok: true, data: { to: payload?.to ?? "the configured address" } };
 }
+
+
+// ---------------------------------------------------------------------------
+// The invoice document
+// ---------------------------------------------------------------------------
+
+export type InvoiceDocument = {
+  invoice: {
+    id: string;
+    number: string;
+    issueDate: string;
+    dueDate: string;
+    status: string;
+    notes: string | null;
+    cancelReason: string | null;
+  };
+  school: {
+    name: string;
+    addressLine1: string | null;
+    addressLine2: string | null;
+    city: string | null;
+    state: string | null;
+    postalCode: string | null;
+    phone: string | null;
+    email: string | null;
+    website: string | null;
+  };
+  student: {
+    id: string;
+    fullName: string;
+    admissionNumber: string;
+    sectionLabel: string | null;
+    rollNumber: string | null;
+    guardianName: string | null;
+    guardianPhone: string | null;
+  } | null;
+  lines: { id: string; description: string; amount: number }[];
+  /** Only entries settled against THIS invoice, not money paid on account. */
+  payments: {
+    id: string;
+    occurredAt: string;
+    receiptNumber: string | null;
+    method: string | null;
+    amount: number;
+    isReversal: boolean;
+  }[];
+  total: number;
+  paid: number;
+  outstanding: number;
+  sessionName: string | null;
+};
+
+/**
+ * Everything needed to print one bill.
+ *
+ * `paid` counts only ledger entries allocated to this invoice. Money the
+ * family paid on account is deliberately excluded: it reduces what they owe
+ * overall, but it is not evidence that *this* bill was settled, and an invoice
+ * that claims otherwise is the kind of document a parent brings back to the
+ * counter to argue about.
+ */
+export async function getInvoiceDocument(invoiceId: string): Promise<InvoiceDocument | null> {
+  const ctx = await getUserContext();
+  const supabase = await createClient();
+
+  const { data: invoice, error } = await supabase
+    .from("invoices")
+    .select("id, invoice_number, issue_date, due_date, status, notes, cancel_reason, student_id")
+    .eq("id", invoiceId)
+    .maybeSingle();
+
+  if (error) throw new Error(error.message);
+  if (!invoice) return null;
+
+  // Single-column keys only -- see the note in getStudentAccount about not
+  // embedding across the composite foreign keys added in 0024.
+  const [linesRes, paymentsRes, studentRes, profileRes] = await Promise.all([
+    supabase
+      .from("invoice_lines")
+      .select("id, description, amount")
+      .eq("invoice_id", invoiceId)
+      .order("created_at"),
+    supabase
+      .from("ledger_entries")
+      .select("id, occurred_at, receipt_number, method, amount, entry_type, reverses_entry_id")
+      .eq("invoice_id", invoiceId)
+      .eq("entry_type", "payment")
+      .order("occurred_at"),
+    supabase
+      .from("students")
+      .select(
+        `id, admission_number,
+         people:person_id ( first_name, last_name ),
+         enrolments ( roll_number, sections ( name, class_levels ( name ) ) ),
+         guardian_student ( is_primary, guardians ( people:person_id ( first_name, last_name, phone ) ) )`,
+      )
+      .eq("id", invoice.student_id)
+      .maybeSingle(),
+    supabase.from("settings").select("value").eq("key", "school.profile").maybeSingle(),
+  ]);
+
+  if (linesRes.error) throw new Error(linesRes.error.message);
+  if (paymentsRes.error) throw new Error(paymentsRes.error.message);
+
+  const lines = (linesRes.data ?? []).map((l) => ({
+    id: l.id,
+    description: l.description,
+    amount: Number(l.amount),
+  }));
+
+  const payments = (paymentsRes.data ?? []).map((p) => ({
+    id: p.id,
+    occurredAt: p.occurred_at,
+    receiptNumber: p.receipt_number,
+    method: p.method,
+    // Stored negative; a bill reads better with positive figures in a
+    // "payments received" column.
+    amount: -Number(p.amount),
+    isReversal: p.reverses_entry_id !== null,
+  }));
+
+  const s = studentRes.data;
+  const person = s?.people;
+  const enrolment = Array.isArray(s?.enrolments) ? s.enrolments[0] : s?.enrolments;
+  const links = Array.isArray(s?.guardian_student) ? s.guardian_student : [];
+  const primary = links.find((l) => l.is_primary) ?? links[0];
+  const guardianPerson = primary?.guardians?.people;
+
+  const profile = (profileRes.data?.value ?? {}) as Record<string, string | null>;
+
+  const total = lines.reduce((sum, l) => sum + l.amount, 0);
+  // A reversed payment nets itself out, because both rows are here.
+  const paid = payments.reduce((sum, p) => sum + p.amount, 0);
+
+  return {
+    invoice: {
+      id: invoice.id,
+      number: invoice.invoice_number,
+      issueDate: invoice.issue_date,
+      dueDate: invoice.due_date,
+      status: invoice.status,
+      notes: invoice.notes,
+      cancelReason: invoice.cancel_reason,
+    },
+    school: {
+      name: ctx?.tenantName ?? "",
+      addressLine1: profile.address_line1 ?? null,
+      addressLine2: profile.address_line2 ?? null,
+      city: profile.city ?? null,
+      state: profile.state ?? null,
+      postalCode: profile.postal_code ?? null,
+      phone: profile.phone ?? null,
+      email: profile.email ?? null,
+      website: profile.website ?? null,
+    },
+    student: s
+      ? {
+          id: s.id,
+          fullName: person ? `${person.first_name} ${person.last_name}` : "Unknown",
+          admissionNumber: s.admission_number,
+          sectionLabel:
+            enrolment?.sections && enrolment.sections.class_levels
+              ? `${enrolment.sections.class_levels.name} · ${enrolment.sections.name}`
+              : null,
+          rollNumber: enrolment?.roll_number ?? null,
+          guardianName: guardianPerson
+            ? `${guardianPerson.first_name} ${guardianPerson.last_name}`
+            : null,
+          guardianPhone: guardianPerson?.phone ?? null,
+        }
+      : null,
+    lines,
+    payments,
+    total,
+    paid,
+    outstanding: total - paid,
+    sessionName: ctx?.currentSessionName ?? null,
+  };
+}
+
+export type InvoiceListRow = {
+  id: string;
+  number: string;
+  issueDate: string;
+  dueDate: string;
+  status: string;
+  studentName: string;
+  admissionNumber: string;
+  total: number;
+};
+
+export async function listInvoices(params: {
+  pageIndex: number;
+  pageSize: number;
+  status?: string;
+  search?: string;
+}): Promise<{ rows: InvoiceListRow[]; total: number }> {
+  const ctx = await getUserContext();
+  const supabase = await createClient();
+
+  let query = supabase
+    .from("invoices")
+    .select("id, invoice_number, issue_date, due_date, status, student_id", { count: "exact" });
+
+  if (ctx?.currentSessionId) query = query.eq("session_id", ctx.currentSessionId);
+  if (params.status && params.status !== "all") query = query.eq("status", params.status);
+  if (params.search?.trim()) query = query.ilike("invoice_number", `%${params.search.trim()}%`);
+
+  const { data, count, error } = await query
+    .order("issue_date", { ascending: false })
+    .order("invoice_number", { ascending: false })
+    .range(
+      params.pageIndex * params.pageSize,
+      params.pageIndex * params.pageSize + params.pageSize - 1,
+    );
+
+  if (error) throw new Error(error.message);
+
+  const rows = data ?? [];
+  const ids = rows.map((r) => r.id);
+  const studentIds = [...new Set(rows.map((r) => r.student_id))];
+
+  const [lineRes, studentRes] = await Promise.all([
+    ids.length
+      ? supabase.from("invoice_lines").select("invoice_id, amount").in("invoice_id", ids)
+      : Promise.resolve({ data: [] as { invoice_id: string; amount: number }[] }),
+    studentIds.length
+      ? supabase
+          .from("students")
+          .select("id, admission_number, people:person_id ( first_name, last_name )")
+          .in("id", studentIds)
+      : Promise.resolve({ data: [] }),
+  ]);
+
+  const totalByInvoice = new Map<string, number>();
+  for (const l of lineRes.data ?? []) {
+    totalByInvoice.set(l.invoice_id, (totalByInvoice.get(l.invoice_id) ?? 0) + Number(l.amount));
+  }
+
+  const studentById = new Map(
+    (studentRes.data ?? []).map((s) => [
+      s.id,
+      {
+        name: s.people ? `${s.people.first_name} ${s.people.last_name}` : "Unknown",
+        admissionNumber: s.admission_number,
+      },
+    ]),
+  );
+
+  return {
+    rows: rows.map((r) => {
+      const student = studentById.get(r.student_id);
+      return {
+        id: r.id,
+        number: r.invoice_number,
+        issueDate: r.issue_date,
+        dueDate: r.due_date,
+        status: r.status,
+        studentName: student?.name ?? "Unknown",
+        admissionNumber: student?.admissionNumber ?? "—",
+        total: totalByInvoice.get(r.id) ?? 0,
+      };
+    }),
+    total: count ?? 0,
+  };
+}
+
+export async function saveSchoolProfile(input: {
+  addressLine1: string;
+  addressLine2: string;
+  city: string;
+  state: string;
+  postalCode: string;
+  phone: string;
+  email: string;
+  website: string;
+}): Promise<ActionResult> {
+  const ctx = await getUserContext();
+  if (!ctx) return fail("Not signed in.");
+
+  const supabase = await createClient();
+  const blank = (v: string) => (v.trim() === "" ? null : v.trim());
+
+  const { error } = await supabase.from("settings").upsert(
+    {
+      tenant_id: ctx.tenantId,
+      key: "school.profile",
+      value: {
+        address_line1: blank(input.addressLine1),
+        address_line2: blank(input.addressLine2),
+        city: blank(input.city),
+        state: blank(input.state),
+        postal_code: blank(input.postalCode),
+        phone: blank(input.phone),
+        email: blank(input.email),
+        website: blank(input.website),
+      },
+      updated_by: ctx.userId,
+    },
+    { onConflict: "tenant_id,key" },
+  );
+
+  if (error) return fail(error.message);
+
+  revalidatePath("/fees/setup");
+  revalidatePath("/fees/invoices");
+  return { ok: true, data: undefined };
+}
+
+export async function getSchoolProfile() {
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("settings")
+    .select("value")
+    .eq("key", "school.profile")
+    .maybeSingle();
+
+  const v = (data?.value ?? {}) as Record<string, string | null>;
+  return {
+    addressLine1: v.address_line1 ?? "",
+    addressLine2: v.address_line2 ?? "",
+    city: v.city ?? "",
+    state: v.state ?? "",
+    postalCode: v.postal_code ?? "",
+    phone: v.phone ?? "",
+    email: v.email ?? "",
+    website: v.website ?? "",
+  };
+}
