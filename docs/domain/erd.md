@@ -61,6 +61,19 @@ these into one "student" table blocks all of it.
 |---|---|
 | `class_levels` | "Grade 1"…"Grade 12", with `sequence` for ordering. Unique per tenant on both name and sequence. |
 | `sections` | A class level's section for a given session ("6A"). `capacity`, `class_teacher_staff_id`. Unique on (tenant, class_level, session, name). |
+| `subjects` | What is taught. `code` unique per tenant, `kind` (theory/practical), `is_active`. **Not** session-scoped — a subject outlives a year. Deactivated rather than deleted once assigned. |
+| `class_rooms` | Name and capacity. Capacity is what the exam seat-plan generator divides by. |
+| `time_slots` | **Two** bell schedules, separated by `kind` (class/exam), because exam periods run longer. Unique on (tenant, kind, period_number); `ends_at > starts_at` enforced. |
+| `weekends` | One row per weekday, `is_teaching`. **ISO numbering (1 = Monday … 7 = Sunday)**, matching `extract(isodow …)`. A missing row counts as teaching. |
+| `holidays` | Session-scoped. A closure is **one row with a date range**, not one row per day. Both ends inclusive. |
+| `section_subjects` | Session-scoped. Subject × section × teacher — the join that drives marks entry, homework and the routine. `teacher_staff_id` nullable, so a subject can be on the curriculum before a teacher is chosen. Unique on (tenant, session, section, subject), so re-assigning is an edit. |
+
+`academics_is_teaching_day(date)` answers "is the school open" from the weekday
+config **and** the holiday list, in one place — attendance, the routine grid and
+any future calendar all need it, and three implementations is three chances to
+disagree about a holiday.
+
+See [docs/modules/academics.md](../modules/academics.md).
 
 ### AuthZ
 
@@ -276,13 +289,13 @@ function has to remember.
 Recorded here so the built schema keeps accepting it. Each of these is
 tenant-scoped, and every transactional one is session-scoped.
 
-### Academics & timetable
-`subjects`, `section_subjects` (subject × section × teacher), `periods`,
-`timetable_entries` (section, subject, teacher, weekday, period, room).
-Clash detection = exclusion constraints on (teacher, weekday, period, session)
-and (room, weekday, period, session). `sections.class_teacher_staff_id` already
-exists; subject-teacher assignment is what unlocks a finer-grained RLS rule
-than today's "class teacher sees their section".
+### Timetable
+`subjects`, `section_subjects`, `time_slots` and `class_rooms` are **built**
+(see *Academic structure* under Built). What remains is `timetable_entries`
+(section, subject, teacher, weekday, time_slot, room) with clash detection as
+exclusion constraints on (teacher, weekday, slot, session) and (room, weekday,
+slot, session). Subject-teacher assignment now exists, which is what unlocks a
+finer-grained RLS rule than today's "class teacher sees their section".
 
 ### Students — bulk import only
 The register itself is **built** (see *Students* under Built). What remains is

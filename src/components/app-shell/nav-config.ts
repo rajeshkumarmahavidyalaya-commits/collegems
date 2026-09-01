@@ -6,6 +6,7 @@ import {
   GraduationCap,
   BookOpenCheck,
   FileText,
+  Library,
   IndianRupee,
   LayoutDashboard,
   ListChecks,
@@ -44,6 +45,12 @@ export const NAV_GROUPS: NavGroup[] = [
   {
     title: "Academics",
     items: [
+      {
+        title: "Academics",
+        href: "/academics",
+        icon: Library,
+        roles: ["admin", "teacher", "accountant"],
+      },
       {
         title: "Attendance",
         href: "/attendance",

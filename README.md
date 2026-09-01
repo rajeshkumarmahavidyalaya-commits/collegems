@@ -54,6 +54,8 @@ After any migration, regenerate types into
 - Multi-tenant foundation: tenants, academic sessions, people/students/
   guardians/staff, enrolments, class levels, sections, roles, permission
   matrix, invitations, user profiles, audit log, jobs queue, settings
+- Academic structure: subjects, rooms, period schedules, teaching-week and
+  holiday config, subject-teacher assignment
 - RLS on every table, with row-ownership rules for teachers, parents, students
 - Library module end-to-end as the reference implementation
 - Students register: admission, editing, status changes, guardian links
