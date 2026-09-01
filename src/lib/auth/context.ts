@@ -25,9 +25,19 @@ export type UserContext = {
  */
 export const getUserContext = cache(async (): Promise<UserContext | null> => {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+
+  // Same reasoning as middleware.ts: a revoked/stale refresh token can reject
+  // rather than return an error, and missing build-time env throws outright.
+  // Returning null routes the caller to /login, which is what "we could not
+  // establish who this is" should mean -- not a 500 on a rendered page.
+  let user: { id: string } | null = null;
+  try {
+    const result = await supabase.auth.getUser();
+    user = result.data?.user ?? null;
+  } catch (error) {
+    console.error("[getUserContext] auth check failed, treating as signed out:", error);
+    return null;
+  }
 
   if (!user) return null;
 
