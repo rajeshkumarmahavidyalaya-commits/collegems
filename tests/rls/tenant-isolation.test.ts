@@ -53,6 +53,7 @@ describe("cross-tenant isolation", () => {
     "book_categories",
     "members",
     "book_issues",
+    "attendance_records",
     "roles",
     "role_permissions",
     "settings",

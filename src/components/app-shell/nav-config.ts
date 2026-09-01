@@ -1,5 +1,13 @@
 import type { LucideIcon } from "lucide-react";
-import { BookOpen, GraduationCap, LayoutDashboard, ListChecks, Users } from "lucide-react";
+import {
+  BarChart3,
+  BookOpen,
+  ClipboardCheck,
+  GraduationCap,
+  LayoutDashboard,
+  ListChecks,
+  Users,
+} from "lucide-react";
 
 export type NavItem = {
   title: string;
@@ -26,6 +34,23 @@ export const NAV_GROUPS: NavGroup[] = [
         href: "/students",
         icon: GraduationCap,
         roles: ["admin", "teacher", "accountant", "librarian"],
+      },
+    ],
+  },
+  {
+    title: "Academics",
+    items: [
+      {
+        title: "Attendance",
+        href: "/attendance",
+        icon: ClipboardCheck,
+        roles: ["admin", "teacher"],
+      },
+      {
+        title: "Attendance report",
+        href: "/attendance/report",
+        icon: BarChart3,
+        roles: ["admin", "teacher", "accountant"],
       },
     ],
   },

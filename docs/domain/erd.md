@@ -122,6 +122,39 @@ and sibling links working.
 
 ---
 
+### Attendance
+
+```
+enrolments ──< attendance_records >── academic_sessions (session_id)
+                     └──> auth.users (marked_by)
+```
+
+| Table | Notes |
+|---|---|
+| `attendance_records` | Session-scoped. Keyed to **`enrolment_id`**, not `student_id`, so a mid-year section transfer keeps each month's marks with the class the student was actually in. `attendance_date` (a date, not a timestamp), `period` (`not null default 0`, 0 = whole day), `status` (present/absent/late/excused), `note`, `marked_by`. |
+
+The unique index `(tenant_id, enrolment_id, attendance_date, period)` is the
+whole idempotency story: a phone that lost signal and replays its queue upserts
+onto the same rows instead of double-marking, so no client-generated
+idempotency key is needed — the natural key already is one.
+
+`period` is `not null` with 0 meaning whole-day rather than nullable, so the
+unique key stays a plain four-column index instead of one over
+`coalesce(period, -1)`. Period-wise marking (which needs the timetable tables)
+then becomes a data change rather than a migration of the key.
+
+One `SECURITY INVOKER` RPC:
+
+| Function | Notes |
+|---|---|
+| `mark_attendance(section_id, date, entries jsonb, period default 0)` | Writes a whole register in one upsert and returns the row count. Resolves `session_id` itself, refuses future dates, and filters `entries` to enrolments genuinely in that section and session — so a tampered payload cannot mark another class. |
+
+Teachers may read and write only sections where they are
+`class_teacher_staff_id`; students see their own rows, parents their children's.
+See [docs/modules/attendance.md](../modules/attendance.md).
+
+---
+
 ## Roadmap (not built yet)
 
 Recorded here so the built schema keeps accepting it. Each of these is
@@ -143,11 +176,12 @@ table with per-row validation results so the UI can show a dry-run before
 committing — and it should call `admit_student()` per row so imported students
 go through exactly the same atomic path as hand-entered ones.
 
-### Attendance
-`attendance_records` (enrolment, date, period nullable, status, marked_by).
-Period-wise requires the timetable tables. Offline-tolerant mobile means a
-client-generated idempotency key per (enrolment, date, period) so replayed
-writes collapse instead of duplicating.
+### Attendance — period-wise and holidays
+The register itself is **built** (see *Attendance* under Built). What remains
+needs tables that do not exist yet: period-wise marking waits on the timetable
+(`attendance_records.period` is already there, defaulting to 0 = whole day), and
+a school-calendar table would let the report say "18 of 22 school days marked"
+instead of just counting the days that were.
 
 ### Fees ledger
 `fee_heads`, `fee_structures` (per class level × session), `invoices`,

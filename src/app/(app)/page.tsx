@@ -1,4 +1,11 @@
-import { BookMarked, Building2, GraduationCap, TriangleAlert, Users } from "lucide-react";
+import {
+  BookMarked,
+  Building2,
+  ClipboardCheck,
+  GraduationCap,
+  TriangleAlert,
+  Users,
+} from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { getUserContext } from "@/lib/auth/context";
 import { StatCard } from "@/components/dashboard/stat-card";
@@ -18,7 +25,23 @@ export default async function DashboardPage() {
   const ctx = await getUserContext();
   const supabase = await createClient();
 
-  const [studentsRes, staffRes, sectionsRes, booksRes, issuesRes, enrolmentsRes] = await Promise.all([
+  // Local date, not UTC -- a 9am IST dashboard must not report yesterday.
+  const today = new Date(Date.now() - new Date().getTimezoneOffset() * 60_000)
+    .toISOString()
+    .slice(0, 10);
+
+  // Named session, per rule 2, even though today's marks could only belong to
+  // the current one.
+  const attendanceQuery = ctx?.currentSessionId
+    ? supabase
+        .from("attendance_records")
+        .select("status")
+        .eq("attendance_date", today)
+        .eq("session_id", ctx.currentSessionId)
+    : supabase.from("attendance_records").select("status").eq("attendance_date", today);
+
+  const [studentsRes, staffRes, sectionsRes, booksRes, issuesRes, enrolmentsRes, attendanceRes] =
+    await Promise.all([
     supabase.from("students").select("id, status", { count: "exact", head: true }).eq("status", "active"),
     supabase.from("staff").select("id", { count: "exact", head: true }).eq("status", "active"),
     supabase.from("sections").select("id", { count: "exact", head: true }),
@@ -31,7 +54,18 @@ export default async function DashboardPage() {
       )
       .eq("status", "active")
       .eq("students.status", "active"),
+    attendanceQuery,
   ]);
+
+  const todaysMarks = attendanceRes.data ?? [];
+  const presentToday = todaysMarks.filter((m) => m.status === "present" || m.status === "late").length;
+  const absentToday = todaysMarks.filter((m) => m.status === "absent").length;
+  // Percentage over what was actually marked, not over enrolment -- a register
+  // half-taken should read as half-taken, not as a school half empty.
+  const attendanceRate =
+    presentToday + absentToday === 0
+      ? null
+      : Math.round((presentToday / (presentToday + absentToday)) * 100);
 
   const totalBookCopies = (booksRes.data ?? []).reduce((sum, b) => sum + b.total_copies, 0);
   const issued = (issuesRes.data ?? []).filter((i) => i.status === "issued");
@@ -76,10 +110,21 @@ export default async function DashboardPage() {
         </p>
       </div>
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
         <StatCard label="Active students" value={String(studentsRes.count ?? 0)} icon={GraduationCap} />
         <StatCard label="Active staff" value={String(staffRes.count ?? 0)} icon={Users} />
         <StatCard label="Sections" value={String(sectionsRes.count ?? 0)} icon={Building2} />
+        <StatCard
+          label="Attendance today"
+          value={attendanceRate === null ? "Not taken" : `${attendanceRate}%`}
+          icon={ClipboardCheck}
+          tone={attendanceRate === null ? "default" : attendanceRate >= 85 ? "success" : "warning"}
+          hint={
+            todaysMarks.length === 0
+              ? "No register marked yet today"
+              : `${presentToday} present · ${absentToday} absent`
+          }
+        />
         <StatCard
           label="Books overdue"
           value={String(overdue.length)}

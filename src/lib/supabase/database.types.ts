@@ -55,6 +55,70 @@ export type Database = {
           },
         ]
       }
+      attendance_records: {
+        Row: {
+          attendance_date: string
+          created_at: string
+          enrolment_id: string
+          id: string
+          marked_by: string | null
+          note: string | null
+          period: number
+          session_id: string
+          status: string
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          attendance_date: string
+          created_at?: string
+          enrolment_id: string
+          id?: string
+          marked_by?: string | null
+          note?: string | null
+          period?: number
+          session_id: string
+          status: string
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          attendance_date?: string
+          created_at?: string
+          enrolment_id?: string
+          id?: string
+          marked_by?: string | null
+          note?: string | null
+          period?: number
+          session_id?: string
+          status?: string
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "attendance_records_enrolment_id_fkey"
+            columns: ["enrolment_id"]
+            isOneToOne: false
+            referencedRelation: "enrolments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "attendance_records_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "academic_sessions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "attendance_records_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       audit_log: {
         Row: {
           action: string
@@ -1223,6 +1287,15 @@ export type Database = {
           isOneToOne: true
           isSetofReturn: false
         }
+      }
+      mark_attendance: {
+        Args: {
+          p_date: string
+          p_entries: Json
+          p_period?: number
+          p_section_id: string
+        }
+        Returns: number
       }
       schema_guard_violations: {
         Args: never
