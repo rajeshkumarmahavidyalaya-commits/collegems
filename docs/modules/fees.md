@@ -224,6 +224,25 @@ section (~40 students) on purpose: billing a whole school belongs in `jobs`
 Removing a class amount warns that invoices already raised are unaffected —
 an issued invoice is a record of what was charged.
 
+
+## Fines that come from the library
+
+A late book return books a `fine` here rather than leaving the amount on
+`book_issues.fine_amount`, so it lands in the same balance and is collected
+with the same receipt as tuition. Three things make that safe:
+
+- `ledger_entries_book_issue_unique` (partial, excluding reversals) means one
+  fine per issue, forever — a retried return converges instead of double-billing.
+- A policy lets a librarian insert **only** `entry_type = 'fine'` rows carrying
+  a `book_issue_id`, so `library_return_book` can run as `SECURITY INVOKER`
+  without handing librarians the rest of the ledger.
+- `fees_reverse_entry` carries `book_issue_id` onto the reversal, so a
+  cancelled library fine stays explainable.
+
+The fine is booked **at return**, when the amount is final — a daily-accruing
+debt cannot be one immutable row. Details and the staff-member exception are in
+`docs/modules/library.md`.
+
 ## Known, deliberate gaps
 
 - **No gateway integration.** Schema and idempotent write path only; see above.
@@ -232,10 +251,10 @@ an issued invoice is a record of what was charged.
   concern.
 - **Whole-school invoicing is not offered**, only per-section, for the same
   reason.
-- **Library fines have not moved into this ledger.** CLAUDE.md rule 6 said they
-  should once the ledger existed. It now does, and they have not moved — see
-  the note there for what the migration involves and why it was not folded into
-  this change.
+- **Staff library fines are not collectable here.** Library fines for *student*
+  members now book into this ledger (migration `0026`); staff members have no
+  fee account, so theirs stay on `book_issues.fine_amount` and are settled
+  outside this module. See `docs/modules/library.md`.
 - **No receipt printing or PDF.** The receipt number and every field a receipt
   needs are stored; rendering one is not built.
 - **`fees_student_balances()` recomputes on every call.** Correct at one

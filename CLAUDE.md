@@ -101,15 +101,29 @@ Two consequences worth knowing before you touch this module:
 - **Amounts are signed, positive means "owes more", and the RPCs take positive
   numbers** and do the signing. Never ask a caller for a negative amount.
 
-**Library fines have not moved into the ledger.** The rule said they should
-once it existed; it now does, and they have not. `book_issues.fine_amount` is
-still a mutable field. Moving it means a data migration of existing fines into
-`ledger_entries`, a `fine` entry raised by `library_return_book`, and a
-decision about whether an unreturned book's fine accrues daily (which the
-ledger cannot express as a single row). That is a fees change and a library
-change together, and it was deliberately not folded into building the ledger.
-Until it happens, the two are separate: a library fine does not appear in a
-student's fee balance.
+**Library fines are in the ledger** (migration `0026`). Returning a late book
+books a `fine` entry against the student's fee account, so an overdue book is
+collected on the same screen, with the same receipt, as tuition. Three rules
+came out of that and apply to any module that wants to write here:
+
+- **Book the charge when the amount is final.** A daily-accruing debt cannot be
+  one immutable row, so the fine is booked at return and the running amount
+  before then is an estimate computed on the fly and stored nowhere.
+- **Give a module its own narrow way in, not the whole ledger.** Librarians
+  have a policy permitting exactly `entry_type = 'fine'` rows that carry a
+  `book_issue_id` — which is what lets `library_return_book` stay
+  `SECURITY INVOKER` instead of becoming `SECURITY DEFINER`.
+- **Make idempotency a unique index on the source row.** One fine per book
+  issue (excluding reversals), so a retried return converges instead of
+  double-billing.
+
+`book_issues.fine_paid` was dropped: for a student the fee balance answers it,
+and a second boolean free to disagree with the ledger is exactly the drift the
+ledger exists to prevent. **Staff library fines did not move** — `members` is a
+student *or* a staff member, `ledger_entries.student_id` is `not null`, and a
+staff fine is a payroll matter, not a fee receivable. Theirs stay on
+`fine_amount` and are not collectable through the fees module. That is an open
+gap, recorded in `docs/modules/library.md`, not a solved problem.
 
 ## 7. Heavy work goes through the jobs table
 

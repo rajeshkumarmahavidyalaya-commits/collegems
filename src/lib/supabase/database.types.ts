@@ -198,7 +198,6 @@ export type Database = {
           created_at: string
           due_at: string
           fine_amount: number
-          fine_paid: boolean
           id: string
           issued_at: string
           issued_by: string | null
@@ -215,7 +214,6 @@ export type Database = {
           created_at?: string
           due_at: string
           fine_amount?: number
-          fine_paid?: boolean
           id?: string
           issued_at?: string
           issued_by?: string | null
@@ -232,7 +230,6 @@ export type Database = {
           created_at?: string
           due_at?: string
           fine_amount?: number
-          fine_paid?: boolean
           id?: string
           issued_at?: string
           issued_by?: string | null
@@ -977,6 +974,7 @@ export type Database = {
       ledger_entries: {
         Row: {
           amount: number
+          book_issue_id: string | null
           created_at: string
           entry_type: string
           id: string
@@ -996,6 +994,7 @@ export type Database = {
         }
         Insert: {
           amount: number
+          book_issue_id?: string | null
           created_at?: string
           entry_type: string
           id?: string
@@ -1015,6 +1014,7 @@ export type Database = {
         }
         Update: {
           amount?: number
+          book_issue_id?: string | null
           created_at?: string
           entry_type?: string
           id?: string
@@ -1033,6 +1033,13 @@ export type Database = {
           tenant_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "ledger_entries_book_issue_id_fkey"
+            columns: ["tenant_id", "book_issue_id"]
+            isOneToOne: false
+            referencedRelation: "book_issues"
+            referencedColumns: ["tenant_id", "id"]
+          },
           {
             foreignKeyName: "ledger_entries_invoice_id_fkey"
             columns: ["tenant_id", "invoice_id"]
@@ -1725,6 +1732,7 @@ export type Database = {
         }
         Returns: {
           amount: number
+          book_issue_id: string | null
           created_at: string
           entry_type: string
           id: string
@@ -1763,6 +1771,7 @@ export type Database = {
         }
         Returns: {
           amount: number
+          book_issue_id: string | null
           created_at: string
           entry_type: string
           id: string
@@ -1798,6 +1807,7 @@ export type Database = {
         }
         Returns: {
           amount: number
+          book_issue_id: string | null
           created_at: string
           entry_type: string
           id: string
@@ -1826,6 +1836,7 @@ export type Database = {
         Args: { p_entry_id: string; p_reason: string }
         Returns: {
           amount: number
+          book_issue_id: string | null
           created_at: string
           entry_type: string
           id: string
@@ -1875,7 +1886,6 @@ export type Database = {
           created_at: string
           due_at: string
           fine_amount: number
-          fine_paid: boolean
           id: string
           issued_at: string
           issued_by: string | null
@@ -1918,7 +1928,6 @@ export type Database = {
           created_at: string
           due_at: string
           fine_amount: number
-          fine_paid: boolean
           id: string
           issued_at: string
           issued_by: string | null

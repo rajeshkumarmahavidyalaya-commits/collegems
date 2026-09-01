@@ -2,11 +2,12 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { keepPreviousData, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { ColumnDef, SortingState, VisibilityState } from "@tanstack/react-table";
 import { format } from "date-fns";
 import { toast } from "sonner";
-import { Undo2 } from "lucide-react";
+import { IndianRupee, Undo2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -18,6 +19,7 @@ import {
 } from "@/components/ui/select";
 import { DataTable, exportRowsToCsv } from "@/components/data-table/data-table";
 import { DataTableToolbar } from "@/components/data-table/data-table-toolbar";
+import { formatMoney } from "@/lib/validations/fees";
 import { listIssues, returnBook, type IssueRow } from "../actions";
 
 function StatusBadge({ row }: { row: IssueRow }) {
@@ -28,6 +30,7 @@ function StatusBadge({ row }: { row: IssueRow }) {
 
 export function IssuesTable({ canManage }: { canManage: boolean }) {
   const queryClient = useQueryClient();
+  const router = useRouter();
   const [pageIndex, setPageIndex] = useState(0);
   const [pageSize, setPageSize] = useState(25);
   const [sorting, setSorting] = useState<SortingState>([]);
@@ -58,10 +61,22 @@ export function IssuesTable({ canManage }: { canManage: boolean }) {
       return;
     }
 
-    if (result.data.fineAmount > 0) {
-      toast.success(`Returned. Fine due: ₹${result.data.fineAmount.toFixed(2)}`);
-    } else {
+    const { fineAmount, billedToFees, studentId } = result.data;
+
+    if (fineAmount === 0) {
       toast.success("Returned, no fine due");
+    } else if (billedToFees && studentId) {
+      // The fine is now a ledger entry, not a number on this row, so say so
+      // and offer the place it can actually be collected.
+      toast.success(`Returned. ${formatMoney(fineAmount)} billed to the fee account`, {
+        action: {
+          label: "Open account",
+          onClick: () => router.push(`/fees/students/${studentId}`),
+        },
+      });
+    } else {
+      // Staff have no fee account; the fine stays on the issue.
+      toast.success(`Returned. ${formatMoney(fineAmount)} fine recorded against this issue`);
     }
     queryClient.invalidateQueries({ queryKey: ["library-issues"] });
   }
@@ -125,11 +140,47 @@ export function IssuesTable({ canManage }: { canManage: boolean }) {
     {
       accessorKey: "fineAmount",
       header: "Fine",
-      cell: ({ row }) => (
-        <span className="font-mono tabular-nums">
-          {row.original.fineAmount > 0 ? `₹${row.original.fineAmount.toFixed(2)}` : "—"}
-        </span>
-      ),
+      cell: ({ row }) => {
+        const issue = row.original;
+
+        // Still out and late: nothing is booked yet, and the amount is a
+        // running estimate. Labelled "accruing" so nobody reads it as a debt
+        // already on the family's account.
+        if (issue.status === "issued") {
+          if (issue.accruedFine <= 0) {
+            return <span className="text-muted-foreground">—</span>;
+          }
+          return (
+            <div className="flex flex-col gap-0.5">
+              <span className="font-mono tabular-nums">{formatMoney(issue.accruedFine)}</span>
+              <span className="text-xs text-muted-foreground">
+                Accruing · {issue.daysLate} {issue.daysLate === 1 ? "day" : "days"}
+              </span>
+            </div>
+          );
+        }
+
+        if (issue.fineAmount <= 0) {
+          return <span className="text-muted-foreground">—</span>;
+        }
+
+        return (
+          <div className="flex flex-col items-start gap-1">
+            <span className="font-mono tabular-nums">{formatMoney(issue.fineAmount)}</span>
+            {issue.billedToFees && issue.studentId ? (
+              <Link
+                href={`/fees/students/${issue.studentId}`}
+                className="inline-flex items-center gap-1 text-xs text-muted-foreground underline-offset-4 hover:underline"
+              >
+                <IndianRupee className="size-3" aria-hidden="true" />
+                On fee account
+              </Link>
+            ) : (
+              <span className="text-xs text-muted-foreground">Not billed to fees</span>
+            )}
+          </div>
+        );
+      },
       enableSorting: false,
       meta: { label: "Fine" },
     },
@@ -204,6 +255,7 @@ export function IssuesTable({ canManage }: { canManage: boolean }) {
                 { key: "dueAt", label: "Due" },
                 { key: "status", label: "Status" },
                 { key: "fineAmount", label: "Fine" },
+                { key: "accruedFine", label: "Accruing fine" },
               ],
               "schoolos-library-issues.csv",
             )

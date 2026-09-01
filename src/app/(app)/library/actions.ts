@@ -273,18 +273,48 @@ export type IssueRow = {
   returnedAt: string | null;
   fineAmount: number;
   isOverdue: boolean;
+  daysLate: number;
+  /**
+   * What the fine would be if the book came back today. Only meaningful while
+   * the issue is still open -- nothing is booked until the book is returned,
+   * because a growing debt cannot be one immutable ledger entry.
+   */
+  accruedFine: number;
+  /** True once this fine has been booked to the student's fee account. */
+  billedToFees: boolean;
+  /** Set when the member is a student, so the ledger can be linked to. */
+  studentId: string | null;
 };
+
+/**
+ * The per-day fine, from `settings`, so the estimate shown in the library and
+ * the amount `library_return_book()` actually charges come from one place.
+ * Falls back to the historical default if a tenant has no row.
+ */
+export async function getFinePerDay(): Promise<number> {
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("settings")
+    .select("value")
+    .eq("key", "library.fine_per_day")
+    .maybeSingle();
+
+  const amount = (data?.value as { amount?: number } | null)?.amount;
+  return typeof amount === "number" ? amount : 2;
+}
 
 export async function listIssues(params: ListParams): Promise<{ rows: IssueRow[]; total: number }> {
   const supabase = await createClient();
   const { pageIndex, pageSize, search, status } = params;
+
+  const finePerDay = await getFinePerDay();
 
   let query = supabase
     .from("book_issues")
     .select(
       `id, status, issued_at, due_at, returned_at, fine_amount,
        books ( id, title ),
-       members ( membership_number,
+       members ( membership_number, student_id,
                  students ( people:person_id ( first_name, last_name ) ),
                  staff ( people:person_id ( first_name, last_name ) ) )`,
       { count: "exact" },
@@ -304,8 +334,37 @@ export async function listIssues(params: ListParams): Promise<{ rows: IssueRow[]
   const { data, count, error } = await query;
   if (error) throw new Error(error.message);
 
+  // Which of these fines actually reached a fee account. A separate query
+  // rather than an embed: `ledger_entries -> book_issues` is a composite
+  // (tenant_id, book_issue_id) foreign key, and embedding across one is not
+  // something this project can verify from its test environment.
+  const issueIds = (data ?? []).map((i) => i.id);
+  let billedIssueIds = new Set<string>();
+
+  if (issueIds.length > 0) {
+    const { data: booked } = await supabase
+      .from("ledger_entries")
+      .select("book_issue_id")
+      .in("book_issue_id", issueIds)
+      .is("reverses_entry_id", null);
+
+    billedIssueIds = new Set(
+      (booked ?? []).map((e) => e.book_issue_id).filter(Boolean) as string[],
+    );
+  }
+
   let rows = (data ?? []).map((i) => {
     const person = i.members?.students?.people ?? i.members?.staff?.people;
+    const isOverdue = i.status === "issued" && i.due_at < today;
+    const daysLate = Math.max(
+      0,
+      Math.round(
+        (Date.parse(i.status === "returned" && i.returned_at ? i.returned_at : today) -
+          Date.parse(i.due_at)) /
+          86_400_000,
+      ),
+    );
+
     return {
       id: i.id,
       bookId: i.books?.id ?? "",
@@ -317,7 +376,11 @@ export async function listIssues(params: ListParams): Promise<{ rows: IssueRow[]
       dueAt: i.due_at,
       returnedAt: i.returned_at,
       fineAmount: Number(i.fine_amount),
-      isOverdue: i.status === "issued" && i.due_at < today,
+      isOverdue,
+      daysLate,
+      accruedFine: isOverdue ? daysLate * finePerDay : 0,
+      billedToFees: billedIssueIds.has(i.id),
+      studentId: i.members?.student_id ?? null,
     };
   });
 
@@ -354,15 +417,43 @@ export async function issueBook(input: unknown): Promise<ActionResult<{ id: stri
   return { ok: true, data: { id: (data as { id: string }).id } };
 }
 
-export async function returnBook(issueId: string): Promise<ActionResult<{ fineAmount: number }>> {
+/**
+ * Returning a late book now books a `fine` entry against the student's fee
+ * account inside the same transaction, so the toast can say where the money
+ * went. A staff member has no fee account, so their fine stays on the issue
+ * row -- the caller is told which happened rather than left to guess.
+ */
+export async function returnBook(
+  issueId: string,
+): Promise<ActionResult<{ fineAmount: number; billedToFees: boolean; studentId: string | null }>> {
   const supabase = await createClient();
   const { data, error } = await supabase.rpc("library_return_book", { p_issue_id: issueId });
 
   if (error) return { ok: false, error: error.message };
 
+  const fineAmount = Number(data.fine_amount);
+
+  let billedToFees = false;
+  let studentId: string | null = null;
+
+  if (fineAmount > 0) {
+    const { data: entry } = await supabase
+      .from("ledger_entries")
+      .select("student_id")
+      .eq("book_issue_id", issueId)
+      .is("reverses_entry_id", null)
+      .maybeSingle();
+
+    billedToFees = entry !== null;
+    studentId = entry?.student_id ?? null;
+  }
+
   revalidatePath("/library/issues");
   revalidatePath("/library/books");
-  return { ok: true, data: { fineAmount: Number(data.fine_amount) } };
+  revalidatePath("/fees");
+  if (studentId) revalidatePath(`/fees/students/${studentId}`);
+
+  return { ok: true, data: { fineAmount, billedToFees, studentId } };
 }
 
 export async function listIssuableMembers(search: string) {

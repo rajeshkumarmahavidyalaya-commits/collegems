@@ -185,6 +185,87 @@ That last one is the pattern to copy for every module: prove the boundary from
 the outside, with a real signed-in client, not by reading the policy and
 believing it.
 
+---
+
+## Fines live in the fees ledger, not here
+
+Since migration `0026`, returning a book late does not just stamp a number on
+the issue row — it books an immutable `fine` entry against the student's fee
+account, so an overdue book is collected on the same screen, with the same
+receipt, as tuition.
+
+Four decisions worth knowing before changing any of this.
+
+### The fine is booked at return, not as it accrues
+
+An overdue book's fine grows every day. A ledger entry is a fixed amount, and
+rewriting it daily is exactly what an append-only ledger forbids. So the ledger
+records the fine when it is **final** — at return — and the issues list shows
+the running amount before then as an estimate, labelled *Accruing*, computed on
+the fly and stored nowhere.
+
+That also matches how a library works: you settle when you hand the book back.
+
+### Staff fines do not move
+
+`members` is a student **or** a staff member, and `ledger_entries.student_id`
+is `not null` because that module is student fees. A staff member's overdue
+book is a payroll or petty-cash matter, not a fee receivable.
+
+Their fine stays on `book_issues.fine_amount` and is **not collectable through
+the fees module** — the issues list says *Not billed to fees* rather than
+implying otherwise. Staff fine collection is an open gap, not a solved problem.
+
+### `fine_paid` is gone
+
+Nothing read or wrote it and no row ever set it. For a student the fee balance
+now answers it, and a boolean that can silently disagree with the ledger is
+precisely the drift the ledger exists to prevent.
+
+### The rate lives in `settings`
+
+`library.fine_per_day`, read by both `library_return_book()` and the accrual
+estimate in the UI. It used to be a function default (`2.00`) the app could not
+see, so any estimate shown would have been a second hardcoded copy free to
+drift from what was actually charged.
+
+### How a librarian is allowed to write to the ledger
+
+`library_return_book` is `SECURITY INVOKER`, so it writes as the librarian who
+called it — and the finance-roles policy would reject them. Rather than making
+the function `SECURITY DEFINER` (which would hand librarians the entire
+ledger), there is a policy granting exactly one shape of row:
+
+```sql
+entry_type = 'fine' and book_issue_id is not null
+```
+
+A librarian still cannot record a payment, a discount, or a fine unattached to
+a book. Both are proven from a real session in
+`tests/library/library-fines.test.ts`.
+
+### One fine per issue, forever
+
+`ledger_entries_book_issue_unique` — partial, excluding reversals — is what
+makes booking idempotent. A double-submitted return, or a re-run of the
+backfill, cannot fine a family twice.
+
+Because reversals are excluded, a wrongly-assessed fine can still be cancelled,
+and the reversal carries the same `book_issue_id` so it stays explainable on
+the ledger. The consequence: once a fine is reversed, a *corrected* amount
+cannot be re-booked against that issue — record it as a manual fine on the fee
+account instead.
+
+### Where the amount lives now
+
+`book_issues.fine_amount` remains, as the record of what was assessed on that
+issue. The **collectable debt** is the ledger entry. They are written in the
+same transaction and the ledger row is immutable, so they cannot drift — but if
+a fine is reversed, the issue still shows the original assessment while the
+ledger nets to zero. The ledger is the authority.
+
+---
+
 ## Checklist for the next module
 
 - [ ] Migration creates tables **with** `tenant_id`, RLS, and policies

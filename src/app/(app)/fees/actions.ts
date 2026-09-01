@@ -141,6 +141,9 @@ export type LedgerEntryRow = {
   invoiceNumber: string | null;
   reversesEntryId: string | null;
   isReversed: boolean;
+  /** Set when this entry came from the library rather than a fee invoice. */
+  bookIssueId: string | null;
+  bookTitle: string | null;
 };
 
 export type InvoiceRow = {
@@ -187,15 +190,25 @@ export async function getStudentAccount(studentId: string): Promise<StudentAccou
   // balance `fees_student_balances()` reports on the collection screen --
   // which is also this session only. Last year's settled account is history,
   // not part of what this family owes now.
+  //
+  // Lines, invoice numbers and book titles are fetched separately rather than
+  // as PostgREST embeds. Migration 0024 made `ledger_entries -> invoices` and
+  // `invoice_lines -> invoices` composite (tenant_id, id) foreign keys, and
+  // 0026 added another for book issues; embedding across a composite key is
+  // not something this project can verify from its test environment, and a
+  // page that 500s in production to save one round trip is a bad trade. Every
+  // relationship used below is a plain single-column key.
   let invoiceQuery = supabase
     .from("invoices")
-    .select("id, invoice_number, issue_date, due_date, status, cancel_reason, notes, invoice_lines ( id, description, amount )")
+    .select("id, invoice_number, issue_date, due_date, status, cancel_reason, notes")
     .eq("student_id", studentId)
     .order("issue_date", { ascending: false });
 
   let entryQuery = supabase
     .from("ledger_entries")
-    .select("id, entry_type, amount, occurred_at, receipt_number, method, reference, note, reverses_entry_id, invoices ( invoice_number )")
+    .select(
+      "id, entry_type, amount, occurred_at, receipt_number, method, reference, note, reverses_entry_id, invoice_id, book_issue_id",
+    )
     .eq("student_id", studentId)
     .order("occurred_at", { ascending: false });
 
@@ -230,12 +243,39 @@ export async function getStudentAccount(studentId: string): Promise<StudentAccou
   const primary = links.find((l) => l.is_primary) ?? links[0];
   const guardianPerson = primary?.guardians?.people;
 
+  const invoiceIds = (invoiceRes.data ?? []).map((i) => i.id);
+  const bookIssueIds = [
+    ...new Set((entryRes.data ?? []).map((e) => e.book_issue_id).filter(Boolean) as string[]),
+  ];
+
+  const [lineRes, bookRes] = await Promise.all([
+    invoiceIds.length
+      ? supabase
+          .from("invoice_lines")
+          .select("id, invoice_id, description, amount")
+          .in("invoice_id", invoiceIds)
+      : Promise.resolve({ data: [], error: null }),
+    bookIssueIds.length
+      ? supabase.from("book_issues").select("id, books ( title )").in("id", bookIssueIds)
+      : Promise.resolve({ data: [], error: null }),
+  ]);
+
+  if (lineRes.error) throw new Error(lineRes.error.message);
+  if (bookRes.error) throw new Error(bookRes.error.message);
+
+  const linesByInvoice = new Map<string, { id: string; description: string; amount: number }[]>();
+  for (const l of lineRes.data ?? []) {
+    const bucket = linesByInvoice.get(l.invoice_id) ?? [];
+    bucket.push({ id: l.id, description: l.description, amount: Number(l.amount) });
+    linesByInvoice.set(l.invoice_id, bucket);
+  }
+
+  const bookTitleByIssue = new Map<string, string>(
+    (bookRes.data ?? []).map((bi) => [bi.id, bi.books?.title ?? ""]),
+  );
+
   const invoices: InvoiceRow[] = (invoiceRes.data ?? []).map((i) => {
-    const lines = (i.invoice_lines ?? []).map((l) => ({
-      id: l.id,
-      description: l.description,
-      amount: Number(l.amount),
-    }));
+    const lines = linesByInvoice.get(i.id) ?? [];
     return {
       id: i.id,
       invoiceNumber: i.invoice_number,
@@ -248,6 +288,8 @@ export async function getStudentAccount(studentId: string): Promise<StudentAccou
       lines,
     };
   });
+
+  const invoiceNumberById = new Map(invoices.map((i) => [i.id, i.invoiceNumber]));
 
   const raw = entryRes.data ?? [];
   // An entry that something else reverses is shown struck through rather than
@@ -264,9 +306,11 @@ export async function getStudentAccount(studentId: string): Promise<StudentAccou
     method: e.method,
     reference: e.reference,
     note: e.note,
-    invoiceNumber: e.invoices?.invoice_number ?? null,
+    invoiceNumber: e.invoice_id ? (invoiceNumberById.get(e.invoice_id) ?? null) : null,
     reversesEntryId: e.reverses_entry_id,
     isReversed: reversedIds.has(e.id),
+    bookIssueId: e.book_issue_id,
+    bookTitle: e.book_issue_id ? (bookTitleByIssue.get(e.book_issue_id) ?? null) : null,
   }));
 
   const charged = invoices

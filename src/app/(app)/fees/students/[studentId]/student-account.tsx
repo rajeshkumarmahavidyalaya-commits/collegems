@@ -2,13 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import {
-  Ban,
-  CircleMinus,
-  FileText,
-  IndianRupee,
-  Undo2,
-} from "lucide-react";
+import { Ban, BookOpen, CircleMinus, FileText, IndianRupee, Undo2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -237,6 +231,12 @@ export function StudentAccountView({
                             </Badge>
                           )}
                           {entry.isReversed && <Badge variant="outline">Reversed</Badge>}
+                          {entry.bookIssueId && (
+                            <Badge variant="outline" className="gap-1">
+                              <BookOpen className="size-3" aria-hidden="true" />
+                              Library
+                            </Badge>
+                          )}
                           {entry.invoiceNumber && (
                             <span className="font-mono text-xs text-muted-foreground">
                               {entry.invoiceNumber}

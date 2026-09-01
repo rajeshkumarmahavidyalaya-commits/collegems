@@ -92,10 +92,23 @@ book_categories ──< books ──< book_issues >── members ──> studen
 | `book_categories` | Name, unique per tenant. |
 | `books` | Title, author, ISBN, publisher, edition, shelf, `total_copies`, `available_copies`. Check constraint: `available_copies <= total_copies`. |
 | `members` | A student **or** a staff member (check constraint enforces exactly one). `membership_number`, `status`, `max_books`. |
-| `book_issues` | Session-scoped. `status` (issued/returned/lost), `due_at`, `returned_at`, `fine_amount`, who issued/returned it. |
+| `book_issues` | Session-scoped. `status` (issued/returned/lost), `due_at`, `returned_at`, `fine_amount`, who issued/returned it. `fine_paid` was **dropped** in `0026` — for a student the fee balance answers it, and a boolean that can disagree with the ledger is drift waiting to happen. |
 
 Two `SECURITY INVOKER` RPCs keep the two-write operations atomic:
 `library_issue_book(book, member, due_at)` and `library_return_book(issue)`.
+
+**Fines go to the fees ledger** (migration `0026`). Returning a late book books
+a `fine` entry against the student's fee account, linked by
+`ledger_entries.book_issue_id`, so an overdue book is collected on the same
+screen as tuition. Booked at return, when the amount is final — a daily-accruing
+debt cannot be one immutable row, so the running amount before then is an
+estimate the UI computes and stores nowhere. The per-day rate lives in
+`settings` (`library.fine_per_day`), read by both the function and the UI.
+
+Staff members have no fee account, so their fines stay on `fine_amount` and are
+settled outside the fees module. A dedicated policy lets a librarian insert
+*only* `entry_type = 'fine'` rows carrying a `book_issue_id`, which is what lets
+`library_return_book` stay `SECURITY INVOKER`.
 
 ### Students
 
