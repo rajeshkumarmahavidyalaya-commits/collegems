@@ -1,6 +1,5 @@
 import { redirect } from "next/navigation";
 import { getUserContext } from "@/lib/auth/context";
-import { navForRole } from "@/components/app-shell/nav-config";
 import { AppShell } from "@/components/app-shell/shell";
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
@@ -12,7 +11,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
 
   return (
     <AppShell
-      navGroups={navForRole(ctx.roleCode)}
+      roleCode={ctx.roleCode}
       tenantName={ctx.tenantName}
       currentSessionName={ctx.currentSessionName}
       displayName={ctx.displayName}

@@ -9,23 +9,31 @@ import { AppBreadcrumbs } from "./breadcrumbs";
 import { CommandPalette } from "./command-palette";
 import { ThemeToggle } from "./theme-toggle";
 import { UserMenu } from "./user-menu";
-import type { NavGroup } from "./nav-config";
+import { navForRole } from "./nav-config";
 
 export function AppShell({
-  navGroups,
+  roleCode,
   tenantName,
   currentSessionName,
   displayName,
   roleName,
   children,
 }: {
-  navGroups: NavGroup[];
+  /**
+   * The role code, not a built nav tree. Nav items carry Lucide icon
+   * *components*, and functions cannot cross the server/client boundary --
+   * passing them in throws "Functions cannot be passed directly to Client
+   * Components" and takes down every authenticated page. Only serializable
+   * props come in; the tree is built here, on the client.
+   */
+  roleCode: string;
   tenantName: string;
   currentSessionName: string | null;
   displayName: string;
   roleName: string;
   children: React.ReactNode;
 }) {
+  const navGroups = navForRole(roleCode);
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
 
