@@ -10,11 +10,26 @@ function isPublicPath(pathname: string) {
 
 export async function middleware(request: NextRequest) {
   let response = NextResponse.next({ request });
+  const { pathname } = request.nextUrl;
 
-  const supabase = createServerClient(
-    supabaseUrl(),
-    supabasePublishableKey(),
-    {
+  let user: { id: string } | null = null;
+
+  // Middleware runs in front of EVERY route, so anything that throws here
+  // takes the whole site down with MIDDLEWARE_INVOCATION_FAILED -- including
+  // /login, leaving no way to recover in the browser. Two things in here can
+  // realistically fail, and neither should be fatal:
+  //
+  //   1. Missing build-time env (see ./lib/supabase/env) -- a deployment
+  //      misconfiguration. It must stay loud in the logs, but a 500 on every
+  //      route is a worse signal than a login page that cannot sign in.
+  //   2. A stale or revoked auth cookie -- an ordinary runtime condition.
+  //      Rotating a password or revoking sessions invalidates the refresh
+  //      token every existing browser is still holding, and the refresh
+  //      attempt can reject at the network layer.
+  //
+  // Both mean the same thing for routing: treat this request as signed out.
+  try {
+    const supabase = createServerClient(supabaseUrl(), supabasePublishableKey(), {
       cookies: {
         getAll() {
           return request.cookies.getAll();
@@ -29,16 +44,16 @@ export async function middleware(request: NextRequest) {
           }
         },
       },
-    },
-  );
+    });
 
-  // Do not remove: refreshes the auth token and must run before any
-  // other Supabase call so the session cookie stays valid.
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  const { pathname } = request.nextUrl;
+    // Do not remove: refreshes the auth token and must run before any
+    // other Supabase call so the session cookie stays valid.
+    const result = await supabase.auth.getUser();
+    user = result.data?.user ?? null;
+  } catch (error) {
+    console.error("[middleware] auth check failed, treating request as signed out:", error);
+    user = null;
+  }
 
   if (!user && !isPublicPath(pathname)) {
     const loginUrl = new URL("/login", request.url);
