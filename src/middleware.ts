@@ -2,7 +2,9 @@ import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import { supabasePublishableKey, supabaseUrl } from "@/lib/supabase/env";
 
-const PUBLIC_PATHS = ["/login", "/auth"];
+// /api/health must stay reachable without a session -- it exists to diagnose
+// deployments that cannot authenticate in the first place.
+const PUBLIC_PATHS = ["/login", "/auth", "/api/health"];
 
 function isPublicPath(pathname: string) {
   return PUBLIC_PATHS.some((p) => pathname === p || pathname.startsWith(`${p}/`));
