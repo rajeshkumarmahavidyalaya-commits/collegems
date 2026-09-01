@@ -6,6 +6,7 @@ import { getUserContext } from "@/lib/auth/context";
 import {
   adjustmentSchema,
   cancelInvoiceSchema,
+  chargeSchema,
   feeHeadSchema,
   feeStructureSchema,
   generateInvoiceSchema,
@@ -630,4 +631,190 @@ export async function deleteFeeStructure(id: string): Promise<ActionResult> {
   if (error) return fail(error.message);
   revalidatePath("/fees/setup");
   return { ok: true, data: undefined };
+}
+
+
+// ---------------------------------------------------------------------------
+// The fee counter
+// ---------------------------------------------------------------------------
+
+export type CounterHit = {
+  studentId: string;
+  admissionNumber: string;
+  fullName: string;
+  sectionLabel: string | null;
+  rollNumber: string | null;
+  balance: number;
+};
+
+/**
+ * Type-ahead lookup for the counter.
+ *
+ * Two steps rather than one: find the handful of students matching the text,
+ * then price only those. `fees_student_balances` recomputes from the ledger, so
+ * asking it for the whole school on every keystroke would be wasteful --
+ * `p_student_ids` exists precisely so the clerk sees "Ravi Kumar · 6,200 due"
+ * next to the name before opening the form, which is how you catch the wrong
+ * Ravi before taking their money.
+ */
+export async function searchStudentsForCounter(query: string): Promise<CounterHit[]> {
+  const needle = query.trim();
+  if (needle.length < 2) return [];
+
+  const supabase = await createClient();
+  const like = `%${needle}%`;
+
+  const [byAdmission, byName] = await Promise.all([
+    supabase.from("students").select("id").ilike("admission_number", like).limit(10),
+    supabase
+      .from("people")
+      .select("students ( id )")
+      .or(`first_name.ilike.${like},last_name.ilike.${like}`)
+      .limit(10),
+  ]);
+
+  const ids = new Set<string>();
+  for (const row of byAdmission.data ?? []) ids.add(row.id);
+  for (const row of byName.data ?? []) {
+    const student = Array.isArray(row.students) ? row.students[0] : row.students;
+    if (student?.id) ids.add(student.id);
+  }
+  if (ids.size === 0) return [];
+
+  const { data, error } = await supabase.rpc("fees_student_balances", {
+    p_student_ids: [...ids],
+  });
+  if (error) throw new Error(error.message);
+
+  return (data ?? [])
+    .map((r) => ({
+      studentId: r.student_id,
+      admissionNumber: r.admission_number,
+      fullName: r.full_name,
+      sectionLabel: r.section_label,
+      rollNumber: r.roll_number,
+      balance: Number(r.balance),
+    }))
+    // Those who owe most first: at a counter that is almost always who is
+    // standing there.
+    .sort((a, b) => b.balance - a.balance || a.fullName.localeCompare(b.fullName));
+}
+
+/** A charge typed at the counter, not derived from the class fee structure. */
+export async function raiseCharge(input: unknown): Promise<ActionResult<{ invoiceNumber: string }>> {
+  const parsed = chargeSchema.safeParse(input);
+  if (!parsed.success) {
+    return { ok: false, error: "Check the highlighted fields.", fieldErrors: parsed.error.flatten().fieldErrors };
+  }
+
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("fees_raise_charge", {
+    p_student_id: parsed.data.studentId,
+    p_amount: parsed.data.amount,
+    p_description: parsed.data.description,
+    p_due_date: parsed.data.dueDate,
+    p_fee_head_id: parsed.data.feeHeadId || undefined,
+  });
+
+  if (error) return fail(error.message);
+
+  revalidatePath("/fees");
+  revalidatePath(`/fees/students/${parsed.data.studentId}`);
+  return { ok: true, data: { invoiceNumber: data!.invoice_number } };
+}
+
+export type DayBookEntry = {
+  id: string;
+  occurredAt: string;
+  entryType: string;
+  receiptNumber: string | null;
+  method: string | null;
+  reference: string | null;
+  note: string | null;
+  /** Signed as stored: negative is money in, positive is money out. */
+  amount: number;
+  studentId: string;
+  studentName: string;
+  admissionNumber: string;
+  isReversed: boolean;
+  isReversal: boolean;
+};
+
+export type DayBook = {
+  entries: DayBookEntry[];
+  /** Net cash in, per method, after reversals and refunds. */
+  byMethod: { method: string; received: number; refunded: number; net: number; count: number }[];
+  received: number;
+  refunded: number;
+  net: number;
+  receiptCount: number;
+};
+
+/**
+ * The collection register for a date range — what a cash desk reconciles the
+ * drawer against at close of day.
+ *
+ * Only entries that moved money appear: payments and refunds. Discounts and
+ * fines change what a family owes but nothing crossed the counter, so putting
+ * them here would make the totals disagree with the cash box.
+ *
+ * Reversals are included and net out, because a receipt cancelled today did
+ * affect today's takings.
+ */
+export async function getDayBook(params: { from: string; to: string }): Promise<DayBook> {
+  const supabase = await createClient();
+
+  // The boundaries are computed in Postgres from `tenants.timezone`, not here.
+  // Vercel runs in UTC, so building them in Node would start a Kolkata school's
+  // day at 05:30 local -- invisible until the one evening a payment lands after
+  // midnight, and then the drawer does not reconcile.
+  const { data, error } = await supabase.rpc("fees_day_book", {
+    p_from: params.from,
+    p_to: params.to,
+  });
+  if (error) throw new Error(error.message);
+
+  const entries: DayBookEntry[] = (data ?? []).map((r) => ({
+    id: r.id,
+    occurredAt: r.occurred_at,
+    entryType: r.entry_type,
+    receiptNumber: r.receipt_number,
+    method: r.method,
+    reference: r.reference,
+    note: r.note,
+    amount: Number(r.amount),
+    studentId: r.student_id,
+    studentName: r.student_name,
+    admissionNumber: r.admission_number,
+    isReversed: r.is_reversed,
+    isReversal: r.is_reversal,
+  }));
+
+  const buckets = new Map<string, { received: number; refunded: number; count: number }>();
+  for (const e of entries) {
+    const key = e.method ?? "unknown";
+    const bucket = buckets.get(key) ?? { received: 0, refunded: 0, count: 0 };
+    // Payments are stored negative and refunds positive; the day book reports
+    // cash movement, so both are flipped into plain positive figures.
+    if (e.entryType === "payment") bucket.received += -e.amount;
+    else bucket.refunded += e.amount;
+    if (!e.isReversal) bucket.count += 1;
+    buckets.set(key, bucket);
+  }
+
+  const byMethod = [...buckets.entries()]
+    .map(([method, b]) => ({ method, ...b, net: b.received - b.refunded }))
+    .sort((a, b) => b.net - a.net);
+
+  const received = byMethod.reduce((s, m) => s + m.received, 0);
+  const refunded = byMethod.reduce((s, m) => s + m.refunded, 0);
+
+  return {
+    entries,
+    byMethod,
+    received,
+    refunded,
+    net: received - refunded,
+    receiptCount: entries.filter((e) => !e.isReversal && e.entryType === "payment").length,
+  };
 }

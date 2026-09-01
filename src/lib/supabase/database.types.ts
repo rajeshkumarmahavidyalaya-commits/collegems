@@ -1686,6 +1686,24 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      fees_day_book: {
+        Args: { p_from: string; p_to: string }
+        Returns: {
+          admission_number: string
+          amount: number
+          entry_type: string
+          id: string
+          is_reversal: boolean
+          is_reversed: boolean
+          method: string
+          note: string
+          occurred_at: string
+          receipt_number: string
+          reference: string
+          student_id: string
+          student_name: string
+        }[]
+      }
       fees_generate_invoice: {
         Args: {
           p_due_date: string
@@ -1722,6 +1740,38 @@ export type Database = {
         Returns: number
       }
       fees_next_document_number: { Args: { p_kind: string }; Returns: string }
+      fees_raise_charge: {
+        Args: {
+          p_amount: number
+          p_description: string
+          p_due_date: string
+          p_fee_head_id?: string
+          p_student_id: string
+        }
+        Returns: {
+          cancel_reason: string | null
+          cancelled_at: string | null
+          cancelled_by: string | null
+          created_at: string
+          due_date: string
+          id: string
+          invoice_number: string
+          issue_date: string
+          issued_by: string | null
+          notes: string | null
+          session_id: string
+          status: string
+          student_id: string
+          tenant_id: string
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "invoices"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       fees_record_adjustment: {
         Args: {
           p_amount: number
@@ -1862,7 +1912,11 @@ export type Database = {
         }
       }
       fees_student_balances: {
-        Args: { p_only_outstanding?: boolean; p_section_id?: string }
+        Args: {
+          p_only_outstanding?: boolean
+          p_section_id?: string
+          p_student_ids?: string[]
+        }
         Returns: {
           admission_number: string
           balance: number

@@ -59,6 +59,8 @@ After any migration, regenerate types into
 - Students register: admission, editing, status changes, guardian links
 - Attendance: keyboard-first register, autosave, per-class report
 - Fees: append-only ledger, gapless receipt numbers, reversals, collection screen
+- Fee counter: keyboard-first data entry (receive, raise dues, discount/fine,
+  refund) plus a day book for reconciling the drawer
 - App shell: role-driven nav, breadcrumbs, ⌘K command palette, theme toggle
 - DataTable and form primitives
 - Dashboard with KPIs and charts

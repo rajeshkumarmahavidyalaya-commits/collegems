@@ -166,3 +166,16 @@ export function methodLabel(value: string | null): string {
   if (!value) return "—";
   return PAYMENT_METHODS.find((m) => m.value === value)?.label ?? value;
 }
+
+/** A charge typed at the counter, rather than derived from a fee structure. */
+export const chargeSchema = z.object({
+  studentId: z.string().uuid(),
+  amount: money,
+  description: z
+    .string()
+    .min(3, "Say what this is for — the family will see it on their bill")
+    .max(200),
+  dueDate: isoDate,
+  feeHeadId: z.union([z.string().uuid(), z.literal("")]).optional(),
+});
+export type ChargeInput = z.infer<typeof chargeSchema>;

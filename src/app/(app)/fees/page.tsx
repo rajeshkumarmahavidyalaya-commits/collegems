@@ -1,5 +1,12 @@
 import Link from "next/link";
-import { AlertTriangle, IndianRupee, Settings2, TrendingUp, Users } from "lucide-react";
+import {
+  AlertTriangle,
+  BookOpenCheck,
+  IndianRupee,
+  Settings2,
+  TrendingUp,
+  Users,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { StatCard } from "@/components/dashboard/stat-card";
 import { getUserContext } from "@/lib/auth/context";
@@ -30,14 +37,30 @@ export default async function FeesPage() {
             discount and fine is a permanent ledger entry — corrections are reversals, never edits.
           </p>
         </div>
-        {canManage && (
+        <div className="flex flex-wrap gap-2">
+          {canCollect && (
+            <Button asChild>
+              <Link href="/fees/counter">
+                <IndianRupee className="size-4" aria-hidden="true" />
+                Fee counter
+              </Link>
+            </Button>
+          )}
           <Button asChild variant="outline">
-            <Link href="/fees/setup">
-              <Settings2 className="size-4" aria-hidden="true" />
-              Fee setup
+            <Link href="/fees/daybook">
+              <BookOpenCheck className="size-4" aria-hidden="true" />
+              Day book
             </Link>
           </Button>
-        )}
+          {canManage && (
+            <Button asChild variant="outline">
+              <Link href="/fees/setup">
+                <Settings2 className="size-4" aria-hidden="true" />
+                Fee setup
+              </Link>
+            </Button>
+          )}
+        </div>
       </div>
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">

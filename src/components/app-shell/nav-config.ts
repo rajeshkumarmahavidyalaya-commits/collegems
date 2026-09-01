@@ -4,6 +4,7 @@ import {
   BookOpen,
   ClipboardCheck,
   GraduationCap,
+  BookOpenCheck,
   IndianRupee,
   LayoutDashboard,
   ListChecks,
@@ -60,9 +61,21 @@ export const NAV_GROUPS: NavGroup[] = [
     title: "Finance",
     items: [
       {
-        title: "Fees",
-        href: "/fees",
+        title: "Fee counter",
+        href: "/fees/counter",
         icon: IndianRupee,
+        roles: ["admin", "accountant"],
+      },
+      {
+        title: "Balances",
+        href: "/fees",
+        icon: BarChart3,
+        roles: ["admin", "accountant"],
+      },
+      {
+        title: "Day book",
+        href: "/fees/daybook",
+        icon: BookOpenCheck,
         roles: ["admin", "accountant"],
       },
       {

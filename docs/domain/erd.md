@@ -224,10 +224,18 @@ at the row it cancels, unique on `reverses_entry_id`.
 `fees_record_payment` checks it *before* allocating a receipt number, so a
 redelivered event returns the original receipt instead of burning a number.
 
-Nine `SECURITY INVOKER` functions: `fees_next_document_number`,
+Eleven `SECURITY INVOKER` functions: `fees_next_document_number`,
 `fees_generate_invoice`, `fees_generate_section_invoices`,
 `fees_cancel_invoice`, `fees_record_payment`, `fees_record_refund`,
-`fees_record_adjustment`, `fees_reverse_entry`, `fees_student_balances`.
+`fees_record_adjustment`, `fees_reverse_entry`, `fees_student_balances`,
+`fees_raise_charge` (a one-line invoice at a typed amount, for the counter) and
+`fees_day_book` (payments and refunds in a date range, with the day boundaries
+taken from `tenants.timezone` rather than from the server's clock).
+
+`fees_student_balances` takes `p_student_ids` as well as `p_section_id`, so the
+counter's type-ahead can price a handful of matches through the same arithmetic
+that produces every other balance — the identity must never have two
+implementations.
 
 See [docs/modules/fees.md](../modules/fees.md).
 

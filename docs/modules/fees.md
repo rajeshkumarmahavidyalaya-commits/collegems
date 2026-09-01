@@ -243,6 +243,63 @@ The fine is booked **at return**, when the amount is final — a daily-accruing
 debt cannot be one immutable row. Details and the staff-member exception are in
 `docs/modules/library.md`.
 
+
+## The fee counter
+
+`/fees/counter` — the data-entry desk, as distinct from `/fees`, which is a
+report you read. A clerk with a queue in front of them needs a different screen
+from an administrator reviewing defaulters.
+
+**Search first, everything else second.** Focus lands in the search box on load
+and again after every completed entry, so hands never leave the keyboard
+between customers. Two characters, arrow keys to move, Enter to pick, Escape to
+start over; Ctrl/Cmd+Enter submits.
+
+**The amount owed is in the picker, not behind a click.** Each result shows the
+balance beside the name, because the moment to catch the wrong Ravi Kumar is
+before you take his money, not after. That is why
+`fees_student_balances` gained `p_student_ids` (migration `0027`) rather than
+growing a second function: the balance identity must never have two
+implementations, so the lookup prices only the handful of matches through the
+same arithmetic as everything else.
+
+Four things can be entered against the selected student:
+
+| Tab | What it writes |
+|---|---|
+| Receive | A `payment` with a gapless receipt number. Amount defaults to the full balance — that is what most families pay — but stays editable for part payments. |
+| Add a due | `fees_raise_charge` — a one-line invoice at a typed amount. |
+| Discount / fine | An adjustment. No cash moved, so no receipt, and the form says so. |
+| Refund | Money back out, with its own document number. |
+
+**`fees_raise_charge` deliberately lacks the duplicate-due-date guard** that
+`fees_generate_invoice` has. That guard stops a double-submitted *termly billing*
+form double-billing a family; an ad-hoc charge is a considered act, and two on
+one day (two lost books) is ordinary.
+
+After each entry the receipt or invoice number is shown large enough to read
+back to the family before they leave, with **Next student** returning focus to
+the search box.
+
+## The day book
+
+`/fees/daybook` — what the drawer is reconciled against at close of day.
+Totals by mode (cash, UPI, cheque…), because each is counted separately.
+
+**Only payments and refunds appear.** Discounts and fines change what a family
+owes but nothing crossed the counter, so including them would make these totals
+disagree with the cash box. Reversals *are* included and net out, because a
+receipt cancelled today did change today's takings.
+
+**Its day boundaries come from `tenants.timezone`, computed in Postgres**
+(`fees_day_book`, migration `0028`). The first version built them with `new
+Date()` in the server action — and Vercel runs in UTC, so "today" for a
+Kolkata school would have run 05:30 to 05:30. A counter rarely takes money
+between midnight and half past five, so the error would have stayed invisible
+until the one evening it didn't. The range is half-open (`>= from`, `< the day
+after to`), which includes the whole final day without a `23:59:59.999`
+fencepost and stays correct across a DST change.
+
 ## Known, deliberate gaps
 
 - **No gateway integration.** Schema and idempotent write path only; see above.
@@ -256,7 +313,11 @@ debt cannot be one immutable row. Details and the staff-member exception are in
   fee account, so theirs stay on `book_issues.fine_amount` and are settled
   outside this module. See `docs/modules/library.md`.
 - **No receipt printing or PDF.** The receipt number and every field a receipt
-  needs are stored; rendering one is not built.
+  needs are stored, and the counter shows the number to read back — but there is
+  no printable receipt or PDF.
+- **The day book is per-tenant, not per-clerk.** `recorded_by` is on every
+  entry, so a per-user cash-up is a filter away, but the screen does not offer
+  it yet.
 - **`fees_student_balances()` recomputes on every call.** Correct at one
   school's scale and it keeps the balance underivable-but-always-right rather
   than a cached column that can drift. A school with tens of thousands of
