@@ -60,6 +60,7 @@ describe("cross-tenant isolation", () => {
     "invoices",
     "invoice_lines",
     "ledger_entries",
+    "payment_intents",
     "roles",
     "role_permissions",
     "settings",

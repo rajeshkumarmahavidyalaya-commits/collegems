@@ -3,19 +3,28 @@ import { IndianRupee } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { getUserContext } from "@/lib/auth/context";
 import { listSections } from "../../students/actions";
-import { listClassLevels, listFeeHeads, listFeeStructures } from "../actions";
+import { hasPermission } from "@/lib/auth/permissions";
+import {
+  getFeeIntegrationSettings,
+  listClassLevels,
+  listFeeHeads,
+  listFeeStructures,
+} from "../actions";
 import { FeeSetup } from "./fee-setup";
 
 export const metadata = { title: "Fee setup" };
 
 export default async function FeeSetupPage() {
-  const [ctx, feeHeads, structures, classLevels, sections] = await Promise.all([
-    getUserContext(),
-    listFeeHeads(),
-    listFeeStructures(),
-    listClassLevels(),
-    listSections(),
-  ]);
+  const [ctx, feeHeads, structures, classLevels, sections, integrations, canManageSettings] =
+    await Promise.all([
+      getUserContext(),
+      listFeeHeads(),
+      listFeeStructures(),
+      listClassLevels(),
+      listSections(),
+      getFeeIntegrationSettings(),
+      hasPermission("settings.manage"),
+    ]);
 
   return (
     <div className="flex flex-col gap-4">
@@ -40,6 +49,8 @@ export default async function FeeSetupPage() {
         structures={structures}
         classLevels={classLevels}
         sections={sections}
+        integrations={integrations}
+        canManageSettings={canManageSettings}
       />
     </div>
   );

@@ -300,9 +300,107 @@ until the one evening it didn't. The range is half-open (`>= from`, `< the day
 after to`), which includes the whole final day without a `23:59:59.999`
 fencepost and stays correct across a DST change.
 
+
+## Online payments (Razorpay)
+
+A family can be sent a payment link, and what they pay arrives in the ledger
+with its own receipt number — indistinguishable, afterwards, from cash taken at
+the counter.
+
+```
+app        fees_create_payment_intent()     -> payment_intents (created)
+edge fn    razorpay-create-link             -> provider_order_id, payment_url
+family     pays on Razorpay's page
+razorpay   POST webhook (HMAC-signed)
+edge fn    razorpay-webhook, verifies       -> fees_settle_gateway_payment()
+ledger     one `payment` entry, one receipt number
+```
+
+### Why there is an intent at all
+
+So the webhook can answer *who paid, and how much were they supposed to pay*
+from a row **this system wrote**. The callback is trusted for three things —
+the order id, the event id, and an amount that must **agree** with the intent.
+`fees_settle_gateway_payment` takes the actual figure from the intent, so a
+forged body cannot decide how much was paid even if it somehow arrived signed.
+A callback claiming ₹1 against a ₹5,000 intent is rejected.
+
+### The one SECURITY DEFINER function in the module
+
+Everything else here is INVOKER, because a user is present and their policies
+should decide. **A webhook has no user** — no JWT, so `current_tenant_id()` is
+null and the invoker functions cannot run at all.
+
+`fees_settle_gateway_payment` is therefore DEFINER, and narrowed to compensate:
+it settles an existing intent and nothing else, deriving tenant, session,
+student and expected amount from that intent rather than from its arguments,
+and it is **revoked from `public`, `anon` and `authenticated`**. Verified: a
+tenant admin calling it gets `permission denied`. Only the service role behind
+the Edge Function can execute it.
+
+### The signature check
+
+`razorpay-webhook` is deployed with **JWT verification off**, because a gateway
+cannot present one. Its HMAC check is therefore the only thing between the open
+internet and a function that books money, and the code is arranged around not
+weakening it:
+
+- the raw body is read **once, as text**, and verified before it is parsed —
+  parsing and re-serialising changes the bytes and breaks the HMAC, and *"the
+  signature kept failing so I compared the parsed object instead"* is how this
+  check gets quietly removed;
+- a missing secret is a hard 503, never a skipped check;
+- the comparison is constant-time.
+
+`tests/fees/webhook-signature.test.ts` pins the algorithm against what Razorpay
+itself computes, and asserts that a tampered body, a wrong secret, a truncated
+signature and a re-serialised body all fail. It needs no database, so it runs
+anywhere.
+
+### Receipt numbering across two paths
+
+The gateway path cannot call `fees_next_document_number()` — no JWT. Rather
+than let it carry a second copy of the gapless-counter logic (a receipt series
+with two implementations is a series waiting to collide), migration `0029`
+moves the real work into `fees_next_document_number_for(tenant, session, kind)`
+and makes the original a thin wrapper. Counter and gateway draw from the same
+counter row.
+
+### Where the keys live
+
+`RAZORPAY_KEY_ID`, `RAZORPAY_KEY_SECRET` and `RAZORPAY_WEBHOOK_SECRET` are set
+on the **Supabase Edge Functions**, never in the Next.js app — so they cannot
+reach a browser bundle, a client log, or an error page. Until they are set,
+creating a link returns a clear "not configured" message and the webhook
+refuses every callback. Nothing half-works.
+
+## Invoice email — a queue with no sender
+
+`fees_queue_invoice_email` writes a `jobs` row of type `invoice_email` carrying
+the invoice, the student and the destination address.
+
+**Nothing consumes that queue.** Sending was deliberately left unwired, so a
+queued row records an intention and not a delivery. The UI says exactly that —
+*"Queued for accounts@school.example · Sending is not connected yet, so nothing
+has gone out"* — rather than a "Sent" toast that would have a clerk telling a
+parent to check an inbox that will stay empty.
+
+The destination is one address per school, configured by an administrator under
+**Fee setup → Payments & email**, and the function refuses to queue anything
+while it is unset. Both switches ship **off**; no migration enables either.
+
+Connecting a provider is a consumer of this queue, not a change to it.
+
 ## Known, deliberate gaps
 
-- **No gateway integration.** Schema and idempotent write path only; see above.
+- **The gateway path has never run end to end.** Every guarantee around it is
+  tested — the settle function against the live database, the signature
+  algorithm against Razorpay's own scheme — but no real payment has gone
+  through, because that needs live keys and a public webhook URL. Treat the
+  first one as a test transaction.
+- **No parent-facing checkout.** Staff generate a link and send it; there is no
+  student or parent portal to pay from, because there is no portal at all yet.
+- **No mail provider.** See above: the queue exists, nothing drains it.
 - **No recurring billing.** `fee_structures.frequency` describes the intended
   cadence but nothing generates instalments on a schedule. That is a `jobs`
   concern.

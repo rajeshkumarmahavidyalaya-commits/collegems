@@ -19,6 +19,10 @@ const eslintConfig = [
       // author or ship. Linting them fails the repo's own lint command on
       // rules (CommonJS require) that don't apply to them.
       ".claude/**",
+      // Supabase Edge Functions run on Deno, not Node: `Deno.serve`, jsr:
+      // imports and no Next.js. The Next lint config has nothing useful to say
+      // about them and flags every line.
+      "supabase/functions/**",
     ],
   },
 ];

@@ -2,7 +2,19 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Ban, BookOpen, CircleMinus, FileText, IndianRupee, Undo2 } from "lucide-react";
+import {
+  Ban,
+  BookOpen,
+  CircleMinus,
+  Copy,
+  FileText,
+  IndianRupee,
+  Link2,
+  Loader2,
+  Mail,
+  Undo2,
+} from "lucide-react";
+import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -17,7 +29,7 @@ import {
   ReverseEntryDialog,
   type StudentTarget,
 } from "../../fee-dialogs";
-import type { StudentAccount } from "../../actions";
+import { createPaymentLink, queueInvoiceEmail, type StudentAccount } from "../../actions";
 
 function formatDateTime(iso: string) {
   return new Date(iso).toLocaleString(undefined, {
@@ -60,9 +72,13 @@ function amountCell(amount: number) {
 export function StudentAccountView({
   account,
   canCollect,
+  onlinePaymentsEnabled,
+  invoiceEmailEnabled,
 }: {
   account: StudentAccount;
   canCollect: boolean;
+  onlinePaymentsEnabled: boolean;
+  invoiceEmailEnabled: boolean;
 }) {
   const router = useRouter();
   const [paying, setPaying] = useState(false);
@@ -71,6 +87,9 @@ export function StudentAccountView({
   const [reversing, setReversing] = useState<{ id: string; label: string; amount: number } | null>(
     null,
   );
+  const [linking, setLinking] = useState(false);
+  const [paymentUrl, setPaymentUrl] = useState<string | null>(null);
+  const [emailingId, setEmailingId] = useState<string | null>(null);
 
   const student = account.student;
   if (!student) {
@@ -122,9 +141,66 @@ export function StudentAccountView({
               <Undo2 className="size-4" aria-hidden="true" />
               Refund
             </Button>
+            {onlinePaymentsEnabled && account.balance > 0 && (
+              <Button
+                variant="outline"
+                disabled={linking}
+                onClick={async () => {
+                  setLinking(true);
+                  const result = await createPaymentLink({
+                    studentId: student.id,
+                    amount: account.balance,
+                  });
+                  setLinking(false);
+                  if (!result.ok) {
+                    toast.error(result.error);
+                    return;
+                  }
+                  setPaymentUrl(result.data.paymentUrl);
+                  toast.success("Payment link created");
+                }}
+              >
+                {linking ? (
+                  <Loader2 className="size-4 animate-spin" aria-hidden="true" />
+                ) : (
+                  <Link2 className="size-4" aria-hidden="true" />
+                )}
+                Payment link
+              </Button>
+            )}
           </div>
         )}
       </div>
+
+      {paymentUrl && (
+        <Alert>
+          <Link2 className="size-4" aria-hidden="true" />
+          <AlertTitle>Payment link for {formatMoney(account.balance)}</AlertTitle>
+          <AlertDescription>
+            <p className="font-mono text-xs break-all">{paymentUrl}</p>
+            <p>
+              Send it to the family. When they pay, Razorpay calls back and the payment appears
+              below with its own receipt number — there is nothing further to enter here.
+            </p>
+            <div className="flex flex-wrap gap-2">
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => {
+                  void navigator.clipboard.writeText(paymentUrl);
+                  toast.success("Link copied");
+                }}
+              >
+                <Copy className="size-4" aria-hidden="true" />
+                Copy link
+              </Button>
+              <Button size="sm" variant="ghost" onClick={() => setPaymentUrl(null)}>
+                Dismiss
+              </Button>
+            </div>
+          </AlertDescription>
+        </Alert>
+      )}
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
         <Card>
@@ -322,6 +398,35 @@ export function StudentAccountView({
                     <span className="font-mono font-medium tabular-nums">
                       {formatMoney(invoice.total)}
                     </span>
+                    {invoiceEmailEnabled && invoice.status === "issued" && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        disabled={emailingId === invoice.id}
+                        onClick={async () => {
+                          setEmailingId(invoice.id);
+                          const result = await queueInvoiceEmail(invoice.id);
+                          setEmailingId(null);
+                          if (!result.ok) {
+                            toast.error(result.error);
+                            return;
+                          }
+                          // Deliberately not "sent": no provider is wired, so
+                          // the job sits in the queue. Saying otherwise would
+                          // have a clerk telling a parent to check their inbox.
+                          toast.success(`Queued for ${result.data.to}`, {
+                            description: "Sending is not connected yet, so nothing has gone out.",
+                          });
+                        }}
+                      >
+                        {emailingId === invoice.id ? (
+                          <Loader2 className="size-4 animate-spin" aria-hidden="true" />
+                        ) : (
+                          <Mail className="size-4" aria-hidden="true" />
+                        )}
+                        Email
+                      </Button>
+                    )}
                   </div>
                 </CardHeader>
                 <CardContent>

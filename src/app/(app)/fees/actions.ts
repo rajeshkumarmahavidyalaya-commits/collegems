@@ -818,3 +818,180 @@ export async function getDayBook(params: { from: string; to: string }): Promise<
     receiptCount: entries.filter((e) => !e.isReversal && e.entryType === "payment").length,
   };
 }
+
+
+// ---------------------------------------------------------------------------
+// Online payments and the invoice email queue
+// ---------------------------------------------------------------------------
+
+export type FeeIntegrationSettings = {
+  onlinePaymentsEnabled: boolean;
+  provider: string;
+  invoiceEmailEnabled: boolean;
+  invoiceEmailTo: string | null;
+};
+
+export async function getFeeIntegrationSettings(): Promise<FeeIntegrationSettings> {
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("settings")
+    .select("key, value")
+    .in("key", ["fees.online_payments", "notifications.invoice_email"]);
+
+  const byKey = new Map((data ?? []).map((r) => [r.key, r.value as Record<string, unknown>]));
+  const online = byKey.get("fees.online_payments") ?? {};
+  const email = byKey.get("notifications.invoice_email") ?? {};
+
+  return {
+    onlinePaymentsEnabled: online.enabled === true,
+    provider: typeof online.provider === "string" ? online.provider : "razorpay",
+    invoiceEmailEnabled: email.enabled === true,
+    invoiceEmailTo: typeof email.to === "string" ? email.to : null,
+  };
+}
+
+/**
+ * Only an admin may change these: one switch turns on taking money from
+ * families over the internet, and the other decides where their invoices are
+ * sent. `settings` has an admin-only write policy, so this is belt and braces
+ * over the real gate.
+ */
+export async function saveFeeIntegrationSettings(input: {
+  onlinePaymentsEnabled: boolean;
+  invoiceEmailEnabled: boolean;
+  invoiceEmailTo: string;
+}): Promise<ActionResult> {
+  const ctx = await getUserContext();
+  if (!ctx) return fail("Not signed in.");
+
+  const to = input.invoiceEmailTo.trim();
+  if (input.invoiceEmailEnabled && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(to)) {
+    return {
+      ok: false,
+      error: "Enter the email address invoices should go to.",
+      fieldErrors: { invoiceEmailTo: ["Enter a valid email address"] },
+    };
+  }
+
+  const supabase = await createClient();
+  const { error } = await supabase.from("settings").upsert(
+    [
+      {
+        tenant_id: ctx.tenantId,
+        key: "fees.online_payments",
+        value: { enabled: input.onlinePaymentsEnabled, provider: "razorpay" },
+        updated_by: ctx.userId,
+      },
+      {
+        tenant_id: ctx.tenantId,
+        key: "notifications.invoice_email",
+        value: { enabled: input.invoiceEmailEnabled, to: to || null },
+        updated_by: ctx.userId,
+      },
+    ],
+    { onConflict: "tenant_id,key" },
+  );
+
+  if (error) return fail(error.message);
+
+  revalidatePath("/fees/setup");
+  revalidatePath("/fees/students");
+  return { ok: true, data: undefined };
+}
+
+/**
+ * Creates an intent, then asks the Edge Function to turn it into a Razorpay
+ * payment link.
+ *
+ * The two steps are split because only one of them may hold the Razorpay
+ * secret. The intent is written here, under the caller's own RLS; the secret
+ * lives in the Edge Function and never enters this process, so it cannot end
+ * up in a bundle, a log line or an error page.
+ */
+export async function createPaymentLink(input: {
+  studentId: string;
+  amount: number;
+  invoiceId?: string;
+}): Promise<ActionResult<{ paymentUrl: string; intentId: string }>> {
+  if (!Number.isFinite(input.amount) || input.amount <= 0) {
+    return fail("Enter an amount greater than zero.");
+  }
+
+  const supabase = await createClient();
+
+  const { data: intent, error } = await supabase.rpc("fees_create_payment_intent", {
+    p_student_id: input.studentId,
+    p_amount: input.amount,
+    p_invoice_id: input.invoiceId || undefined,
+  });
+
+  if (error) return fail(error.message);
+
+  const { data, error: fnError } = await supabase.functions.invoke("razorpay-create-link", {
+    body: { intentId: intent!.id },
+  });
+
+  if (fnError) {
+    // The intent survives as a record that a link was attempted. It carries no
+    // money and no order id, so nothing is owed and nothing is duplicated when
+    // the clerk tries again.
+    return fail(
+      "The payment link could not be created. Check that Razorpay keys are set on the Edge Function, then try again.",
+    );
+  }
+
+  const result = data as { paymentUrl?: string; error?: string };
+  if (!result?.paymentUrl) return fail(result?.error ?? "Razorpay did not return a link.");
+
+  revalidatePath(`/fees/students/${input.studentId}`);
+  return { ok: true, data: { paymentUrl: result.paymentUrl, intentId: intent!.id } };
+}
+
+export type PaymentLinkRow = {
+  id: string;
+  amount: number;
+  status: string;
+  paymentUrl: string | null;
+  createdAt: string;
+  expiresAt: string | null;
+};
+
+export async function listPaymentLinks(studentId: string): Promise<PaymentLinkRow[]> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("payment_intents")
+    .select("id, amount, status, payment_url, created_at, expires_at")
+    .eq("student_id", studentId)
+    .order("created_at", { ascending: false })
+    .limit(10);
+
+  if (error) throw new Error(error.message);
+
+  return (data ?? []).map((r) => ({
+    id: r.id,
+    amount: Number(r.amount),
+    status: r.status,
+    paymentUrl: r.payment_url,
+    createdAt: r.created_at,
+    expiresAt: r.expires_at,
+  }));
+}
+
+/**
+ * Queues an invoice for emailing to the school's configured billing address.
+ *
+ * NOTHING CONSUMES THIS QUEUE YET. Sending was deliberately left unwired, so a
+ * queued row records an intention and not a delivery — and the UI says exactly
+ * that rather than implying an email went out.
+ */
+export async function queueInvoiceEmail(invoiceId: string): Promise<ActionResult<{ to: string }>> {
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("fees_queue_invoice_email", {
+    p_invoice_id: invoiceId,
+  });
+
+  if (error) return fail(error.message);
+
+  const payload = data!.payload as { to?: string };
+  return { ok: true, data: { to: payload?.to ?? "the configured address" } };
+}

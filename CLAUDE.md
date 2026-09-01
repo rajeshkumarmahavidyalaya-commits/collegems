@@ -125,6 +125,22 @@ staff fine is a payroll matter, not a fee receivable. Theirs stay on
 `fine_amount` and are not collectable through the fees module. That is an open
 gap, recorded in `docs/modules/library.md`, not a solved problem.
 
+### Secrets never enter the Next.js app
+
+Payment-gateway credentials live on the Supabase Edge Functions
+(`RAZORPAY_KEY_ID`, `RAZORPAY_KEY_SECRET`, `RAZORPAY_WEBHOOK_SECRET`), never in
+this application and never in a `NEXT_PUBLIC_*` variable. The app creates a
+payment *intent*; an Edge Function turns it into a link. That split is the
+whole reason the function exists.
+
+A webhook has no JWT, so `current_tenant_id()` is null and no INVOKER function
+can serve it. `fees_settle_gateway_payment` is the module's single
+`SECURITY DEFINER` function, and is revoked from `public`, `anon` **and**
+`authenticated` — nothing holding a JWT may call it. When you add another
+callback-driven write, copy that shape: definer, narrow, revoked from people,
+and taking its authority from a row this system wrote rather than from the
+callback body.
+
 ## 7. Heavy work goes through the jobs table
 
 Report generation, bulk SMS/email, imports, and promotion runs are queued in

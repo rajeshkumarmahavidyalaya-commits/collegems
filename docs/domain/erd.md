@@ -196,6 +196,8 @@ balance = Σ lines of issued invoices + Σ ledger entries
 | `invoices` | Keyed to `student_id` (not `enrolment_id`, unlike attendance): a bill follows the child for the year, so a mid-year section move neither orphans nor duplicates it. `status` is `issued` or `cancelled`; cancelling requires who, when and why. |
 | `invoice_lines` | **Append-only.** No `updated_at`, no UPDATE/DELETE policy, privileges revoked. |
 | `ledger_entries` | **Append-only.** One table for payments, discounts, fines, refunds and write-offs, typed by `entry_type`. |
+| `ledger_entries.book_issue_id` | Set when the fine came from a returned library book. Composite `(tenant_id, book_issue_id)` FK, `on delete set null` on that column alone, so deleting a book cannot erase money history. |
+| `payment_intents` | An online payment before it becomes money: student, amount, `provider_order_id`, `payment_url`, `status`, and `ledger_entry_id` once settled. It exists so a webhook can answer "who paid, and how much were they supposed to pay" from a row **this system wrote** rather than from the callback body. |
 
 **One ledger table, not four.** This entry previously sketched separate
 `payments` / `discounts` / `fines` / `refunds` tables. Four tables would mean
@@ -236,6 +238,21 @@ taken from `tenants.timezone` rather than from the server's clock).
 counter's type-ahead can price a handful of matches through the same arithmetic
 that produces every other balance — the identity must never have two
 implementations.
+
+Online payments add `fees_create_payment_intent` (INVOKER) and
+`fees_settle_gateway_payment` — the module's **only** `SECURITY DEFINER`
+function, because a webhook carries no JWT and no invoker function can serve
+it. It is narrowed to compensate: it settles an existing intent and nothing
+else, takes the amount from that intent rather than its arguments, and is
+revoked from `public`, `anon` and `authenticated`, so only the service role
+behind the Edge Function reaches it.
+
+Receipt numbering was split for the same reason: `fees_next_document_number_for(
+tenant, session, kind)` does the work and `fees_next_document_number(kind)` is a
+JWT-resolving wrapper, so the counter and the gateway draw from one counter row.
+
+`fees_queue_invoice_email` writes a `jobs` row of type `invoice_email`.
+**Nothing consumes it** — no mail provider is connected, by choice.
 
 See [docs/modules/fees.md](../modules/fees.md).
 

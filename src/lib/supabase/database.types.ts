@@ -1138,6 +1138,99 @@ export type Database = {
           },
         ]
       }
+      payment_intents: {
+        Row: {
+          amount: number
+          created_at: string
+          created_by: string | null
+          expires_at: string | null
+          failure_reason: string | null
+          id: string
+          invoice_id: string | null
+          ledger_entry_id: string | null
+          payment_url: string | null
+          provider: string
+          provider_order_id: string | null
+          session_id: string
+          status: string
+          student_id: string
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          created_by?: string | null
+          expires_at?: string | null
+          failure_reason?: string | null
+          id?: string
+          invoice_id?: string | null
+          ledger_entry_id?: string | null
+          payment_url?: string | null
+          provider?: string
+          provider_order_id?: string | null
+          session_id: string
+          status?: string
+          student_id: string
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          created_by?: string | null
+          expires_at?: string | null
+          failure_reason?: string | null
+          id?: string
+          invoice_id?: string | null
+          ledger_entry_id?: string | null
+          payment_url?: string | null
+          provider?: string
+          provider_order_id?: string | null
+          session_id?: string
+          status?: string
+          student_id?: string
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payment_intents_invoice_id_fkey"
+            columns: ["tenant_id", "invoice_id"]
+            isOneToOne: false
+            referencedRelation: "invoices"
+            referencedColumns: ["tenant_id", "id"]
+          },
+          {
+            foreignKeyName: "payment_intents_ledger_entry_id_fkey"
+            columns: ["ledger_entry_id"]
+            isOneToOne: false
+            referencedRelation: "ledger_entries"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payment_intents_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "academic_sessions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payment_intents_student_id_fkey"
+            columns: ["tenant_id", "student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["tenant_id", "id"]
+          },
+          {
+            foreignKeyName: "payment_intents_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       people: {
         Row: {
           address_line1: string | null
@@ -1686,6 +1779,33 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      fees_create_payment_intent: {
+        Args: { p_amount: number; p_invoice_id?: string; p_student_id: string }
+        Returns: {
+          amount: number
+          created_at: string
+          created_by: string | null
+          expires_at: string | null
+          failure_reason: string | null
+          id: string
+          invoice_id: string | null
+          ledger_entry_id: string | null
+          payment_url: string | null
+          provider: string
+          provider_order_id: string | null
+          session_id: string
+          status: string
+          student_id: string
+          tenant_id: string
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "payment_intents"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       fees_day_book: {
         Args: { p_from: string; p_to: string }
         Returns: {
@@ -1740,6 +1860,28 @@ export type Database = {
         Returns: number
       }
       fees_next_document_number: { Args: { p_kind: string }; Returns: string }
+      fees_queue_invoice_email: {
+        Args: { p_invoice_id: string }
+        Returns: {
+          completed_at: string | null
+          created_at: string
+          created_by: string | null
+          error: string | null
+          id: string
+          job_type: string
+          payload: Json
+          result: Json | null
+          started_at: string | null
+          status: string
+          tenant_id: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "jobs"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       fees_raise_charge: {
         Args: {
           p_amount: number

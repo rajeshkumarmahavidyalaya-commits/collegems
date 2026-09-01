@@ -4,13 +4,16 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { FileText, Loader2, Plus, Trash2 } from "lucide-react";
+import { CreditCard, FileText, Loader2, Mail, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 import {
   Dialog,
   DialogContent,
@@ -36,7 +39,9 @@ import {
   deleteFeeStructure,
   generateSectionInvoices,
   saveFeeHead,
+  saveFeeIntegrationSettings,
   saveFeeStructure,
+  type FeeIntegrationSettings,
 } from "../actions";
 
 type FeeHead = {
@@ -68,11 +73,15 @@ export function FeeSetup({
   structures,
   classLevels,
   sections,
+  integrations,
+  canManageSettings,
 }: {
   feeHeads: FeeHead[];
   structures: FeeStructure[];
   classLevels: { id: string; name: string }[];
   sections: { id: string; label: string }[];
+  integrations: FeeIntegrationSettings;
+  canManageSettings: boolean;
 }) {
   const router = useRouter();
   const [headOpen, setHeadOpen] = useState(false);
@@ -96,6 +105,7 @@ export function FeeSetup({
           <TabsTrigger value="structures">Class amounts</TabsTrigger>
           <TabsTrigger value="heads">Fee heads ({feeHeads.length})</TabsTrigger>
           <TabsTrigger value="billing">Raise invoices</TabsTrigger>
+          {canManageSettings && <TabsTrigger value="integrations">Payments &amp; email</TabsTrigger>}
         </TabsList>
 
         <TabsContent value="structures" className="mt-4 flex flex-col gap-4">
@@ -246,6 +256,12 @@ export function FeeSetup({
             </Alert>
           )}
         </TabsContent>
+
+        {canManageSettings && (
+          <TabsContent value="integrations" className="mt-4">
+            <IntegrationSettings settings={integrations} onDone={() => router.refresh()} />
+          </TabsContent>
+        )}
       </Tabs>
 
       <FeeHeadDialog open={headOpen} onOpenChange={setHeadOpen} onDone={() => router.refresh()} />
@@ -558,5 +574,137 @@ function BillSectionDialog({
         </Form>
       </DialogContent>
     </Dialog>
+  );
+}
+
+
+/**
+ * Two switches an administrator owns: whether families can be asked to pay
+ * online, and where invoice emails go. Both are off until someone deliberately
+ * turns them on — a migration never enables either.
+ */
+function IntegrationSettings({
+  settings,
+  onDone,
+}: {
+  settings: FeeIntegrationSettings;
+  onDone: () => void;
+}) {
+  const [online, setOnline] = useState(settings.onlinePaymentsEnabled);
+  const [emailOn, setEmailOn] = useState(settings.invoiceEmailEnabled);
+  const [to, setTo] = useState(settings.invoiceEmailTo ?? "");
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const dirty =
+    online !== settings.onlinePaymentsEnabled ||
+    emailOn !== settings.invoiceEmailEnabled ||
+    to !== (settings.invoiceEmailTo ?? "");
+
+  async function save() {
+    setSaving(true);
+    setError(null);
+    const result = await saveFeeIntegrationSettings({
+      onlinePaymentsEnabled: online,
+      invoiceEmailEnabled: emailOn,
+      invoiceEmailTo: to,
+    });
+    setSaving(false);
+
+    if (!result.ok) {
+      setError(result.error);
+      return;
+    }
+    toast.success("Settings saved");
+    onDone();
+  }
+
+  return (
+    <div className="flex flex-col gap-4">
+      {error && (
+        <Alert variant="destructive">
+          <AlertTitle>Not saved</AlertTitle>
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
+      )}
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-base">
+            <CreditCard className="size-4" aria-hidden="true" />
+            Online payments
+          </CardTitle>
+          <CardDescription>
+            Lets the counter create a Razorpay payment link a family can pay from their phone. The
+            payment lands in the ledger with its own receipt number, exactly like cash.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="flex flex-col gap-3">
+          <div className="flex items-center gap-2">
+            <Switch id="online-payments" checked={online} onCheckedChange={setOnline} />
+            <Label htmlFor="online-payments" className="font-normal">
+              Allow payment links
+            </Label>
+          </div>
+          <Alert>
+            <AlertTitle>Keys are set outside this screen</AlertTitle>
+            <AlertDescription>
+              Razorpay credentials live on the Supabase Edge Functions as{" "}
+              <code className="font-mono text-xs">RAZORPAY_KEY_ID</code>,{" "}
+              <code className="font-mono text-xs">RAZORPAY_KEY_SECRET</code> and{" "}
+              <code className="font-mono text-xs">RAZORPAY_WEBHOOK_SECRET</code> — never in this
+              application, so they cannot reach a browser. Until they are set, creating a link
+              fails with a clear message and nothing is charged.
+            </AlertDescription>
+          </Alert>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-base">
+            <Mail className="size-4" aria-hidden="true" />
+            Invoice email
+          </CardTitle>
+          <CardDescription>
+            One address for this school. Invoices you choose to send are queued for it.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="flex flex-col gap-3">
+          <div className="flex items-center gap-2">
+            <Switch id="invoice-email" checked={emailOn} onCheckedChange={setEmailOn} />
+            <Label htmlFor="invoice-email" className="font-normal">
+              Queue invoices for email
+            </Label>
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="invoice-email-to">Send invoices to</Label>
+            <Input
+              id="invoice-email-to"
+              type="email"
+              value={to}
+              onChange={(e) => setTo(e.target.value)}
+              placeholder="accounts@school.example"
+              className="max-w-sm"
+            />
+          </div>
+          <Alert>
+            <AlertTitle>Queued, not sent</AlertTitle>
+            <AlertDescription>
+              No mail provider is connected yet, so queued invoices wait in the jobs table and
+              nothing reaches an inbox. This is deliberate — turning it on here does not start
+              sending mail to anybody.
+            </AlertDescription>
+          </Alert>
+        </CardContent>
+      </Card>
+
+      <div>
+        <Button onClick={save} disabled={!dirty || saving}>
+          {saving && <Loader2 className="size-4 animate-spin" aria-hidden="true" />}
+          Save settings
+        </Button>
+      </div>
+    </div>
   );
 }
