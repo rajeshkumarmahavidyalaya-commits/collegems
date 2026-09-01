@@ -26,9 +26,19 @@ export function supabaseUrl(): string {
   return required("NEXT_PUBLIC_SUPABASE_URL", process.env.NEXT_PUBLIC_SUPABASE_URL);
 }
 
+/**
+ * Supabase's newer "publishable key" and its legacy "anon key" are the same
+ * thing as far as this app is concerned: a public, RLS-gated client key. The
+ * Vercel Supabase integration injects the legacy name, while a hand-configured
+ * project usually gets the newer one -- so accept whichever is present rather
+ * than forcing one convention on the deployment.
+ *
+ * Both must be referenced as literal `process.env.X` for Next.js to inline them.
+ */
 export function supabasePublishableKey(): string {
   return required(
-    "NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY",
-    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY,
+    "NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY (or NEXT_PUBLIC_SUPABASE_ANON_KEY)",
+    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ??
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
   );
 }
