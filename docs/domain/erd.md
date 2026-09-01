@@ -97,6 +97,29 @@ book_categories ──< books ──< book_issues >── members ──> studen
 Two `SECURITY INVOKER` RPCs keep the two-write operations atomic:
 `library_issue_book(book, member, due_at)` and `library_return_book(issue)`.
 
+### Students
+
+No new tables — the register is a UI and an atomic write path over the existing
+identity model (`people` → `students` → `enrolments`).
+
+Two `SECURITY INVOKER` RPCs, for the same reason the library has them: admitting
+a student writes three rows across three tables, and supabase-js cannot open a
+transaction.
+
+| Function | Notes |
+|---|---|
+| `admit_student(person jsonb, admission_number, admission_date, section_id, roll_number)` | Creates the person, the student, and — if a section is given — the enrolment. Resolves `session_id` itself via `current_session_id()`; the client never supplies it. A section is optional: a student can be admitted before placement. |
+| `update_student(student_id, person jsonb, …, section_id, roll_number)` | Updates person + student, and **upserts** the enrolment on `(tenant_id, session_id, student_id)` so moving a student between sections edits this year's row instead of creating a second one. |
+
+Both take the person as `jsonb` rather than fifteen positional arguments, so
+adding a field to `people` doesn't change the function signature. Both pin
+`search_path = public, extensions` — `citext` lives in `extensions`, and a
+`public`-only path makes `people.email` fail at runtime (fixed in `0018`).
+
+Students are **never deleted**. `status` (active/inactive/alumni/transferred/
+expelled) is how a leaver is recorded, which is what keeps alumni, re-admission
+and sibling links working.
+
 ---
 
 ## Roadmap (not built yet)
@@ -112,10 +135,13 @@ and (room, weekday, period, session). `sections.class_teacher_staff_id` already
 exists; subject-teacher assignment is what unlocks a finer-grained RLS rule
 than today's "class teacher sees their section".
 
-### Students & bulk import
-Excel/CSV import runs through `jobs` (`job_type = 'student_import'`), never in
-a request handler. Needs a staging table with per-row validation results so the
-UI can show a dry-run before committing.
+### Students — bulk import only
+The register itself is **built** (see *Students* under Built). What remains is
+bulk admission: Excel/CSV import runs through `jobs`
+(`job_type = 'student_import'`), never in a request handler. Needs a staging
+table with per-row validation results so the UI can show a dry-run before
+committing — and it should call `admit_student()` per row so imported students
+go through exactly the same atomic path as hand-entered ones.
 
 ### Attendance
 `attendance_records` (enrolment, date, period nullable, status, marked_by).

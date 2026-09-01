@@ -1143,6 +1143,58 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      admit_student: {
+        Args: {
+          p_admission_date?: string
+          p_admission_number: string
+          p_person: Json
+          p_roll_number?: string | null
+          p_section_id?: string | null
+        }
+        Returns: {
+          admission_date: string
+          admission_number: string
+          created_at: string
+          id: string
+          person_id: string
+          status: string
+          tenant_id: string
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "students"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      update_student: {
+        Args: {
+          p_admission_date: string
+          p_admission_number: string
+          p_person: Json
+          p_roll_number?: string | null
+          p_section_id?: string | null
+          p_status: string
+          p_student_id: string
+        }
+        Returns: {
+          admission_date: string
+          admission_number: string
+          created_at: string
+          id: string
+          person_id: string
+          status: string
+          tenant_id: string
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "students"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       current_role_code: { Args: never; Returns: string }
       current_session_id: { Args: { p_tenant_id: string }; Returns: string }
       current_tenant_id: { Args: never; Returns: string }

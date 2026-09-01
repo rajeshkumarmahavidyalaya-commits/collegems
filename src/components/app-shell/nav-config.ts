@@ -1,5 +1,5 @@
 import type { LucideIcon } from "lucide-react";
-import { BookOpen, LayoutDashboard, ListChecks, Users } from "lucide-react";
+import { BookOpen, GraduationCap, LayoutDashboard, ListChecks, Users } from "lucide-react";
 
 export type NavItem = {
   title: string;
@@ -17,6 +17,17 @@ export const NAV_GROUPS: NavGroup[] = [
   {
     title: "Overview",
     items: [{ title: "Dashboard", href: "/", icon: LayoutDashboard }],
+  },
+  {
+    title: "People",
+    items: [
+      {
+        title: "Students",
+        href: "/students",
+        icon: GraduationCap,
+        roles: ["admin", "teacher", "accountant", "librarian"],
+      },
+    ],
   },
   {
     title: "Library",
