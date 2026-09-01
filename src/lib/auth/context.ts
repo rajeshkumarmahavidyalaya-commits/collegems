@@ -30,7 +30,7 @@ export const getUserContext = cache(async (): Promise<UserContext | null> => {
   // rather than return an error, and missing build-time env throws outright.
   // Returning null routes the caller to /login, which is what "we could not
   // establish who this is" should mean -- not a 500 on a rendered page.
-  let user: { id: string } | null = null;
+  let user: Awaited<ReturnType<typeof supabase.auth.getUser>>["data"]["user"] = null;
   try {
     const result = await supabase.auth.getUser();
     user = result.data?.user ?? null;
