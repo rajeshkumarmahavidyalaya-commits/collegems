@@ -45,6 +45,7 @@ After any migration, regenerate types into
 | [docs/domain/erd.md](./docs/domain/erd.md) | Full schema + the roadmap it's shaped for |
 | [docs/modules/library.md](./docs/modules/library.md) | The pattern every module copies |
 | [docs/modules/attendance.md](./docs/modules/attendance.md) | Attendance: the keyboard-first register and why it deviates |
+| [docs/modules/fees.md](./docs/modules/fees.md) | Fees: the append-only ledger, gapless receipts, and one real bug |
 | [docs/design/decisions.md](./docs/design/decisions.md) | Palette, type, spacing — and why |
 | `design-system/schoolos/MASTER.md` | Source of truth for all UI values |
 
@@ -57,6 +58,7 @@ After any migration, regenerate types into
 - Library module end-to-end as the reference implementation
 - Students register: admission, editing, status changes, guardian links
 - Attendance: keyboard-first register, autosave, per-class report
+- Fees: append-only ledger, gapless receipt numbers, reversals, collection screen
 - App shell: role-driven nav, breadcrumbs, ⌘K command palette, theme toggle
 - DataTable and form primitives
 - Dashboard with KPIs and charts

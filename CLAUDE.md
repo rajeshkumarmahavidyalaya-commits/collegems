@@ -87,9 +87,29 @@ Corrections are reversing entries, never updates. Receipt numbers are gapless
 per-tenant-per-session sequences generated in Postgres. Payment webhooks are
 idempotent on the provider's event id.
 
-The library module's `fine_amount` is a simple mutable field — the fees ledger
-does not exist yet, so there is nothing to be append-only *into*. When the fees
-module lands, library fines should move into that ledger.
+This is now built: one `ledger_entries` table typed by `entry_type`, with the
+sign constrained per type, `UPDATE`/`DELETE` revoked outright (not merely
+unmatched by a policy), and `document_sequences` as the gapless counter. See
+`docs/modules/fees.md`.
+
+Two consequences worth knowing before you touch this module:
+
+- **A row lock needs the UPDATE privilege.** `select ... for update` on
+  `ledger_entries` fails with `permission denied`, because the revoke is what
+  makes the table append-only. Serialise on a unique index instead — that is
+  what `ledger_entries_reversal_unique` is for.
+- **Amounts are signed, positive means "owes more", and the RPCs take positive
+  numbers** and do the signing. Never ask a caller for a negative amount.
+
+**Library fines have not moved into the ledger.** The rule said they should
+once it existed; it now does, and they have not. `book_issues.fine_amount` is
+still a mutable field. Moving it means a data migration of existing fines into
+`ledger_entries`, a `fine` entry raised by `library_return_book`, and a
+decision about whether an unreturned book's fine accrues daily (which the
+ledger cannot express as a single row). That is a fees change and a library
+change together, and it was deliberately not folded into building the ledger.
+Until it happens, the two are separate: a library fine does not appear in a
+student's fee balance.
 
 ## 7. Heavy work goes through the jobs table
 

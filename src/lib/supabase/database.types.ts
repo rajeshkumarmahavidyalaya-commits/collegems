@@ -373,6 +373,54 @@ export type Database = {
           },
         ]
       }
+      document_sequences: {
+        Row: {
+          created_at: string
+          id: string
+          kind: string
+          next_value: number
+          prefix: string
+          session_id: string
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          kind: string
+          next_value?: number
+          prefix?: string
+          session_id: string
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          kind?: string
+          next_value?: number
+          prefix?: string
+          session_id?: string
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "document_sequences_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "academic_sessions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "document_sequences_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       enrolments: {
         Row: {
           created_at: string
@@ -434,6 +482,115 @@ export type Database = {
           },
           {
             foreignKeyName: "enrolments_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      fee_heads: {
+        Row: {
+          category: string
+          code: string
+          created_at: string
+          description: string | null
+          id: string
+          is_active: boolean
+          name: string
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          category?: string
+          code: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          name: string
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          category?: string
+          code?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          name?: string
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fee_heads_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      fee_structures: {
+        Row: {
+          amount: number
+          class_level_id: string
+          created_at: string
+          fee_head_id: string
+          frequency: string
+          id: string
+          session_id: string
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          amount: number
+          class_level_id: string
+          created_at?: string
+          fee_head_id: string
+          frequency?: string
+          id?: string
+          session_id: string
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          class_level_id?: string
+          created_at?: string
+          fee_head_id?: string
+          frequency?: string
+          id?: string
+          session_id?: string
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fee_structures_class_level_id_fkey"
+            columns: ["class_level_id"]
+            isOneToOne: false
+            referencedRelation: "class_levels"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fee_structures_fee_head_id_fkey"
+            columns: ["fee_head_id"]
+            isOneToOne: false
+            referencedRelation: "fee_heads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fee_structures_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "academic_sessions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fee_structures_tenant_id_fkey"
             columns: ["tenant_id"]
             isOneToOne: false
             referencedRelation: "tenants"
@@ -629,6 +786,144 @@ export type Database = {
           },
         ]
       }
+      invoice_lines: {
+        Row: {
+          amount: number
+          created_at: string
+          description: string
+          fee_head_id: string | null
+          id: string
+          invoice_id: string
+          session_id: string
+          tenant_id: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          description: string
+          fee_head_id?: string | null
+          id?: string
+          invoice_id: string
+          session_id: string
+          tenant_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          description?: string
+          fee_head_id?: string | null
+          id?: string
+          invoice_id?: string
+          session_id?: string
+          tenant_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "invoice_lines_fee_head_id_fkey"
+            columns: ["fee_head_id"]
+            isOneToOne: false
+            referencedRelation: "fee_heads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invoice_lines_invoice_id_fkey"
+            columns: ["tenant_id", "invoice_id"]
+            isOneToOne: false
+            referencedRelation: "invoices"
+            referencedColumns: ["tenant_id", "id"]
+          },
+          {
+            foreignKeyName: "invoice_lines_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "academic_sessions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invoice_lines_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      invoices: {
+        Row: {
+          cancel_reason: string | null
+          cancelled_at: string | null
+          cancelled_by: string | null
+          created_at: string
+          due_date: string
+          id: string
+          invoice_number: string
+          issue_date: string
+          issued_by: string | null
+          notes: string | null
+          session_id: string
+          status: string
+          student_id: string
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          cancel_reason?: string | null
+          cancelled_at?: string | null
+          cancelled_by?: string | null
+          created_at?: string
+          due_date: string
+          id?: string
+          invoice_number: string
+          issue_date?: string
+          issued_by?: string | null
+          notes?: string | null
+          session_id: string
+          status?: string
+          student_id: string
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          cancel_reason?: string | null
+          cancelled_at?: string | null
+          cancelled_by?: string | null
+          created_at?: string
+          due_date?: string
+          id?: string
+          invoice_number?: string
+          issue_date?: string
+          issued_by?: string | null
+          notes?: string | null
+          session_id?: string
+          status?: string
+          student_id?: string
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "invoices_student_id_fkey"
+            columns: ["tenant_id", "student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["tenant_id", "id"]
+          },
+          {
+            foreignKeyName: "invoices_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "academic_sessions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invoices_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       jobs: {
         Row: {
           completed_at: string | null
@@ -672,6 +967,102 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "jobs_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ledger_entries: {
+        Row: {
+          amount: number
+          created_at: string
+          entry_type: string
+          id: string
+          invoice_id: string | null
+          method: string | null
+          note: string | null
+          occurred_at: string
+          provider: string | null
+          provider_event_id: string | null
+          receipt_number: string | null
+          recorded_by: string | null
+          reference: string | null
+          reverses_entry_id: string | null
+          session_id: string
+          student_id: string
+          tenant_id: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          entry_type: string
+          id?: string
+          invoice_id?: string | null
+          method?: string | null
+          note?: string | null
+          occurred_at?: string
+          provider?: string | null
+          provider_event_id?: string | null
+          receipt_number?: string | null
+          recorded_by?: string | null
+          reference?: string | null
+          reverses_entry_id?: string | null
+          session_id: string
+          student_id: string
+          tenant_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          entry_type?: string
+          id?: string
+          invoice_id?: string | null
+          method?: string | null
+          note?: string | null
+          occurred_at?: string
+          provider?: string | null
+          provider_event_id?: string | null
+          receipt_number?: string | null
+          recorded_by?: string | null
+          reference?: string | null
+          reverses_entry_id?: string | null
+          session_id?: string
+          student_id?: string
+          tenant_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ledger_entries_invoice_id_fkey"
+            columns: ["tenant_id", "invoice_id"]
+            isOneToOne: false
+            referencedRelation: "invoices"
+            referencedColumns: ["tenant_id", "id"]
+          },
+          {
+            foreignKeyName: "ledger_entries_reverses_entry_id_fkey"
+            columns: ["reverses_entry_id"]
+            isOneToOne: true
+            referencedRelation: "ledger_entries"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ledger_entries_student_id_fkey"
+            columns: ["tenant_id", "student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["tenant_id", "id"]
+          },
+          {
+            foreignKeyName: "ledger_entries_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "academic_sessions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ledger_entries_tenant_id_fkey"
             columns: ["tenant_id"]
             isOneToOne: false
             referencedRelation: "tenants"
@@ -1262,6 +1653,221 @@ export type Database = {
       current_role_code: { Args: never; Returns: string }
       current_session_id: { Args: { p_tenant_id: string }; Returns: string }
       current_tenant_id: { Args: never; Returns: string }
+      fees_cancel_invoice: {
+        Args: { p_invoice_id: string; p_reason: string }
+        Returns: {
+          cancel_reason: string | null
+          cancelled_at: string | null
+          cancelled_by: string | null
+          created_at: string
+          due_date: string
+          id: string
+          invoice_number: string
+          issue_date: string
+          issued_by: string | null
+          notes: string | null
+          session_id: string
+          status: string
+          student_id: string
+          tenant_id: string
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "invoices"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      fees_generate_invoice: {
+        Args: {
+          p_due_date: string
+          p_fee_head_ids?: string[]
+          p_notes?: string
+          p_student_id: string
+        }
+        Returns: {
+          cancel_reason: string | null
+          cancelled_at: string | null
+          cancelled_by: string | null
+          created_at: string
+          due_date: string
+          id: string
+          invoice_number: string
+          issue_date: string
+          issued_by: string | null
+          notes: string | null
+          session_id: string
+          status: string
+          student_id: string
+          tenant_id: string
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "invoices"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      fees_generate_section_invoices: {
+        Args: { p_due_date: string; p_fee_head_ids?: string[]; p_section_id: string }
+        Returns: number
+      }
+      fees_next_document_number: { Args: { p_kind: string }; Returns: string }
+      fees_record_adjustment: {
+        Args: {
+          p_amount: number
+          p_entry_type: string
+          p_invoice_id?: string
+          p_note: string
+          p_student_id: string
+        }
+        Returns: {
+          amount: number
+          created_at: string
+          entry_type: string
+          id: string
+          invoice_id: string | null
+          method: string | null
+          note: string | null
+          occurred_at: string
+          provider: string | null
+          provider_event_id: string | null
+          receipt_number: string | null
+          recorded_by: string | null
+          reference: string | null
+          reverses_entry_id: string | null
+          session_id: string
+          student_id: string
+          tenant_id: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "ledger_entries"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      fees_record_payment: {
+        Args: {
+          p_amount: number
+          p_invoice_id?: string
+          p_method: string
+          p_note?: string
+          p_occurred_at?: string
+          p_provider?: string
+          p_provider_event_id?: string
+          p_reference?: string
+          p_student_id: string
+        }
+        Returns: {
+          amount: number
+          created_at: string
+          entry_type: string
+          id: string
+          invoice_id: string | null
+          method: string | null
+          note: string | null
+          occurred_at: string
+          provider: string | null
+          provider_event_id: string | null
+          receipt_number: string | null
+          recorded_by: string | null
+          reference: string | null
+          reverses_entry_id: string | null
+          session_id: string
+          student_id: string
+          tenant_id: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "ledger_entries"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      fees_record_refund: {
+        Args: {
+          p_amount: number
+          p_method: string
+          p_note?: string
+          p_occurred_at?: string
+          p_reference?: string
+          p_student_id: string
+        }
+        Returns: {
+          amount: number
+          created_at: string
+          entry_type: string
+          id: string
+          invoice_id: string | null
+          method: string | null
+          note: string | null
+          occurred_at: string
+          provider: string | null
+          provider_event_id: string | null
+          receipt_number: string | null
+          recorded_by: string | null
+          reference: string | null
+          reverses_entry_id: string | null
+          session_id: string
+          student_id: string
+          tenant_id: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "ledger_entries"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      fees_reverse_entry: {
+        Args: { p_entry_id: string; p_reason: string }
+        Returns: {
+          amount: number
+          created_at: string
+          entry_type: string
+          id: string
+          invoice_id: string | null
+          method: string | null
+          note: string | null
+          occurred_at: string
+          provider: string | null
+          provider_event_id: string | null
+          receipt_number: string | null
+          recorded_by: string | null
+          reference: string | null
+          reverses_entry_id: string | null
+          session_id: string
+          student_id: string
+          tenant_id: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "ledger_entries"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      fees_student_balances: {
+        Args: { p_only_outstanding?: boolean; p_section_id?: string }
+        Returns: {
+          admission_number: string
+          balance: number
+          charged: number
+          discounts: number
+          fines: number
+          full_name: string
+          last_payment_at: string
+          paid: number
+          refunds: number
+          roll_number: string
+          section_label: string
+          student_id: string
+          write_offs: number
+        }[]
+      }
       library_issue_book: {
         Args: { p_book_id: string; p_due_at?: string; p_member_id: string }
         Returns: {

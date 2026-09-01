@@ -155,6 +155,81 @@ See [docs/modules/attendance.md](../modules/attendance.md).
 
 ---
 
+### Fees
+
+```
+fee_heads ──< fee_structures >── class_levels
+                   └──> academic_sessions (session_id)
+
+invoices ──< invoice_lines ──> fee_heads
+    └──< ledger_entries ──> ledger_entries (reverses_entry_id)
+
+document_sequences   (tenant, session, kind) -> next_value
+```
+
+Two halves that must not be confused: **charges** (`invoices` +
+`invoice_lines`, what the school billed) and the **ledger** (`ledger_entries`,
+every movement against those charges).
+
+```
+balance = Σ lines of issued invoices + Σ ledger entries
+```
+
+| Table | Notes |
+|---|---|
+| `fee_heads` | What the school charges for. `code` unique per tenant, `category`, `is_active`. Never deleted once billed — deactivated. |
+| `fee_structures` | What one class level pays for one head in one session. Unique on (tenant, session, class level, head). `amount` is per *instalment*; `frequency` describes the cadence, it does not divide the amount. |
+| `document_sequences` | A counter row per (tenant, session, kind). See below. |
+| `invoices` | Keyed to `student_id` (not `enrolment_id`, unlike attendance): a bill follows the child for the year, so a mid-year section move neither orphans nor duplicates it. `status` is `issued` or `cancelled`; cancelling requires who, when and why. |
+| `invoice_lines` | **Append-only.** No `updated_at`, no UPDATE/DELETE policy, privileges revoked. |
+| `ledger_entries` | **Append-only.** One table for payments, discounts, fines, refunds and write-offs, typed by `entry_type`. |
+
+**One ledger table, not four.** This entry previously sketched separate
+`payments` / `discounts` / `fines` / `refunds` tables. Four tables would mean
+four sets of policies, four audit triggers, four reversal mechanisms and a
+five-way `UNION` to answer "what does this child owe". A single table with a
+sign-constrained `entry_type` gives the same guarantees and makes the balance
+one `SUM`.
+
+**Sign convention:** `amount` is signed and positive always means *owes more*.
+Fines and refunds are positive; payments, discounts and write-offs are
+negative. `ledger_entries_sign_chk` enforces this per type and inverts it for a
+reversal, so a mis-signed row cannot be inserted. The RPCs take positive
+amounts and do the signing.
+
+**Gapless numbering:** a Postgres sequence will not roll back, so a failed
+payment would burn a receipt number and leave a hole — which an auditor reads
+as a missing receipt. `document_sequences` is an ordinary counter row
+incremented inside the caller's transaction, so a rollback returns the number.
+
+**Immutability:** `ledger_entries` and `invoice_lines` have no UPDATE/DELETE
+policy *and* have those privileges revoked, so a careless `for all` policy added
+later still cannot rewrite history. A correction is a reversing entry pointing
+at the row it cancels, unique on `reverses_entry_id`.
+
+**Webhook idempotency:** `(tenant_id, provider, provider_event_id)` is unique;
+`fees_record_payment` checks it *before* allocating a receipt number, so a
+redelivered event returns the original receipt instead of burning a number.
+
+Nine `SECURITY INVOKER` functions: `fees_next_document_number`,
+`fees_generate_invoice`, `fees_generate_section_invoices`,
+`fees_cancel_invoice`, `fees_record_payment`, `fees_record_refund`,
+`fees_record_adjustment`, `fees_reverse_entry`, `fees_student_balances`.
+
+See [docs/modules/fees.md](../modules/fees.md).
+
+### Cross-tenant foreign keys
+
+Foreign key checks are **not** subject to RLS, so `references students(id)`
+accepts an id the caller cannot see. Migration `0024` gives `students`,
+`invoices` and `enrolments` a `unique (tenant_id, id)` and points
+`invoices`, `invoice_lines`, `ledger_entries` and `attendance_records` at those
+with composite foreign keys — making "the child's tenant equals the parent's
+tenant" a database constraint that holds on every write path, not a check every
+function has to remember.
+
+---
+
 ## Roadmap (not built yet)
 
 Recorded here so the built schema keeps accepting it. Each of these is
@@ -183,13 +258,12 @@ needs tables that do not exist yet: period-wise marking waits on the timetable
 a school-calendar table would let the report say "18 of 22 school days marked"
 instead of just counting the days that were.
 
-### Fees ledger
-`fee_heads`, `fee_structures` (per class level × session), `invoices`,
-`invoice_lines`, and an **append-only** `payments` / `discounts` / `fines` /
-`refunds` ledger. Corrections are reversing entries. `receipt_sequences`
-(tenant, session, next_value) generates gapless receipt numbers in Postgres.
-Razorpay/Stripe webhooks are idempotent on the provider event id — store it
-with a unique constraint. See CLAUDE.md rule 6.
+### Fees — gateway integration and recurring billing
+The ledger itself is **built** (see *Fees* under Built). What remains: a
+Razorpay/Stripe Edge Function (a thin adapter over `fees_record_payment` with
+`p_provider` / `p_provider_event_id` — the idempotency constraint is already
+there), recurring instalment generation through `jobs`, whole-school invoicing
+through `jobs`, and receipt PDFs.
 
 ### Accounts
 Chart of accounts, vouchers, and a mapping from the fee ledger into it.

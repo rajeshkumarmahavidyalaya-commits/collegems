@@ -4,8 +4,10 @@ import {
   BookOpen,
   ClipboardCheck,
   GraduationCap,
+  IndianRupee,
   LayoutDashboard,
   ListChecks,
+  Settings2,
   Users,
 } from "lucide-react";
 
@@ -51,6 +53,23 @@ export const NAV_GROUPS: NavGroup[] = [
         href: "/attendance/report",
         icon: BarChart3,
         roles: ["admin", "teacher", "accountant"],
+      },
+    ],
+  },
+  {
+    title: "Finance",
+    items: [
+      {
+        title: "Fees",
+        href: "/fees",
+        icon: IndianRupee,
+        roles: ["admin", "accountant"],
+      },
+      {
+        title: "Fee setup",
+        href: "/fees/setup",
+        icon: Settings2,
+        roles: ["admin", "accountant"],
       },
     ],
   },
