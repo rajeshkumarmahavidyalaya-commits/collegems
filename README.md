@@ -46,6 +46,7 @@ After any migration, regenerate types into
 | [docs/modules/library.md](./docs/modules/library.md) | The pattern every module copies |
 | [docs/modules/attendance.md](./docs/modules/attendance.md) | Attendance: the keyboard-first register and why it deviates |
 | [docs/modules/fees.md](./docs/modules/fees.md) | Fees: the append-only ledger, gapless receipts, and one real bug |
+| [docs/modules/notifications.md](./docs/modules/notifications.md) | Notifications: one send path, and the RLS hole that column grants close |
 | [docs/design/decisions.md](./docs/design/decisions.md) | Palette, type, spacing — and why |
 | `design-system/schoolos/MASTER.md` | Source of truth for all UI values |
 
@@ -57,6 +58,8 @@ After any migration, regenerate types into
 - Academic structure: subjects, rooms, period schedules, teaching-week and
   holiday config, subject-teacher assignment
 - RLS on every table, with row-ownership rules for teachers, parents, students
+- Notification service: one send path, in-app delivery, per-user opt-outs,
+  templates, and a delivery log (external channels queue — no driver connected)
 - Library module end-to-end as the reference implementation
 - Students register: admission, editing, status changes, guardian links
 - Attendance: keyboard-first register, autosave, per-class report

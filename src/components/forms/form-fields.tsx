@@ -84,7 +84,8 @@ export function TextareaField<TFieldValues extends FieldValues>({
   required,
   className,
   placeholder,
-}: BaseFieldProps<TFieldValues> & { placeholder?: string }) {
+  rows,
+}: BaseFieldProps<TFieldValues> & { placeholder?: string; rows?: number }) {
   return (
     <FormField
       control={control}
@@ -96,7 +97,7 @@ export function TextareaField<TFieldValues extends FieldValues>({
             {required && <span aria-hidden="true" className="text-destructive"> *</span>}
           </FormLabel>
           <FormControl>
-            <Textarea placeholder={placeholder} {...field} value={field.value ?? ""} />
+            <Textarea rows={rows} placeholder={placeholder} {...field} value={field.value ?? ""} />
           </FormControl>
           {description && <FormDescription>{description}</FormDescription>}
           <FormMessage />

@@ -64,6 +64,26 @@ the rule here first — deliberately — rather than working around it in code.
 **The UI layer is never the gate.** Hiding a button does not protect data; the
 policy does. Every new module needs both.
 
+### RLS cannot restrict columns
+
+A policy decides which **rows** an update may touch. Once a row qualifies,
+**every column on it is writable** — and Supabase's default blanket
+`grant all … to authenticated` means there is nothing else standing in the way.
+
+So a policy shaped "users may update their own row" is only safe when the user
+genuinely owns the whole row. When only some columns should be writable, say so
+with a column-level `GRANT` beside the policy:
+
+```sql
+revoke update on public.some_table from authenticated, anon;
+grant update (the_one_column) on public.some_table to authenticated;
+```
+
+This is not theoretical. `notification_deliveries` shipped with a policy letting
+recipients mark their own messages read, and a comment claiming `read_at` was
+"the only column they could want to change" — until a probe rewrote a delivery's
+`body`. Migration `0039` fixed it; the comment had been a hope, not a rule.
+
 ## 5. Identity model — do not collapse these
 
 ```
@@ -161,6 +181,32 @@ database (e.g. `people.photo_path`), never a public URL.
 timestamp to `audit_log` on every insert/update/delete of a core table. When
 you add a table, add its trigger — see migration `0008` and the four triggers
 at the end of `0015`.
+
+## 10. Nobody calls a provider
+
+**Nothing in this codebase may call an email, SMS, WhatsApp or push API
+directly.** A module that wants to tell somebody something calls
+`notify_send(event_key, subject, body, audience, payload, channels)` and stops
+caring how it travels. One table and one dispatcher means a new channel is a
+driver, not a migration through twelve modules.
+
+`notifications` is what happened, once; `notification_deliveries` is one row per
+recipient per channel. Keep them separate — "did the notice go out" and "did
+Ravi's mother's SMS arrive" are different questions and collapsing them makes
+the second unanswerable.
+
+**Only `in_app` delivers today.** Email, SMS, WhatsApp and push are real
+channels with real preference handling and real delivery rows; they queue, and
+nothing drains them, because no provider is connected. That is deliberate. Any
+surface offering one of those channels must say so rather than implying a
+message went out — `CHANNELS[].live` in
+`src/lib/validations/notifications.ts` is the single source of that honesty, and
+a test asserts today's value so it cannot drift silently.
+
+`notification_deliveries` has **no INSERT policy at all** — that is what stops a
+student inventing a message from the principal — which is why `notify_send` is
+`SECURITY DEFINER` with its own admin check. Do not "fix" this by granting
+admins INSERT. See `docs/modules/notifications.md`.
 
 ---
 

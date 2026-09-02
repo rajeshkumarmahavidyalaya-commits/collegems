@@ -1227,6 +1227,214 @@ export type Database = {
           },
         ]
       }
+      notification_deliveries: {
+        Row: {
+          address: string | null
+          attempts: number
+          body: string
+          channel: string
+          created_at: string
+          id: string
+          last_error: string | null
+          next_attempt_at: string
+          notification_id: string
+          read_at: string | null
+          recipient_user_id: string | null
+          sent_at: string | null
+          status: string
+          subject: string | null
+          tenant_id: string
+        }
+        Insert: {
+          address?: string | null
+          attempts?: number
+          body: string
+          channel: string
+          created_at?: string
+          id?: string
+          last_error?: string | null
+          next_attempt_at?: string
+          notification_id: string
+          read_at?: string | null
+          recipient_user_id?: string | null
+          sent_at?: string | null
+          status?: string
+          subject?: string | null
+          tenant_id: string
+        }
+        Update: {
+          address?: string | null
+          attempts?: number
+          body?: string
+          channel?: string
+          created_at?: string
+          id?: string
+          last_error?: string | null
+          next_attempt_at?: string
+          notification_id?: string
+          read_at?: string | null
+          recipient_user_id?: string | null
+          sent_at?: string | null
+          status?: string
+          subject?: string | null
+          tenant_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notification_deliveries_notification_id_fkey"
+            columns: ["tenant_id", "notification_id"]
+            isOneToOne: false
+            referencedRelation: "notifications"
+            referencedColumns: ["tenant_id", "id"]
+          },
+          {
+            foreignKeyName: "notification_deliveries_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      notification_preferences: {
+        Row: {
+          channel: string
+          created_at: string
+          enabled: boolean
+          event_key: string
+          id: string
+          tenant_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          channel: string
+          created_at?: string
+          enabled?: boolean
+          event_key: string
+          id?: string
+          tenant_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          channel?: string
+          created_at?: string
+          enabled?: boolean
+          event_key?: string
+          id?: string
+          tenant_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notification_preferences_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      notification_templates: {
+        Row: {
+          body: string
+          channel: string
+          created_at: string
+          event_key: string
+          id: string
+          is_active: boolean
+          subject: string | null
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          body: string
+          channel: string
+          created_at?: string
+          event_key: string
+          id?: string
+          is_active?: boolean
+          subject?: string | null
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          body?: string
+          channel?: string
+          created_at?: string
+          event_key?: string
+          id?: string
+          is_active?: boolean
+          subject?: string | null
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notification_templates_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      notifications: {
+        Row: {
+          audience: Json
+          body: string
+          created_at: string
+          created_by: string | null
+          event_key: string
+          id: string
+          payload: Json
+          session_id: string
+          subject: string | null
+          tenant_id: string
+        }
+        Insert: {
+          audience?: Json
+          body: string
+          created_at?: string
+          created_by?: string | null
+          event_key: string
+          id?: string
+          payload?: Json
+          session_id: string
+          subject?: string | null
+          tenant_id: string
+        }
+        Update: {
+          audience?: Json
+          body?: string
+          created_at?: string
+          created_by?: string | null
+          event_key?: string
+          id?: string
+          payload?: Json
+          session_id?: string
+          subject?: string | null
+          tenant_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notifications_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "academic_sessions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notifications_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       payment_intents: {
         Row: {
           amount: number
@@ -2391,6 +2599,82 @@ export type Database = {
         }
         Returns: number
       }
+      notify_event_types: {
+        Args: never
+        Returns: {
+          default_channels: string[]
+          description: string
+          key: string
+          name: string
+        }[]
+      }
+      notify_inbox: {
+        Args: { p_limit?: number; p_only_unread?: boolean }
+        Returns: {
+          body: string
+          created_at: string
+          event_key: string
+          event_name: string
+          id: string
+          notification_id: string
+          read_at: string | null
+          subject: string | null
+        }[]
+      }
+      notify_mark_all_read: { Args: never; Returns: number }
+      notify_render: { Args: { p_payload: Json; p_template: string }; Returns: string }
+      notify_resolve_audience: {
+        Args: { p_audience: Json; p_tenant_id: string }
+        Returns: { user_id: string }[]
+      }
+      notify_send: {
+        Args: {
+          p_audience: Json
+          p_body: string
+          p_channels?: string[]
+          p_event_key: string
+          p_payload?: Json
+          p_subject: string
+        }
+        Returns: {
+          audience: Json
+          body: string
+          created_at: string
+          created_by: string | null
+          event_key: string
+          id: string
+          payload: Json
+          session_id: string
+          subject: string | null
+          tenant_id: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "notifications"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      notify_outbox: {
+        Args: { p_event_key?: string; p_limit?: number }
+        Returns: {
+          audience: Json
+          body: string
+          created_at: string
+          created_by_name: string | null
+          deliveries: number
+          event_key: string
+          event_name: string
+          failed: number
+          id: string
+          queued: number
+          recipients: number
+          sent: number
+          skipped: number
+          subject: string | null
+        }[]
+      }
+      notify_unread_count: { Args: never; Returns: number }
       schema_guard_violations: {
         Args: never
         Returns: {

@@ -272,6 +272,54 @@ bare total. **Nothing consumes it** — no mail provider is connected, by choice
 
 See [docs/modules/fees.md](../modules/fees.md).
 
+### Notifications
+
+```
+reference.notification_types  key PK, name, description, default_channels[]
+notifications                 tenant, session, event_key, subject, body,
+                              payload jsonb, audience jsonb, created_by
+  └── notification_deliveries tenant, notification (composite FK),
+                              recipient_user_id, channel, address,
+                              subject, body, status, attempts,
+                              next_attempt_at, last_error, sent_at, read_at
+notification_templates        tenant × event_key × channel, {{interpolated}}
+notification_preferences      tenant × user × event_key × channel, opt-outs only
+```
+
+One message, one row in `notifications`; one row per recipient per channel in
+`notification_deliveries`. "Did the announcement go out" and "did Ravi's
+mother's SMS arrive" are different questions, and the split is what keeps the
+second answerable.
+
+`audience` records **how** recipients were chosen (`all` / `role` / `section` +
+`who` / `users`), not who they were — so the log stays meaningful after a
+student changes class. `address` freezes the email or phone **as it was at send
+time**; a log that re-reads the current address cannot say where a message
+actually went.
+
+Preferences store **only opt-outs**. An absent row means "use the catalog
+default", which is what lets a school change a default and have it reach
+everyone who never expressed a preference.
+
+`reference.notification_types` sits outside `public`, like
+`reference.permissions`, so the schema-guard invariant stays meaningful.
+
+Writes go through `notify_send` — the module's one `SECURITY DEFINER` function,
+needed because `notification_deliveries` has **no INSERT policy at all**, which
+is what stops anyone forging a message from the principal. The dispatcher pair
+(`notify_claim_deliveries`, `notify_record_result`) is revoked from
+`authenticated` outright: they are for an Edge Function holding the service
+role.
+
+**Only `in_app` delivers today.** The other four channels queue real delivery
+rows that nothing drains, because no provider is connected. The UI says so
+rather than implying a message went out.
+
+Migration `0039` narrows what a recipient may write to `read_at` with a
+**column-level GRANT** — RLS cannot restrict columns, and the policy alone let a
+recipient rewrite the body of their own delivery. See
+[docs/modules/notifications.md](../modules/notifications.md).
+
 ### Cross-tenant foreign keys
 
 Foreign key checks are **not** subject to RLS, so `references students(id)`
@@ -338,10 +386,14 @@ balances. Runs through `jobs`.
 `homework`, `homework_submissions`, `study_material` — files in the
 `homework-submissions` / `study-material` buckets, paths in the DB.
 
-### Notifications
-A driver abstraction: `notification_templates`, `notifications`, and
-`notification_deliveries` with a `channel` (in-app / email / SMS / push /
-WhatsApp). Sending goes through `jobs`.
+### Notifications — drivers only
+The service itself is **built** (see *Notifications* under Built). What remains
+is a driver per external channel: an Edge Function that calls
+`notify_claim_deliveries()`, sends, and calls `notify_record_result()`. No
+application code moves when one is added — that is the whole point of the
+abstraction. Also unbuilt: scheduled sending, and wiring the existing modules
+(`attendance.absent`, `fees.invoice_raised`, `library.book_overdue`) to emit
+their events.
 
 ### Later modules
 Inventory, transport (routes, stops, vehicle assignments), dormitory, front

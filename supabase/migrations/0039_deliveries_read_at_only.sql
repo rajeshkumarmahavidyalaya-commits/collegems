@@ -1,0 +1,39 @@
+-- Phase 4.1, part 5 -- close a hole that migration 0033 asserted was closed.
+--
+-- 0033 said, above the update policy on `notification_deliveries`:
+--
+--   "Marking your own in-app message read is the only update a person may
+--    make, and `read_at` is the only column they could want to change."
+--
+-- The second half was a hope, not a rule. **RLS cannot restrict columns.** The
+-- policy decides which *rows* an update may touch; once a row qualifies, every
+-- column on it is writable. With Supabase's default blanket
+-- `grant all ... to authenticated`, the recipient of a message could rewrite
+-- its `body`, its `subject`, the `address` it was sent to, its `status`, and
+-- `sent_at` -- on their own delivery, which is exactly the row the delivery log
+-- treats as the school's evidence of what it told them.
+--
+-- Confirmed against the live database before writing this: a recipient's
+-- `update notification_deliveries set body = '...'` succeeded and returned the
+-- rewritten row.
+--
+-- The fix is a column-level GRANT, which is the only mechanism in Postgres that
+-- expresses "this column and no other". RLS keeps deciding *which rows*; the
+-- grant decides *which column*. Both are needed, and neither substitutes for
+-- the other.
+--
+-- Nothing else loses a capability:
+--
+--   * `notify_send` and the two dispatcher functions are SECURITY DEFINER, so
+--     they write as the owner and are unaffected.
+--   * `notify_mark_all_read` is SECURITY INVOKER and touches only `read_at`,
+--     so the narrowed grant is enough for it -- verified, not assumed.
+--   * No admin policy grants UPDATE on this table at all. An administrator has
+--     never been able to edit a delivery, and still cannot.
+--
+-- The general lesson, which applies to any future table with a
+-- "users may update their own row" policy: if only some columns are meant to be
+-- writable, say so with a GRANT. A policy alone will not do it.
+
+revoke update on public.notification_deliveries from authenticated, anon;
+grant update (read_at) on public.notification_deliveries to authenticated;

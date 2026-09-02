@@ -1,6 +1,7 @@
 import type { LucideIcon } from "lucide-react";
 import {
   BarChart3,
+  Bell,
   BookOpen,
   ClipboardCheck,
   GraduationCap,
@@ -10,6 +11,8 @@ import {
   IndianRupee,
   LayoutDashboard,
   ListChecks,
+  PenLine,
+  ScrollText,
   Settings2,
   Users,
 } from "lucide-react";
@@ -97,6 +100,27 @@ export const NAV_GROUPS: NavGroup[] = [
         href: "/fees/setup",
         icon: Settings2,
         roles: ["admin", "accountant"],
+      },
+    ],
+  },
+  {
+    title: "Communication",
+    items: [
+      // No `roles` filter: every account has an inbox, and hiding it from
+      // students and parents is exactly how a "we told you" message ends up
+      // nowhere.
+      { title: "Notifications", href: "/notifications", icon: Bell },
+      {
+        title: "Compose",
+        href: "/notifications/compose",
+        icon: PenLine,
+        roles: ["admin"],
+      },
+      {
+        title: "Delivery log",
+        href: "/notifications/log",
+        icon: ScrollText,
+        roles: ["admin"],
       },
     ],
   },

@@ -7,6 +7,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sh
 import { DesktopSidebar, SidebarContent } from "./app-sidebar";
 import { AppBreadcrumbs } from "./breadcrumbs";
 import { CommandPalette } from "./command-palette";
+import { NotificationBell } from "./notification-bell";
 import { ThemeToggle } from "./theme-toggle";
 import { UserMenu } from "./user-menu";
 import { navForRole } from "./nav-config";
@@ -17,6 +18,7 @@ export function AppShell({
   currentSessionName,
   displayName,
   roleName,
+  unreadCount,
   children,
 }: {
   /**
@@ -31,6 +33,8 @@ export function AppShell({
   currentSessionName: string | null;
   displayName: string;
   roleName: string;
+  /** Unread in-app messages, resolved server-side in the layout. */
+  unreadCount: number;
   children: React.ReactNode;
 }) {
   const navGroups = navForRole(roleCode);
@@ -93,6 +97,7 @@ export function AppShell({
 
           <div className="ml-auto flex items-center gap-1">
             <CommandPaletteTrigger />
+            <NotificationBell unreadCount={unreadCount} />
             <ThemeToggle />
             <UserMenu displayName={displayName} roleName={roleName} />
           </div>
