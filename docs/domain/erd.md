@@ -272,6 +272,44 @@ bare total. **Nothing consumes it** — no mail provider is connected, by choice
 
 See [docs/modules/fees.md](../modules/fees.md).
 
+### Class routine
+
+```
+timetable_entries  tenant, session, section, subject, teacher?, room?,
+                   time_slot, weekday (ISO 1-7), slot_schedulable (constant true)
+```
+
+Three unique constraints carry the whole design: one lesson per class per
+period, a teacher in one place at a time, a room holding one class at a time.
+The last two are **partial** indexes (`where … is not null`), because a period
+with no teacher assigned yet is not a clash with every other unassigned period.
+
+Not exclusion constraints, as this file first sketched: a period is a
+`time_slots` row rather than a time range, so two lessons either occupy the same
+slot or they do not, and an equality-only exclusion constraint is a unique index
+with a GiST index and no `on conflict`.
+
+`time_slots` gains a generated `schedulable` column (`kind = 'class' and not
+is_break`) and a `unique (tenant_id, id, schedulable)`. `timetable_entries`
+carries a constant `slot_schedulable = true` and points a composite FK at it —
+which makes "a real lesson period in my own tenant" one declarative constraint,
+where a CHECK could not reach another table.
+
+The curriculum FK
+`(tenant_id, session_id, section_id, subject_id) → section_subjects` subsumes
+the section and subject keys and adds "this subject is on this class's
+curriculum this year". `teacher_staff_id` is denormalised from the assignment on
+purpose: the clash index needs it on the row, and a period covered by a
+substitute is still that section's lesson.
+
+Written through `timetable_set_entry` (an upsert — a cell holds one lesson) and
+`timetable_copy_day` (fills empty periods only, never overwrites). Read through
+`timetable_for_section`, `timetable_for_teacher` (defaults to the caller's own
+staff record) and `timetable_teacher_load`.
+
+Everyone in the tenant reads it; only admins write. See
+[docs/modules/timetable.md](../modules/timetable.md).
+
 ### Notifications
 
 ```
@@ -337,13 +375,15 @@ function has to remember.
 Recorded here so the built schema keeps accepting it. Each of these is
 tenant-scoped, and every transactional one is session-scoped.
 
-### Timetable
-`subjects`, `section_subjects`, `time_slots` and `class_rooms` are **built**
-(see *Academic structure* under Built). What remains is `timetable_entries`
-(section, subject, teacher, weekday, time_slot, room) with clash detection as
-exclusion constraints on (teacher, weekday, slot, session) and (room, weekday,
-slot, session). Subject-teacher assignment now exists, which is what unlocks a
-finer-grained RLS rule than today's "class teacher sees their section".
+### Timetable — generation and period-wise attendance
+The routine itself is **built** (see *Class routine* under Built). What remains
+is automatic generation — constraint solving over teacher availability, subject
+period-quotas and room types, which is genuinely hard and worse than nothing if
+done badly; the constraints a generator would have to satisfy are already in the
+schema, which is the part worth having first. Also unbuilt: wiring
+`attendance_records.period` (which has existed since `0019`, defaulting to
+`0` = whole day) to the periods that now exist, a substitute-teacher log, a
+room-utilisation view, and a printable per-class handout.
 
 ### Students — bulk import only
 The register itself is **built** (see *Students* under Built). What remains is

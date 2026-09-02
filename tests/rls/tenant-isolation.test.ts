@@ -54,6 +54,7 @@ describe("cross-tenant isolation", () => {
     "weekends",
     "holidays",
     "section_subjects",
+    "timetable_entries",
     "academic_sessions",
     "books",
     "book_categories",

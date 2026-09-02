@@ -2027,6 +2027,7 @@ export type Database = {
           kind: string
           label: string | null
           period_number: number
+          schedulable: boolean | null
           starts_at: string
           tenant_id: string
           updated_at: string
@@ -2058,6 +2059,97 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "time_slots_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      timetable_entries: {
+        Row: {
+          class_room_id: string | null
+          created_at: string
+          id: string
+          note: string | null
+          section_id: string
+          session_id: string
+          slot_schedulable: boolean
+          subject_id: string
+          teacher_staff_id: string | null
+          tenant_id: string
+          time_slot_id: string
+          updated_at: string
+          weekday: number
+        }
+        Insert: {
+          class_room_id?: string | null
+          created_at?: string
+          id?: string
+          note?: string | null
+          section_id: string
+          session_id: string
+          slot_schedulable?: boolean
+          subject_id: string
+          teacher_staff_id?: string | null
+          tenant_id: string
+          time_slot_id: string
+          updated_at?: string
+          weekday: number
+        }
+        Update: {
+          class_room_id?: string | null
+          created_at?: string
+          id?: string
+          note?: string | null
+          section_id?: string
+          session_id?: string
+          slot_schedulable?: boolean
+          subject_id?: string
+          teacher_staff_id?: string | null
+          tenant_id?: string
+          time_slot_id?: string
+          updated_at?: string
+          weekday?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "timetable_entries_assignment_fkey"
+            columns: ["tenant_id", "session_id", "section_id", "subject_id"]
+            isOneToOne: false
+            referencedRelation: "section_subjects"
+            referencedColumns: ["tenant_id", "session_id", "section_id", "subject_id"]
+          },
+          {
+            foreignKeyName: "timetable_entries_teacher_fkey"
+            columns: ["tenant_id", "teacher_staff_id"]
+            isOneToOne: false
+            referencedRelation: "staff"
+            referencedColumns: ["tenant_id", "id"]
+          },
+          {
+            foreignKeyName: "timetable_entries_room_fkey"
+            columns: ["tenant_id", "class_room_id"]
+            isOneToOne: false
+            referencedRelation: "class_rooms"
+            referencedColumns: ["tenant_id", "id"]
+          },
+          {
+            foreignKeyName: "timetable_entries_slot_fkey"
+            columns: ["tenant_id", "time_slot_id", "slot_schedulable"]
+            isOneToOne: false
+            referencedRelation: "time_slots"
+            referencedColumns: ["tenant_id", "id", "schedulable"]
+          },
+          {
+            foreignKeyName: "timetable_entries_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "academic_sessions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "timetable_entries_tenant_id_fkey"
             columns: ["tenant_id"]
             isOneToOne: false
             referencedRelation: "tenants"
@@ -2675,6 +2767,101 @@ export type Database = {
         }[]
       }
       notify_unread_count: { Args: never; Returns: number }
+      timetable_busy_in_slot: {
+        Args: { p_section_id?: string; p_time_slot_id: string; p_weekday: number }
+        Returns: {
+          busy_with: string
+          entity: string
+          entity_id: string
+        }[]
+      }
+      timetable_copy_day: {
+        Args: { p_from_weekday: number; p_section_id: string; p_to_weekday: number }
+        Returns: {
+          copied: number
+          skipped: number
+        }[]
+      }
+      timetable_describe_entry: { Args: { p_entry_id: string }; Returns: string }
+      timetable_for_section: {
+        Args: { p_section_id: string }
+        Returns: {
+          class_room_id: string | null
+          ends_at: string
+          id: string
+          note: string | null
+          period_number: number
+          room_name: string | null
+          slot_label: string | null
+          starts_at: string
+          subject_code: string
+          subject_id: string
+          subject_name: string
+          teacher_name: string | null
+          teacher_staff_id: string | null
+          time_slot_id: string
+          weekday: number
+        }[]
+      }
+      timetable_for_teacher: {
+        Args: { p_staff_id?: string }
+        Returns: {
+          ends_at: string
+          id: string
+          period_number: number
+          room_name: string | null
+          section_id: string
+          section_label: string
+          starts_at: string
+          subject_code: string
+          subject_name: string
+          time_slot_id: string
+          weekday: number
+        }[]
+      }
+      timetable_set_entry: {
+        Args: {
+          p_class_room_id?: string
+          p_note?: string
+          p_section_id: string
+          p_subject_id: string
+          p_teacher_staff_id?: string
+          p_time_slot_id: string
+          p_weekday: number
+        }
+        Returns: {
+          class_room_id: string | null
+          created_at: string
+          id: string
+          note: string | null
+          section_id: string
+          session_id: string
+          slot_schedulable: boolean
+          subject_id: string
+          teacher_staff_id: string | null
+          tenant_id: string
+          time_slot_id: string
+          updated_at: string
+          weekday: number
+        }
+        SetofOptions: {
+          from: "*"
+          to: "timetable_entries"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      timetable_teacher_load: {
+        Args: never
+        Returns: {
+          employee_code: string
+          periods: number
+          sections: number
+          staff_id: string
+          subjects: number
+          teacher_name: string
+        }[]
+      }
       schema_guard_violations: {
         Args: never
         Returns: {

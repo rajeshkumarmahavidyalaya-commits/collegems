@@ -116,9 +116,16 @@ export function SelectField<TFieldValues extends FieldValues>({
   className,
   placeholder = "Select…",
   options,
+  onValueChange,
 }: BaseFieldProps<TFieldValues> & {
   placeholder?: string;
   options: { value: string; label: string }[];
+  /**
+   * Fires after the field updates, for the case where one choice should fill in
+   * another — picking a subject filling in whoever normally teaches it, say.
+   * Not a replacement for `field.onChange`; the form is still the owner.
+   */
+  onValueChange?: (value: string) => void;
 }) {
   return (
     <FormField
@@ -130,7 +137,13 @@ export function SelectField<TFieldValues extends FieldValues>({
             {label}
             {required && <span aria-hidden="true" className="text-destructive"> *</span>}
           </FormLabel>
-          <Select onValueChange={field.onChange} value={field.value ?? undefined}>
+          <Select
+            onValueChange={(value) => {
+              field.onChange(value);
+              onValueChange?.(value);
+            }}
+            value={field.value ?? undefined}
+          >
             <FormControl>
               <SelectTrigger className="w-full">
                 <SelectValue placeholder={placeholder} />

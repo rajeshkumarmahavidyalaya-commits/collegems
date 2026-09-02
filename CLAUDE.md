@@ -84,6 +84,34 @@ recipients mark their own messages read, and a comment claiming `read_at` was
 "the only column they could want to change" — until a probe rewrote a delivery's
 `body`. Migration `0039` fixed it; the comment had been a hope, not a rule.
 
+### A CHECK cannot reach another table
+
+The same genre of mistake. When a rule depends on a column of a *different*
+table — "a lesson may only be scheduled in a period that is not a break" — a
+CHECK constraint cannot express it, and the reflex is to reach for a trigger.
+
+Usually there is a declarative answer: materialise the fact on the parent as a
+**generated column**, add it to a unique key, and join it into a composite
+foreign key on the child.
+
+```sql
+alter table public.time_slots
+  add column schedulable boolean
+  generated always as (kind = 'class' and not is_break) stored;
+alter table public.time_slots
+  add constraint time_slots_schedulable_key unique (tenant_id, id, schedulable);
+-- child carries a constant `true` and points at it:
+constraint timetable_entries_slot_fkey
+  foreign key (tenant_id, time_slot_id, slot_schedulable)
+  references public.time_slots (tenant_id, id, schedulable)
+```
+
+The child's column has exactly one legal value, and its only job is to make the
+key unsatisfiable for a row that fails the rule. One constraint then enforces
+"same tenant" and "a real lesson period" together, with no trigger to keep in
+step. Add a plain check ahead of it in the write function if the raw foreign-key
+error would be unreadable — for the message, not for the enforcement.
+
 ## 5. Identity model — do not collapse these
 
 ```

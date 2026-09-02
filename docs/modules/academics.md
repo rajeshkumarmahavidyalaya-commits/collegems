@@ -37,6 +37,12 @@ and the exam scheduler each read their own. Unique on
 `(tenant, kind, period_number)`, so an exam "period 1" and a lesson "period 1"
 coexist. `ends_at > starts_at` is a check constraint, not a form rule.
 
+Migration `0040` adds a generated `schedulable` column
+(`kind = 'class' and not is_break`). It exists to be the target of the class
+routine's composite foreign key, so "you cannot timetable a lunch break" is a
+database fact rather than a trigger — see
+[docs/modules/timetable.md](./timetable.md).
+
 **`weekends`** — one row per weekday, `is_teaching`. **ISO numbering
 (1 = Monday … 7 = Sunday)**, matching `extract(isodow …)`, so the app, the RPCs
 and the attendance seed all agree without a translation table in someone's

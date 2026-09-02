@@ -6,6 +6,8 @@ import {
   ClipboardCheck,
   GraduationCap,
   BookOpenCheck,
+  CalendarClock,
+  CalendarRange,
   FileText,
   Library,
   IndianRupee,
@@ -53,6 +55,17 @@ export const NAV_GROUPS: NavGroup[] = [
         href: "/academics",
         icon: Library,
         roles: ["admin", "teacher", "accountant"],
+      },
+      {
+        title: "Class routine",
+        href: "/timetable",
+        icon: CalendarRange,
+      },
+      {
+        title: "My week",
+        href: "/timetable/me",
+        icon: CalendarClock,
+        roles: ["admin", "teacher"],
       },
       {
         title: "Attendance",
