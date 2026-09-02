@@ -64,6 +64,14 @@ the rule here first — deliberately — rather than working around it in code.
 **The UI layer is never the gate.** Hiding a button does not protect data; the
 policy does. Every new module needs both.
 
+One refinement, because the reporting kernel depends on it: **the matrix does
+real work wherever RLS is deliberately tenant-wide.** RLS on `staff` and
+`people` lets any tenant member read them, so "an accountant may not pull the
+staff roster" is a rule only `role_permissions` expresses. `report_run` checks
+it *inside the function that produces the data*, not in the UI — which is the
+distinction that keeps this consistent with the sentence above rather than an
+exception to it.
+
 ### RLS cannot restrict columns
 
 A policy decides which **rows** an update may touch. Once a row qualifies,
@@ -235,6 +243,32 @@ a test asserts today's value so it cannot drift silently.
 student inventing a message from the principal — which is why `notify_send` is
 `SECURITY DEFINER` with its own admin check. Do not "fix" this by granting
 admins INSERT. See `docs/modules/notifications.md`.
+
+
+## 11. A report is a catalog row, not a page
+
+**Do not add a screen to answer a question.** `reference.reports` describes each
+report's parameters and columns as data, and `/reports` renders any of them
+without being edited. A new report is a `SECURITY INVOKER` function taking
+`jsonb` and returning `jsonb` rows, plus one row in the catalog.
+
+Three rules for writing one:
+
+- **Never put `where tenant_id =` in a read model.** Invoker + RLS is what makes
+  a report unable to cross tenants. A filter written by hand in eight functions
+  is a filter the ninth will forget.
+- **Wrap the module's own read path where one exists.** Four of the eight ship
+  as thin wrappers over `fees_student_balances`, `fees_day_book`,
+  `timetable_teacher_load` and `timetable_for_section` — a report that
+  recomputes what a module already knows is free to disagree with the screen the
+  money is actually taken on.
+- **Filter a `timestamptz` with `report_day_bounds()`**, never with a timestamp
+  built in Node. Vercel runs in UTC; the school does not.
+
+Reports are bounded (1,000 rows by default, 5,000 at most) with the true total
+returned alongside, which is why they run inline without breaking rule 7. The
+unbounded cases — a full export, a PDF, a scheduled report — belong in `jobs`
+and are not built. See `docs/modules/reports.md`.
 
 ---
 

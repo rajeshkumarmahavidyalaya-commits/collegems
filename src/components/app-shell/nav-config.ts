@@ -13,6 +13,7 @@ import {
   IndianRupee,
   LayoutDashboard,
   ListChecks,
+  FileSpreadsheet,
   PenLine,
   ScrollText,
   Settings2,
@@ -114,6 +115,15 @@ export const NAV_GROUPS: NavGroup[] = [
         icon: Settings2,
         roles: ["admin", "accountant"],
       },
+    ],
+  },
+  {
+    title: "Insight",
+    items: [
+      // No `roles` filter: `report_list` already narrows the catalog to what a
+      // role may run, so a librarian sees the two reports they can run rather
+      // than a menu item that leads to an empty page.
+      { title: "Reports", href: "/reports", icon: FileSpreadsheet },
     ],
   },
   {

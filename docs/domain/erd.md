@@ -272,6 +272,38 @@ bare total. **Nothing consumes it** — no mail provider is connected, by choice
 
 See [docs/modules/fees.md](../modules/fees.md).
 
+### Reporting kernel
+
+```
+reference.reports  key PK, name, description, module,
+                   required_permission -> reference.permissions(code),
+                   function_name, parameters jsonb, columns jsonb, sort_order
+```
+
+No new tenant-scoped table: a report is a *view* of a module's own read path.
+Outside `public`, like the other reference catalogs, so the schema-guard
+invariant stays meaningful.
+
+`report_run(key, params, limit)` looks the report up, checks the caller's
+`required_permission` against `role_permissions`, and executes
+`public.<function_name>(jsonb)` through `%I`-quoted dynamic SQL — safe because
+`reference.reports` has writes revoked from `authenticated` and `anon`, so the
+only writer is a migration.
+
+**No read model contains a `where tenant_id =`.** All eight are SECURITY
+INVOKER, so RLS decides every row; if isolation depended on each function
+remembering, the ninth would forget.
+
+Bounded rather than queued: 1,000 rows by default and 5,000 at most, with
+`count(*) over ()` giving the exact total before LIMIT so the caller can say
+"showing 1,000 of 3,412". Rule 7's `jobs` path is for the unbounded case — a
+full export, a PDF, a scheduled report — none of which are built.
+
+Four of the eight wrap functions that already exist (`fees_student_balances`,
+`fees_day_book`, `timetable_teacher_load`, `timetable_for_section`) rather than
+recomputing what a module already knows. See
+[docs/modules/reports.md](../modules/reports.md).
+
 ### Class routine
 
 ```
@@ -437,6 +469,8 @@ their events.
 
 ### Later modules
 Inventory, transport (routes, stops, vehicle assignments), dormitory, front
-office (visitors, enquiries, calls). Reporting kernel over a set of read
-models. i18n + RTL. Public REST API for mobile (PostgREST is already there;
-what is missing is a versioned, documented surface and per-app keys).
+office (visitors, enquiries, calls). i18n + RTL. Public REST API for mobile
+(PostgREST is already there; what is missing is a versioned, documented surface
+and per-app keys). The reporting kernel is **built** (see *Reporting kernel*
+under Built); what remains there is queued exports through `jobs`, PDF
+rendering, saved presets, and charts over the same read models.

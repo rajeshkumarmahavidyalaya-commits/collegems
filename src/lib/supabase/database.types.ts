@@ -2862,6 +2862,24 @@ export type Database = {
           teacher_name: string
         }[]
       }
+      report_list: {
+        Args: never
+        Returns: {
+          columns: Json
+          description: string
+          key: string
+          module: string
+          name: string
+          parameters: Json
+        }[]
+      }
+      report_run: {
+        Args: { p_key: string; p_limit?: number; p_params?: Json }
+        Returns: {
+          row_data: Json
+          total_count: number
+        }[]
+      }
       schema_guard_violations: {
         Args: never
         Returns: {
