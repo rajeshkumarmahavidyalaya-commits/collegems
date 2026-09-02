@@ -46,6 +46,7 @@ After any migration, regenerate types into
 | [docs/modules/library.md](./docs/modules/library.md) | The pattern every module copies |
 | [docs/modules/attendance.md](./docs/modules/attendance.md) | Attendance: the keyboard-first register and why it deviates |
 | [docs/modules/fees.md](./docs/modules/fees.md) | Fees: the append-only ledger, gapless receipts, and one real bug |
+| [docs/modules/exams.md](./docs/modules/exams.md) | Exams: grading rules as data, and two bugs the demo cohort surfaced |
 | [docs/modules/reports.md](./docs/modules/reports.md) | The reporting kernel: reports as data, not as forty pages |
 | [docs/modules/timetable.md](./docs/modules/timetable.md) | The class routine: three unique indexes doing all the work |
 | [docs/modules/notifications.md](./docs/modules/notifications.md) | Notifications: one send path, and the RLS hole that column grants close |
@@ -60,6 +61,8 @@ After any migration, regenerate types into
 - Academic structure: subjects, rooms, period schedules, teaching-week and
   holiday config, subject-teacher assignment
 - RLS on every table, with row-ownership rules for teachers, parents, students
+- Exams and grading: papers, keyboard-first marks entry, and a rules engine
+  (grade bands, grace, best-of-N, optional subjects) stored as data per school
 - Reporting kernel: eight reports across five modules, run through one
   permission-checked dispatcher, with CSV export and print
 - Class routine: weekly grid per class, clash-proof by construction, teaching

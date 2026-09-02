@@ -524,6 +524,168 @@ export type Database = {
           },
         ]
       }
+      exam_results: {
+        Row: {
+          created_at: string
+          detail: Json
+          exam_id: string
+          grade: string | null
+          grade_point: number | null
+          id: string
+          max_marks: number
+          percentage: number
+          published_at: string
+          result: string
+          rules_snapshot: Json
+          session_id: string
+          student_id: string
+          subjects_counted: number
+          subjects_failed: number
+          tenant_id: string
+          total_marks: number
+        }
+        Insert: {
+          created_at?: string
+          detail?: Json
+          exam_id: string
+          grade?: string | null
+          grade_point?: number | null
+          id?: string
+          max_marks: number
+          percentage: number
+          published_at?: string
+          result: string
+          rules_snapshot?: Json
+          session_id: string
+          student_id: string
+          subjects_counted?: number
+          subjects_failed?: number
+          tenant_id: string
+          total_marks: number
+        }
+        Update: {
+          created_at?: string
+          detail?: Json
+          exam_id?: string
+          grade?: string | null
+          grade_point?: number | null
+          id?: string
+          max_marks?: number
+          percentage?: number
+          published_at?: string
+          result?: string
+          rules_snapshot?: Json
+          session_id?: string
+          student_id?: string
+          subjects_counted?: number
+          subjects_failed?: number
+          tenant_id?: string
+          total_marks?: number
+        }
+        Relationships: []
+      }
+      exam_subjects: {
+        Row: {
+          created_at: string
+          exam_date: string | null
+          exam_id: string
+          id: string
+          is_optional: boolean
+          max_marks: number
+          pass_marks: number
+          section_id: string
+          session_id: string
+          slot_kind: string
+          subject_id: string
+          tenant_id: string
+          time_slot_id: string | null
+          updated_at: string
+          weight: number
+        }
+        Insert: {
+          created_at?: string
+          exam_date?: string | null
+          exam_id: string
+          id?: string
+          is_optional?: boolean
+          max_marks: number
+          pass_marks?: number
+          section_id: string
+          session_id: string
+          slot_kind?: string
+          subject_id: string
+          tenant_id: string
+          time_slot_id?: string | null
+          updated_at?: string
+          weight?: number
+        }
+        Update: {
+          created_at?: string
+          exam_date?: string | null
+          exam_id?: string
+          id?: string
+          is_optional?: boolean
+          max_marks?: number
+          pass_marks?: number
+          section_id?: string
+          session_id?: string
+          slot_kind?: string
+          subject_id?: string
+          tenant_id?: string
+          time_slot_id?: string | null
+          updated_at?: string
+          weight?: number
+        }
+        Relationships: []
+      }
+      exams: {
+        Row: {
+          created_at: string
+          ends_on: string | null
+          grading_scheme_id: string | null
+          id: string
+          kind: string
+          name: string
+          published_at: string | null
+          published_by: string | null
+          session_id: string
+          starts_on: string | null
+          status: string
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          ends_on?: string | null
+          grading_scheme_id?: string | null
+          id?: string
+          kind?: string
+          name: string
+          published_at?: string | null
+          published_by?: string | null
+          session_id: string
+          starts_on?: string | null
+          status?: string
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          ends_on?: string | null
+          grading_scheme_id?: string | null
+          id?: string
+          kind?: string
+          name?: string
+          published_at?: string | null
+          published_by?: string | null
+          session_id?: string
+          starts_on?: string | null
+          status?: string
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       fee_heads: {
         Row: {
           category: string
@@ -632,6 +794,39 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      grading_schemes: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          is_default: boolean
+          name: string
+          rules: Json
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_default?: boolean
+          name: string
+          rules?: Json
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_default?: boolean
+          name?: string
+          rules?: Json
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
       guardian_student: {
         Row: {
@@ -1163,6 +1358,66 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "tenants"
             referencedColumns: ["id"]
+          },
+        ]
+      }
+      marks: {
+        Row: {
+          created_at: string
+          entered_by: string | null
+          exam_subject_id: string
+          id: string
+          is_absent: boolean
+          marks_obtained: number | null
+          max_marks: number
+          remarks: string | null
+          session_id: string
+          student_id: string
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          entered_by?: string | null
+          exam_subject_id: string
+          id?: string
+          is_absent?: boolean
+          marks_obtained?: number | null
+          max_marks: number
+          remarks?: string | null
+          session_id: string
+          student_id: string
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          entered_by?: string | null
+          exam_subject_id?: string
+          id?: string
+          is_absent?: boolean
+          marks_obtained?: number | null
+          max_marks?: number
+          remarks?: string | null
+          session_id?: string
+          student_id?: string
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "marks_exam_subject_fkey"
+            columns: ["tenant_id", "exam_subject_id", "max_marks"]
+            isOneToOne: false
+            referencedRelation: "exam_subjects"
+            referencedColumns: ["tenant_id", "id", "max_marks"]
+          },
+          {
+            foreignKeyName: "marks_student_fkey"
+            columns: ["tenant_id", "student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["tenant_id", "id"]
           },
         ]
       }
@@ -2879,6 +3134,81 @@ export type Database = {
           row_data: Json
           total_count: number
         }[]
+      }
+      exams_enter_marks: {
+        Args: { p_entries: Json; p_exam_subject_id: string }
+        Returns: number
+      }
+      exams_mark_sheet: {
+        Args: { p_exam_subject_id: string }
+        Returns: {
+          admission_number: string
+          is_absent: boolean
+          marks_obtained: number | null
+          remarks: string | null
+          roll_number: string | null
+          student_id: string
+          student_name: string
+        }[]
+      }
+      exams_publish: { Args: { p_exam_id: string }; Returns: number }
+      exams_result_sheet: {
+        Args: { p_exam_id: string; p_section_id?: string }
+        Returns: {
+          admission_number: string
+          detail: Json
+          grade: string | null
+          grade_point: number | null
+          max_marks: number
+          percentage: number
+          result: string
+          roll_number: string | null
+          section_label: string
+          student_id: string
+          student_name: string
+          subjects_counted: number
+          subjects_failed: number
+          subjects_unmarked: number
+          total_marks: number
+        }[]
+      }
+      exams_rules_for: { Args: { p_exam_id: string }; Returns: Json }
+      exams_subject_breakdown: {
+        Args: { p_exam_id: string; p_student_id?: string }
+        Returns: {
+          counted: boolean
+          effective_marks: number
+          entered: boolean
+          exam_subject_id: string
+          grace_marks: number
+          is_absent: boolean
+          is_optional: boolean
+          marks_obtained: number | null
+          max_marks: number
+          note: string | null
+          pass_marks: number
+          passed: boolean
+          percentage: number | null
+          student_id: string
+          subject_code: string
+          subject_id: string
+          subject_name: string
+          weight: number
+        }[]
+      }
+      exams_unpublish: { Args: { p_exam_id: string }; Returns: number }
+      grading_grade_for: {
+        Args: { p_percentage: number; p_rules: Json }
+        Returns: {
+          code: string | null
+          description: string | null
+          is_fail: boolean
+          point: number | null
+        }[]
+      }
+      grading_scheme_problems: {
+        Args: { p_rules: Json }
+        Returns: { problem: string }[]
       }
       schema_guard_violations: {
         Args: never

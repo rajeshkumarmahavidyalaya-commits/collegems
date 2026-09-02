@@ -120,6 +120,14 @@ key unsatisfiable for a row that fails the rule. One constraint then enforces
 step. Add a plain check ahead of it in the write function if the raw foreign-key
 error would be unreadable — for the message, not for the enforcement.
 
+The same trick works for a **value**, not just a flag. `marks` may not exceed its
+paper's `max_marks`, so it carries a denormalised copy inside a composite foreign
+key to `exam_subjects (tenant_id, id, max_marks)` and checks against that local
+column. Use `on update cascade`, which keeps the copy in step *and* refuses to
+lower a paper's maximum below a mark already awarded — the cascade rewrites the
+child and the CHECK re-evaluates. That refusal is the correct answer, not a side
+effect.
+
 ## 5. Identity model — do not collapse these
 
 ```
@@ -269,6 +277,38 @@ Reports are bounded (1,000 rows by default, 5,000 at most) with the true total
 returned alongside, which is why they run inline without breaking rule 7. The
 unbounded cases — a full export, a PDF, a scheduled report — belong in `jobs`
 and are not built. See `docs/modules/reports.md`.
+
+
+## 12. School policy is data, not branches
+
+**Anything a school could reasonably disagree with belongs in a JSONB rules
+document, not in an `if`.** Grade bands, grace marks, best-of-N, whether an
+additional subject can stand in for a failed one, whether an absence may be
+substituted — every one of those is a real school's real policy, and hardcoding
+the first customer's version is the single most common way products like this
+fail their second.
+
+`grading_schemes.rules` is the pattern. Three rules for extending it, or for the
+next module that needs one:
+
+- **Evaluation order is part of the contract.** Grace before pass; substitution
+  after grace; best-of after substitution. Write the order down and pin each
+  step to an exact number in a test — schools argue about the order, and a
+  comment does not survive a refactor.
+- **A missing key means the conservative reading.** `replaces_absent` defaults
+  to false because a school that wants leniency will say so, whereas a school
+  that gets it by accident finds out from a parent. An empty `{}` must be a
+  coherent configuration, not an error.
+- **Criticise the document in Postgres, not in the browser.**
+  `grading_scheme_problems()` returns sentences, and lives next to the engine so
+  the thing that judges a scheme and the thing that evaluates it cannot drift.
+  It is deliberately not a check constraint: a half-finished scheme must be
+  savable.
+
+Derived values are computed while they are provisional and **frozen when they
+matter** — `exam_results` stores the numbers *and* a `rules_snapshot`, so
+editing a scheme two years later cannot change a report card that was already
+handed to somebody. See `docs/modules/exams.md`.
 
 ---
 

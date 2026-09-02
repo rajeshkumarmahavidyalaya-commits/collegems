@@ -272,6 +272,40 @@ bare total. **Nothing consumes it** — no mail provider is connected, by choice
 
 See [docs/modules/fees.md](../modules/fees.md).
 
+### Exams and grading
+
+```
+grading_schemes  tenant, name, is_default (partial unique), rules jsonb
+exams            tenant, session, name, kind, dates, grading_scheme_id,
+                 status (draft|published), published_at
+exam_subjects    exam x section x subject, max_marks, pass_marks, weight,
+                 is_optional, exam_date, time_slot (kind='exam' via composite FK)
+marks            exam_subject x student, marks_obtained (nullable = unmarked),
+                 is_absent, max_marks (denormalised, see below)
+exam_results     the frozen answer, written once by exams_publish
+```
+
+`marks` is raw facts and `exam_results` is the frozen answer; **everything
+between them is computed**. Grace, best-of-N, optional-subject substitution, the
+aggregate and the grade are all derived on demand while the exam is a draft, and
+frozen with a `rules_snapshot` at publish so a reprint matches the original.
+Grace is deliberately not a column: it is a rule, not a fact.
+
+**`marks.max_marks` is denormalised and held equal to its paper's by a composite
+foreign key**, so the CHECK `marks_obtained <= max_marks` has a local column to
+compare against — the generated-column trick from `0040`, generalised from a
+boolean to a value. `on update cascade` keeps it in step and refuses to lower a
+paper's maximum below a mark already awarded.
+
+`exam_results` has **no INSERT, UPDATE or DELETE policy for anybody**;
+`exams_publish` / `exams_unpublish` are SECURITY DEFINER with their own admin
+check. Marks are writable by the **subject** teacher
+(`section_subjects.teacher_staff_id`) — the finer-grained rule the academic
+structure was built to unlock — readable by the class teacher, and visible to
+families only once published.
+
+See [docs/modules/exams.md](../modules/exams.md).
+
 ### Reporting kernel
 
 ```
@@ -442,12 +476,14 @@ through `jobs`, and receipt PDFs.
 ### Accounts
 Chart of accounts, vouchers, and a mapping from the fee ledger into it.
 
-### Examination + configurable grading engine
-`exams`, `exam_components` (weighted), `marks`, and a **rules engine** rather
-than hardcoded logic: `grading_schemes` holding weighted components, best-of-N,
-optional-subject handling, and grace-mark rules as data (JSONB), evaluated in
-Postgres. Getting this wrong — hardcoding one school's rules — is the single
-most common way school ERPs fail their second customer.
+### Examination — components, report cards, rank
+The exams module and its rules engine are **built** (see *Exams and grading*
+under Built). What remains: `exam_components`, so "Theory 80 + Practical 20" is
+one paper with two parts rather than two papers with weights; a letterheaded
+report-card PDF; class rank (whose tie and optional-subject rules must themselves
+be scheme data); re-evaluation and supplementary exams; and wiring
+`exam.results_published` into the notification service, which already has the
+event key and no caller.
 
 ### Promotion
 A dry-run that produces a preview (who promotes, repeats, graduates) before
