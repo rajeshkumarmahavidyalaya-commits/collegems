@@ -54,6 +54,7 @@ After any migration, regenerate types into
 | [docs/modules/homework.md](./docs/modules/homework.md) | Homework: files, signed URLs, and where a column grant stops working |
 | [docs/modules/payroll.md](./docs/modules/payroll.md) | HR and payroll: salary as data, and a payslip made immutable by a foreign key |
 | [docs/modules/accounts.md](./docs/modules/accounts.md) | The general ledger: three rules, three different devices, and books that tie |
+| [docs/modules/report-cards.md](./docs/modules/report-cards.md) | Report cards: a rank is a fact about the cohort, and the attendance line that moved |
 | [docs/design/decisions.md](./docs/design/decisions.md) | Palette, type, spacing — and why |
 | `design-system/schoolos/MASTER.md` | Source of truth for all UI values |
 

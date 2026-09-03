@@ -32,6 +32,37 @@ export const AGGREGATE_METHODS = [
   },
 ] as const;
 
+export const RANK_SCOPES = [
+  {
+    value: "section",
+    label: "Within the section",
+    hint: "Position among the children in the same class and section.",
+  },
+  {
+    value: "class_level",
+    label: "Within the class",
+    hint: "Position across every section of the class level.",
+  },
+  {
+    value: "school",
+    label: "Across the school",
+    hint: "One position per student across every class sitting the exam.",
+  },
+] as const;
+
+export const RANK_METHODS = [
+  {
+    value: "competition",
+    label: "Standard (1, 2, 2, 4)",
+    hint: "Two students tied for second are both second, and the next is fourth.",
+  },
+  {
+    value: "dense",
+    label: "Dense (1, 2, 2, 3)",
+    hint: "Two students tied for second are both second, and the next is third.",
+  },
+] as const;
+
 export const RESULT_STATES = [
   { value: "pass", label: "Pass", tone: "success" },
   { value: "fail", label: "Fail", tone: "danger" },
@@ -122,6 +153,19 @@ export const gradingRulesSchema = z.object({
     .object({
       method: z.enum(["weighted", "best_of"]),
       best_of: z.number().int().min(1).max(30).nullable().optional(),
+    })
+    .optional(),
+  /**
+   * Where a student is ranked, and how ties are handled. A missing `rank` key
+   * means the school does not rank -- the conservative reading, and not a
+   * hypothetical one: several boards have abolished class rank outright, and a
+   * card that invents one is worse than a card without one.
+   */
+  rank: z
+    .object({
+      scope: z.enum(["section", "class_level", "school"]),
+      method: z.enum(["competition", "dense"]).optional(),
+      include: z.enum(["all", "passed"]).optional(),
     })
     .optional(),
   optional_subject: z

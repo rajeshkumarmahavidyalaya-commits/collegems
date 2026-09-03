@@ -234,6 +234,19 @@
     break-inside: avoid;
   }
 
+  /* A report card is a document per child: thirty-eight cards are
+     thirty-eight sheets of paper, never one long ribbon. The last one does
+     not force a page after it, so printing a single card does not eject a
+     blank sheet. */
+  [data-print="page"] {
+    break-after: page;
+    break-inside: avoid;
+  }
+
+  [data-print="page"]:last-child {
+    break-after: auto;
+  }
+
   @page {
     margin: 14mm;
   }

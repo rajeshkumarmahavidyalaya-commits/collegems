@@ -185,6 +185,13 @@ write all of it. When two roles need different **columns** on the same row, this
 cannot help; that is the definer-function case above. The distinction is whether
 you are separating rows or separating people.
 
+`exam_remarks` is the second use and the clearest one: a class teacher's
+sentence on a report card carries `exam_status`, held equal to `exams.status`,
+and the write policies require `'draft'`. Publishing an exam is still one UPDATE
+on `exams`; from that instant a remark cannot be edited by anybody, and
+unpublishing reopens it — which is what makes "fix a typo on a card that already
+went home" an audited unpublish/republish pair rather than a quiet edit.
+
 ### Two rows that must not overlap need an EXCLUSION constraint
 
 A third thing no CHECK can see: a second row. "One approved leave per person per
@@ -471,6 +478,21 @@ next module that needs one:
   to false because a school that wants leniency will say so, whereas a school
   that gets it by accident finds out from a parent. An empty `{}` must be a
   coherent configuration, not an error.
+
+  `rank` is the second instance, and the conservative reading there is *do not
+  rank at all*: several boards have abolished class position outright, and a
+  card that invents one is worse than a card without one. An unrecognised
+  `rank.scope` means the same thing — and because a silently-safe default is
+  baffling to meet on a printed card, `grading_scheme_problems()` says so.
+
+- **Some derived numbers are facts about a cohort, not about a row, and those
+  must be frozen with their denominator.** A rank cannot be recomputed later:
+  the cohort has changed. `exam_results` stores `rank_in_cohort` *and*
+  `cohort_size`, written in the same statement as the marks. The same reasoning
+  caught a subtler one — the attendance line on a report card was computed at
+  read time, so a reprint in December disagreed with the card handed out in
+  March. Anything printed on a document a person keeps is frozen when the
+  document is made. See `docs/modules/report-cards.md`.
 - **Criticise the document in Postgres, not in the browser.**
   `grading_scheme_problems()` returns sentences, and lives next to the engine so
   the thing that judges a scheme and the thing that evaluates it cannot drift.

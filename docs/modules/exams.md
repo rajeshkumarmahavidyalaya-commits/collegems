@@ -249,11 +249,16 @@ constraint violation.
 - **No components within a paper.** Theory 80 + Practical 20 is currently two
   papers with weights, not one paper with two parts. That works arithmetically
   and reads wrong on a report card; a `exam_components` table is the fix.
-- **No report card PDF.** The result sheet prints through the global stylesheet;
-  a per-student letterheaded card does not exist.
-- **No rank or class position.** The data supports it; nothing computes it,
-  because ranking rules (ties, whether optional subjects count) are yet another
-  thing that must be scheme data rather than an assumption.
+- ~~**No report card.**~~ Built in Phase 3.2 — a per-student card with the
+  class teacher's remark and an attendance line, printing one child to a sheet.
+  A *PDF* is still not built and is queued work per rule 7. See
+  [report-cards.md](./report-cards.md).
+- ~~**No rank or class position.**~~ Built in Phase 3.2, and as predicted here
+  it turned out to be scheme data rather than an assumption: `rank.scope`,
+  `rank.method` and `rank.include` are keys in the rules document, a missing
+  `rank` key means the school does not rank, and the position is frozen onto
+  `exam_results` at publish because it is a fact about a cohort that has since
+  changed.
 - **No re-evaluation or supplementary exams.** A correction today means
   unpublish, fix, republish — which is audited, and is the honest workflow, but
   is not the same as a recorded re-evaluation request.

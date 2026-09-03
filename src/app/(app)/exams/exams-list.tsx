@@ -49,6 +49,8 @@ import {
   examKindLabel,
   examSchema,
   gradingSchemeSchema,
+  RANK_METHODS,
+  RANK_SCOPES,
   type ExamInput,
   type GradingSchemeInput,
 } from "@/lib/validations/exams";
@@ -635,9 +637,55 @@ function SchemeDialog({
                 Keys: <code className="font-mono">grades</code>,{" "}
                 <code className="font-mono">pass</code>, <code className="font-mono">grace</code>,{" "}
                 <code className="font-mono">aggregate</code>,{" "}
-                <code className="font-mono">optional_subject</code>. The order they are applied in
-                is documented in <code className="font-mono">docs/modules/exams.md</code>.
+                <code className="font-mono">optional_subject</code>,{" "}
+                <code className="font-mono">rank</code>. The order they are applied in is
+                documented in <code className="font-mono">docs/modules/exams.md</code>.
               </p>
+
+              {/* Ranking is the one key whose absence is a decision rather than
+                  an omission, so the editor says so rather than leaving a
+                  school to discover it from a printed card. */}
+              <details className="rounded-md border border-border p-3">
+                <summary className="cursor-pointer text-xs font-medium">
+                  Class position (the <code className="font-mono">rank</code> key)
+                </summary>
+                <div className="mt-2 flex flex-col gap-2 text-xs text-muted-foreground">
+                  <p>
+                    Leave <code className="font-mono">rank</code> out entirely and no position is
+                    worked out — which is a real choice, not an omission. When it is present, the
+                    position is frozen onto each result at publish, together with the number of
+                    students it was taken over.
+                  </p>
+                  <dl className="flex flex-col gap-1">
+                    <dt className="font-medium text-foreground">
+                      <code className="font-mono">scope</code>
+                    </dt>
+                    {RANK_SCOPES.map((scope) => (
+                      <dd key={scope.value}>
+                        <code className="font-mono">{scope.value}</code> — {scope.hint}
+                      </dd>
+                    ))}
+                    <dt className="mt-1 font-medium text-foreground">
+                      <code className="font-mono">method</code>
+                    </dt>
+                    {RANK_METHODS.map((method) => (
+                      <dd key={method.value}>
+                        <code className="font-mono">{method.value}</code> — {method.hint}
+                      </dd>
+                    ))}
+                    <dt className="mt-1 font-medium text-foreground">
+                      <code className="font-mono">include</code>
+                    </dt>
+                    <dd>
+                      <code className="font-mono">all</code> — a failed result still takes a
+                      position.
+                    </dd>
+                    <dd>
+                      <code className="font-mono">passed</code> — only passing students are ranked.
+                    </dd>
+                  </dl>
+                </div>
+              </details>
             </div>
 
             <div className="flex items-center justify-between rounded-md border p-3">

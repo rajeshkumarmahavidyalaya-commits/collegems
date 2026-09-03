@@ -116,6 +116,16 @@ export const NAV_GROUPS: NavGroup[] = [
         href: "/study-material",
         icon: FolderOpen,
       },
+      // The family's own cards. Staff reach a class's cards from the exam
+      // itself, because printing is something you do to a class, not to the
+      // school -- so this entry is only for the people who have exactly one
+      // card to look at.
+      {
+        title: "Report cards",
+        href: "/report-card",
+        icon: ScrollText,
+        roles: ["parent", "student"],
+      },
     ],
   },
   {

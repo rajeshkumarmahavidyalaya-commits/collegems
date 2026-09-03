@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowLeft, CalendarDays, Scale } from "lucide-react";
+import { ArrowLeft, CalendarDays, MessageSquare, ScrollText, Scale } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { hasPermission } from "@/lib/auth/permissions";
@@ -56,12 +56,26 @@ export default async function ExamPage({ params }: { params: Promise<{ examId: s
             </span>
           </p>
         </div>
-        <Button asChild variant="outline">
-          <Link href="/exams">
-            <ArrowLeft className="size-4" aria-hidden="true" />
-            All exams
-          </Link>
-        </Button>
+        <div className="flex flex-wrap gap-2">
+          <Button asChild variant="outline">
+            <Link href={`/exams/${examId}/report-cards`}>
+              <ScrollText className="size-4" aria-hidden="true" />
+              Report cards
+            </Link>
+          </Button>
+          <Button asChild variant="outline">
+            <Link href={`/exams/${examId}/remarks`}>
+              <MessageSquare className="size-4" aria-hidden="true" />
+              Remarks
+            </Link>
+          </Button>
+          <Button asChild variant="outline">
+            <Link href="/exams">
+              <ArrowLeft className="size-4" aria-hidden="true" />
+              All exams
+            </Link>
+          </Button>
+        </div>
       </div>
 
       <ExamDetail

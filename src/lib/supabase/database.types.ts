@@ -603,8 +603,78 @@ export type Database = {
           },
         ]
       }
+      exam_remarks: {
+        Row: {
+          authored_by: string | null
+          created_at: string
+          exam_id: string
+          exam_status: string
+          id: string
+          remark: string
+          session_id: string
+          student_id: string
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          authored_by?: string | null
+          created_at?: string
+          exam_id: string
+          exam_status?: string
+          id?: string
+          remark: string
+          session_id: string
+          student_id: string
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          authored_by?: string | null
+          created_at?: string
+          exam_id?: string
+          exam_status?: string
+          id?: string
+          remark?: string
+          session_id?: string
+          student_id?: string
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "exam_remarks_exam_fkey"
+            columns: ["tenant_id", "exam_id", "exam_status"]
+            isOneToOne: false
+            referencedRelation: "exams"
+            referencedColumns: ["tenant_id", "id", "status"]
+          },
+          {
+            foreignKeyName: "exam_remarks_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "academic_sessions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "exam_remarks_student_fkey"
+            columns: ["tenant_id", "student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["tenant_id", "id"]
+          },
+          {
+            foreignKeyName: "exam_remarks_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       exam_results: {
         Row: {
+          attendance: Json
+          cohort_size: number | null
           created_at: string
           detail: Json
           exam_id: string
@@ -614,6 +684,7 @@ export type Database = {
           max_marks: number
           percentage: number
           published_at: string
+          rank_in_cohort: number | null
           result: string
           rules_snapshot: Json
           session_id: string
@@ -624,6 +695,8 @@ export type Database = {
           total_marks: number
         }
         Insert: {
+          attendance?: Json
+          cohort_size?: number | null
           created_at?: string
           detail?: Json
           exam_id: string
@@ -633,6 +706,7 @@ export type Database = {
           max_marks: number
           percentage: number
           published_at?: string
+          rank_in_cohort?: number | null
           result: string
           rules_snapshot?: Json
           session_id: string
@@ -643,6 +717,8 @@ export type Database = {
           total_marks: number
         }
         Update: {
+          attendance?: Json
+          cohort_size?: number | null
           created_at?: string
           detail?: Json
           exam_id?: string
@@ -652,6 +728,7 @@ export type Database = {
           max_marks?: number
           percentage?: number
           published_at?: string
+          rank_in_cohort?: number | null
           result?: string
           rules_snapshot?: Json
           session_id?: string
@@ -4126,9 +4203,23 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      current_role_allows: {
+        Args: { p_permission_code: string }
+        Returns: boolean
+      }
       current_role_code: { Args: never; Returns: string }
       current_session_id: { Args: { p_tenant_id: string }; Returns: string }
       current_tenant_id: { Args: never; Returns: string }
+      exams_attendance_summary: {
+        Args: { p_session_id: string; p_student_id: string; p_upto?: string }
+        Returns: {
+          days_absent: number
+          days_excused: number
+          days_late: number
+          days_marked: number
+          days_present: number
+        }[]
+      }
       exams_enter_marks: {
         Args: { p_entries: Json; p_exam_subject_id: string }
         Returns: number
@@ -4145,7 +4236,57 @@ export type Database = {
           student_name: string
         }[]
       }
+      exams_may_see_student: {
+        Args: { p_student_id: string }
+        Returns: boolean
+      }
       exams_publish: { Args: { p_exam_id: string }; Returns: number }
+      exams_published_for_student: {
+        Args: { p_student_id: string }
+        Returns: {
+          cohort_size: number
+          ends_on: string
+          exam_id: string
+          exam_name: string
+          grade: string
+          kind: string
+          percentage: number
+          published_at: string
+          rank_in_cohort: number
+          result: string
+        }[]
+      }
+      exams_ranking: {
+        Args: { p_exam_id: string }
+        Returns: {
+          cohort_size: number
+          rank_in_cohort: number
+          student_id: string
+        }[]
+      }
+      exams_remark_sheet: {
+        Args: { p_exam_id: string; p_section_id: string }
+        Returns: {
+          admission_number: string
+          remark: string
+          roll_number: string
+          student_id: string
+          student_name: string
+          updated_at: string
+        }[]
+      }
+      exams_report_card: {
+        Args: { p_exam_id: string; p_student_id: string }
+        Returns: Json
+      }
+      exams_report_cards: {
+        Args: {
+          p_exam_id: string
+          p_section_id?: string
+          p_student_id?: string
+        }
+        Returns: Json[]
+      }
       exams_result_sheet: {
         Args: { p_exam_id: string; p_section_id?: string }
         Returns: {
@@ -4167,6 +4308,10 @@ export type Database = {
         }[]
       }
       exams_rules_for: { Args: { p_exam_id: string }; Returns: Json }
+      exams_set_remark: {
+        Args: { p_exam_id: string; p_remark: string; p_student_id: string }
+        Returns: string
+      }
       exams_subject_breakdown: {
         Args: { p_exam_id: string; p_student_id?: string }
         Returns: {

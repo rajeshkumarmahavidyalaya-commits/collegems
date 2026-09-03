@@ -313,7 +313,12 @@ exam_subjects    exam x section x subject, max_marks, pass_marks, weight,
                  is_optional, exam_date, time_slot (kind='exam' via composite FK)
 marks            exam_subject x student, marks_obtained (nullable = unmarked),
                  is_absent, max_marks (denormalised, see below)
-exam_results     the frozen answer, written once by exams_publish
+exam_results     the frozen answer, written once by exams_publish:
+                 marks, rules_snapshot, rank_in_cohort + cohort_size,
+                 attendance jsonb
+exam_remarks     one class-teacher sentence per student per exam,
+                 exam_status (=exams.status via composite FK) makes it
+                 immutable once published
 ```
 
 `marks` is raw facts and `exam_results` is the frozen answer; **everything
@@ -335,7 +340,21 @@ check. Marks are writable by the **subject** teacher
 structure was built to unlock — readable by the class teacher, and visible to
 families only once published.
 
-See [docs/modules/exams.md](../modules/exams.md).
+**Rank and attendance are frozen with the marks**, and for the same reason. A
+rank is a fact about a cohort that has since changed, so `cohort_size` is stored
+beside it — "4th" without its denominator is the most misread number on a card.
+The attendance line was computed live in the first draft, which meant a reprint
+disagreed with the card that went home; it now freezes with its own cut-off
+date. Which cohort a rank is taken over, and how ties break, are keys in
+`grading_schemes.rules` — a missing `rank` key means the school does not rank.
+
+`exam_remarks` carries `exam_status` inside a composite foreign key to
+`exams (tenant_id, id, status)`, so publishing — one UPDATE on the parent —
+cascades and the draft-only write policies stop matching. The second use of the
+device after `payslips`.
+
+See [docs/modules/exams.md](../modules/exams.md) and
+[docs/modules/report-cards.md](../modules/report-cards.md).
 
 ### Homework and study material
 
