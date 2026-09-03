@@ -1857,6 +1857,118 @@ export type Database = {
           },
         ]
       }
+      promotion_decisions: {
+        Row: {
+          applied_enrolment_id: string | null
+          carry_forward: number
+          created_at: string
+          decision: string
+          from_enrolment_id: string
+          id: string
+          is_override: boolean
+          reason: string
+          run_id: string
+          student_id: string
+          tenant_id: string
+          to_section_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          applied_enrolment_id?: string | null
+          carry_forward?: number
+          created_at?: string
+          decision: string
+          from_enrolment_id: string
+          id?: string
+          is_override?: boolean
+          reason: string
+          run_id: string
+          student_id: string
+          tenant_id: string
+          to_section_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          applied_enrolment_id?: string | null
+          carry_forward?: number
+          created_at?: string
+          decision?: string
+          from_enrolment_id?: string
+          id?: string
+          is_override?: boolean
+          reason?: string
+          run_id?: string
+          student_id?: string
+          tenant_id?: string
+          to_section_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "promotion_decisions_run_fkey"
+            columns: ["tenant_id", "run_id"]
+            isOneToOne: false
+            referencedRelation: "promotion_runs"
+            referencedColumns: ["tenant_id", "id"]
+          },
+          {
+            foreignKeyName: "promotion_decisions_student_fkey"
+            columns: ["tenant_id", "student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["tenant_id", "id"]
+          },
+          {
+            foreignKeyName: "promotion_decisions_section_fkey"
+            columns: ["tenant_id", "to_section_id"]
+            isOneToOne: false
+            referencedRelation: "sections"
+            referencedColumns: ["tenant_id", "id"]
+          },
+        ]
+      }
+      promotion_runs: {
+        Row: {
+          applied_at: string | null
+          applied_by: string | null
+          created_at: string
+          created_by: string | null
+          from_session_id: string
+          id: string
+          rules: Json
+          status: string
+          tenant_id: string
+          to_session_id: string
+          updated_at: string
+        }
+        Insert: {
+          applied_at?: string | null
+          applied_by?: string | null
+          created_at?: string
+          created_by?: string | null
+          from_session_id: string
+          id?: string
+          rules?: Json
+          status?: string
+          tenant_id: string
+          to_session_id: string
+          updated_at?: string
+        }
+        Update: {
+          applied_at?: string | null
+          applied_by?: string | null
+          created_at?: string
+          created_by?: string | null
+          from_session_id?: string
+          id?: string
+          rules?: Json
+          status?: string
+          tenant_id?: string
+          to_session_id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       role_permissions: {
         Row: {
           allowed: boolean
@@ -3209,6 +3321,50 @@ export type Database = {
       grading_scheme_problems: {
         Args: { p_rules: Json }
         Returns: { problem: string }[]
+      }
+      academics_roll_forward_sections: {
+        Args: { p_from_session_id: string; p_to_session_id: string }
+        Returns: number
+      }
+      promotion_apply: {
+        Args: { p_run_id: string }
+        Returns: {
+          carried: number
+          graduated: number
+          held: number
+          promoted: number
+          repeated: number
+        }[]
+      }
+      promotion_discard_run: { Args: { p_run_id: string }; Returns: undefined }
+      promotion_preview: {
+        Args: { p_from_session_id: string; p_rules?: Json; p_to_session_id: string }
+        Returns: {
+          admission_number: string
+          attendance_percent: number | null
+          decision: string
+          exam_result: string | null
+          from_enrolment_id: string
+          from_section_id: string
+          from_section_label: string
+          from_sequence: number
+          outstanding: number
+          reason: string
+          roll_number: string | null
+          student_id: string
+          student_name: string
+          subjects_failed: number | null
+          to_section_id: string | null
+          to_section_label: string | null
+        }[]
+      }
+      promotion_rule_problems: {
+        Args: { p_rules: Json }
+        Returns: { problem: string }[]
+      }
+      promotion_start_run: {
+        Args: { p_from_session_id: string; p_rules?: Json; p_to_session_id: string }
+        Returns: string
       }
       schema_guard_violations: {
         Args: never

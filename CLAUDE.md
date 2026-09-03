@@ -207,10 +207,32 @@ callback body.
 
 ## 7. Heavy work goes through the jobs table
 
-Report generation, bulk SMS/email, imports, and promotion runs are queued in
-`jobs` and consumed by Supabase Edge Functions. **Never inside a Next.js
-request handler.** Edge Functions use the service role (bypassing RLS), so they
-must filter by `tenant_id` explicitly.
+Bulk SMS/email, imports, and anything unbounded are queued in `jobs` and
+consumed by Supabase Edge Functions. **Never inside a Next.js request handler.**
+Edge Functions use the service role (bypassing RLS), so they must filter by
+`tenant_id` explicitly.
+
+### The test is boundedness, not the category
+
+This rule originally named report generation and promotion runs as queued work.
+Both are now built inline, deliberately, and the rule is narrowed to say why
+rather than leaving the code quietly contradicting it.
+
+What makes a request handler unsafe is *unbounded* work, not work of a
+particular kind:
+
+- **`report_run` is capped** at 1,000 rows by default and 5,000 at most, over
+  indexed tenant-scoped tables, and returns the true total alongside so a
+  truncated answer says so. That is a normal query.
+- **Promotion previews are one indexed query**, and applying is a few hundred
+  short transactions whose result is a screen somebody argues with — far more
+  useful than a job id. Above a few thousand students that stops being true, and
+  the apply step is the half that ports cleanly: it is already row-by-row and
+  already idempotent on `(tenant_id, session_id, student_id)`.
+
+So: bound it and say what the bound is, or queue it. What is still genuinely
+`jobs` work and is **not built**: full exports, PDF rendering, scheduled
+reports, bulk import, and every external notification channel.
 
 ## 8. Storage
 
@@ -309,6 +331,41 @@ Derived values are computed while they are provisional and **frozen when they
 matter** — `exam_results` stores the numbers *and* a `rules_snapshot`, so
 editing a scheme two years later cannot change a report card that was already
 handed to somebody. See `docs/modules/exams.md`.
+
+
+## 13. A bulk operation's preview is editable rows, not a report
+
+Anything that changes many records at once — a rollover, a bulk import, a
+whole-school invoice run — gets a **dry run that materialises as rows a person
+can edit**, and an apply step that writes *what the rows say* rather than
+recomputing from the rules.
+
+`promotion_runs` → `promotion_decisions` is the pattern. The reason is specific:
+every year the rules get three or four **named children** wrong — one was ill
+for the examination, one is transferring in June, one the head has decided to
+keep back — and the person who knows that is standing at the screen. A preview
+they can only read is a preview they have to override afterwards, one enrolment
+at a time, in a different part of the app.
+
+Four things that make it work:
+
+- **Freeze the rules onto the run.** Editing the tenant's policy later must not
+  change what a run already decided — same instinct as
+  `exam_results.rules_snapshot`.
+- **Record that a human intervened.** `is_override` is the difference between
+  "the rules decided" and "the head teacher decided", and both belong in the
+  audit log.
+- **Tie the decision to its target with a check constraint.** A promotion with
+  no destination would otherwise apply as a silent no-op and the student would
+  vanish from next year.
+- **At most one live run per target**, as a partial unique index. Two half-built
+  previews of the same operation disagree, and whichever is applied second
+  silently wins.
+
+Make the apply idempotent on the natural key so a retry after a timeout
+converges. Keep it `SECURITY INVOKER` where the tables it writes already have
+policies — reach for a definer function only when a table deliberately has no
+INSERT policy at all. See `docs/modules/promotion.md`.
 
 ---
 

@@ -18,6 +18,7 @@ import {
   PenLine,
   ScrollText,
   Settings2,
+  ArrowUpNarrowWide,
   Users,
 } from "lucide-react";
 
@@ -86,6 +87,12 @@ export const NAV_GROUPS: NavGroup[] = [
         href: "/exams",
         icon: PenSquare,
         roles: ["admin", "teacher"],
+      },
+      {
+        title: "Promotion",
+        href: "/promotion",
+        icon: ArrowUpNarrowWide,
+        roles: ["admin"],
       },
     ],
   },

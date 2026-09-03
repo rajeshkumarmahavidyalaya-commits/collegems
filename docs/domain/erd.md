@@ -272,6 +272,37 @@ bare total. **Nothing consumes it** — no mail provider is connected, by choice
 
 See [docs/modules/fees.md](../modules/fees.md).
 
+### Promotion
+
+```
+promotion_runs        tenant, from_session, to_session, rules jsonb,
+                      status (draft|applied|discarded), applied_at/by
+  └── promotion_decisions  run x student, decision
+                      (promote|repeat|graduate|hold), to_section, reason,
+                      is_override, carry_forward, applied_enrolment_id
+```
+
+**The preview is editable rows, not a report.** Applying writes what the
+decisions say, not what the rules said — because every year the machine gets
+three or four named children wrong and the person who knows that is standing at
+the screen. `is_override` records which is which.
+
+A check constraint ties the decision to its target — a promotion or repeat must
+land somewhere, a graduate or hold must not — so a "promote" with a null section
+cannot apply as a silent no-op. A partial unique index allows at most one live
+run per session pair.
+
+Applying closes the outgoing enrolment as `promoted` or `repeated` (which is what
+makes `enrolments` a history rather than a snapshot), writes the new one
+idempotently on `(tenant_id, session_id, student_id)`, marks a graduate
+`students.status = 'alumni'`, and raises carried balances as **opening invoices**
+in the receiving year rather than copying a number across.
+
+`SECURITY INVOKER`: everything it writes already has an admin policy, so RLS
+decides every row and the function only supplies atomicity. Admin-only to read
+as well as write — a preview says "this child will repeat" before anybody has
+decided it. See [docs/modules/promotion.md](../modules/promotion.md).
+
 ### Exams and grading
 
 ```
@@ -485,10 +516,14 @@ be scheme data); re-evaluation and supplementary exams; and wiring
 `exam.results_published` into the notification service, which already has the
 event key and no caller.
 
-### Promotion
-A dry-run that produces a preview (who promotes, repeats, graduates) before
-writing next-session `enrolments`, plus fee carry-forward of outstanding
-balances. Runs through `jobs`.
+### Promotion — scale, undo, and notifications
+The rollover is **built** (see *Promotion* under Built). What remains: moving the
+apply step into `jobs` (it is already row-by-row and idempotent, so it is the
+half that ports cleanly, and it starts to matter well above a few hundred
+students); telling families a child was promoted, which means calling
+`notify_send`; assigning roll numbers in the receiving year; and bulk section
+rebalancing, since today a student lands in the same-lettered section and
+anything else is one override at a time.
 
 ### Homework & study material
 `homework`, `homework_submissions`, `study_material` — files in the

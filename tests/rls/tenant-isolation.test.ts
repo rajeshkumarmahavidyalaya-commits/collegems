@@ -60,6 +60,8 @@ describe("cross-tenant isolation", () => {
     "exam_subjects",
     "marks",
     "exam_results",
+    "promotion_runs",
+    "promotion_decisions",
     "academic_sessions",
     "books",
     "book_categories",
