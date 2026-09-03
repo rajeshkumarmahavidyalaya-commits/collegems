@@ -168,6 +168,32 @@ export const salaryAssignmentSchema = z
   });
 export type SalaryAssignmentInput = z.infer<typeof salaryAssignmentSchema>;
 
+export const PAYMENT_METHODS = [
+  { value: "bank_transfer", label: "Bank transfer" },
+  { value: "cash", label: "Cash" },
+  { value: "cheque", label: "Cheque" },
+  { value: "other", label: "Other" },
+] as const;
+
+export const paymentSchema = z.object({
+  payslipId: z.string().uuid(),
+  // A string, and the amount is positive: the RPC does the signing, and a
+  // person at a counter is never asked for a negative number.
+  amount: z.string().refine((v) => Number(v) > 0, "Enter an amount above zero"),
+  method: z.enum(["bank_transfer", "cash", "cheque", "other"]),
+  reference: z.string().max(120).optional(),
+  paidOn: z.union([
+    z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Pick a date"),
+    z.literal(""),
+  ]).optional(),
+  note: z.string().max(300).optional(),
+});
+export type PaymentInput = z.infer<typeof paymentSchema>;
+
+export function paymentMethodLabel(value: string) {
+  return PAYMENT_METHODS.find((m) => m.value === value)?.label ?? value;
+}
+
 export const payslipEditSchema = z.object({
   payslipId: z.string().uuid(),
   grossEarnings: z.string(),

@@ -17,6 +17,13 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import {
   Table,
@@ -185,15 +192,20 @@ function PreviewDialog({
   const [pending, startTransition] = useTransition();
   const [month, setMonth] = useState(() => monthValue().slice(0, 7));
   const [note, setNote] = useState("");
+  const [kind, setKind] = useState<"regular" | "correction">("regular");
 
   function run() {
     startTransition(async () => {
-      const result = await previewPayroll(`${month}-01`, note || undefined);
+      const result = await previewPayroll(`${month}-01`, note || undefined, kind);
       if (!result.ok) {
         toast.error(result.error);
         return;
       }
-      toast.success("Preview built. Nobody has been paid yet.");
+      toast.success(
+        kind === "correction"
+          ? "Correction built. It pays only the difference."
+          : "Preview built. Nobody has been paid yet.",
+      );
       onOpenChange(false);
       router.push(`/payroll/${result.data.runId}`);
     });
@@ -203,14 +215,27 @@ function PreviewDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Run a month</DialogTitle>
+          <DialogTitle>Run payroll</DialogTitle>
           <DialogDescription>
-            This builds a draft. Re-running the same month replaces the draft; a month that has
-            already been finalised cannot be run again.
+            A regular run pays the month. A correction, run after a month is finalised, pays only
+            the difference between what is now owed and what has already been paid — the original
+            record is never rewritten.
           </DialogDescription>
         </DialogHeader>
 
         <div className="flex flex-col gap-4">
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="payroll-kind">Kind</Label>
+            <Select value={kind} onValueChange={(v) => setKind(v as "regular" | "correction")}>
+              <SelectTrigger id="payroll-kind" className="w-full">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="regular">Regular run</SelectItem>
+                <SelectItem value="correction">Correction (pays the difference)</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
           <div className="flex flex-col gap-1.5">
             <Label htmlFor="payroll-month">Month</Label>
             <Input
@@ -231,8 +256,9 @@ function PreviewDialog({
           </div>
           <p className="flex items-start gap-2 rounded-lg bg-muted/40 p-3 text-sm text-muted-foreground">
             <CalendarRange className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
-            Working days come from the school&apos;s weekend and holiday configuration, and a
-            working day nobody marked counts as present.
+            {kind === "correction"
+              ? "A correction lists only the people whose pay has changed since the month was finalised — a raise backdated, a leaver, an absence corrected."
+              : "Working days come from the school's weekend and holiday configuration, and a working day nobody marked counts as present."}
           </p>
         </div>
 
@@ -241,7 +267,7 @@ function PreviewDialog({
             Cancel
           </Button>
           <Button disabled={pending || !month} onClick={run}>
-            {pending ? "Building…" : "Build the preview"}
+            {pending ? "Building…" : kind === "correction" ? "Build the correction" : "Build the preview"}
           </Button>
         </DialogFooter>
       </DialogContent>

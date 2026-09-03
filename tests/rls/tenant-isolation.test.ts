@@ -70,6 +70,7 @@ describe("cross-tenant isolation", () => {
     "payroll_runs",
     "payslips",
     "payslip_lines",
+    "payroll_payments",
     "homework",
     "homework_submissions",
     "homework_files",

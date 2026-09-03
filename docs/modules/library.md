@@ -206,15 +206,19 @@ the fly and stored nowhere.
 
 That also matches how a library works: you settle when you hand the book back.
 
-### Staff fines do not move
+### Staff fines go to payroll, not fees
 
 `members` is a student **or** a staff member, and `ledger_entries.student_id`
 is `not null` because that module is student fees. A staff member's overdue
-book is a payroll or petty-cash matter, not a fee receivable.
+book is a payroll matter, not a fee receivable.
 
 Their fine stays on `book_issues.fine_amount` and is **not collectable through
-the fees module** — the issues list says *Not billed to fees* rather than
-implying otherwise. Staff fine collection is an open gap, not a solved problem.
+the fees module**. It is instead collected as a deduction line on the next
+payroll run and settled by stamping `book_issues.staff_fine_payslip_id`
+(migration `0065`), or written off with `library_waive_staff_fine` — the
+*Waive* action on the issues list. The list shows *Owed — collected via
+payroll*, *Collected on payslip*, or *Waived* accordingly. This was an open gap
+until payroll existed to receive it; see `docs/modules/payroll.md`.
 
 ### `fine_paid` is gone
 

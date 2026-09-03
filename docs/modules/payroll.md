@@ -208,29 +208,94 @@ only the days that were.
 
 ---
 
-## What is not built
+## The four gaps, now closed (migrations 0065–0070)
 
-- **Nobody is paid by this module.** A finalised payslip is a liability the
-  school owes; recording the payment is an accounts entry, and `ledger_entries`
-  is a *fee receivable* ledger (`student_id` is `not null`) that deliberately
-  cannot hold it. That is Phase 2.2, unbuilt.
-- **No correction or arrears run**, as above.
-- **Staff library fines still have no home.** `docs/modules/library.md` records
-  that a staff fine is "a payroll matter, not a fee receivable". Payroll now
-  exists, so the gap has somewhere to go — a deduction line proposed by the
-  preview — but wiring it needs a settlement concept on the staff fine, which
-  `book_issues.fine_amount` does not have. Recorded, not solved.
+The first version of this module recorded four things as "recorded, not
+solved". All four are now built, and two of the four *fixes* were themselves
+bugs that only doing the arithmetic on the output would catch — the same lesson
+as the double-proration bug above.
+
+### Paying a payslip — `payroll_payments`
+
+Nobody was paid by the module; a finalised payslip was a liability with no
+record of settlement. This is **not** the general ledger — a chart of accounts
+is still Phase 2.2 — but every school needs to answer "has Ravi been paid for
+March, and how" on payday, and waiting for a ledger is how that answer ends up
+in a notebook.
+
+`payroll_payments` follows rule 6's discipline exactly, because the reasons are
+identical: append-only (UPDATE/DELETE revoked outright), signed amounts,
+corrections as **reversing entries** never edits, idempotent on the bank's own
+reference. It attaches only to a **finalised** payslip — enforced by carrying
+`payslip_status` in a composite key, the same device the payslip itself uses —
+and `payroll_record_payment` refuses to pay more than the net owed, because the
+payslip is the figure that was agreed. When Accounts arrives, each row maps to
+one voucher.
+
+### Correction and arrears runs — `payroll_runs.run_kind`
+
+A finalised month is the record of what was paid and must never be rewritten,
+which left no way to fix April's mistake discovered in May. A **correction run**
+is the answer: a second run for the same month that pays the *difference*
+between what is now owed and what has already been paid, additively, leaving the
+original intact. `run_kind` distinguishes it, and the one-live-run index was
+split into two partial indexes so a finalised regular run and a live correction
+can coexist.
+
+The correction had a subtle bug the demo caught: it recomputed entitlement as
+pure salary and so proposed to *refund* library fines that had been correctly
+collected on the regular run — four spurious ₹8 arrears beside one real ₹5,500
+raise. Migration `0070` measures entitlement on the same basis as what was paid,
+subtracting fines already settled that month. A month with no salary change now
+nets to zero.
+
+### A leaver is prorated — `staff.date_of_leaving`
+
+`staff` had a joining date and no leaving date, so marking a leaver
+`terminated` made them vanish from payroll entirely — including from the final
+month they had worked. Adding the date was step one; step two (`0067`) was the
+real fix, and it was a second engine bug hiding behind the first.
+
+`payroll_evaluate` had a single proration factor, `paid / working`, and the
+preview passed the *clamped* window as the denominator — so a leaver's 11
+employed days over 11 window days came to 1, a whole month. Absence and a
+shortened employment window are **two different reasons to pay less**, and only
+one is loss of pay. The engine now has two factors — an employment factor
+(employed days over the *month's* working days, always) and an absence factor
+(paid over employed, only when `lop` is configured) — and multiplies them. A
+leaver on 11 of 26 days is paid 11/26, whether or not the structure docks
+absence. The payslip carries `employed_days` alongside `working_days` so the
+screen shows "11 of 26 days employed".
+
+### Staff library fines settle through payroll
+
+`docs/modules/library.md` recorded that a staff fine is "a payroll matter, not
+a fee receivable" — `ledger_entries.student_id` is `not null`, so it could not
+go to the fee ledger, and there was no settlement concept. A regular payroll run
+now collects any outstanding staff fine as a `LIBFINE` deduction line, and
+finalising stamps `book_issues.staff_fine_payslip_id` — the settlement concept
+that was missing, a foreign key that says both "collected" and "on which
+payslip" at once. `library_waive_staff_fine` is the other exit: a write-off that
+records who and when rather than zeroing the amount. The issue ids are frozen
+onto the payslip at *preview* time, so finalising settles exactly the fines that
+slip charged for — a fine raised between preview and finalise lands on next
+month instead of being swept in silently.
+
+## What is still not built
+
 - **No payslip PDF and no bank advice file.** Both are unbounded rendering work
   and belong in `jobs` per rule 7.
 - **No income tax.** TDS on salary is a slab calculation over projected annual
-  income, which is a different kind of document from this one and should not be
-  bolted onto `components`.
-- **Termination does not stop payroll.** `staff.status` has no date, so a person
-  marked `terminated` simply stops appearing; a mid-month leaver is paid for the
-  whole month. A `date_of_leaving` beside `date_of_joining` would fix it
-  symmetrically.
+  income, a different kind of document from `components`.
 - **No approval chain.** Leave is approved by an admin, full stop; a department
   head cannot approve their own team's.
+- **No staff editor.** `date_of_leaving` is a column the engine honours, but
+  there is no staff CRUD screen to set it from — staff are seeded. Staff
+  management is Phase 2.1, unbuilt; the demo seed sets one leaver so the
+  proration is visible.
+- **A salary payment is still not an accounts entry.** `payroll_payments` is a
+  subsidiary record, not double-entry bookkeeping. The chart of accounts that
+  turns it into one is Phase 2.2.
 
 ---
 

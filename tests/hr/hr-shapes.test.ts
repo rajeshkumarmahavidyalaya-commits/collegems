@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import {
   ATTENDANCE_STATUSES,
+  paymentMethodLabel,
+  paymentSchema,
   attendanceLabel,
   formatDays,
   formatMonth,
@@ -249,5 +251,31 @@ describe("display", () => {
 
   it("names a month rather than showing a date", () => {
     expect(formatMonth("2026-02-01")).toBe("February 2026");
+  });
+});
+
+describe("recording a payment", () => {
+  const base = {
+    payslipId: "11111111-1111-4111-8111-111111111111",
+    amount: "45200",
+    method: "bank_transfer" as const,
+  };
+
+  it("accepts a positive amount", () => {
+    expect(paymentSchema.safeParse(base).success).toBe(true);
+  });
+
+  it("refuses zero or a negative amount -- the RPC does the signing", () => {
+    expect(paymentSchema.safeParse({ ...base, amount: "0" }).success).toBe(false);
+    expect(paymentSchema.safeParse({ ...base, amount: "-100" }).success).toBe(false);
+  });
+
+  it("refuses a method it does not know", () => {
+    expect(paymentSchema.safeParse({ ...base, method: "bitcoin" }).success).toBe(false);
+  });
+
+  it("names each method in words", () => {
+    expect(paymentMethodLabel("bank_transfer")).toBe("Bank transfer");
+    expect(paymentMethodLabel("cheque")).toBe("Cheque");
   });
 });

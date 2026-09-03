@@ -20,7 +20,7 @@ import {
 import { DataTable, exportRowsToCsv } from "@/components/data-table/data-table";
 import { DataTableToolbar } from "@/components/data-table/data-table-toolbar";
 import { formatMoney } from "@/lib/validations/fees";
-import { listIssues, returnBook, type IssueRow } from "../actions";
+import { listIssues, returnBook, waiveStaffFine, type IssueRow } from "../actions";
 
 function StatusBadge({ row }: { row: IssueRow }) {
   if (row.status === "returned") return <Badge variant="secondary">Returned</Badge>;
@@ -38,6 +38,7 @@ export function IssuesTable({ canManage }: { canManage: boolean }) {
   const [status, setStatus] = useState("all");
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
   const [returningId, setReturningId] = useState<string | null>(null);
+  const [waivingId, setWaivingId] = useState<string | null>(null);
 
   const query = useQuery({
     queryKey: ["library-issues", pageIndex, pageSize, search, status],
@@ -75,9 +76,27 @@ export function IssuesTable({ canManage }: { canManage: boolean }) {
         },
       });
     } else {
-      // Staff have no fee account; the fine stays on the issue.
-      toast.success(`Returned. ${formatMoney(fineAmount)} fine recorded against this issue`);
+      // Staff have no fee account; the fine is collected on the next payroll run
+      // (migration 0065) or waived here.
+      toast.success(
+        `Returned. ${formatMoney(fineAmount)} staff fine — it will be collected on the next payroll run, or can be waived here.`,
+      );
     }
+    queryClient.invalidateQueries({ queryKey: ["library-issues"] });
+  }
+
+  async function handleWaive(row: IssueRow) {
+    if (!window.confirm(`Waive the ${formatMoney(row.fineAmount)} fine for ${row.memberName}? This records a write-off; it does not erase that the book was late.`)) {
+      return;
+    }
+    setWaivingId(row.id);
+    const result = await waiveStaffFine(row.id);
+    setWaivingId(null);
+    if (!result.ok) {
+      toast.error(result.error);
+      return;
+    }
+    toast.success("Fine waived.");
     queryClient.invalidateQueries({ queryKey: ["library-issues"] });
   }
 
@@ -167,7 +186,15 @@ export function IssuesTable({ canManage }: { canManage: boolean }) {
         return (
           <div className="flex flex-col items-start gap-1">
             <span className="font-mono tabular-nums">{formatMoney(issue.fineAmount)}</span>
-            {issue.billedToFees && issue.studentId ? (
+            {issue.isStaff ? (
+              issue.staffFineWaived ? (
+                <span className="text-xs text-muted-foreground">Waived</span>
+              ) : issue.staffFineSettled ? (
+                <span className="text-xs text-muted-foreground">Collected on payslip</span>
+              ) : (
+                <span className="text-xs text-muted-foreground">Owed — collected via payroll</span>
+              )
+            ) : issue.billedToFees && issue.studentId ? (
               <Link
                 href={`/fees/students/${issue.studentId}`}
                 className="inline-flex items-center gap-1 text-xs text-muted-foreground underline-offset-4 hover:underline"
@@ -189,18 +216,39 @@ export function IssuesTable({ canManage }: { canManage: boolean }) {
           {
             id: "actions",
             header: "",
-            cell: ({ row }) =>
-              row.original.status === "issued" ? (
-                <Button
-                  size="sm"
-                  variant="outline"
-                  disabled={returningId === row.original.id}
-                  onClick={() => handleReturn(row.original)}
-                >
-                  <Undo2 className="size-3.5" aria-hidden="true" />
-                  Return
-                </Button>
-              ) : null,
+            cell: ({ row }) => {
+              const issue = row.original;
+              const canWaive =
+                issue.isStaff &&
+                issue.fineAmount > 0 &&
+                !issue.staffFineSettled &&
+                !issue.staffFineWaived;
+              return (
+                <div className="flex justify-end gap-1">
+                  {issue.status === "issued" && (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      disabled={returningId === issue.id}
+                      onClick={() => handleReturn(issue)}
+                    >
+                      <Undo2 className="size-3.5" aria-hidden="true" />
+                      Return
+                    </Button>
+                  )}
+                  {canWaive && (
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      disabled={waivingId === issue.id}
+                      onClick={() => handleWaive(issue)}
+                    >
+                      Waive
+                    </Button>
+                  )}
+                </div>
+              );
+            },
             enableSorting: false,
             enableHiding: false,
           } satisfies ColumnDef<IssueRow>,

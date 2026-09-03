@@ -394,10 +394,13 @@ staff_attendance         staff x date, status
                          leave_request_id when a leave day
 salary_structures        name + a JSONB `components` document (rule 12)
 staff_salary_assignments staff x structure, `overrides` jsonb, effective-dated
-payroll_runs             tenant x period_month, status, rules_snapshot
-  payslips               run x staff, run_status (denormalised), days, totals,
-                         is_override, `computed` jsonb
+payroll_runs             tenant x period_month, status, run_kind
+                         (regular|correction), rules_snapshot
+  payslips               run x staff, run_status (denormalised), working_days,
+                         employed_days, paid_days, totals, is_override, `computed`
     payslip_lines        one per component, with the `basis` in words
+payroll_payments         append-only settlement of a finalised payslip; signed,
+                         reversing entries, idempotent on the bank reference
 ```
 
 **A finalised payslip is immutable because no policy matches it.** `payslips`
@@ -599,15 +602,18 @@ also where a **salary payment** belongs: payroll produces a liability, and
 deliberately cannot hold it.
 
 ### HR and payroll — the gaps
-The module is **built** (see *HR and payroll* under Built). What remains: a
-correction or arrears run against an already-paid month, which is the biggest
-gap; a `date_of_leaving` beside `date_of_joining`, so a mid-month leaver is not
-paid for the whole month; income tax, which is a slab calculation over projected
-annual income and a different kind of document from `components`; payslip PDFs
-and bank advice files, both `jobs` work per rule 7; an approval chain, so a
-department head can decide their own team's leave; and wiring staff library
-fines in as a deduction, which needs a settlement concept `book_issues` does not
-have.
+The module is **built** (see *HR and payroll* under Built), and the four gaps the
+first version recorded are now closed (migrations 0065–0070): payslip payments as
+an append-only subsidiary record (`payroll_payments`); correction/arrears runs
+(`payroll_runs.run_kind`); mid-month leavers prorated (`staff.date_of_leaving`
+plus a two-factor engine); and staff library fines collected through payroll and
+settled on `book_issues.staff_fine_payslip_id`. What still remains: income tax
+(a slab calculation over projected annual income, a different document from
+`components`); payslip PDFs and bank advice files, both `jobs` work per rule 7;
+an approval chain, so a department head can decide their own team's leave; a
+staff CRUD screen to set `date_of_leaving` from (staff are seeded today); and the
+chart of accounts (Phase 2.2) that turns a salary payment into a real
+double-entry voucher.
 
 ### Examination — components, report cards, rank
 The exams module and its rules engine are **built** (see *Exams and grading*

@@ -205,6 +205,9 @@ export type Database = {
           returned_at: string | null
           returned_by: string | null
           session_id: string
+          staff_fine_payslip_id: string | null
+          staff_fine_waived_at: string | null
+          staff_fine_waived_by: string | null
           status: string
           tenant_id: string
           updated_at: string
@@ -221,6 +224,9 @@ export type Database = {
           returned_at?: string | null
           returned_by?: string | null
           session_id: string
+          staff_fine_payslip_id?: string | null
+          staff_fine_waived_at?: string | null
+          staff_fine_waived_by?: string | null
           status?: string
           tenant_id: string
           updated_at?: string
@@ -237,6 +243,9 @@ export type Database = {
           returned_at?: string | null
           returned_by?: string | null
           session_id?: string
+          staff_fine_payslip_id?: string | null
+          staff_fine_waived_at?: string | null
+          staff_fine_waived_by?: string | null
           status?: string
           tenant_id?: string
           updated_at?: string
@@ -262,6 +271,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "academic_sessions"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "book_issues_staff_fine_payslip_fkey"
+            columns: ["tenant_id", "staff_fine_payslip_id"]
+            isOneToOne: false
+            referencedRelation: "payslips"
+            referencedColumns: ["tenant_id", "id"]
           },
           {
             foreignKeyName: "book_issues_tenant_id_fkey"
@@ -2277,6 +2293,73 @@ export type Database = {
           },
         ]
       }
+      payroll_payments: {
+        Row: {
+          amount: number
+          created_at: string
+          id: string
+          method: string
+          note: string | null
+          paid_on: string
+          payslip_id: string
+          payslip_status: string
+          recorded_by: string | null
+          reference: string | null
+          reverses_payment_id: string | null
+          tenant_id: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          id?: string
+          method: string
+          note?: string | null
+          paid_on?: string
+          payslip_id: string
+          payslip_status: string
+          recorded_by?: string | null
+          reference?: string | null
+          reverses_payment_id?: string | null
+          tenant_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          id?: string
+          method?: string
+          note?: string | null
+          paid_on?: string
+          payslip_id?: string
+          payslip_status?: string
+          recorded_by?: string | null
+          reference?: string | null
+          reverses_payment_id?: string | null
+          tenant_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payroll_payments_payslip_fkey"
+            columns: ["tenant_id", "payslip_id", "payslip_status"]
+            isOneToOne: false
+            referencedRelation: "payslips"
+            referencedColumns: ["tenant_id", "id", "run_status"]
+          },
+          {
+            foreignKeyName: "payroll_payments_reverses_payment_id_fkey"
+            columns: ["reverses_payment_id"]
+            isOneToOne: false
+            referencedRelation: "payroll_payments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payroll_payments_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       payroll_runs: {
         Row: {
           created_at: string
@@ -2287,6 +2370,7 @@ export type Database = {
           note: string | null
           period_month: string
           rules_snapshot: Json
+          run_kind: string
           session_id: string
           status: string
           tenant_id: string
@@ -2301,6 +2385,7 @@ export type Database = {
           note?: string | null
           period_month: string
           rules_snapshot?: Json
+          run_kind?: string
           session_id: string
           status?: string
           tenant_id: string
@@ -2315,6 +2400,7 @@ export type Database = {
           note?: string | null
           period_month?: string
           rules_snapshot?: Json
+          run_kind?: string
           session_id?: string
           status?: string
           tenant_id?: string
@@ -2398,6 +2484,7 @@ export type Database = {
         Row: {
           computed: Json
           created_at: string
+          employed_days: number
           gross_earnings: number
           id: string
           is_override: boolean
@@ -2416,6 +2503,7 @@ export type Database = {
         Insert: {
           computed?: Json
           created_at?: string
+          employed_days?: number
           gross_earnings?: number
           id?: string
           is_override?: boolean
@@ -2434,6 +2522,7 @@ export type Database = {
         Update: {
           computed?: Json
           created_at?: string
+          employed_days?: number
           gross_earnings?: number
           id?: string
           is_override?: boolean
@@ -2996,6 +3085,7 @@ export type Database = {
         Row: {
           created_at: string
           date_of_joining: string
+          date_of_leaving: string | null
           department: string | null
           designation: string
           employee_code: string
@@ -3008,6 +3098,7 @@ export type Database = {
         Insert: {
           created_at?: string
           date_of_joining?: string
+          date_of_leaving?: string | null
           department?: string | null
           designation: string
           employee_code: string
@@ -3020,6 +3111,7 @@ export type Database = {
         Update: {
           created_at?: string
           date_of_joining?: string
+          date_of_leaving?: string | null
           department?: string | null
           designation?: string
           employee_code?: string
@@ -4319,6 +4411,9 @@ export type Database = {
           returned_at: string | null
           returned_by: string | null
           session_id: string
+          staff_fine_payslip_id: string | null
+          staff_fine_waived_at: string | null
+          staff_fine_waived_by: string | null
           status: string
           tenant_id: string
           updated_at: string
@@ -4344,6 +4439,9 @@ export type Database = {
           returned_at: string | null
           returned_by: string | null
           session_id: string
+          staff_fine_payslip_id: string | null
+          staff_fine_waived_at: string | null
+          staff_fine_waived_by: string | null
           status: string
           tenant_id: string
           updated_at: string
@@ -4354,6 +4452,10 @@ export type Database = {
           isOneToOne: true
           isSetofReturn: false
         }
+      }
+      library_waive_staff_fine: {
+        Args: { p_issue_id: string; p_note?: string }
+        Returns: undefined
       }
       mark_attendance: {
         Args: {
@@ -4479,6 +4581,7 @@ export type Database = {
       payroll_evaluate: {
         Args: {
           p_components: Json
+          p_employed_days?: number
           p_lop_days: number
           p_overrides: Json
           p_working_days: number
@@ -4490,20 +4593,39 @@ export type Database = {
         Args: { p_from: string; p_staff_id: string; p_to: string }
         Returns: number
       }
+      payroll_paid_for_month: {
+        Args: { p_period_month: string; p_staff_id: string }
+        Returns: number
+      }
+      payroll_payslip_paid: { Args: { p_payslip_id: string }; Returns: number }
       payroll_preview: {
-        Args: { p_note?: string; p_period_month: string }
+        Args: { p_kind?: string; p_note?: string; p_period_month: string }
         Returns: string
       }
       payroll_recompute_payslip: {
         Args: { p_payslip_id: string }
         Returns: undefined
       }
+      payroll_record_payment: {
+        Args: {
+          p_amount: number
+          p_method?: string
+          p_note?: string
+          p_paid_on?: string
+          p_payslip_id: string
+          p_reference?: string
+        }
+        Returns: string
+      }
       payroll_register: {
         Args: { p_run_id: string }
         Returns: {
+          amount_paid: number
           designation: string
+          employed_days: number
           employee_code: string
           gross_earnings: number
+          has_left: boolean
           is_override: boolean
           lop_days: number
           net_pay: number
@@ -4515,6 +4637,17 @@ export type Database = {
           structure_name: string
           total_deductions: number
           working_days: number
+        }[]
+      }
+      payroll_reverse_payment: {
+        Args: { p_note?: string; p_payment_id: string }
+        Returns: string
+      }
+      payroll_staff_library_fines: {
+        Args: { p_staff_id: string }
+        Returns: {
+          fine_amount: number
+          issue_id: string
         }[]
       }
       promotion_apply: {

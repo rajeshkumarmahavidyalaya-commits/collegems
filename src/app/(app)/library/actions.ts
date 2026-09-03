@@ -284,6 +284,11 @@ export type IssueRow = {
   billedToFees: boolean;
   /** Set when the member is a student, so the ledger can be linked to. */
   studentId: string | null;
+  /** True when the member is staff -- their fine settles through payroll, not fees. */
+  isStaff: boolean;
+  /** A staff fine that has been collected on a payslip, or written off. */
+  staffFineSettled: boolean;
+  staffFineWaived: boolean;
 };
 
 /**
@@ -313,8 +318,9 @@ export async function listIssues(params: ListParams): Promise<{ rows: IssueRow[]
     .from("book_issues")
     .select(
       `id, status, issued_at, due_at, returned_at, fine_amount,
+       staff_fine_payslip_id, staff_fine_waived_at,
        books ( id, title ),
-       members ( membership_number, student_id,
+       members ( membership_number, student_id, staff_id,
                  students ( people:person_id ( first_name, last_name ) ),
                  staff ( people:person_id ( first_name, last_name ) ) )`,
       { count: "exact" },
@@ -381,6 +387,9 @@ export async function listIssues(params: ListParams): Promise<{ rows: IssueRow[]
       accruedFine: isOverdue ? daysLate * finePerDay : 0,
       billedToFees: billedIssueIds.has(i.id),
       studentId: i.members?.student_id ?? null,
+      isStaff: i.members?.staff_id != null,
+      staffFineSettled: i.staff_fine_payslip_id != null,
+      staffFineWaived: i.staff_fine_waived_at != null,
     };
   });
 
@@ -481,4 +490,21 @@ export async function listIssuableMembers(search: string) {
       label: `${m.membership_number} · ${person ? `${person.first_name} ${person.last_name}` : "—"}`,
     };
   });
+}
+
+/**
+ * Write off a staff library fine. A student's fine goes to the fee ledger at
+ * return time (migration 0026); a staff member's has nowhere to go there --
+ * `ledger_entries.student_id` is not null -- so it is either collected on a
+ * payslip (migration 0065) or waived here. A waiver records who and when
+ * rather than zeroing the amount, because the amount is what was owed and the
+ * lateness is a fact worth keeping.
+ */
+export async function waiveStaffFine(issueId: string): Promise<ActionResult> {
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("library_waive_staff_fine", { p_issue_id: issueId });
+  if (error) return { ok: false, error: error.message };
+
+  revalidatePath("/library/issues");
+  return { ok: true, data: undefined };
 }

@@ -263,11 +263,13 @@ came out of that and apply to any module that wants to write here:
 
 `book_issues.fine_paid` was dropped: for a student the fee balance answers it,
 and a second boolean free to disagree with the ledger is exactly the drift the
-ledger exists to prevent. **Staff library fines did not move** — `members` is a
-student *or* a staff member, `ledger_entries.student_id` is `not null`, and a
-staff fine is a payroll matter, not a fee receivable. Theirs stay on
-`fine_amount` and are not collectable through the fees module. That is an open
-gap, recorded in `docs/modules/library.md`, not a solved problem.
+ledger exists to prevent. **Staff library fines are a payroll matter, not a fee
+receivable** — `members` is a student *or* a staff member, and
+`ledger_entries.student_id` is `not null`, so a staff fine cannot go to the fee
+ledger. It is collected instead as a deduction line on the next payroll run and
+settled by stamping `book_issues.staff_fine_payslip_id` (migration `0065`), or
+written off with `library_waive_staff_fine`. This was an open gap until payroll
+existed to receive it; see `docs/modules/payroll.md`.
 
 ### Secrets never enter the Next.js app
 

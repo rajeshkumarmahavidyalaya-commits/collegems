@@ -2,11 +2,19 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
-import { payslipEditSchema } from "@/lib/validations/hr";
+import { paymentSchema, payslipEditSchema } from "@/lib/validations/hr";
 import type { ActionResult } from "../library/actions";
 
 function fail(message: string): ActionResult<never> {
   return { ok: false, error: message };
+}
+
+function invalid(error: { flatten: () => { fieldErrors: Record<string, string[] | undefined> } }) {
+  return {
+    ok: false as const,
+    error: "Check the highlighted fields.",
+    fieldErrors: error.flatten().fieldErrors as Record<string, string[]>,
+  };
 }
 
 export type RunRow = {
@@ -69,6 +77,7 @@ export type RegisterRow = {
   designation: string;
   structureName: string | null;
   workingDays: number;
+  employedDays: number;
   paidDays: number;
   lopDays: number;
   grossEarnings: number;
@@ -76,6 +85,8 @@ export type RegisterRow = {
   netPay: number;
   isOverride: boolean;
   note: string | null;
+  amountPaid: number;
+  hasLeft: boolean;
 };
 
 export async function getRegister(runId: string): Promise<RegisterRow[]> {
@@ -91,6 +102,7 @@ export async function getRegister(runId: string): Promise<RegisterRow[]> {
     designation: r.designation,
     structureName: r.structure_name,
     workingDays: Number(r.working_days),
+    employedDays: Number(r.employed_days),
     paidDays: Number(r.paid_days),
     lopDays: Number(r.lop_days),
     grossEarnings: Number(r.gross_earnings),
@@ -98,6 +110,8 @@ export async function getRegister(runId: string): Promise<RegisterRow[]> {
     netPay: Number(r.net_pay),
     isOverride: r.is_override,
     note: r.note,
+    amountPaid: Number(r.amount_paid),
+    hasLeft: r.has_left,
   }));
 }
 
@@ -141,17 +155,87 @@ export async function getPayslipLines(
 export async function previewPayroll(
   periodMonth: string,
   note?: string,
+  kind: "regular" | "correction" = "regular",
 ): Promise<ActionResult<{ runId: string }>> {
   const supabase = await createClient();
   const { data, error } = await supabase.rpc("payroll_preview", {
     p_period_month: periodMonth,
     p_note: note || undefined,
+    p_kind: kind,
   });
 
   if (error) return fail(error.message);
 
   revalidatePath("/payroll");
   return { ok: true, data: { runId: data as string } };
+}
+
+// ---------------------------------------------------------------------------
+// Paying a payslip
+// ---------------------------------------------------------------------------
+
+export type PaymentRow = {
+  id: string;
+  amount: number;
+  paidOn: string;
+  method: string;
+  reference: string | null;
+  note: string | null;
+  isReversal: boolean;
+};
+
+export async function listPayments(payslipId: string): Promise<PaymentRow[]> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("payroll_payments")
+    .select("id, amount, paid_on, method, reference, note, reverses_payment_id")
+    .eq("payslip_id", payslipId)
+    .order("created_at");
+
+  if (error) throw new Error(error.message);
+
+  return (data ?? []).map((p) => ({
+    id: p.id,
+    amount: Number(p.amount),
+    paidOn: p.paid_on,
+    method: p.method,
+    reference: p.reference,
+    note: p.note,
+    isReversal: p.reverses_payment_id !== null,
+  }));
+}
+
+export async function recordPayment(input: unknown): Promise<ActionResult> {
+  const parsed = paymentSchema.safeParse(input);
+  if (!parsed.success) return invalid(parsed.error);
+
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("payroll_record_payment", {
+    p_payslip_id: parsed.data.payslipId,
+    p_amount: Number(parsed.data.amount),
+    p_method: parsed.data.method,
+    p_reference: parsed.data.reference || undefined,
+    p_paid_on: parsed.data.paidOn || undefined,
+    p_note: parsed.data.note || undefined,
+  });
+
+  if (error) return fail(error.message);
+
+  revalidatePath("/payroll");
+  return { ok: true, data: undefined };
+}
+
+export async function reversePayment(paymentId: string, note?: string): Promise<ActionResult> {
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("payroll_reverse_payment", {
+    p_payment_id: paymentId,
+    p_note: note || undefined,
+  });
+
+  if (error) return fail(error.message);
+
+  revalidatePath("/payroll");
+  return { ok: true, data: undefined };
 }
 
 /**

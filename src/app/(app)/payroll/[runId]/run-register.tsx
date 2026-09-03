@@ -1,8 +1,17 @@
 "use client";
 
-import { useMemo, useState, useTransition } from "react";
+import { useEffect, useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { AlertTriangle, Lock, Pencil, RotateCcw, ShieldCheck, Users } from "lucide-react";
+import {
+  AlertTriangle,
+  BanknoteArrowUp,
+  CircleDollarSign,
+  Lock,
+  Pencil,
+  RotateCcw,
+  ShieldCheck,
+  Users,
+} from "lucide-react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -26,15 +35,30 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { formatDays, formatMoney } from "@/lib/validations/hr";
+import {
+  PAYMENT_METHODS,
+  formatDays,
+  formatMoney,
+  paymentMethodLabel,
+} from "@/lib/validations/hr";
 import {
   editPayslip,
   finalisePayroll,
+  listPayments,
   recomputePayslip,
+  recordPayment,
+  reversePayment,
   type PayslipLineRow,
   type RegisterRow,
   type RunRow,
 } from "../actions";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 type Props = {
   run: RunRow;
@@ -48,6 +72,7 @@ export function RunRegister({ run, rows, lines, canProcess }: Props) {
   const [pending, startTransition] = useTransition();
   const [openId, setOpenId] = useState<string | null>(null);
   const [editing, setEditing] = useState<RegisterRow | null>(null);
+  const [paying, setPaying] = useState<RegisterRow | null>(null);
 
   const isDraft = run.status === "draft";
   const totals = useMemo(
@@ -55,8 +80,12 @@ export function RunRegister({ run, rows, lines, canProcess }: Props) {
       gross: rows.reduce((sum, r) => sum + r.grossEarnings, 0),
       deductions: rows.reduce((sum, r) => sum + r.totalDeductions, 0),
       net: rows.reduce((sum, r) => sum + r.netPay, 0),
+      paid: rows.reduce((sum, r) => sum + r.amountPaid, 0),
       overrides: rows.filter((r) => r.isOverride).length,
       lop: rows.filter((r) => r.lopDays > 0).length,
+      // Only slips that can be paid at all: a zero or negative net (a recovery)
+      // is settled by nature, so it does not count as "outstanding".
+      unpaid: rows.filter((r) => r.netPay > 0 && r.amountPaid < r.netPay - 0.005).length,
     }),
     [rows],
   );
@@ -86,7 +115,11 @@ export function RunRegister({ run, rows, lines, canProcess }: Props) {
         <Stat label="Payslips" value={String(rows.length)} />
         <Stat label="Gross" value={formatMoney(totals.gross)} />
         <Stat label="Deductions" value={formatMoney(totals.deductions)} />
-        <Stat label="Net payable" value={formatMoney(totals.net)} emphasis />
+        <Stat
+          label={run.status === "finalised" ? "Paid" : "Net payable"}
+          value={run.status === "finalised" ? formatMoney(totals.paid) : formatMoney(totals.net)}
+          emphasis
+        />
       </div>
 
       {isDraft ? (
@@ -117,8 +150,14 @@ export function RunRegister({ run, rows, lines, canProcess }: Props) {
           <Lock className="mt-0.5 size-4 shrink-0 text-muted-foreground" aria-hidden="true" />
           <span>
             <span className="font-medium">Finalised.</span> These payslips are the record of what
-            was paid. No policy matches them any more, so nothing — including this screen — can
-            change them.
+            was owed and can no longer be edited. Record what actually leaves the bank against each
+            one below.
+            {totals.unpaid > 0 && (
+              <span className="block text-muted-foreground">
+                {totals.unpaid} {totals.unpaid === 1 ? "payslip is" : "payslips are"} not yet paid
+                in full.
+              </span>
+            )}
           </span>
         </p>
       ) : null}
@@ -158,7 +197,10 @@ export function RunRegister({ run, rows, lines, canProcess }: Props) {
                     <TableHead className="text-right">Gross</TableHead>
                     <TableHead className="text-right">Deductions</TableHead>
                     <TableHead className="text-right">Net</TableHead>
-                    <TableHead className="w-24 text-right">Actions</TableHead>
+                    {run.status === "finalised" && (
+                      <TableHead className="text-right">Paid</TableHead>
+                    )}
+                    <TableHead className="w-28 text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -168,12 +210,14 @@ export function RunRegister({ run, rows, lines, canProcess }: Props) {
                       row={row}
                       lines={lines[row.payslipId] ?? []}
                       isDraft={isDraft}
+                      isFinalised={run.status === "finalised"}
                       canProcess={canProcess}
                       isOpen={openId === row.payslipId}
                       onToggle={() =>
                         setOpenId((c) => (c === row.payslipId ? null : row.payslipId))
                       }
                       onEdit={() => setEditing(row)}
+                      onPay={() => setPaying(row)}
                     />
                   ))}
                 </TableBody>
@@ -184,6 +228,7 @@ export function RunRegister({ run, rows, lines, canProcess }: Props) {
       </Card>
 
       <EditDialog row={editing} onClose={() => setEditing(null)} />
+      <PaymentDialog row={paying} onClose={() => setPaying(null)} />
     </div>
   );
 }
@@ -207,19 +252,25 @@ function PayslipRow({
   row,
   lines,
   isDraft,
+  isFinalised,
   canProcess,
   isOpen,
   onToggle,
   onEdit,
+  onPay,
 }: {
   row: RegisterRow;
   lines: PayslipLineRow[];
   isDraft: boolean;
+  isFinalised: boolean;
   canProcess: boolean;
   isOpen: boolean;
   onToggle: () => void;
   onEdit: () => void;
+  onPay: () => void;
 }) {
+  const fullyPaid = row.netPay <= 0 || row.amountPaid >= row.netPay - 0.005;
+  const partlyPaid = row.amountPaid > 0.005 && !fullyPaid;
   const router = useRouter();
   const [pending, startTransition] = useTransition();
 
@@ -247,20 +298,30 @@ function PayslipRow({
             {row.designation}
             {row.structureName && ` · ${row.structureName}`}
           </p>
-          {row.isOverride && (
-            <Badge variant="outline" className="mt-1 gap-1 text-[10px]">
-              <Pencil className="size-2.5" aria-hidden="true" />
-              Corrected by hand
-            </Badge>
-          )}
+          <span className="mt-1 flex flex-wrap gap-1">
+            {row.isOverride && (
+              <Badge variant="outline" className="gap-1 text-[10px]">
+                <Pencil className="size-2.5" aria-hidden="true" />
+                Corrected by hand
+              </Badge>
+            )}
+            {row.hasLeft && (
+              <Badge variant="outline" className="text-[10px]">
+                Left
+              </Badge>
+            )}
+          </span>
         </TableCell>
         <TableCell className="text-right font-mono tabular-nums">
           {formatDays(row.paidDays)}
           <span className="text-muted-foreground"> / {formatDays(row.workingDays)}</span>
-          {row.lopDays > 0 && (
-            <p className="text-xs text-destructive">
-              {formatDays(row.lopDays)} unpaid
+          {row.employedDays < row.workingDays && (
+            <p className="text-xs text-muted-foreground">
+              {formatDays(row.employedDays)} days employed
             </p>
+          )}
+          {row.lopDays > 0 && (
+            <p className="text-xs text-destructive">{formatDays(row.lopDays)} unpaid</p>
           )}
         </TableCell>
         <TableCell className="text-right font-mono tabular-nums">
@@ -272,8 +333,34 @@ function PayslipRow({
         <TableCell className="text-right font-mono font-medium tabular-nums">
           {formatMoney(row.netPay)}
         </TableCell>
+        {isFinalised && (
+          <TableCell className="text-right">
+            {row.netPay <= 0 ? (
+              <span className="text-xs text-muted-foreground">—</span>
+            ) : fullyPaid ? (
+              <Badge variant="default">Paid</Badge>
+            ) : partlyPaid ? (
+              <span className="font-mono text-xs tabular-nums text-brand-accent">
+                {formatMoney(row.amountPaid)}
+              </span>
+            ) : (
+              <Badge variant="outline">Unpaid</Badge>
+            )}
+          </TableCell>
+        )}
         <TableCell className="text-right">
           <div className="flex justify-end gap-1">
+            {isFinalised && canProcess && row.netPay > 0 && !fullyPaid && (
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={onPay}
+                aria-label={`Record a payment for ${row.staffName}`}
+                title="Record a payment"
+              >
+                <BanknoteArrowUp className="size-4" aria-hidden="true" />
+              </Button>
+            )}
             <Button
               variant="ghost"
               size="sm"
@@ -313,7 +400,7 @@ function PayslipRow({
 
       {isOpen && (
         <TableRow id={`slip-${row.payslipId}`}>
-          <TableCell colSpan={7} className="bg-muted/30">
+          <TableCell colSpan={isFinalised ? 8 : 7} className="bg-muted/30">
             <div className="flex flex-col gap-3 py-2">
               {row.note && (
                 <p className="text-sm">
@@ -356,11 +443,121 @@ function PayslipRow({
                   </Table>
                 </div>
               )}
+
+              {isFinalised && (
+                <PaymentHistory
+                  payslipId={row.payslipId}
+                  canProcess={canProcess}
+                  open={isOpen}
+                />
+              )}
             </div>
           </TableCell>
         </TableRow>
       )}
     </>
+  );
+}
+
+/**
+ * The payments made against one finalised payslip, loaded on demand when the
+ * row is opened. A reversal is a negative row, never an edit — so the history
+ * reads as a running record, exactly like the fee ledger it is modelled on.
+ */
+function PaymentHistory({
+  payslipId,
+  canProcess,
+  open,
+}: {
+  payslipId: string;
+  canProcess: boolean;
+  open: boolean;
+}) {
+  const router = useRouter();
+  const [pending, startTransition] = useTransition();
+  const [payments, setPayments] = useState<
+    { id: string; amount: number; paidOn: string; method: string; reference: string | null; isReversal: boolean }[]
+  >([]);
+  const [loaded, setLoaded] = useState(false);
+
+  useEffect(() => {
+    if (!open || loaded) return;
+    let alive = true;
+    listPayments(payslipId).then((rows) => {
+      if (alive) {
+        setPayments(rows);
+        setLoaded(true);
+      }
+    });
+    return () => {
+      alive = false;
+    };
+  }, [open, loaded, payslipId]);
+
+  function reverse(id: string) {
+    if (!window.confirm("Reverse this payment? A negative entry is added; the original stays as the record.")) {
+      return;
+    }
+    startTransition(async () => {
+      const result = await reversePayment(id);
+      if (!result.ok) {
+        toast.error(result.error);
+        return;
+      }
+      toast.success("Reversed.");
+      setLoaded(false);
+      router.refresh();
+    });
+  }
+
+  if (!loaded) {
+    return <p className="text-xs text-muted-foreground">Loading payments…</p>;
+  }
+  if (payments.length === 0) {
+    return <p className="text-xs text-muted-foreground">No payments recorded yet.</p>;
+  }
+
+  return (
+    <div className="rounded-md border border-border">
+      <ul className="divide-y divide-border">
+        {payments.map((p) => (
+          <li key={p.id} className="flex items-center justify-between gap-3 px-3 py-2 text-sm">
+            <span className="flex items-center gap-2">
+              <CircleDollarSign className="size-3.5 text-muted-foreground" aria-hidden="true" />
+              <span className="font-mono tabular-nums">
+                {p.isReversal ? "−" : ""}
+                {formatMoney(Math.abs(p.amount))}
+              </span>
+              <span className="text-xs text-muted-foreground">
+                {paymentMethodLabel(p.method)}
+                {p.reference && ` · ${p.reference}`} ·{" "}
+                {new Date(`${p.paidOn}T00:00:00Z`).toLocaleDateString("en-IN", {
+                  day: "2-digit",
+                  month: "short",
+                  timeZone: "UTC",
+                })}
+              </span>
+              {p.isReversal && (
+                <Badge variant="outline" className="text-[10px]">
+                  Reversal
+                </Badge>
+              )}
+            </span>
+            {canProcess && !p.isReversal && p.amount > 0 && (
+              <Button
+                variant="ghost"
+                size="sm"
+                disabled={pending}
+                onClick={() => reverse(p.id)}
+                className="text-xs"
+              >
+                Reverse
+              </Button>
+            )}
+          </li>
+        ))}
+      </ul>
+    </div>
   );
 }
 
@@ -452,6 +649,112 @@ function EditDialog({ row, onClose }: { row: RegisterRow | null; onClose: () => 
           </Button>
           <Button disabled={pending} onClick={save}>
             {pending ? "Saving…" : "Save the correction"}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function PaymentDialog({ row, onClose }: { row: RegisterRow | null; onClose: () => void }) {
+  const router = useRouter();
+  const [pending, startTransition] = useTransition();
+  const [amount, setAmount] = useState("");
+  const [method, setMethod] = useState("bank_transfer");
+  const [reference, setReference] = useState("");
+  const [note, setNote] = useState("");
+
+  const open = row !== null;
+  const outstanding = row ? Math.max(row.netPay - row.amountPaid, 0) : 0;
+
+  function save() {
+    if (!row) return;
+    startTransition(async () => {
+      const result = await recordPayment({
+        payslipId: row.payslipId,
+        amount: amount || String(outstanding),
+        method,
+        reference: reference || undefined,
+        note: note || undefined,
+      });
+      if (!result.ok) {
+        toast.error(result.error);
+        return;
+      }
+      toast.success(`Recorded against ${row.staffName}.`);
+      setAmount("");
+      setReference("");
+      setNote("");
+      onClose();
+      router.refresh();
+    });
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
+      <DialogContent className="sm:max-w-md" key={row?.payslipId ?? ""}>
+        <DialogHeader>
+          <DialogTitle>Pay {row?.staffName}</DialogTitle>
+          <DialogDescription>
+            {formatMoney(outstanding)} outstanding of a net {formatMoney(row?.netPay ?? 0)}. Paying
+            more than is owed is refused — the payslip is the figure that was agreed.
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="flex flex-col gap-4">
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="pay-amount">Amount</Label>
+            <Input
+              id="pay-amount"
+              type="number"
+              inputMode="decimal"
+              className="font-mono tabular-nums"
+              placeholder={String(outstanding)}
+              value={amount}
+              onChange={(e) => setAmount(e.target.value)}
+            />
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="pay-method">Method</Label>
+            <Select value={method} onValueChange={setMethod}>
+              <SelectTrigger id="pay-method" className="w-full">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {PAYMENT_METHODS.map((m) => (
+                  <SelectItem key={m.value} value={m.value}>
+                    {m.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="pay-reference">Reference</Label>
+            <Input
+              id="pay-reference"
+              value={reference}
+              onChange={(e) => setReference(e.target.value)}
+              placeholder="UTR, cheque number… (optional)"
+            />
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="pay-note">Note</Label>
+            <Textarea
+              id="pay-note"
+              rows={2}
+              value={note}
+              onChange={(e) => setNote(e.target.value)}
+            />
+          </div>
+        </div>
+
+        <DialogFooter>
+          <Button variant="outline" onClick={onClose}>
+            Cancel
+          </Button>
+          <Button disabled={pending} onClick={save}>
+            {pending ? "Recording…" : "Record payment"}
           </Button>
         </DialogFooter>
       </DialogContent>
