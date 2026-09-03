@@ -98,10 +98,10 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "attendance_records_enrolment_id_fkey"
-            columns: ["enrolment_id"]
+            columns: ["tenant_id", "enrolment_id"]
             isOneToOne: false
             referencedRelation: "enrolments"
-            referencedColumns: ["id"]
+            referencedColumns: ["tenant_id", "id"]
           },
           {
             foreignKeyName: "attendance_records_session_id_fkey"
@@ -582,7 +582,36 @@ export type Database = {
           tenant_id?: string
           total_marks?: number
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "exam_results_exam_fkey"
+            columns: ["tenant_id", "exam_id"]
+            isOneToOne: false
+            referencedRelation: "exams"
+            referencedColumns: ["tenant_id", "id"]
+          },
+          {
+            foreignKeyName: "exam_results_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "academic_sessions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "exam_results_student_fkey"
+            columns: ["tenant_id", "student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["tenant_id", "id"]
+          },
+          {
+            foreignKeyName: "exam_results_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       exam_subjects: {
         Row: {
@@ -636,7 +665,48 @@ export type Database = {
           updated_at?: string
           weight?: number
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "exam_subjects_assignment_fkey"
+            columns: ["tenant_id", "session_id", "section_id", "subject_id"]
+            isOneToOne: false
+            referencedRelation: "section_subjects"
+            referencedColumns: [
+              "tenant_id",
+              "session_id",
+              "section_id",
+              "subject_id",
+            ]
+          },
+          {
+            foreignKeyName: "exam_subjects_exam_fkey"
+            columns: ["tenant_id", "exam_id"]
+            isOneToOne: false
+            referencedRelation: "exams"
+            referencedColumns: ["tenant_id", "id"]
+          },
+          {
+            foreignKeyName: "exam_subjects_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "academic_sessions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "exam_subjects_slot_fkey"
+            columns: ["tenant_id", "time_slot_id", "slot_kind"]
+            isOneToOne: false
+            referencedRelation: "time_slots"
+            referencedColumns: ["tenant_id", "id", "kind"]
+          },
+          {
+            foreignKeyName: "exam_subjects_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       exams: {
         Row: {
@@ -684,7 +754,29 @@ export type Database = {
           tenant_id?: string
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "exams_grading_scheme_fkey"
+            columns: ["tenant_id", "grading_scheme_id"]
+            isOneToOne: false
+            referencedRelation: "grading_schemes"
+            referencedColumns: ["tenant_id", "id"]
+          },
+          {
+            foreignKeyName: "exams_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "academic_sessions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "exams_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       fee_heads: {
         Row: {
@@ -826,7 +918,15 @@ export type Database = {
           tenant_id?: string
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "grading_schemes_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       guardian_student: {
         Row: {
@@ -1031,7 +1131,41 @@ export type Database = {
           title?: string
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "homework_assignment_fkey"
+            columns: ["tenant_id", "session_id", "section_id", "subject_id"]
+            isOneToOne: false
+            referencedRelation: "section_subjects"
+            referencedColumns: [
+              "tenant_id",
+              "session_id",
+              "section_id",
+              "subject_id",
+            ]
+          },
+          {
+            foreignKeyName: "homework_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "academic_sessions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "homework_staff_fkey"
+            columns: ["tenant_id", "assigned_by_staff_id"]
+            isOneToOne: false
+            referencedRelation: "staff"
+            referencedColumns: ["tenant_id", "id"]
+          },
+          {
+            foreignKeyName: "homework_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       homework_files: {
         Row: {
@@ -1088,6 +1222,13 @@ export type Database = {
             referencedRelation: "homework_submissions"
             referencedColumns: ["tenant_id", "id"]
           },
+          {
+            foreignKeyName: "homework_files_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
         ]
       }
       homework_submissions: {
@@ -1142,7 +1283,36 @@ export type Database = {
           tenant_id?: string
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "homework_submissions_homework_fkey"
+            columns: ["tenant_id", "homework_id", "max_marks"]
+            isOneToOne: false
+            referencedRelation: "homework"
+            referencedColumns: ["tenant_id", "id", "max_marks"]
+          },
+          {
+            foreignKeyName: "homework_submissions_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "academic_sessions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "homework_submissions_student_fkey"
+            columns: ["tenant_id", "student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["tenant_id", "id"]
+          },
+          {
+            foreignKeyName: "homework_submissions_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       invitations: {
         Row: {
@@ -1354,18 +1524,18 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "invoices_student_id_fkey"
-            columns: ["tenant_id", "student_id"]
-            isOneToOne: false
-            referencedRelation: "students"
-            referencedColumns: ["tenant_id", "id"]
-          },
-          {
             foreignKeyName: "invoices_session_id_fkey"
             columns: ["session_id"]
             isOneToOne: false
             referencedRelation: "academic_sessions"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invoices_student_id_fkey"
+            columns: ["tenant_id", "student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["tenant_id", "id"]
           },
           {
             foreignKeyName: "invoices_tenant_id_fkey"
@@ -1419,6 +1589,145 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "jobs_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      leave_requests: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          decided_at: string | null
+          decided_by: string | null
+          decision_note: string | null
+          ends_on: string
+          half_day_end: boolean
+          half_day_start: boolean
+          id: string
+          leave_type_id: string
+          reason: string | null
+          session_id: string
+          staff_id: string
+          starts_on: string
+          status: string
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          decided_at?: string | null
+          decided_by?: string | null
+          decision_note?: string | null
+          ends_on: string
+          half_day_end?: boolean
+          half_day_start?: boolean
+          id?: string
+          leave_type_id: string
+          reason?: string | null
+          session_id: string
+          staff_id: string
+          starts_on: string
+          status?: string
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          decided_at?: string | null
+          decided_by?: string | null
+          decision_note?: string | null
+          ends_on?: string
+          half_day_end?: boolean
+          half_day_start?: boolean
+          id?: string
+          leave_type_id?: string
+          reason?: string | null
+          session_id?: string
+          staff_id?: string
+          starts_on?: string
+          status?: string
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "leave_requests_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "academic_sessions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "leave_requests_staff_fkey"
+            columns: ["tenant_id", "staff_id"]
+            isOneToOne: false
+            referencedRelation: "staff"
+            referencedColumns: ["tenant_id", "id"]
+          },
+          {
+            foreignKeyName: "leave_requests_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "leave_requests_type_fkey"
+            columns: ["tenant_id", "leave_type_id"]
+            isOneToOne: false
+            referencedRelation: "leave_types"
+            referencedColumns: ["tenant_id", "id"]
+          },
+        ]
+      }
+      leave_types: {
+        Row: {
+          allows_half_day: boolean
+          annual_quota_days: number | null
+          code: string
+          created_at: string
+          id: string
+          is_active: boolean
+          is_paid: boolean
+          name: string
+          requires_approval: boolean
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          allows_half_day?: boolean
+          annual_quota_days?: number | null
+          code: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          is_paid?: boolean
+          name: string
+          requires_approval?: boolean
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          allows_half_day?: boolean
+          annual_quota_days?: number | null
+          code?: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          is_paid?: boolean
+          name?: string
+          requires_approval?: boolean
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "leave_types_tenant_id_fkey"
             columns: ["tenant_id"]
             isOneToOne: false
             referencedRelation: "tenants"
@@ -1505,8 +1814,15 @@ export type Database = {
           {
             foreignKeyName: "ledger_entries_reverses_entry_id_fkey"
             columns: ["reverses_entry_id"]
-            isOneToOne: true
+            isOneToOne: false
             referencedRelation: "ledger_entries"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ledger_entries_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "academic_sessions"
             referencedColumns: ["id"]
           },
           {
@@ -1515,13 +1831,6 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "students"
             referencedColumns: ["tenant_id", "id"]
-          },
-          {
-            foreignKeyName: "ledger_entries_session_id_fkey"
-            columns: ["session_id"]
-            isOneToOne: false
-            referencedRelation: "academic_sessions"
-            referencedColumns: ["id"]
           },
           {
             foreignKeyName: "ledger_entries_tenant_id_fkey"
@@ -1584,11 +1893,25 @@ export type Database = {
             referencedColumns: ["tenant_id", "id", "max_marks"]
           },
           {
+            foreignKeyName: "marks_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "academic_sessions"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "marks_student_fkey"
             columns: ["tenant_id", "student_id"]
             isOneToOne: false
             referencedRelation: "students"
             referencedColumns: ["tenant_id", "id"]
+          },
+          {
+            foreignKeyName: "marks_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
           },
         ]
       }
@@ -1954,6 +2277,202 @@ export type Database = {
           },
         ]
       }
+      payroll_runs: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          finalised_at: string | null
+          finalised_by: string | null
+          id: string
+          note: string | null
+          period_month: string
+          rules_snapshot: Json
+          session_id: string
+          status: string
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          finalised_at?: string | null
+          finalised_by?: string | null
+          id?: string
+          note?: string | null
+          period_month: string
+          rules_snapshot?: Json
+          session_id: string
+          status?: string
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          finalised_at?: string | null
+          finalised_by?: string | null
+          id?: string
+          note?: string | null
+          period_month?: string
+          rules_snapshot?: Json
+          session_id?: string
+          status?: string
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payroll_runs_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "academic_sessions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payroll_runs_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      payslip_lines: {
+        Row: {
+          amount: number
+          basis: string | null
+          code: string
+          created_at: string
+          id: string
+          kind: string
+          name: string
+          payslip_id: string
+          payslip_status: string
+          sort_order: number
+          tenant_id: string
+        }
+        Insert: {
+          amount: number
+          basis?: string | null
+          code: string
+          created_at?: string
+          id?: string
+          kind: string
+          name: string
+          payslip_id: string
+          payslip_status: string
+          sort_order?: number
+          tenant_id: string
+        }
+        Update: {
+          amount?: number
+          basis?: string | null
+          code?: string
+          created_at?: string
+          id?: string
+          kind?: string
+          name?: string
+          payslip_id?: string
+          payslip_status?: string
+          sort_order?: number
+          tenant_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payslip_lines_payslip_fkey"
+            columns: ["tenant_id", "payslip_id", "payslip_status"]
+            isOneToOne: false
+            referencedRelation: "payslips"
+            referencedColumns: ["tenant_id", "id", "run_status"]
+          },
+          {
+            foreignKeyName: "payslip_lines_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      payslips: {
+        Row: {
+          computed: Json
+          created_at: string
+          gross_earnings: number
+          id: string
+          is_override: boolean
+          lop_days: number
+          net_pay: number
+          note: string | null
+          paid_days: number
+          run_id: string
+          run_status: string
+          staff_id: string
+          tenant_id: string
+          total_deductions: number
+          updated_at: string
+          working_days: number
+        }
+        Insert: {
+          computed?: Json
+          created_at?: string
+          gross_earnings?: number
+          id?: string
+          is_override?: boolean
+          lop_days?: number
+          net_pay?: number
+          note?: string | null
+          paid_days?: number
+          run_id: string
+          run_status: string
+          staff_id: string
+          tenant_id: string
+          total_deductions?: number
+          updated_at?: string
+          working_days?: number
+        }
+        Update: {
+          computed?: Json
+          created_at?: string
+          gross_earnings?: number
+          id?: string
+          is_override?: boolean
+          lop_days?: number
+          net_pay?: number
+          note?: string | null
+          paid_days?: number
+          run_id?: string
+          run_status?: string
+          staff_id?: string
+          tenant_id?: string
+          total_deductions?: number
+          updated_at?: string
+          working_days?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payslips_run_fkey"
+            columns: ["tenant_id", "run_id", "run_status"]
+            isOneToOne: false
+            referencedRelation: "payroll_runs"
+            referencedColumns: ["tenant_id", "id", "status"]
+          },
+          {
+            foreignKeyName: "payslips_staff_fkey"
+            columns: ["tenant_id", "staff_id"]
+            isOneToOne: false
+            referencedRelation: "staff"
+            referencedColumns: ["tenant_id", "id"]
+          },
+          {
+            foreignKeyName: "payslips_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       people: {
         Row: {
           address_line1: string | null
@@ -2076,10 +2595,31 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "promotion_decisions_applied_enrolment_id_fkey"
+            columns: ["applied_enrolment_id"]
+            isOneToOne: false
+            referencedRelation: "enrolments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "promotion_decisions_from_enrolment_id_fkey"
+            columns: ["from_enrolment_id"]
+            isOneToOne: false
+            referencedRelation: "enrolments"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "promotion_decisions_run_fkey"
             columns: ["tenant_id", "run_id"]
             isOneToOne: false
             referencedRelation: "promotion_runs"
+            referencedColumns: ["tenant_id", "id"]
+          },
+          {
+            foreignKeyName: "promotion_decisions_section_fkey"
+            columns: ["tenant_id", "to_section_id"]
+            isOneToOne: false
+            referencedRelation: "sections"
             referencedColumns: ["tenant_id", "id"]
           },
           {
@@ -2090,11 +2630,11 @@ export type Database = {
             referencedColumns: ["tenant_id", "id"]
           },
           {
-            foreignKeyName: "promotion_decisions_section_fkey"
-            columns: ["tenant_id", "to_section_id"]
+            foreignKeyName: "promotion_decisions_tenant_id_fkey"
+            columns: ["tenant_id"]
             isOneToOne: false
-            referencedRelation: "sections"
-            referencedColumns: ["tenant_id", "id"]
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
           },
         ]
       }
@@ -2138,7 +2678,29 @@ export type Database = {
           to_session_id?: string
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "promotion_runs_from_session_id_fkey"
+            columns: ["from_session_id"]
+            isOneToOne: false
+            referencedRelation: "academic_sessions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "promotion_runs_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "promotion_runs_to_session_id_fkey"
+            columns: ["to_session_id"]
+            isOneToOne: false
+            referencedRelation: "academic_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       role_permissions: {
         Row: {
@@ -2217,6 +2779,50 @@ export type Database = {
           },
         ]
       }
+      salary_structures: {
+        Row: {
+          components: Json
+          created_at: string
+          created_by: string | null
+          description: string | null
+          id: string
+          is_active: boolean
+          name: string
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          components?: Json
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          name: string
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          components?: Json
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          name?: string
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "salary_structures_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       section_subjects: {
         Row: {
           created_at: string
@@ -2257,6 +2863,13 @@ export type Database = {
             referencedColumns: ["tenant_id", "id"]
           },
           {
+            foreignKeyName: "section_subjects_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "academic_sessions"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "section_subjects_subject_id_fkey"
             columns: ["tenant_id", "subject_id"]
             isOneToOne: false
@@ -2269,13 +2882,6 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "staff"
             referencedColumns: ["tenant_id", "id"]
-          },
-          {
-            foreignKeyName: "section_subjects_session_id_fkey"
-            columns: ["session_id"]
-            isOneToOne: false
-            referencedRelation: "academic_sessions"
-            referencedColumns: ["id"]
           },
           {
             foreignKeyName: "section_subjects_tenant_id_fkey"
@@ -2440,6 +3046,147 @@ export type Database = {
           },
         ]
       }
+      staff_attendance: {
+        Row: {
+          attendance_date: string
+          check_in: string | null
+          check_out: string | null
+          created_at: string
+          id: string
+          leave_request_id: string | null
+          marked_by: string | null
+          note: string | null
+          session_id: string
+          staff_id: string
+          status: string
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          attendance_date: string
+          check_in?: string | null
+          check_out?: string | null
+          created_at?: string
+          id?: string
+          leave_request_id?: string | null
+          marked_by?: string | null
+          note?: string | null
+          session_id: string
+          staff_id: string
+          status: string
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          attendance_date?: string
+          check_in?: string | null
+          check_out?: string | null
+          created_at?: string
+          id?: string
+          leave_request_id?: string | null
+          marked_by?: string | null
+          note?: string | null
+          session_id?: string
+          staff_id?: string
+          status?: string
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "staff_attendance_leave_fkey"
+            columns: ["tenant_id", "leave_request_id"]
+            isOneToOne: false
+            referencedRelation: "leave_requests"
+            referencedColumns: ["tenant_id", "id"]
+          },
+          {
+            foreignKeyName: "staff_attendance_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "academic_sessions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "staff_attendance_staff_fkey"
+            columns: ["tenant_id", "staff_id"]
+            isOneToOne: false
+            referencedRelation: "staff"
+            referencedColumns: ["tenant_id", "id"]
+          },
+          {
+            foreignKeyName: "staff_attendance_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      staff_salary_assignments: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          effective_from: string
+          effective_to: string | null
+          id: string
+          note: string | null
+          overrides: Json
+          staff_id: string
+          structure_id: string
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          effective_from: string
+          effective_to?: string | null
+          id?: string
+          note?: string | null
+          overrides?: Json
+          staff_id: string
+          structure_id: string
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          effective_from?: string
+          effective_to?: string | null
+          id?: string
+          note?: string | null
+          overrides?: Json
+          staff_id?: string
+          structure_id?: string
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "staff_salary_assignments_staff_fkey"
+            columns: ["tenant_id", "staff_id"]
+            isOneToOne: false
+            referencedRelation: "staff"
+            referencedColumns: ["tenant_id", "id"]
+          },
+          {
+            foreignKeyName: "staff_salary_assignments_structure_fkey"
+            columns: ["tenant_id", "structure_id"]
+            isOneToOne: false
+            referencedRelation: "salary_structures"
+            referencedColumns: ["tenant_id", "id"]
+          },
+          {
+            foreignKeyName: "staff_salary_assignments_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       students: {
         Row: {
           admission_date: string
@@ -2552,7 +3299,43 @@ export type Database = {
           updated_at?: string
           uploaded_by_staff_id?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "study_material_section_fkey"
+            columns: ["tenant_id", "section_id"]
+            isOneToOne: false
+            referencedRelation: "sections"
+            referencedColumns: ["tenant_id", "id"]
+          },
+          {
+            foreignKeyName: "study_material_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "academic_sessions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "study_material_staff_fkey"
+            columns: ["tenant_id", "uploaded_by_staff_id"]
+            isOneToOne: false
+            referencedRelation: "staff"
+            referencedColumns: ["tenant_id", "id"]
+          },
+          {
+            foreignKeyName: "study_material_subject_fkey"
+            columns: ["tenant_id", "subject_id"]
+            isOneToOne: false
+            referencedRelation: "subjects"
+            referencedColumns: ["tenant_id", "id"]
+          },
+          {
+            foreignKeyName: "study_material_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       subjects: {
         Row: {
@@ -2644,6 +3427,7 @@ export type Database = {
           kind?: string
           label?: string | null
           period_number: number
+          schedulable?: boolean | null
           starts_at: string
           tenant_id: string
           updated_at?: string
@@ -2656,6 +3440,7 @@ export type Database = {
           kind?: string
           label?: string | null
           period_number?: number
+          schedulable?: boolean | null
           starts_at?: string
           tenant_id?: string
           updated_at?: string
@@ -2722,14 +3507,12 @@ export type Database = {
             columns: ["tenant_id", "session_id", "section_id", "subject_id"]
             isOneToOne: false
             referencedRelation: "section_subjects"
-            referencedColumns: ["tenant_id", "session_id", "section_id", "subject_id"]
-          },
-          {
-            foreignKeyName: "timetable_entries_teacher_fkey"
-            columns: ["tenant_id", "teacher_staff_id"]
-            isOneToOne: false
-            referencedRelation: "staff"
-            referencedColumns: ["tenant_id", "id"]
+            referencedColumns: [
+              "tenant_id",
+              "session_id",
+              "section_id",
+              "subject_id",
+            ]
           },
           {
             foreignKeyName: "timetable_entries_room_fkey"
@@ -2739,6 +3522,13 @@ export type Database = {
             referencedColumns: ["tenant_id", "id"]
           },
           {
+            foreignKeyName: "timetable_entries_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "academic_sessions"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "timetable_entries_slot_fkey"
             columns: ["tenant_id", "time_slot_id", "slot_schedulable"]
             isOneToOne: false
@@ -2746,11 +3536,11 @@ export type Database = {
             referencedColumns: ["tenant_id", "id", "schedulable"]
           },
           {
-            foreignKeyName: "timetable_entries_session_id_fkey"
-            columns: ["session_id"]
+            foreignKeyName: "timetable_entries_teacher_fkey"
+            columns: ["tenant_id", "teacher_staff_id"]
             isOneToOne: false
-            referencedRelation: "academic_sessions"
-            referencedColumns: ["id"]
+            referencedRelation: "staff"
+            referencedColumns: ["tenant_id", "id"]
           },
           {
             foreignKeyName: "timetable_entries_tenant_id_fkey"
@@ -2884,40 +3674,17 @@ export type Database = {
     }
     Functions: {
       academics_is_teaching_day: { Args: { p_date: string }; Returns: boolean }
+      academics_roll_forward_sections: {
+        Args: { p_from_session_id: string; p_to_session_id: string }
+        Returns: number
+      }
       admit_student: {
         Args: {
           p_admission_date?: string
           p_admission_number: string
           p_person: Json
-          p_roll_number?: string | null
-          p_section_id?: string | null
-        }
-        Returns: {
-          admission_date: string
-          admission_number: string
-          created_at: string
-          id: string
-          person_id: string
-          status: string
-          tenant_id: string
-          updated_at: string
-        }
-        SetofOptions: {
-          from: "*"
-          to: "students"
-          isOneToOne: true
-          isSetofReturn: false
-        }
-      }
-      update_student: {
-        Args: {
-          p_admission_date: string
-          p_admission_number: string
-          p_person: Json
-          p_roll_number?: string | null
-          p_section_id?: string | null
-          p_status: string
-          p_student_id: string
+          p_roll_number?: string
+          p_section_id?: string
         }
         Returns: {
           admission_date: string
@@ -2939,6 +3706,68 @@ export type Database = {
       current_role_code: { Args: never; Returns: string }
       current_session_id: { Args: { p_tenant_id: string }; Returns: string }
       current_tenant_id: { Args: never; Returns: string }
+      exams_enter_marks: {
+        Args: { p_entries: Json; p_exam_subject_id: string }
+        Returns: number
+      }
+      exams_mark_sheet: {
+        Args: { p_exam_subject_id: string }
+        Returns: {
+          admission_number: string
+          is_absent: boolean
+          marks_obtained: number
+          remarks: string
+          roll_number: string
+          student_id: string
+          student_name: string
+        }[]
+      }
+      exams_publish: { Args: { p_exam_id: string }; Returns: number }
+      exams_result_sheet: {
+        Args: { p_exam_id: string; p_section_id?: string }
+        Returns: {
+          admission_number: string
+          detail: Json
+          grade: string
+          grade_point: number
+          max_marks: number
+          percentage: number
+          result: string
+          roll_number: string
+          section_label: string
+          student_id: string
+          student_name: string
+          subjects_counted: number
+          subjects_failed: number
+          subjects_unmarked: number
+          total_marks: number
+        }[]
+      }
+      exams_rules_for: { Args: { p_exam_id: string }; Returns: Json }
+      exams_subject_breakdown: {
+        Args: { p_exam_id: string; p_student_id?: string }
+        Returns: {
+          counted: boolean
+          effective_marks: number
+          entered: boolean
+          exam_subject_id: string
+          grace_marks: number
+          is_absent: boolean
+          is_optional: boolean
+          marks_obtained: number
+          max_marks: number
+          note: string
+          pass_marks: number
+          passed: boolean
+          percentage: number
+          student_id: string
+          subject_code: string
+          subject_id: string
+          subject_name: string
+          weight: number
+        }[]
+      }
+      exams_unpublish: { Args: { p_exam_id: string }; Returns: number }
       fees_cancel_invoice: {
         Args: { p_invoice_id: string; p_reason: string }
         Returns: {
@@ -3042,10 +3871,18 @@ export type Database = {
         }
       }
       fees_generate_section_invoices: {
-        Args: { p_due_date: string; p_fee_head_ids?: string[]; p_section_id: string }
+        Args: {
+          p_due_date: string
+          p_fee_head_ids?: string[]
+          p_section_id: string
+        }
         Returns: number
       }
       fees_next_document_number: { Args: { p_kind: string }; Returns: string }
+      fees_next_document_number_for: {
+        Args: { p_kind: string; p_session_id: string; p_tenant_id: string }
+        Returns: string
+      }
       fees_queue_invoice_email: {
         Args: { p_invoice_id: string }
         Returns: {
@@ -3239,6 +4076,42 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      fees_settle_gateway_payment: {
+        Args: {
+          p_amount: number
+          p_method?: string
+          p_provider: string
+          p_provider_event_id: string
+          p_provider_order_id: string
+          p_reference?: string
+        }
+        Returns: {
+          amount: number
+          book_issue_id: string | null
+          created_at: string
+          entry_type: string
+          id: string
+          invoice_id: string | null
+          method: string | null
+          note: string | null
+          occurred_at: string
+          provider: string | null
+          provider_event_id: string | null
+          receipt_number: string | null
+          recorded_by: string | null
+          reference: string | null
+          reverses_entry_id: string | null
+          session_id: string
+          student_id: string
+          tenant_id: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "ledger_entries"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       fees_student_balances: {
         Args: {
           p_only_outstanding?: boolean
@@ -3261,8 +4134,204 @@ export type Database = {
           write_offs: number
         }[]
       }
+      grading_grade_for: {
+        Args: { p_percentage: number; p_rules: Json }
+        Returns: {
+          code: string
+          description: string
+          is_fail: boolean
+          point: number
+        }[]
+      }
+      grading_scheme_problems: {
+        Args: { p_rules: Json }
+        Returns: {
+          problem: string
+        }[]
+      }
+      homework_for_student: {
+        Args: { p_include_done?: boolean; p_student_id?: string }
+        Returns: {
+          assigned_on: string
+          attachment_count: number
+          collects_submissions: boolean
+          due_on: string
+          feedback: string
+          homework_id: string
+          instructions: string
+          is_overdue: boolean
+          marks_obtained: number
+          max_marks: number
+          section_label: string
+          status: string
+          subject_code: string
+          subject_name: string
+          submission_file_count: number
+          submission_id: string
+          submitted_at: string
+          title: string
+        }[]
+      }
+      homework_grade: {
+        Args: {
+          p_feedback?: string
+          p_marks?: number
+          p_return?: boolean
+          p_submission_id: string
+        }
+        Returns: {
+          created_at: string
+          feedback: string | null
+          graded_at: string | null
+          graded_by: string | null
+          homework_id: string
+          id: string
+          marks_obtained: number | null
+          max_marks: number | null
+          note: string | null
+          session_id: string
+          status: string
+          student_id: string
+          submitted_at: string | null
+          tenant_id: string
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "homework_submissions"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      homework_publish: { Args: { p_homework_id: string }; Returns: number }
+      homework_submission_sheet: {
+        Args: { p_homework_id: string }
+        Returns: {
+          admission_number: string
+          feedback: string
+          file_count: number
+          is_late: boolean
+          marks_obtained: number
+          max_marks: number
+          note: string
+          roll_number: string
+          status: string
+          student_id: string
+          student_name: string
+          submission_id: string
+          submitted_at: string
+        }[]
+      }
+      homework_submit: {
+        Args: { p_homework_id: string; p_note?: string }
+        Returns: {
+          created_at: string
+          feedback: string | null
+          graded_at: string | null
+          graded_by: string | null
+          homework_id: string
+          id: string
+          marks_obtained: number | null
+          max_marks: number | null
+          note: string | null
+          session_id: string
+          status: string
+          student_id: string
+          submitted_at: string | null
+          tenant_id: string
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "homework_submissions"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      homework_unpublish: {
+        Args: { p_homework_id: string }
+        Returns: undefined
+      }
+      homework_unsubmit: { Args: { p_homework_id: string }; Returns: undefined }
+      hr_attendance_sheet: {
+        Args: { p_date: string }
+        Returns: {
+          check_in: string
+          check_out: string
+          department: string
+          designation: string
+          employee_code: string
+          is_working_day: boolean
+          leave_type_name: string
+          note: string
+          staff_id: string
+          staff_name: string
+          status: string
+        }[]
+      }
+      hr_cancel_leave: { Args: { p_request_id: string }; Returns: undefined }
+      hr_decide_leave: {
+        Args: { p_approve: boolean; p_note?: string; p_request_id: string }
+        Returns: number
+      }
+      hr_format_days: { Args: { p_days: number }; Returns: string }
+      hr_leave_balance: {
+        Args: { p_session_id?: string; p_staff_id?: string }
+        Returns: {
+          annual_quota_days: number
+          code: string
+          is_paid: boolean
+          leave_type_id: string
+          name: string
+          pending_days: number
+          remaining_days: number
+          taken_days: number
+        }[]
+      }
+      hr_leave_days: {
+        Args: {
+          p_ends_on: string
+          p_half_end?: boolean
+          p_half_start?: boolean
+          p_starts_on: string
+        }
+        Returns: number
+      }
+      hr_mark_attendance: {
+        Args: { p_date: string; p_entries: Json }
+        Returns: number
+      }
+      hr_working_days: {
+        Args: { p_from: string; p_to: string }
+        Returns: number
+      }
       library_issue_book: {
         Args: { p_book_id: string; p_due_at?: string; p_member_id: string }
+        Returns: {
+          book_id: string
+          created_at: string
+          due_at: string
+          fine_amount: number
+          id: string
+          issued_at: string
+          issued_by: string | null
+          member_id: string
+          returned_at: string | null
+          returned_by: string | null
+          session_id: string
+          status: string
+          tenant_id: string
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "book_issues"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      library_return_book: {
+        Args: { p_fine_per_day?: number; p_issue_id: string }
         Returns: {
           book_id: string
           created_at: string
@@ -3295,6 +4364,32 @@ export type Database = {
         }
         Returns: number
       }
+      notify_claim_deliveries: {
+        Args: { p_limit?: number }
+        Returns: {
+          address: string | null
+          attempts: number
+          body: string
+          channel: string
+          created_at: string
+          id: string
+          last_error: string | null
+          next_attempt_at: string
+          notification_id: string
+          read_at: string | null
+          recipient_user_id: string | null
+          sent_at: string | null
+          status: string
+          subject: string | null
+          tenant_id: string
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "notification_deliveries"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
       notify_event_types: {
         Args: never
         Returns: {
@@ -3313,15 +4408,43 @@ export type Database = {
           event_name: string
           id: string
           notification_id: string
-          read_at: string | null
-          subject: string | null
+          read_at: string
+          subject: string
         }[]
       }
       notify_mark_all_read: { Args: never; Returns: number }
-      notify_render: { Args: { p_payload: Json; p_template: string }; Returns: string }
+      notify_outbox: {
+        Args: { p_event_key?: string; p_limit?: number }
+        Returns: {
+          audience: Json
+          body: string
+          created_at: string
+          created_by_name: string
+          deliveries: number
+          event_key: string
+          event_name: string
+          failed: number
+          id: string
+          queued: number
+          recipients: number
+          sent: number
+          skipped: number
+          subject: string
+        }[]
+      }
+      notify_record_result: {
+        Args: { p_delivery_id: string; p_error?: string; p_ok: boolean }
+        Returns: undefined
+      }
+      notify_render: {
+        Args: { p_payload: Json; p_template: string }
+        Returns: string
+      }
       notify_resolve_audience: {
         Args: { p_audience: Json; p_tenant_id: string }
-        Returns: { user_id: string }[]
+        Returns: {
+          user_id: string
+        }[]
       }
       notify_send: {
         Args: {
@@ -3351,28 +4474,210 @@ export type Database = {
           isSetofReturn: false
         }
       }
-      notify_outbox: {
-        Args: { p_event_key?: string; p_limit?: number }
+      notify_unread_count: { Args: never; Returns: number }
+      payroll_discard: { Args: { p_run_id: string }; Returns: undefined }
+      payroll_evaluate: {
+        Args: {
+          p_components: Json
+          p_lop_days: number
+          p_overrides: Json
+          p_working_days: number
+        }
+        Returns: Json
+      }
+      payroll_finalise: { Args: { p_run_id: string }; Returns: number }
+      payroll_lop_days: {
+        Args: { p_from: string; p_staff_id: string; p_to: string }
+        Returns: number
+      }
+      payroll_preview: {
+        Args: { p_note?: string; p_period_month: string }
+        Returns: string
+      }
+      payroll_recompute_payslip: {
+        Args: { p_payslip_id: string }
+        Returns: undefined
+      }
+      payroll_register: {
+        Args: { p_run_id: string }
         Returns: {
-          audience: Json
-          body: string
-          created_at: string
-          created_by_name: string | null
-          deliveries: number
-          event_key: string
-          event_name: string
-          failed: number
-          id: string
-          queued: number
-          recipients: number
-          sent: number
-          skipped: number
-          subject: string | null
+          designation: string
+          employee_code: string
+          gross_earnings: number
+          is_override: boolean
+          lop_days: number
+          net_pay: number
+          note: string
+          paid_days: number
+          payslip_id: string
+          staff_id: string
+          staff_name: string
+          structure_name: string
+          total_deductions: number
+          working_days: number
         }[]
       }
-      notify_unread_count: { Args: never; Returns: number }
+      promotion_apply: {
+        Args: { p_run_id: string }
+        Returns: {
+          carried: number
+          graduated: number
+          held: number
+          promoted: number
+          repeated: number
+        }[]
+      }
+      promotion_discard_run: { Args: { p_run_id: string }; Returns: undefined }
+      promotion_preview: {
+        Args: {
+          p_from_session_id: string
+          p_rules?: Json
+          p_to_session_id: string
+        }
+        Returns: {
+          admission_number: string
+          attendance_percent: number
+          decision: string
+          exam_result: string
+          from_enrolment_id: string
+          from_section_id: string
+          from_section_label: string
+          from_sequence: number
+          outstanding: number
+          reason: string
+          roll_number: string
+          student_id: string
+          student_name: string
+          subjects_failed: number
+          to_section_id: string
+          to_section_label: string
+        }[]
+      }
+      promotion_rule_problems: {
+        Args: { p_rules: Json }
+        Returns: {
+          problem: string
+        }[]
+      }
+      promotion_start_run: {
+        Args: {
+          p_from_session_id: string
+          p_rules?: Json
+          p_to_session_id: string
+        }
+        Returns: string
+      }
+      report_attendance_summary: {
+        Args: { p_params: Json }
+        Returns: {
+          row_data: Json
+        }[]
+      }
+      report_day_bounds: {
+        Args: { p_from: string; p_to: string }
+        Returns: {
+          from_ts: string
+          to_ts: string
+        }[]
+      }
+      report_fee_collection: {
+        Args: { p_params: Json }
+        Returns: {
+          row_data: Json
+        }[]
+      }
+      report_fee_defaulters: {
+        Args: { p_params: Json }
+        Returns: {
+          row_data: Json
+        }[]
+      }
+      report_library_overdue: {
+        Args: { p_params: Json }
+        Returns: {
+          row_data: Json
+        }[]
+      }
+      report_list: {
+        Args: never
+        Returns: {
+          columns: Json
+          description: string
+          key: string
+          module: string
+          name: string
+          parameters: Json
+        }[]
+      }
+      report_notification_deliveries: {
+        Args: { p_params: Json }
+        Returns: {
+          row_data: Json
+        }[]
+      }
+      report_param_date: {
+        Args: { p_default?: string; p_name: string; p_params: Json }
+        Returns: string
+      }
+      report_param_numeric: {
+        Args: { p_default?: number; p_name: string; p_params: Json }
+        Returns: number
+      }
+      report_param_text: {
+        Args: { p_default?: string; p_name: string; p_params: Json }
+        Returns: string
+      }
+      report_param_uuid: {
+        Args: { p_name: string; p_params: Json }
+        Returns: string
+      }
+      report_run: {
+        Args: { p_key: string; p_limit?: number; p_params?: Json }
+        Returns: {
+          row_data: Json
+          total_count: number
+        }[]
+      }
+      report_section_routine: {
+        Args: { p_params: Json }
+        Returns: {
+          row_data: Json
+        }[]
+      }
+      report_student_roster: {
+        Args: { p_params: Json }
+        Returns: {
+          row_data: Json
+        }[]
+      }
+      report_teacher_load: {
+        Args: { p_params: Json }
+        Returns: {
+          row_data: Json
+        }[]
+      }
+      salary_structure_problems: {
+        Args: { p_components: Json }
+        Returns: string[]
+      }
+      schema_guard_violations: {
+        Args: never
+        Returns: {
+          has_tenant_id: boolean
+          rls_enabled: boolean
+          table_name: string
+        }[]
+      }
+      storage_object_tenant_matches: {
+        Args: { p_name: string }
+        Returns: boolean
+      }
       timetable_busy_in_slot: {
-        Args: { p_section_id?: string; p_time_slot_id: string; p_weekday: number }
+        Args: {
+          p_section_id?: string
+          p_time_slot_id: string
+          p_weekday: number
+        }
         Returns: {
           busy_with: string
           entity: string
@@ -3380,29 +4685,36 @@ export type Database = {
         }[]
       }
       timetable_copy_day: {
-        Args: { p_from_weekday: number; p_section_id: string; p_to_weekday: number }
+        Args: {
+          p_from_weekday: number
+          p_section_id: string
+          p_to_weekday: number
+        }
         Returns: {
           copied: number
           skipped: number
         }[]
       }
-      timetable_describe_entry: { Args: { p_entry_id: string }; Returns: string }
+      timetable_describe_entry: {
+        Args: { p_entry_id: string }
+        Returns: string
+      }
       timetable_for_section: {
         Args: { p_section_id: string }
         Returns: {
-          class_room_id: string | null
+          class_room_id: string
           ends_at: string
           id: string
-          note: string | null
+          note: string
           period_number: number
-          room_name: string | null
-          slot_label: string | null
+          room_name: string
+          slot_label: string
           starts_at: string
           subject_code: string
           subject_id: string
           subject_name: string
-          teacher_name: string | null
-          teacher_staff_id: string | null
+          teacher_name: string
+          teacher_staff_id: string
           time_slot_id: string
           weekday: number
         }[]
@@ -3413,7 +4725,7 @@ export type Database = {
           ends_at: string
           id: string
           period_number: number
-          room_name: string | null
+          room_name: string
           section_id: string
           section_label: string
           starts_at: string
@@ -3466,274 +4778,29 @@ export type Database = {
           teacher_name: string
         }[]
       }
-      report_list: {
-        Args: never
-        Returns: {
-          columns: Json
-          description: string
-          key: string
-          module: string
-          name: string
-          parameters: Json
-        }[]
-      }
-      report_run: {
-        Args: { p_key: string; p_limit?: number; p_params?: Json }
-        Returns: {
-          row_data: Json
-          total_count: number
-        }[]
-      }
-      exams_enter_marks: {
-        Args: { p_entries: Json; p_exam_subject_id: string }
-        Returns: number
-      }
-      exams_mark_sheet: {
-        Args: { p_exam_subject_id: string }
-        Returns: {
-          admission_number: string
-          is_absent: boolean
-          marks_obtained: number | null
-          remarks: string | null
-          roll_number: string | null
-          student_id: string
-          student_name: string
-        }[]
-      }
-      exams_publish: { Args: { p_exam_id: string }; Returns: number }
-      exams_result_sheet: {
-        Args: { p_exam_id: string; p_section_id?: string }
-        Returns: {
-          admission_number: string
-          detail: Json
-          grade: string | null
-          grade_point: number | null
-          max_marks: number
-          percentage: number
-          result: string
-          roll_number: string | null
-          section_label: string
-          student_id: string
-          student_name: string
-          subjects_counted: number
-          subjects_failed: number
-          subjects_unmarked: number
-          total_marks: number
-        }[]
-      }
-      exams_rules_for: { Args: { p_exam_id: string }; Returns: Json }
-      exams_subject_breakdown: {
-        Args: { p_exam_id: string; p_student_id?: string }
-        Returns: {
-          counted: boolean
-          effective_marks: number
-          entered: boolean
-          exam_subject_id: string
-          grace_marks: number
-          is_absent: boolean
-          is_optional: boolean
-          marks_obtained: number | null
-          max_marks: number
-          note: string | null
-          pass_marks: number
-          passed: boolean
-          percentage: number | null
-          student_id: string
-          subject_code: string
-          subject_id: string
-          subject_name: string
-          weight: number
-        }[]
-      }
-      exams_unpublish: { Args: { p_exam_id: string }; Returns: number }
-      grading_grade_for: {
-        Args: { p_percentage: number; p_rules: Json }
-        Returns: {
-          code: string | null
-          description: string | null
-          is_fail: boolean
-          point: number | null
-        }[]
-      }
-      grading_scheme_problems: {
-        Args: { p_rules: Json }
-        Returns: { problem: string }[]
-      }
-      academics_roll_forward_sections: {
-        Args: { p_from_session_id: string; p_to_session_id: string }
-        Returns: number
-      }
-      promotion_apply: {
-        Args: { p_run_id: string }
-        Returns: {
-          carried: number
-          graduated: number
-          held: number
-          promoted: number
-          repeated: number
-        }[]
-      }
-      promotion_discard_run: { Args: { p_run_id: string }; Returns: undefined }
-      promotion_preview: {
-        Args: { p_from_session_id: string; p_rules?: Json; p_to_session_id: string }
-        Returns: {
-          admission_number: string
-          attendance_percent: number | null
-          decision: string
-          exam_result: string | null
-          from_enrolment_id: string
-          from_section_id: string
-          from_section_label: string
-          from_sequence: number
-          outstanding: number
-          reason: string
-          roll_number: string | null
-          student_id: string
-          student_name: string
-          subjects_failed: number | null
-          to_section_id: string | null
-          to_section_label: string | null
-        }[]
-      }
-      promotion_rule_problems: {
-        Args: { p_rules: Json }
-        Returns: { problem: string }[]
-      }
-      promotion_start_run: {
-        Args: { p_from_session_id: string; p_rules?: Json; p_to_session_id: string }
-        Returns: string
-      }
-      homework_for_student: {
-        Args: { p_include_done?: boolean; p_student_id?: string }
-        Returns: {
-          assigned_on: string
-          attachment_count: number
-          collects_submissions: boolean
-          due_on: string
-          feedback: string | null
-          homework_id: string
-          instructions: string | null
-          is_overdue: boolean
-          marks_obtained: number | null
-          max_marks: number | null
-          section_label: string
-          status: string
-          subject_code: string
-          subject_name: string
-          submission_file_count: number
-          submission_id: string | null
-          submitted_at: string | null
-          title: string
-        }[]
-      }
-      homework_grade: {
+      update_student: {
         Args: {
-          p_feedback?: string
-          p_marks?: number
-          p_return?: boolean
-          p_submission_id: string
+          p_admission_date: string
+          p_admission_number: string
+          p_person: Json
+          p_roll_number?: string
+          p_section_id?: string
+          p_status: string
+          p_student_id: string
         }
         Returns: {
-          created_at: string
-          feedback: string | null
-          graded_at: string | null
-          graded_by: string | null
-          homework_id: string
-          id: string
-          marks_obtained: number | null
-          max_marks: number | null
-          note: string | null
-          session_id: string
-          status: string
-          student_id: string
-          submitted_at: string | null
-          tenant_id: string
-          updated_at: string
-        }
-        SetofOptions: {
-          from: "*"
-          to: "homework_submissions"
-          isOneToOne: true
-          isSetofReturn: false
-        }
-      }
-      homework_publish: { Args: { p_homework_id: string }; Returns: number }
-      homework_submission_sheet: {
-        Args: { p_homework_id: string }
-        Returns: {
+          admission_date: string
           admission_number: string
-          feedback: string | null
-          file_count: number
-          is_late: boolean
-          marks_obtained: number | null
-          max_marks: number | null
-          note: string | null
-          roll_number: string | null
-          status: string
-          student_id: string
-          student_name: string
-          submission_id: string
-          submitted_at: string | null
-        }[]
-      }
-      homework_submit: {
-        Args: { p_homework_id: string; p_note?: string }
-        Returns: {
           created_at: string
-          feedback: string | null
-          graded_at: string | null
-          graded_by: string | null
-          homework_id: string
           id: string
-          marks_obtained: number | null
-          max_marks: number | null
-          note: string | null
-          session_id: string
-          status: string
-          student_id: string
-          submitted_at: string | null
-          tenant_id: string
-          updated_at: string
-        }
-        SetofOptions: {
-          from: "*"
-          to: "homework_submissions"
-          isOneToOne: true
-          isSetofReturn: false
-        }
-      }
-      homework_unpublish: { Args: { p_homework_id: string }; Returns: undefined }
-      homework_unsubmit: { Args: { p_homework_id: string }; Returns: undefined }
-      storage_object_tenant_matches: { Args: { p_name: string }; Returns: boolean }
-      schema_guard_violations: {
-        Args: never
-        Returns: {
-          table_name: string
-          has_tenant_id: boolean
-          rls_enabled: boolean
-        }[]
-      }
-      library_return_book: {
-        Args: { p_fine_per_day?: number; p_issue_id: string }
-        Returns: {
-          book_id: string
-          created_at: string
-          due_at: string
-          fine_amount: number
-          id: string
-          issued_at: string
-          issued_by: string | null
-          member_id: string
-          returned_at: string | null
-          returned_by: string | null
-          session_id: string
+          person_id: string
           status: string
           tenant_id: string
           updated_at: string
         }
         SetofOptions: {
           from: "*"
-          to: "book_issues"
+          to: "students"
           isOneToOne: true
           isSetofReturn: false
         }
@@ -3756,12 +4823,12 @@ export type Tables<
   DefaultSchemaTableNameOrOptions extends
     | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
         DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -3785,11 +4852,11 @@ export type TablesInsert<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -3810,11 +4877,11 @@ export type TablesUpdate<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -3835,11 +4902,11 @@ export type Enums<
   DefaultSchemaEnumNameOrOptions extends
     | keyof DefaultSchema["Enums"]
     | { schema: keyof DatabaseWithoutInternals },
-  EnumName extends DefaultSchemaEnumNameOrOptions extends {
+  EnumName extends (DefaultSchemaEnumNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaEnumNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -3852,11 +4919,11 @@ export type CompositeTypes<
   PublicCompositeTypeNameOrOptions extends
     | keyof DefaultSchema["CompositeTypes"]
     | { schema: keyof DatabaseWithoutInternals },
-  CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
+  CompositeTypeName extends (PublicCompositeTypeNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
-    : never = never,
+    : never) = never,
 > = PublicCompositeTypeNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }

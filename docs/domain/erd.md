@@ -382,6 +382,49 @@ answered by the server action before a signed URL is ever issued.
 
 See [docs/modules/homework.md](../modules/homework.md).
 
+### HR and payroll
+
+```
+leave_types              tenant config: code, name, annual_quota_days
+                         (null = "as much as is approved"), is_paid
+leave_requests           staff x type x date range, half_day_start/end,
+                         status (pending|approved|rejected|cancelled)
+staff_attendance         staff x date, status
+                         (present|absent|half_day|on_leave|on_duty),
+                         leave_request_id when a leave day
+salary_structures        name + a JSONB `components` document (rule 12)
+staff_salary_assignments staff x structure, `overrides` jsonb, effective-dated
+payroll_runs             tenant x period_month, status, rules_snapshot
+  payslips               run x staff, run_status (denormalised), days, totals,
+                         is_override, `computed` jsonb
+    payslip_lines        one per component, with the `basis` in words
+```
+
+**A finalised payslip is immutable because no policy matches it.** `payslips`
+carries `run_status` inside a composite FK to `payroll_runs (tenant_id, id,
+status)` with `on update cascade`, and `payslip_lines` points at `payslips` the
+same way. The write policy requires `run_status = 'draft'`, so finalising is one
+UPDATE on the run: the cascade rewrites every child and the policy then matches
+nothing. No revoke, no trigger. This is the *row* version of the problem
+`homework_submissions` solves with a definer function — reach for the function
+only when the distinction is between people rather than rows.
+
+**Two overlapping date ranges are refused by GiST exclusion constraints**, on
+`leave_requests` (partial on pending/approved, so a refusal does not block
+re-applying) and on `staff_salary_assignments` (so "what is this person paid" is
+never ambiguous). Neither rule can be a CHECK: neither is decidable from one row.
+
+The engine's evaluation order — resolve earnings, prorate once, then deduct
+against the prorated figures — is the contract, and migration `0063` exists
+because `0059` collapsed the first two steps and prorated every allowance twice.
+`salary_structure_problems()` criticises a document in sentences, next to the
+engine, exactly as `grading_scheme_problems()` does.
+
+`hr_working_days()` finally asks `weekends` and `holidays` a question, and is
+the denominator of every loss-of-pay calculation.
+
+See [docs/modules/payroll.md](../modules/payroll.md).
+
 ### Reporting kernel
 
 ```
@@ -550,7 +593,21 @@ there), recurring instalment generation through `jobs`, whole-school invoicing
 through `jobs`, and receipt PDFs.
 
 ### Accounts
-Chart of accounts, vouchers, and a mapping from the fee ledger into it.
+Chart of accounts, vouchers, and a mapping from the fee ledger into it. This is
+also where a **salary payment** belongs: payroll produces a liability, and
+`ledger_entries` is a fee *receivable* ledger (`student_id` is `not null`) that
+deliberately cannot hold it.
+
+### HR and payroll — the gaps
+The module is **built** (see *HR and payroll* under Built). What remains: a
+correction or arrears run against an already-paid month, which is the biggest
+gap; a `date_of_leaving` beside `date_of_joining`, so a mid-month leaver is not
+paid for the whole month; income tax, which is a slab calculation over projected
+annual income and a different kind of document from `components`; payslip PDFs
+and bank advice files, both `jobs` work per rule 7; an approval chain, so a
+department head can decide their own team's leave; and wiring staff library
+fines in as a deduction, which needs a settlement concept `book_issues` does not
+have.
 
 ### Examination — components, report cards, rank
 The exams module and its rules engine are **built** (see *Exams and grading*

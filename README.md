@@ -52,6 +52,7 @@ After any migration, regenerate types into
 | [docs/modules/timetable.md](./docs/modules/timetable.md) | The class routine: three unique indexes doing all the work |
 | [docs/modules/notifications.md](./docs/modules/notifications.md) | Notifications: one send path, and the RLS hole that column grants close |
 | [docs/modules/homework.md](./docs/modules/homework.md) | Homework: files, signed URLs, and where a column grant stops working |
+| [docs/modules/payroll.md](./docs/modules/payroll.md) | HR and payroll: salary as data, and a payslip made immutable by a foreign key |
 | [docs/design/decisions.md](./docs/design/decisions.md) | Palette, type, spacing — and why |
 | `design-system/schoolos/MASTER.md` | Source of truth for all UI values |
 
@@ -71,6 +72,9 @@ After any migration, regenerate types into
   permission-checked dispatcher, with CSV export and print
 - Class routine: weekly grid per class, clash-proof by construction, teaching
   load view, and a teacher's own week
+- HR and payroll: staff attendance and leave, salary structures stored as data
+  per school, and a payroll run whose preview is editable rows — finalised by
+  one update that makes every payslip immutable through a composite key
 - Homework and study material: set, hand in, mark and return, with private
   file attachments served through signed URLs issued after a permission check
 - Notification service: one send path, in-app delivery, per-user opt-outs,

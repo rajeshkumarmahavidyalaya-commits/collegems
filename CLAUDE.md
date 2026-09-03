@@ -158,6 +158,56 @@ lower a paper's maximum below a mark already awarded — the cascade rewrites th
 child and the CHECK re-evaluates. That refusal is the correct answer, not a side
 effect.
 
+#### …and it works for a POLICY, which is how a row becomes immutable
+
+The third use of the same device, and the best one. A policy cannot ask about
+another table cheaply either — so carry the parent's **status** on the child,
+inside the composite key, and put it in the policy:
+
+```sql
+-- payslips carries run_status, held equal to its run's by the key:
+constraint payslips_run_fkey
+  foreign key (tenant_id, run_id, run_status)
+  references public.payroll_runs (tenant_id, id, status)
+  on update cascade
+-- ...and the write policy simply requires it:
+using  (... and run_status = 'draft')
+with check (... and run_status = 'draft')
+```
+
+Finalising is then **one UPDATE on the parent**. The cascade rewrites every
+child, and from that instant the policy matches no row: writes touch nothing,
+silently, which is what RLS does. No revoke, no trigger, no
+`if status = 'finalised' then raise` scattered through five functions.
+
+Use this when the rule is about **rows** — everybody who may write a draft may
+write all of it. When two roles need different **columns** on the same row, this
+cannot help; that is the definer-function case above. The distinction is whether
+you are separating rows or separating people.
+
+### Two rows that must not overlap need an EXCLUSION constraint
+
+A third thing no CHECK can see: a second row. "One approved leave per person per
+day", "one salary in force per person per day", "one booking per room per hour"
+are all the same shape, and application code that checks first and inserts second
+is a race.
+
+```sql
+create extension if not exists btree_gist;
+alter table public.leave_requests
+  add constraint leave_requests_no_overlap
+  exclude using gist (
+    tenant_id with =, staff_id with =,
+    daterange(starts_on, ends_on, '[]') with &&
+  ) where (status in ('pending', 'approved'));
+```
+
+Make it **partial** wherever a dead row should stop blocking — a refused leave
+request must not prevent re-applying for the same dates. The error code is
+`23P01`; translate it into a sentence at the server-action boundary, because
+"conflicting key value violates exclusion constraint" is not something to show a
+person.
+
 ## 5. Identity model — do not collapse these
 
 ```
@@ -376,6 +426,15 @@ next module that needs one:
   after grace; best-of after substitution. Write the order down and pin each
   step to an exact number in a test — schools argue about the order, and a
   comment does not survive a refactor.
+
+  **A comment is not enough, and payroll is the proof.** Migration `0059`
+  carried this exact order in its header — resolve earnings, prorate, then
+  deduct — and the loop underneath collapsed the first two steps into one pass,
+  prorating every allowance twice. It paid a gross of 41,620 where the
+  arrangement pays 42,909, and each payslip line's own description read exactly
+  as a person checking it would expect. Only the arithmetic found it. Pin the
+  numbers: `tests/hr/payroll-engine.test.ts` asserts 42,909 *and* asserts not
+  41,620.
 - **A missing key means the conservative reading.** `replaces_absent` defaults
   to false because a school that wants leniency will say so, whereas a school
   that gets it by accident finds out from a parent. An empty `{}` must be a

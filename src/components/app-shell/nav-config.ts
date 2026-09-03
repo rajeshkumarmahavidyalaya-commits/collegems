@@ -14,6 +14,10 @@ import {
   LayoutDashboard,
   ListChecks,
   NotebookPen,
+  CalendarCheck,
+  Plane,
+  Wallet,
+  Sigma,
   FolderOpen,
   PenSquare,
   FileSpreadsheet,
@@ -110,6 +114,30 @@ export const NAV_GROUPS: NavGroup[] = [
         href: "/study-material",
         icon: FolderOpen,
       },
+    ],
+  },
+  {
+    title: "Staff",
+    items: [
+      {
+        title: "Staff attendance",
+        href: "/hr",
+        icon: CalendarCheck,
+        roles: ["admin", "teacher", "accountant", "librarian"],
+      },
+      // No `roles` filter: everybody employed here has leave, and hiding the
+      // screen from the people who take it is how a form ends up on paper.
+      { title: "Leave", href: "/hr/leave", icon: Plane },
+      {
+        title: "Salary structures",
+        href: "/hr/salary",
+        icon: Sigma,
+        roles: ["admin", "accountant"],
+      },
+      // No `roles` filter, same reason as `/homework`: one address, two
+      // screens. A teacher gets their own payslips here, an accountant gets
+      // the runs.
+      { title: "Payroll", href: "/payroll", icon: Wallet },
     ],
   },
   {

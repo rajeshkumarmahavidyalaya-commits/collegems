@@ -167,8 +167,11 @@ export async function admitStudent(input: unknown): Promise<ActionResult<{ id: s
     p_person: toPersonPayload(parsed.data),
     p_admission_number: parsed.data.admissionNumber,
     p_admission_date: parsed.data.admissionDate,
-    p_section_id: parsed.data.sectionId || null,
-    p_roll_number: parsed.data.rollNumber || null,
+    // `undefined` rather than `null`: both defaulted parameters are
+    // `DEFAULT NULL`, so omitting them and passing null mean the same thing to
+    // Postgres, and the generated types describe an optional argument.
+    p_section_id: parsed.data.sectionId || undefined,
+    p_roll_number: parsed.data.rollNumber || undefined,
   });
 
   if (error) {
@@ -193,8 +196,11 @@ export async function updateStudent(id: string, input: unknown): Promise<ActionR
     p_admission_number: parsed.data.admissionNumber,
     p_admission_date: parsed.data.admissionDate,
     p_status: parsed.data.status,
-    p_section_id: parsed.data.sectionId || null,
-    p_roll_number: parsed.data.rollNumber || null,
+    // `undefined` rather than `null`: both defaulted parameters are
+    // `DEFAULT NULL`, so omitting them and passing null mean the same thing to
+    // Postgres, and the generated types describe an optional argument.
+    p_section_id: parsed.data.sectionId || undefined,
+    p_roll_number: parsed.data.rollNumber || undefined,
   });
 
   if (error) {
