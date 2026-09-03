@@ -428,6 +428,42 @@ the denominator of every loss-of-pay calculation.
 
 See [docs/modules/payroll.md](../modules/payroll.md).
 
+### Accounts (the general ledger)
+
+```
+accounts          tenant, code, name, account_type (the five roots), parent_id,
+                  is_postable, is_system; postable_flag generated for the FK below
+journal_vouchers  tenant, session, voucher_number (gapless, allocated at post),
+                  voucher_date, status (draft|posted|void), source_kind
+                  (manual|fee_ledger|payroll_payment|reversal), source_id,
+                  reverses_voucher_id
+  voucher_lines   voucher_status (denormalised), account_id, account_type
+                  (denormalised), debit, credit — one side each
+posting_rules     event_key -> (debit account, credit account); rules, not code
+```
+
+**Three different devices enforce three different rules**, and the module is
+worth reading for the contrast:
+
+- *A line is a debit or a credit* — a plain CHECK, because it is one row.
+- *A heading cannot take an entry* — a foreign key onto the generated
+  `postable_flag`. A group has no row with `postable_flag = true`, so it is
+  unreferenceable by construction.
+- *Debits equal credits* — checked in `accounts_post_voucher`, because it is a
+  fact about several rows and no CHECK can see a second one.
+
+**A posted voucher is immutable** by the same composite-key cascade `payslips`
+uses: `voucher_lines.voucher_status` is held equal to its header's, the write
+policy demands `'draft'`, and posting is one UPDATE that makes the policy match
+nothing. Corrections are **reversing vouchers**, never edits.
+
+`accounts_sync` posts every unposted fee receipt and salary payment through the
+rules — idempotent on a partial unique index over the source document, and
+bounded per rule 7. Cash basis, deliberately: only cash events post, so the fee
+subledger's discounts, fines and write-offs stay in the subledger.
+
+See [docs/modules/accounts.md](../modules/accounts.md).
+
 ### Reporting kernel
 
 ```
@@ -595,11 +631,16 @@ Razorpay/Stripe Edge Function (a thin adapter over `fees_record_payment` with
 there), recurring instalment generation through `jobs`, whole-school invoicing
 through `jobs`, and receipt PDFs.
 
-### Accounts
-Chart of accounts, vouchers, and a mapping from the fee ledger into it. This is
-also where a **salary payment** belongs: payroll produces a liability, and
-`ledger_entries` is a fee *receivable* ledger (`student_id` is `not null`) that
-deliberately cannot hold it.
+### Accounts — what remains
+The general ledger is **built** (see *Accounts* under Built): chart of accounts,
+double-entry vouchers, and a rules-as-data map that posts both the fee ledger and
+`payroll_payments` into it. What remains: accrual (posting invoices as
+receivables — the `1130 Fees Receivable` account is seeded and waiting); a
+profit-and-loss and balance sheet grouped out of the trial balance; a
+financial-year close rolling income and expense into retained surplus; cost
+centres or funds as a second dimension; bank reconciliation; and splitting cash
+from bank on a fee receipt, which needs richer posting rules than one row per
+event.
 
 ### HR and payroll — the gaps
 The module is **built** (see *HR and payroll* under Built), and the four gaps the

@@ -17,6 +17,8 @@ import {
   CalendarCheck,
   Plane,
   Wallet,
+  Landmark,
+  BookText,
   Sigma,
   FolderOpen,
   PenSquare,
@@ -171,6 +173,21 @@ export const NAV_GROUPS: NavGroup[] = [
         title: "Fee setup",
         href: "/fees/setup",
         icon: Settings2,
+        roles: ["admin", "accountant"],
+      },
+      // The general ledger. RLS restricts every accounts table to these two
+      // roles anyway; the filter keeps the menu honest rather than offering a
+      // page that would render empty.
+      {
+        title: "Accounts",
+        href: "/accounts",
+        icon: Landmark,
+        roles: ["admin", "accountant"],
+      },
+      {
+        title: "Voucher book",
+        href: "/accounts/vouchers",
+        icon: BookText,
         roles: ["admin", "accountant"],
       },
     ],

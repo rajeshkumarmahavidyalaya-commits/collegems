@@ -55,6 +55,69 @@ export type Database = {
           },
         ]
       }
+      accounts: {
+        Row: {
+          account_type: string
+          code: string
+          created_at: string
+          description: string | null
+          id: string
+          is_active: boolean
+          is_postable: boolean
+          is_system: boolean
+          name: string
+          parent_id: string | null
+          postable_flag: boolean
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          account_type: string
+          code: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          is_postable?: boolean
+          is_system?: boolean
+          name: string
+          parent_id?: string | null
+          postable_flag?: boolean
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          account_type?: string
+          code?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          is_postable?: boolean
+          is_system?: boolean
+          name?: string
+          parent_id?: string | null
+          postable_flag?: boolean
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "accounts_parent_fkey"
+            columns: ["tenant_id", "parent_id"]
+            isOneToOne: false
+            referencedRelation: "accounts"
+            referencedColumns: ["tenant_id", "id"]
+          },
+          {
+            foreignKeyName: "accounts_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       attendance_records: {
         Row: {
           attendance_date: string
@@ -1612,6 +1675,82 @@ export type Database = {
           },
         ]
       }
+      journal_vouchers: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          narration: string | null
+          posted_at: string | null
+          posted_by: string | null
+          reverses_voucher_id: string | null
+          session_id: string
+          source_id: string | null
+          source_kind: string
+          status: string
+          tenant_id: string
+          updated_at: string
+          voucher_date: string
+          voucher_number: string | null
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          narration?: string | null
+          posted_at?: string | null
+          posted_by?: string | null
+          reverses_voucher_id?: string | null
+          session_id: string
+          source_id?: string | null
+          source_kind?: string
+          status?: string
+          tenant_id: string
+          updated_at?: string
+          voucher_date?: string
+          voucher_number?: string | null
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          narration?: string | null
+          posted_at?: string | null
+          posted_by?: string | null
+          reverses_voucher_id?: string | null
+          session_id?: string
+          source_id?: string | null
+          source_kind?: string
+          status?: string
+          tenant_id?: string
+          updated_at?: string
+          voucher_date?: string
+          voucher_number?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "journal_vouchers_reverses_voucher_id_fkey"
+            columns: ["reverses_voucher_id"]
+            isOneToOne: false
+            referencedRelation: "journal_vouchers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "journal_vouchers_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "academic_sessions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "journal_vouchers_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       leave_requests: {
         Row: {
           created_at: string
@@ -2629,6 +2768,64 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "people_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      posting_rules: {
+        Row: {
+          account_postable: boolean
+          created_at: string
+          credit_account_id: string
+          debit_account_id: string
+          event_key: string
+          id: string
+          is_active: boolean
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          account_postable?: boolean
+          created_at?: string
+          credit_account_id: string
+          debit_account_id: string
+          event_key: string
+          id?: string
+          is_active?: boolean
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          account_postable?: boolean
+          created_at?: string
+          credit_account_id?: string
+          debit_account_id?: string
+          event_key?: string
+          id?: string
+          is_active?: boolean
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "posting_rules_credit_fkey"
+            columns: ["tenant_id", "credit_account_id", "account_postable"]
+            isOneToOne: false
+            referencedRelation: "accounts"
+            referencedColumns: ["tenant_id", "id", "postable_flag"]
+          },
+          {
+            foreignKeyName: "posting_rules_debit_fkey"
+            columns: ["tenant_id", "debit_account_id", "account_postable"]
+            isOneToOne: false
+            referencedRelation: "accounts"
+            referencedColumns: ["tenant_id", "id", "postable_flag"]
+          },
+          {
+            foreignKeyName: "posting_rules_tenant_id_fkey"
             columns: ["tenant_id"]
             isOneToOne: false
             referencedRelation: "tenants"
@@ -3725,6 +3922,80 @@ export type Database = {
           },
         ]
       }
+      voucher_lines: {
+        Row: {
+          account_id: string
+          account_postable: boolean
+          account_type: string
+          created_at: string
+          credit: number
+          debit: number
+          id: string
+          narration: string | null
+          sort_order: number
+          tenant_id: string
+          voucher_id: string
+          voucher_status: string
+        }
+        Insert: {
+          account_id: string
+          account_postable?: boolean
+          account_type: string
+          created_at?: string
+          credit?: number
+          debit?: number
+          id?: string
+          narration?: string | null
+          sort_order?: number
+          tenant_id: string
+          voucher_id: string
+          voucher_status: string
+        }
+        Update: {
+          account_id?: string
+          account_postable?: boolean
+          account_type?: string
+          created_at?: string
+          credit?: number
+          debit?: number
+          id?: string
+          narration?: string | null
+          sort_order?: number
+          tenant_id?: string
+          voucher_id?: string
+          voucher_status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "voucher_lines_account_postable_fkey"
+            columns: ["tenant_id", "account_id", "account_postable"]
+            isOneToOne: false
+            referencedRelation: "accounts"
+            referencedColumns: ["tenant_id", "id", "postable_flag"]
+          },
+          {
+            foreignKeyName: "voucher_lines_account_type_fkey"
+            columns: ["tenant_id", "account_id", "account_type"]
+            isOneToOne: false
+            referencedRelation: "accounts"
+            referencedColumns: ["tenant_id", "id", "account_type"]
+          },
+          {
+            foreignKeyName: "voucher_lines_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "voucher_lines_voucher_fkey"
+            columns: ["tenant_id", "voucher_id", "voucher_status"]
+            isOneToOne: false
+            referencedRelation: "journal_vouchers"
+            referencedColumns: ["tenant_id", "id", "status"]
+          },
+        ]
+      }
       weekends: {
         Row: {
           created_at: string
@@ -3769,6 +4040,66 @@ export type Database = {
       academics_roll_forward_sections: {
         Args: { p_from_session_id: string; p_to_session_id: string }
         Returns: number
+      }
+      accounts_chart_balances: {
+        Args: { p_as_of?: string }
+        Returns: {
+          account_type: string
+          balance: number
+          code: string
+          depth: number
+          id: string
+          is_active: boolean
+          is_postable: boolean
+          name: string
+          parent_id: string
+        }[]
+      }
+      accounts_delete_draft: {
+        Args: { p_voucher_id: string }
+        Returns: undefined
+      }
+      accounts_ledger: {
+        Args: { p_account_id: string; p_from?: string; p_to?: string }
+        Returns: {
+          credit: number
+          debit: number
+          is_opening: boolean
+          line_narration: string
+          narration: string
+          running_balance: number
+          voucher_date: string
+          voucher_id: string
+          voucher_number: string
+        }[]
+      }
+      accounts_next_voucher_number: { Args: never; Returns: string }
+      accounts_post_voucher: { Args: { p_voucher_id: string }; Returns: string }
+      accounts_reverse_voucher: {
+        Args: { p_date?: string; p_narration?: string; p_voucher_id: string }
+        Returns: string
+      }
+      accounts_seed_default_chart: {
+        Args: { p_tenant_id: string }
+        Returns: undefined
+      }
+      accounts_sync: {
+        Args: { p_limit?: number }
+        Returns: {
+          created: number
+          remaining: number
+        }[]
+      }
+      accounts_trial_balance: {
+        Args: { p_as_of?: string }
+        Returns: {
+          account_id: string
+          account_type: string
+          code: string
+          credit: number
+          debit: number
+          name: string
+        }[]
       }
       admit_student: {
         Args: {

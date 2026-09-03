@@ -271,6 +271,36 @@ settled by stamping `book_issues.staff_fine_payslip_id` (migration `0065`), or
 written off with `library_waive_staff_fine`. This was an open gap until payroll
 existed to receive it; see `docs/modules/payroll.md`.
 
+### The general ledger sits above all of this
+
+`ledger_entries` is a fee *receivable* subledger and `payroll_payments` a
+payable settlement record. Neither is the school's books. Migration `0072`
+adds those: `accounts` (a typed tree), `journal_vouchers` + `voucher_lines`
+(double entry), and `posting_rules` — a rules-as-data map, per rule 12, so
+"a fee receipt debits Bank and credits Fee Income" is a row rather than a
+release.
+
+Rule 6's instincts carry up unchanged — gapless numbers, immutable once
+posted, corrections as reversing entries — and one new one arrives with
+double entry:
+
+> **Debits equal credits is a fact about several rows, so it is checked at
+> post, not by a CHECK.** A draft may be half-built; posting is the gate. The
+> message matters too: `accounts_post_voucher` says *"out by 40.00"*, which is
+> the only number that helps somebody staring at a journal that will not post.
+
+The module is also the clearest place in the codebase to see the three
+enforcement devices side by side — a CHECK for a one-row rule, a foreign key
+onto a generated flag for "a heading cannot take an entry", and a post-time
+check for the multi-row rule. See `docs/modules/accounts.md`.
+
+**Posting into the ledger is a sync, not a trigger.** `accounts_sync` walks
+unposted source documents, is idempotent on a partial unique index over
+`(source_kind, source_id)`, and is bounded per rule 7. A trigger on
+`ledger_entries` would couple the modules and run inside the payment
+transaction; a sync keeps the subledgers independent and lets a backlog drain
+in pages.
+
 ### Secrets never enter the Next.js app
 
 Payment-gateway credentials live on the Supabase Edge Functions
