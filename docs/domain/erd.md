@@ -337,6 +337,51 @@ families only once published.
 
 See [docs/modules/exams.md](../modules/exams.md).
 
+### Homework and study material
+
+```
+homework              tenant, session, section x subject (composite FK to
+                      section_subjects), title, instructions, assigned_on,
+                      due_on, max_marks (nullable), collects_submissions,
+                      status (draft|published), published_at
+homework_submissions  homework x student, status
+                      (pending|submitted|graded|returned), submitted_at, note,
+                      marks_obtained, max_marks (denormalised, see below),
+                      feedback, graded_by, graded_at
+homework_files        one table, two parents, exactly one set: homework_id
+                      (the question) XOR submission_id (the answer);
+                      bucket_id + storage_path, unique together
+study_material        tenant, session, nullable section + subject, kind
+                      (document|video|link), storage_path XOR external_url,
+                      is_published
+```
+
+**A submission exists before any file does.** `homework_publish` creates one
+`pending` row per actively enrolled student, so "not handed in" is a row rather
+than the absence of one — the absence of a row is indistinguishable from a
+child who was never set the work. Homework with `collects_submissions = false`
+gets no roll at all.
+
+**`homework_submissions` has no student UPDATE policy, deliberately.** A column
+grant separates columns, not people: every user here is `authenticated`, so
+`grant update (status, submitted_at, note)` would take `marks_obtained` from the
+teachers too. `homework_submit` / `homework_unsubmit` are narrow SECURITY
+DEFINER functions instead; `homework_grade` stays INVOKER because teachers do
+have a policy covering the whole row. This is the case where the `0039` pattern
+does **not** apply, and the difference is worth reading before copying either.
+
+`homework_submissions.max_marks` is denormalised inside a composite FK to
+`homework (tenant_id, id, max_marks)` with `on update cascade` — the same
+device as `marks`, so a mark above the maximum is refused and the maximum
+cannot be lowered below one already awarded.
+
+Files are the first real use of rule 8: paths are
+`{tenant_id}/{owner_id}/{uuid}-{name}`, storage RLS enforces only the tenant
+prefix (`public.storage_object_tenant_matches()`), and the row-level question is
+answered by the server action before a signed URL is ever issued.
+
+See [docs/modules/homework.md](../modules/homework.md).
+
 ### Reporting kernel
 
 ```
@@ -525,9 +570,14 @@ students); telling families a child was promoted, which means calling
 rebalancing, since today a student lands in the same-lettered section and
 anything else is one override at a time.
 
-### Homework & study material
-`homework`, `homework_submissions`, `study_material` — files in the
-`homework-submissions` / `study-material` buckets, paths in the DB.
+### Homework & study material — the gaps
+The module is **built** (see *Homework and study material* under Built). What
+remains: telling families when homework is set, which needs a batching policy
+before it needs a `notify_send` call (eight pieces on a Monday is eight
+notifications to every parent); back-filling a submission for a student who
+enrols after the homework was set, which is a policy question rather than a
+missing trigger; per-question marking and rubrics; and bulk download of a
+class's submissions, which is unbounded work and belongs in `jobs`.
 
 ### Notifications — drivers only
 The service itself is **built** (see *Notifications* under Built). What remains

@@ -92,6 +92,36 @@ recipients mark their own messages read, and a comment claiming `read_at` was
 "the only column they could want to change" — until a probe rewrote a delivery's
 `body`. Migration `0039` fixed it; the comment had been a hope, not a rule.
 
+#### …and a column grant separates columns, not people
+
+The obvious next step is to reach for that grant every time. It only works in
+one shape, and `homework_submissions` is the counter-example that defines the
+other.
+
+**A `GRANT` is role-wide.** Every user of this application — student, teacher,
+admin alike — is `authenticated`. So a grant narrows what *everybody* may write,
+not what one party may write. On `notification_deliveries` that was exactly
+right, because nobody except recipients had UPDATE at all. On
+`homework_submissions` it is wrong: a student must set `status`, `submitted_at`
+and `note`, a teacher must set `marks_obtained` and `feedback`, and
+`grant update (status, submitted_at, note)` would break marking in the act of
+protecting it.
+
+So:
+
+> When **two roles need different column rights on the same table**, no policy
+> and no grant can express it. Give the narrower role a `SECURITY DEFINER`
+> function and **no policy at all**; leave the role that owns the whole row on
+> RLS.
+
+`homework_submit` and `homework_unsubmit` are that function — narrow, definer,
+each setting exactly three columns after checking the caller is the student who
+owns the row — while `homework_grade` stays `SECURITY INVOKER`. **The absence of
+a student UPDATE policy is the mechanism.** A later migration that tidily "adds
+the missing policy" hands every child their own mark sheet, so the absence is
+commented at the point where it would be added. See
+`docs/modules/homework.md`.
+
 ### A CHECK cannot reach another table
 
 The same genre of mistake. When a rule depends on a column of a *different*
@@ -240,6 +270,35 @@ Supabase Storage, private buckets only, access via signed URLs issued after a
 server-side permission check. Buckets: `avatars`, `documents`,
 `study-material`, `homework-submissions`. Store the object *path* in the
 database (e.g. `people.photo_path`), never a public URL.
+
+Migration `0053` and `src/lib/storage/files.ts` are the built form of this, and
+three things about it are load-bearing:
+
+- **Two independent halves, neither sufficient alone.** Storage RLS sees the
+  object path and nothing else, so it enforces the one rule a path can carry:
+  the first segment is the caller's tenant
+  (`public.storage_object_tenant_matches()` — the helper lives in `public`
+  because functions cannot be created in `storage`). The **row-level** question
+  — is this the student's own submission? — is answered by the server action
+  against `public`, before it ever reaches this module. Everything below the
+  tenant segment is addressing, not security.
+- **The signature is the authorization.** `signedUrlFor` is called only after
+  the row has been read back through RLS; if the select returns nothing, no URL
+  is issued. Never render a signed link into a page — that signs it before
+  anybody asked, which is the same as publishing it. Rebuild every filename
+  through `safeFileName()`: a `../` in a name moves the object out from under
+  the tenant prefix that describes it.
+- **Orphans have a direction.** Upload the object first and insert the row
+  second, deleting the object if the insert fails; on delete, remove objects
+  *before* the rows, while the paths are still readable. An orphaned object
+  costs bytes nobody sees; an orphaned row is a broken download on somebody's
+  screen.
+
+Bucket names and limits live in `src/lib/storage/constants.ts`, which has no
+server imports, so an upload control can state the limit before a person picks a
+40 MB file. `files.ts` imports the server client — making it unimportable from a
+client component, which is what keeps uploads server-side — and re-exports the
+constants so callers have one import to remember.
 
 ## 9. Audit everything
 

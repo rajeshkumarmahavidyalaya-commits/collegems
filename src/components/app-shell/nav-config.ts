@@ -13,6 +13,8 @@ import {
   IndianRupee,
   LayoutDashboard,
   ListChecks,
+  NotebookPen,
+  FolderOpen,
   PenSquare,
   FileSpreadsheet,
   PenLine,
@@ -93,6 +95,20 @@ export const NAV_GROUPS: NavGroup[] = [
         href: "/promotion",
         icon: ArrowUpNarrowWide,
         roles: ["admin"],
+      },
+      // No `roles` filter on either: `/homework` is two screens behind one
+      // address -- a teacher's list of what they set, a family's list of what
+      // they have to do -- and telling a parent to visit a different URL from
+      // their child is exactly the kind of thing that gets a product ignored.
+      {
+        title: "Homework",
+        href: "/homework",
+        icon: NotebookPen,
+      },
+      {
+        title: "Study material",
+        href: "/study-material",
+        icon: FolderOpen,
       },
     ],
   },

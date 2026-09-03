@@ -973,6 +973,177 @@ export type Database = {
           },
         ]
       }
+      homework: {
+        Row: {
+          assigned_by_staff_id: string | null
+          assigned_on: string
+          collects_submissions: boolean
+          created_at: string
+          created_by: string | null
+          due_on: string
+          id: string
+          instructions: string | null
+          max_marks: number | null
+          published_at: string | null
+          section_id: string
+          session_id: string
+          status: string
+          subject_id: string
+          tenant_id: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          assigned_by_staff_id?: string | null
+          assigned_on?: string
+          collects_submissions?: boolean
+          created_at?: string
+          created_by?: string | null
+          due_on: string
+          id?: string
+          instructions?: string | null
+          max_marks?: number | null
+          published_at?: string | null
+          section_id: string
+          session_id: string
+          status?: string
+          subject_id: string
+          tenant_id: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          assigned_by_staff_id?: string | null
+          assigned_on?: string
+          collects_submissions?: boolean
+          created_at?: string
+          created_by?: string | null
+          due_on?: string
+          id?: string
+          instructions?: string | null
+          max_marks?: number | null
+          published_at?: string | null
+          section_id?: string
+          session_id?: string
+          status?: string
+          subject_id?: string
+          tenant_id?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      homework_files: {
+        Row: {
+          bucket_id: string
+          content_type: string | null
+          created_at: string
+          file_name: string
+          homework_id: string | null
+          id: string
+          size_bytes: number | null
+          storage_path: string
+          submission_id: string | null
+          tenant_id: string
+          uploaded_by: string | null
+        }
+        Insert: {
+          bucket_id: string
+          content_type?: string | null
+          created_at?: string
+          file_name: string
+          homework_id?: string | null
+          id?: string
+          size_bytes?: number | null
+          storage_path: string
+          submission_id?: string | null
+          tenant_id: string
+          uploaded_by?: string | null
+        }
+        Update: {
+          bucket_id?: string
+          content_type?: string | null
+          created_at?: string
+          file_name?: string
+          homework_id?: string | null
+          id?: string
+          size_bytes?: number | null
+          storage_path?: string
+          submission_id?: string | null
+          tenant_id?: string
+          uploaded_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "homework_files_homework_fkey"
+            columns: ["tenant_id", "homework_id"]
+            isOneToOne: false
+            referencedRelation: "homework"
+            referencedColumns: ["tenant_id", "id"]
+          },
+          {
+            foreignKeyName: "homework_files_submission_fkey"
+            columns: ["tenant_id", "submission_id"]
+            isOneToOne: false
+            referencedRelation: "homework_submissions"
+            referencedColumns: ["tenant_id", "id"]
+          },
+        ]
+      }
+      homework_submissions: {
+        Row: {
+          created_at: string
+          feedback: string | null
+          graded_at: string | null
+          graded_by: string | null
+          homework_id: string
+          id: string
+          marks_obtained: number | null
+          max_marks: number | null
+          note: string | null
+          session_id: string
+          status: string
+          student_id: string
+          submitted_at: string | null
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          feedback?: string | null
+          graded_at?: string | null
+          graded_by?: string | null
+          homework_id: string
+          id?: string
+          marks_obtained?: number | null
+          max_marks?: number | null
+          note?: string | null
+          session_id: string
+          status?: string
+          student_id: string
+          submitted_at?: string | null
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          feedback?: string | null
+          graded_at?: string | null
+          graded_by?: string | null
+          homework_id?: string
+          id?: string
+          marks_obtained?: number | null
+          max_marks?: number | null
+          note?: string | null
+          session_id?: string
+          status?: string
+          student_id?: string
+          submitted_at?: string | null
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       invitations: {
         Row: {
           accepted_at: string | null
@@ -2317,6 +2488,72 @@ export type Database = {
           },
         ]
       }
+      study_material: {
+        Row: {
+          bucket_id: string | null
+          content_type: string | null
+          created_at: string
+          created_by: string | null
+          description: string | null
+          external_url: string | null
+          file_name: string | null
+          id: string
+          is_published: boolean
+          kind: string
+          section_id: string | null
+          session_id: string
+          size_bytes: number | null
+          storage_path: string | null
+          subject_id: string | null
+          tenant_id: string
+          title: string
+          updated_at: string
+          uploaded_by_staff_id: string | null
+        }
+        Insert: {
+          bucket_id?: string | null
+          content_type?: string | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          external_url?: string | null
+          file_name?: string | null
+          id?: string
+          is_published?: boolean
+          kind?: string
+          section_id?: string | null
+          session_id: string
+          size_bytes?: number | null
+          storage_path?: string | null
+          subject_id?: string | null
+          tenant_id: string
+          title: string
+          updated_at?: string
+          uploaded_by_staff_id?: string | null
+        }
+        Update: {
+          bucket_id?: string | null
+          content_type?: string | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          external_url?: string | null
+          file_name?: string | null
+          id?: string
+          is_published?: boolean
+          kind?: string
+          section_id?: string | null
+          session_id?: string
+          size_bytes?: number | null
+          storage_path?: string | null
+          subject_id?: string | null
+          tenant_id?: string
+          title?: string
+          updated_at?: string
+          uploaded_by_staff_id?: string | null
+        }
+        Relationships: []
+      }
       subjects: {
         Row: {
           code: string
@@ -3366,6 +3603,108 @@ export type Database = {
         Args: { p_from_session_id: string; p_rules?: Json; p_to_session_id: string }
         Returns: string
       }
+      homework_for_student: {
+        Args: { p_include_done?: boolean; p_student_id?: string }
+        Returns: {
+          assigned_on: string
+          attachment_count: number
+          collects_submissions: boolean
+          due_on: string
+          feedback: string | null
+          homework_id: string
+          instructions: string | null
+          is_overdue: boolean
+          marks_obtained: number | null
+          max_marks: number | null
+          section_label: string
+          status: string
+          subject_code: string
+          subject_name: string
+          submission_file_count: number
+          submission_id: string | null
+          submitted_at: string | null
+          title: string
+        }[]
+      }
+      homework_grade: {
+        Args: {
+          p_feedback?: string
+          p_marks?: number
+          p_return?: boolean
+          p_submission_id: string
+        }
+        Returns: {
+          created_at: string
+          feedback: string | null
+          graded_at: string | null
+          graded_by: string | null
+          homework_id: string
+          id: string
+          marks_obtained: number | null
+          max_marks: number | null
+          note: string | null
+          session_id: string
+          status: string
+          student_id: string
+          submitted_at: string | null
+          tenant_id: string
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "homework_submissions"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      homework_publish: { Args: { p_homework_id: string }; Returns: number }
+      homework_submission_sheet: {
+        Args: { p_homework_id: string }
+        Returns: {
+          admission_number: string
+          feedback: string | null
+          file_count: number
+          is_late: boolean
+          marks_obtained: number | null
+          max_marks: number | null
+          note: string | null
+          roll_number: string | null
+          status: string
+          student_id: string
+          student_name: string
+          submission_id: string
+          submitted_at: string | null
+        }[]
+      }
+      homework_submit: {
+        Args: { p_homework_id: string; p_note?: string }
+        Returns: {
+          created_at: string
+          feedback: string | null
+          graded_at: string | null
+          graded_by: string | null
+          homework_id: string
+          id: string
+          marks_obtained: number | null
+          max_marks: number | null
+          note: string | null
+          session_id: string
+          status: string
+          student_id: string
+          submitted_at: string | null
+          tenant_id: string
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "homework_submissions"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      homework_unpublish: { Args: { p_homework_id: string }; Returns: undefined }
+      homework_unsubmit: { Args: { p_homework_id: string }; Returns: undefined }
+      storage_object_tenant_matches: { Args: { p_name: string }; Returns: boolean }
       schema_guard_violations: {
         Args: never
         Returns: {
