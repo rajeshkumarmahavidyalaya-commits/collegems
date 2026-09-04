@@ -189,7 +189,7 @@ describe("transport", () => {
   });
 
   it("reports no fee head charged from both sources", async () => {
-    const { data, error } = await a.rpc("transport_billing_conflicts");
+    const { data, error } = await a.rpc("fees_billing_conflicts");
     expect(error, error?.message).toBeNull();
     expect(data ?? []).toHaveLength(0);
   });

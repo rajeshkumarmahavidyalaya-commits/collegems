@@ -1,6 +1,7 @@
 import type { LucideIcon } from "lucide-react";
 import {
   BarChart3,
+  BedDouble,
   Bell,
   BookOpen,
   Bus,
@@ -144,6 +145,12 @@ export const NAV_GROUPS: NavGroup[] = [
         href: "/transport/assignments",
         icon: MapPin,
         roles: ["admin"],
+      },
+      {
+        title: "Hostel",
+        href: "/hostel",
+        icon: BedDouble,
+        roles: ["admin", "teacher", "accountant"],
       },
     ],
   },

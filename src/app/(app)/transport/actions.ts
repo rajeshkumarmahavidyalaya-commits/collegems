@@ -580,10 +580,16 @@ export async function getManifest(routeId: string): Promise<ManifestRow[]> {
  * Sentences describing fees that would be charged twice. Same contract as
  * `grading_scheme_problems`: Postgres judges, the screen renders. An empty list
  * is the passing state and shows nothing.
+ *
+ * Named for transport, answered by `fees_billing_conflicts` — which covers
+ * every per-student source, not just routes. The detector was transport-only
+ * until hostels arrived and made its name a lie; one definition now serves
+ * both, so a school adding a third source gets the warning without anybody
+ * remembering to write a third detector.
  */
 export async function getBillingConflicts(): Promise<string[]> {
   const supabase = await createClient();
-  const { data, error } = await supabase.rpc("transport_billing_conflicts");
+  const { data, error } = await supabase.rpc("fees_billing_conflicts");
   if (error) throw new Error(error.message);
   return (data ?? []).map((r) => r.problem);
 }

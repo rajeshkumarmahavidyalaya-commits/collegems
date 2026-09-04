@@ -212,6 +212,25 @@ dropping rewrites every assignment, the CHECK re-evaluates, and the route change
 is refused. Same shape as refusing to lower a paper's maximum below an awarded
 mark.
 
+#### …and where it stops
+
+**The device carries a column from exactly one parent table.** A rule about a
+fact two joins away cannot use it, and `hostel_allocations` is the case that
+names the boundary: *a boys' house takes only boys* depends on
+`people.gender`, one join beyond `students`. Reaching it would mean
+denormalising gender onto `students` and keeping it in step — a second copy of a
+fact that already has an owner, to enforce a rule a school may want to relax.
+
+So that one is checked in `hostel_allocate`, with a sentence. The rule:
+
+> One table away, use the composite key. Two tables away, use a function check
+> and say so — do not manufacture a column to reach it.
+
+The same function-check answer applies to any rule about **how many other rows
+exist** — a bus with 40 seats, a room with 4 beds, debits equalling credits. No
+constraint sees a second row, so those live in the write function under an
+advisory lock, with the numbers in the message.
+
 ### Two rows that must not overlap need an EXCLUSION constraint
 
 A third thing no CHECK can see: a second row. "One approved leave per person per
