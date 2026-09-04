@@ -433,6 +433,88 @@ the sender going back to the database for any of it.
 
 (Still nothing drains that queue. See below.)
 
+## Billing periods, and the defect they fix
+
+`fee_structures.frequency` was stored, shown on the setup screen, and never
+acted on. Migration `0021`'s own comment was honest about it — *"generating the
+recurring instalments on a schedule is a jobs concern and is not built; today an
+invoice is raised deliberately, for the heads chosen"* — and the escape hatch
+was `p_fee_head_ids`, a clerk ticking which heads to bill.
+
+That works exactly as long as the clerk ticks correctly every month. Two things
+were wrong underneath:
+
+1. **A school invoicing monthly re-billed its annual heads twelve times**, and
+   nothing in the database objected.
+2. **Nothing recorded which period an invoice was for**, so the guard against
+   double-billing was a due-date comparison — which `0022` itself described as a
+   judgement about what is *"almost always a mistake"*. A heuristic, not a rule.
+
+The missing concept was the **billing period**. `fee_instalments` is the
+school's calendar for a session, and each period carries `collects` — which fee
+frequencies it charges.
+
+```
+April 2025   collects {monthly, quarterly, annual, one_time}   -- the year's charges
+May 2025     collects {monthly}                                -- and every month after
+...
+```
+
+**`collects` is explicit, not inferred from the sequence number.** Inference has
+to know the cadence — *is period 4 a quarter boundary?* — and gets it wrong for
+every school that bills ten months, or two terms, or monthly-except-December. A
+school says what July collects; nothing guesses. Rule 12.
+
+On the demo tenant, for the same child:
+
+| Period | Lines | Total |
+|---|---|---|
+| April 2025 (opening) | 5 | ₹10,400 — tuition, activity, exam, library **and** the bus |
+| September 2025 | 1 | ₹800 — the bus, and nothing else |
+
+Before this, September billed ₹10,400 again.
+
+### The guard is now an index, not a guess
+
+```sql
+create unique index invoices_one_per_instalment
+  on public.invoices (tenant_id, session_id, student_id, instalment_id)
+  where instalment_id is not null and status = 'issued';
+```
+
+Partial twice over, and both halves matter. On `issued`, so **cancelling an
+invoice re-opens the period** — which is what cancelling is for. On
+`instalment_id is not null`, so the ad-hoc charges the counter raises, which
+genuinely have no period, are untouched and keep the old due-date heuristic.
+
+Verified: a section run created 15 invoices and the identical re-run created
+**0**. A second invoice for one student and period is refused with *"This
+student has already been billed for September 2025"* rather than an index name.
+
+The period also carries the due date, so nobody retypes it per class and two
+runs of one period cannot disagree about when it falls due.
+
+### Preview, then apply
+
+`fees_instalment_preview` answers the two questions somebody wants before
+pressing the button: who is already billed, and what the run would charge. On
+the demo it reports 16 of 26 children in a class billable for a monthly period —
+the ten with no transport owe nothing that month, which is correct and would
+have looked like a bug without the preview.
+
+It is read-only rather than rule 13's editable rows. That full pattern exists
+for operations where a person overrides *named children* — a promotion run — and
+a monthly bill is not yet that. If schools start editing a run before applying
+it, the storage is the same shape as `promotion_decisions`.
+
+### A calendar can be silently wrong
+
+Twelve monthly periods and an annual tuition means the tuition is never charged,
+and the school finds out in March. `uncollectedFrequencies` compares what the
+periods collect against what the fee structures actually use and says so on the
+setup screen — the same instinct as `grading_scheme_problems()`, in the browser
+because both halves of the comparison are already on the page.
+
 ## Known, deliberate gaps
 
 - **The gateway path has never run end to end.** Every guarantee around it is
@@ -443,9 +525,16 @@ the sender going back to the database for any of it.
 - **No parent-facing checkout.** Staff generate a link and send it; there is no
   student or parent portal to pay from, because there is no portal at all yet.
 - **No mail provider.** See above: the queue exists, nothing drains it.
-- **No recurring billing.** `fee_structures.frequency` describes the intended
-  cadence but nothing generates instalments on a schedule. That is a `jobs`
-  concern.
+- ~~**No recurring billing.**~~ Billing periods are built: `fee_instalments`
+  says what each period collects and an invoice knows which period it is for.
+  What is still not built is **running the calendar automatically** — a period
+  falling due does not raise anything by itself; somebody opens the screen and
+  runs a class. Scheduling that is genuinely a `jobs` concern, and so is
+  whole-school billing.
+- **Part periods are not pro-rated.** A child admitted on the 20th, or a bus
+  arrangement starting mid-month, is charged the whole period. Doing better
+  needs a policy document of its own (calendar days? school days? a grace
+  threshold?) — rule 12 work, not a patch.
 - **Whole-school invoicing is not offered**, only per-section, for the same
   reason.
 - **Staff library fines are not collectable here.** Library fines for *student*

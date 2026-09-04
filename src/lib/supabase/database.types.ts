@@ -978,6 +978,66 @@ export type Database = {
           },
         ]
       }
+      fee_instalments: {
+        Row: {
+          collects: string[]
+          created_at: string
+          due_date: string
+          id: string
+          is_active: boolean
+          name: string
+          period_end: string | null
+          period_start: string | null
+          sequence: number
+          session_id: string
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          collects?: string[]
+          created_at?: string
+          due_date: string
+          id?: string
+          is_active?: boolean
+          name: string
+          period_end?: string | null
+          period_start?: string | null
+          sequence: number
+          session_id: string
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          collects?: string[]
+          created_at?: string
+          due_date?: string
+          id?: string
+          is_active?: boolean
+          name?: string
+          period_end?: string | null
+          period_start?: string | null
+          sequence?: number
+          session_id?: string
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fee_instalments_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "academic_sessions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fee_instalments_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       fee_structures: {
         Row: {
           amount: number
@@ -1634,6 +1694,7 @@ export type Database = {
           created_at: string
           due_date: string
           id: string
+          instalment_id: string | null
           invoice_number: string
           issue_date: string
           issued_by: string | null
@@ -1651,6 +1712,7 @@ export type Database = {
           created_at?: string
           due_date: string
           id?: string
+          instalment_id?: string | null
           invoice_number: string
           issue_date?: string
           issued_by?: string | null
@@ -1668,6 +1730,7 @@ export type Database = {
           created_at?: string
           due_date?: string
           id?: string
+          instalment_id?: string | null
           invoice_number?: string
           issue_date?: string
           issued_by?: string | null
@@ -1679,6 +1742,13 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "invoices_instalment_fkey"
+            columns: ["tenant_id", "instalment_id"]
+            isOneToOne: false
+            referencedRelation: "fee_instalments"
+            referencedColumns: ["tenant_id", "id"]
+          },
           {
             foreignKeyName: "invoices_session_id_fkey"
             columns: ["session_id"]
@@ -4642,6 +4712,7 @@ export type Database = {
         Args: {
           p_as_of?: string
           p_fee_head_ids?: string[]
+          p_instalment_id?: string
           p_student_id: string
         }
         Returns: {
@@ -4660,6 +4731,7 @@ export type Database = {
           created_at: string
           due_date: string
           id: string
+          instalment_id: string | null
           invoice_number: string
           issue_date: string
           issued_by: string | null
@@ -4724,8 +4796,9 @@ export type Database = {
       }
       fees_generate_invoice: {
         Args: {
-          p_due_date: string
+          p_due_date?: string
           p_fee_head_ids?: string[]
+          p_instalment_id?: string
           p_notes?: string
           p_student_id: string
         }
@@ -4736,6 +4809,7 @@ export type Database = {
           created_at: string
           due_date: string
           id: string
+          instalment_id: string | null
           invoice_number: string
           issue_date: string
           issued_by: string | null
@@ -4755,11 +4829,23 @@ export type Database = {
       }
       fees_generate_section_invoices: {
         Args: {
-          p_due_date: string
+          p_due_date?: string
           p_fee_head_ids?: string[]
+          p_instalment_id?: string
           p_section_id: string
         }
         Returns: number
+      }
+      fees_instalment_preview: {
+        Args: { p_instalment_id: string; p_section_id: string }
+        Returns: {
+          admission_number: string
+          already_billed: boolean
+          line_count: number
+          student_id: string
+          student_name: string
+          total: number
+        }[]
       }
       fees_next_document_number: { Args: { p_kind: string }; Returns: string }
       fees_next_document_number_for: {
@@ -4803,6 +4889,7 @@ export type Database = {
           created_at: string
           due_date: string
           id: string
+          instalment_id: string | null
           invoice_number: string
           issue_date: string
           issued_by: string | null

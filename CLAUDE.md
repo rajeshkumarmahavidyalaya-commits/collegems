@@ -362,6 +362,20 @@ bill something:
   a school's fee structure, because which of the two charges is real is a
   bursar's decision, not a migration's.
 
+A third rule arrived with the billing calendar:
+
+- **A recurring charge needs to know which period it is for, or the guard
+  against double-billing is a guess.** `fee_structures.frequency` was stored and
+  never acted on for seventy migrations, so an invoice run charged every head
+  every time and a school billing monthly billed its annual tuition twelve
+  times. `fee_instalments` is the missing concept: each period says what it
+  `collects` (explicit, never inferred from a sequence number — ten-month years
+  and monthly-except-December are both real), and
+  `invoices_one_per_instalment` is a partial unique index that makes a second
+  issued invoice for one student and period impossible. Partial on `issued` so
+  cancelling re-opens the period, and partial on `instalment_id is not null` so
+  ad-hoc counter charges are untouched. See `docs/modules/fees.md`.
+
 See `docs/modules/transport.md`.
 
 ### Secrets never enter the Next.js app

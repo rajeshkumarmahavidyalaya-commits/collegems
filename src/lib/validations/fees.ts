@@ -42,11 +42,18 @@ export const FEE_CATEGORIES = [
   { value: "other", label: "Other" },
 ] as const;
 
+/**
+ * How often a fee head is charged — and, since instalments arrived, also the
+ * vocabulary a billing period uses to say what it `collects`. The two are the
+ * same list on purpose: if they could drift, a school could configure a period
+ * collecting a frequency no fee ever carries and wonder why the run bills
+ * nothing.
+ */
 export const FEE_FREQUENCIES = [
-  { value: "one_time", label: "One time" },
-  { value: "monthly", label: "Monthly" },
-  { value: "quarterly", label: "Quarterly" },
-  { value: "annual", label: "Annual" },
+  { value: "one_time", label: "One time", hint: "Admission or deposit — charged once in the year." },
+  { value: "monthly", label: "Monthly", hint: "Recurs every period. A transport fare is always this." },
+  { value: "quarterly", label: "Quarterly", hint: "Charged in the periods the school nominates." },
+  { value: "annual", label: "Annual", hint: "The year's charge, collected in one period." },
 ] as const;
 
 const isoDate = z
@@ -138,6 +145,66 @@ export const generateSectionInvoicesSchema = z.object({
   sectionId: z.string().uuid("Choose a class"),
   dueDate: isoDate,
 });
+
+// ---------------------------------------------------------------------------
+// Billing periods
+// ---------------------------------------------------------------------------
+
+export const instalmentSchema = z
+  .object({
+    name: z.string().min(1, "A period needs a name").max(60),
+    sequence: z
+      .number({ message: "Enter where this period comes in the year" })
+      .int()
+      .positive("The first period is 1"),
+    dueDate: isoDate,
+    periodStart: z.union([isoDate, z.literal("")]).optional(),
+    periodEnd: z.union([isoDate, z.literal("")]).optional(),
+    /** At least one, or the period bills nothing — a mistake, not a setting. */
+    collects: z
+      .array(z.enum(["one_time", "monthly", "quarterly", "annual"]))
+      .min(1, "A period that collects nothing would bill nobody"),
+    isActive: z.boolean(),
+  })
+  .refine((v) => !v.periodStart || !v.periodEnd || v.periodEnd >= v.periodStart, {
+    message: "The period cannot end before it starts",
+    path: ["periodEnd"],
+  });
+export type InstalmentInput = z.infer<typeof instalmentSchema>;
+
+export const runInstalmentSchema = z.object({
+  sectionId: z.string().uuid("Choose a class"),
+  instalmentId: z.string().uuid("Choose a billing period"),
+});
+
+export function frequencyLabel(value: string) {
+  return FEE_FREQUENCIES.find((f) => f.value === value)?.label ?? value;
+}
+
+/**
+ * "Monthly and annual", "One-time, monthly and annual" — the list a person
+ * reads, in the order the constant declares rather than the order the array
+ * happens to arrive in.
+ */
+export function collectsSentence(collects: string[]): string {
+  const ordered = FEE_FREQUENCIES.filter((f) => collects.includes(f.value)).map((f) => f.label);
+  if (ordered.length === 0) return "Nothing";
+  if (ordered.length === 1) return ordered[0];
+  return `${ordered.slice(0, -1).join(", ")} and ${ordered[ordered.length - 1].toLowerCase()}`;
+}
+
+/**
+ * Whether a set of periods would ever bill a given frequency. A school that
+ * configures twelve monthly periods and no opening one never collects its
+ * annual tuition, and finds out in March — so the setup screen says so.
+ */
+export function uncollectedFrequencies(
+  periods: { collects: string[]; isActive: boolean }[],
+  used: string[],
+): string[] {
+  const covered = new Set(periods.filter((p) => p.isActive).flatMap((p) => p.collects));
+  return used.filter((f) => !covered.has(f));
+}
 
 export const cancelInvoiceSchema = z.object({
   invoiceId: z.string().uuid(),

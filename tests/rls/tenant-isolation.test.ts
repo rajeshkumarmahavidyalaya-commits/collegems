@@ -92,6 +92,7 @@ describe("cross-tenant isolation", () => {
     "attendance_records",
     "fee_heads",
     "fee_structures",
+    "fee_instalments",
     "document_sequences",
     "invoices",
     "invoice_lines",

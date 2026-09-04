@@ -4,6 +4,8 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { getUserContext } from "@/lib/auth/context";
 import {
+  instalmentSchema,
+  runInstalmentSchema,
   adjustmentSchema,
   cancelInvoiceSchema,
   chargeSchema,
@@ -1323,4 +1325,162 @@ export async function getSchoolProfile() {
     email: v.email ?? "",
     website: v.website ?? "",
   };
+}
+
+// ---------------------------------------------------------------------------
+// Billing periods
+// ---------------------------------------------------------------------------
+
+export type InstalmentRow = {
+  id: string;
+  name: string;
+  sequence: number;
+  dueDate: string;
+  periodStart: string | null;
+  periodEnd: string | null;
+  collects: string[];
+  isActive: boolean;
+  invoiceCount: number;
+};
+
+export async function listInstalments(): Promise<InstalmentRow[]> {
+  const ctx = await getUserContext();
+  const supabase = await createClient();
+
+  const [periodsRes, invoicesRes] = await Promise.all([
+    supabase
+      .from("fee_instalments")
+      .select("id, name, sequence, due_date, period_start, period_end, collects, is_active")
+      .eq("session_id", ctx?.currentSessionId ?? "")
+      .order("sequence"),
+    supabase.from("invoices").select("instalment_id").eq("status", "issued"),
+  ]);
+
+  if (periodsRes.error) throw new Error(periodsRes.error.message);
+  if (invoicesRes.error) throw new Error(invoicesRes.error.message);
+
+  const counts = new Map<string, number>();
+  for (const row of invoicesRes.data ?? []) {
+    if (row.instalment_id) counts.set(row.instalment_id, (counts.get(row.instalment_id) ?? 0) + 1);
+  }
+
+  return (periodsRes.data ?? []).map((p) => ({
+    id: p.id,
+    name: p.name,
+    sequence: p.sequence,
+    dueDate: p.due_date,
+    periodStart: p.period_start,
+    periodEnd: p.period_end,
+    collects: p.collects,
+    isActive: p.is_active,
+    invoiceCount: counts.get(p.id) ?? 0,
+  }));
+}
+
+export async function saveInstalment(
+  input: unknown,
+  id?: string,
+): Promise<ActionResult<{ id: string }>> {
+  const parsed = instalmentSchema.safeParse(input);
+  if (!parsed.success) {
+    return {
+      ok: false,
+      error: "Check the highlighted fields.",
+      fieldErrors: parsed.error.flatten().fieldErrors as Record<string, string[]>,
+    };
+  }
+
+  const ctx = await getUserContext();
+  if (!ctx?.currentSessionId) return fail("There is no current academic session.");
+
+  const supabase = await createClient();
+  const row = {
+    tenant_id: ctx.tenantId,
+    session_id: ctx.currentSessionId,
+    name: parsed.data.name.trim(),
+    sequence: parsed.data.sequence,
+    due_date: parsed.data.dueDate,
+    period_start: parsed.data.periodStart || null,
+    period_end: parsed.data.periodEnd || null,
+    collects: parsed.data.collects,
+    is_active: parsed.data.isActive,
+  };
+
+  const query = id
+    ? supabase.from("fee_instalments").update(row).eq("id", id).select("id").single()
+    : supabase.from("fee_instalments").insert(row).select("id").single();
+
+  const { data, error } = await query;
+  if (error) {
+    if (error.code === "23505") {
+      return fail("This session already has a period with that name or at that position.");
+    }
+    return fail(error.message);
+  }
+
+  revalidatePath("/fees/instalments");
+  revalidatePath("/fees/setup");
+  return { ok: true, data: { id: data.id } };
+}
+
+export type InstalmentPreviewRow = {
+  studentId: string;
+  studentName: string;
+  admissionNumber: string | null;
+  alreadyBilled: boolean;
+  lineCount: number;
+  total: number;
+};
+
+/**
+ * What a period would charge a class, before anybody presses the button —
+ * rule 13's instinct applied to billing. Read-only for now: an editable preview
+ * needs `promotion_decisions`-shaped storage, which a monthly run does not yet
+ * justify.
+ */
+export async function previewInstalment(
+  sectionId: string,
+  instalmentId: string,
+): Promise<InstalmentPreviewRow[]> {
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("fees_instalment_preview", {
+    p_section_id: sectionId,
+    p_instalment_id: instalmentId,
+  });
+  if (error) throw new Error(error.message);
+
+  return (data ?? []).map((r) => ({
+    studentId: r.student_id,
+    studentName: r.student_name,
+    admissionNumber: r.admission_number,
+    alreadyBilled: r.already_billed,
+    lineCount: r.line_count,
+    total: Number(r.total ?? 0),
+  }));
+}
+
+export async function runInstalment(input: unknown): Promise<ActionResult<{ created: number }>> {
+  const parsed = runInstalmentSchema.safeParse(input);
+  if (!parsed.success) {
+    return {
+      ok: false,
+      error: "Check the highlighted fields.",
+      fieldErrors: parsed.error.flatten().fieldErrors as Record<string, string[]>,
+    };
+  }
+
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("fees_generate_section_invoices", {
+    p_section_id: parsed.data.sectionId,
+    p_instalment_id: parsed.data.instalmentId,
+  });
+
+  // Re-running is safe by construction — `invoices_one_per_instalment` makes a
+  // second issued invoice for the same student and period impossible — so a
+  // retry after a timeout tops up rather than double-billing.
+  if (error) return fail(error.message);
+
+  revalidatePath("/fees");
+  revalidatePath("/fees/instalments");
+  return { ok: true, data: { created: typeof data === "number" ? data : 0 } };
 }

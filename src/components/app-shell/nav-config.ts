@@ -198,6 +198,15 @@ export const NAV_GROUPS: NavGroup[] = [
         icon: BookOpenCheck,
         roles: ["admin", "accountant"],
       },
+      // Sits next to fee setup because it is the other half of the same
+      // configuration: the structure says what a class pays, the calendar says
+      // when each of those is collected. Neither is any use alone.
+      {
+        title: "Billing periods",
+        href: "/fees/instalments",
+        icon: CalendarRange,
+        roles: ["admin", "accountant"],
+      },
       {
         title: "Fee setup",
         href: "/fees/setup",
