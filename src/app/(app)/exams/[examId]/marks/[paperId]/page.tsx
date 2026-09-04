@@ -36,8 +36,13 @@ export default async function MarksPage({
           </h1>
           <p className="text-sm text-muted-foreground">
             Out of {paper.maxMarks}, pass mark {paper.passMarks}
-            {paper.isOptional && " · an additional subject"}. Enter or the arrow keys move down the
-            column.
+            {paper.isOptional && " · an additional subject"}.{" "}
+            {paper.components.length > 0
+              ? `Split into ${paper.components
+                  .map((c) => `${c.name} out of ${c.maxMarks}`)
+                  .join(" and ")}.`
+              : ""}{" "}
+            Enter or the arrow keys move down the column; type AB for absent.
           </p>
         </div>
         <Button asChild variant="outline">
@@ -52,6 +57,7 @@ export default async function MarksPage({
         examSubjectId={paper.id}
         maxMarks={paper.maxMarks}
         passMarks={paper.passMarks}
+        components={paper.components}
         rows={rows}
         canEdit={canGrade}
         isPublished={exam.status === "published"}

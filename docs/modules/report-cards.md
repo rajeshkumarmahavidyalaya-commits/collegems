@@ -147,6 +147,13 @@ The document is assembled in Postgres rather than joined together in the app,
 for the reason every read model here is: the thing that prints the card and the
 thing that froze it must not be free to disagree.
 
+**A split paper prints its parts.** `detail` carries a `components` array —
+frozen with the rest of the card at publish, so "Theory 55 / 70 · Practical
+8 / 30" is what it was on the day and not what a later edit to the split would
+make it. It earns the space it takes: a parent looking at 68 out of 100 with
+"Fail" beside it is owed the sentence that explains it, and the sentence is the
+practical mark. See [exams.md](./exams.md#components-a-paper-marked-in-more-than-one-sitting).
+
 A card that does not parse is **not rendered** (`parseCard` returns null and the
 screen says how many were dropped). Half a report card is worse than none,
 because a parent cannot tell which half is missing.

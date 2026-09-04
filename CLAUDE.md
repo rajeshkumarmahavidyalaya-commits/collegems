@@ -202,6 +202,23 @@ went home" an audited unpublish/republish pair rather than a quiet edit.
 | an identity | `transport_assignments.route_id` | a child's stop is on the child's own route |
 | a term in a comparison | `transport_assignments.route_direction` | a pickup-only route cannot drop anybody |
 
+**One key can carry two of those at once.** `marks.component_max_marks` is the
+newest use and it is not a sixth kind — it is the identity use and the value use
+in a single constraint:
+
+```sql
+foreign key (tenant_id, exam_subject_id, exam_component_id, component_max_marks)
+references public.exam_components (tenant_id, exam_subject_id, id, max_marks)
+```
+
+`exam_subject_id` in the key says *this part belongs to this paper*;
+`max_marks` says *this local ceiling is the part's own*. One constraint, two
+rules, one cascade. It also shows how to make the device **optional**: both
+columns are nullable together, a MATCH SIMPLE foreign key is skipped entirely
+when any of its columns is null, and a `check ((a is null) = (b is null))`
+beside it stops one arriving without the other — which is how "this paper is not
+split" is representable in the same table as "this is the practical mark".
+
 The last is the newest shape and worth naming: the rule there is
 **compatibility, not equality** — a `both` route carries anybody, a one-way
 route only its own direction — so the carried column feeds a CHECK

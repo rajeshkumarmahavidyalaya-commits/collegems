@@ -7,7 +7,7 @@ import { hasPermission } from "@/lib/auth/permissions";
 import { listSections } from "../../students/actions";
 import { listSubjects } from "../../academics/actions";
 import { examKindLabel } from "@/lib/validations/exams";
-import { getResultSheet, listExams, listPapers } from "../actions";
+import { getResultSheet, listExamProblems, listExams, listPapers } from "../actions";
 import { ExamDetail } from "../exam-detail";
 
 export const metadata = { title: "Exam" };
@@ -15,15 +15,17 @@ export const metadata = { title: "Exam" };
 export default async function ExamPage({ params }: { params: Promise<{ examId: string }> }) {
   const { examId } = await params;
 
-  const [exams, papers, results, sections, subjects, canManage, canGrade] = await Promise.all([
-    listExams(),
-    listPapers(examId),
-    getResultSheet(examId),
-    listSections(),
-    listSubjects(),
-    hasPermission("settings.manage"),
-    hasPermission("exams.grade"),
-  ]);
+  const [exams, papers, problems, results, sections, subjects, canManage, canGrade] =
+    await Promise.all([
+      listExams(),
+      listPapers(examId),
+      listExamProblems(examId),
+      getResultSheet(examId),
+      listSections(),
+      listSubjects(),
+      hasPermission("settings.manage"),
+      hasPermission("exams.grade"),
+    ]);
 
   const exam = exams.find((e) => e.id === examId);
   if (!exam) notFound();
@@ -81,6 +83,7 @@ export default async function ExamPage({ params }: { params: Promise<{ examId: s
       <ExamDetail
         exam={exam}
         papers={papers}
+        problems={problems}
         results={results}
         sections={sections}
         subjects={subjects.map((s) => ({ id: s.id, label: `${s.name} (${s.code})` }))}

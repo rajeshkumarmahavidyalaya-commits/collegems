@@ -311,8 +311,12 @@ exams            tenant, session, name, kind, dates, grading_scheme_id,
                  status (draft|published), published_at
 exam_subjects    exam x section x subject, max_marks, pass_marks, weight,
                  is_optional, exam_date, time_slot (kind='exam' via composite FK)
-marks            exam_subject x student, marks_obtained (nullable = unmarked),
-                 is_absent, max_marks (denormalised, see below)
+exam_components  the parts of a split paper: code, name, max_marks, pass_marks,
+                 position. Their maxima must add up to the paper's -- a rule
+                 about several rows, so exams_set_components enforces it
+marks            exam_subject x student x (component | none),
+                 marks_obtained (nullable = unmarked), is_absent,
+                 max_marks + component_max_marks (denormalised, see below)
 exam_results     the frozen answer, written once by exams_publish:
                  marks, rules_snapshot, rank_in_cohort + cohort_size,
                  attendance jsonb
@@ -332,6 +336,16 @@ foreign key**, so the CHECK `marks_obtained <= max_marks` has a local column to
 compare against — the generated-column trick from `0040`, generalised from a
 boolean to a value. `on update cascade` keeps it in step and refuses to lower a
 paper's maximum below a mark already awarded.
+
+`component_max_marks` is the same device again, one level down, and its key
+carries two facts rather than one:
+`(tenant_id, exam_subject_id, exam_component_id, component_max_marks)` references
+`exam_components (tenant_id, exam_subject_id, id, max_marks)`, so the part
+provably belongs to this paper *and* the local maximum provably equals the
+part's. Both columns are nullable together — a MATCH SIMPLE foreign key is
+skipped entirely when any column is null, which is how "this paper is not split"
+is represented — and `marks_component_pair_chk` stops one arriving without the
+other. **A split paper's total is the sum of its parts and is stored nowhere.**
 
 `exam_results` has **no INSERT, UPDATE or DELETE policy for anybody**;
 `exams_publish` / `exams_unpublish` are SECURITY DEFINER with their own admin

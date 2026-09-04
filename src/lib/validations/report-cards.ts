@@ -13,6 +13,17 @@ import { z } from "zod";
  * divide by zero.
  */
 
+export const cardComponentSchema = z.object({
+  id: z.string(),
+  code: z.string(),
+  name: z.string(),
+  max: z.number(),
+  pass: z.number(),
+  obtained: z.number().nullable(),
+  absent: z.boolean(),
+});
+export type CardComponent = z.infer<typeof cardComponentSchema>;
+
 export const cardPaperSchema = z.object({
   subject: z.string(),
   code: z.string().nullable(),
@@ -26,6 +37,10 @@ export const cardPaperSchema = z.object({
   counted: z.boolean(),
   optional: z.boolean(),
   absent: z.boolean(),
+  /** Null when the paper was marked as one. Frozen with the rest of the card,
+   *  so "Theory 55 / 70" is what it was on the day and not what a later edit to
+   *  the split would make it. */
+  components: z.array(cardComponentSchema).nullable().optional(),
   note: z.string().nullable(),
 });
 export type CardPaper = z.infer<typeof cardPaperSchema>;

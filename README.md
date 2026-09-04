@@ -47,7 +47,7 @@ After any migration, regenerate types into
 | [docs/modules/attendance.md](./docs/modules/attendance.md) | Attendance: the keyboard-first register and why it deviates |
 | [docs/modules/fees.md](./docs/modules/fees.md) | Fees: the append-only ledger, gapless receipts, and one real bug |
 | [docs/modules/promotion.md](./docs/modules/promotion.md) | Promotion: a dry run you can argue with before it writes anything |
-| [docs/modules/exams.md](./docs/modules/exams.md) | Exams: grading rules as data, and two bugs the demo cohort surfaced |
+| [docs/modules/exams.md](./docs/modules/exams.md) | Exams: grading rules as data, split papers, and two bugs the demo cohort surfaced |
 | [docs/modules/reports.md](./docs/modules/reports.md) | The reporting kernel: reports as data, not as forty pages |
 | [docs/modules/timetable.md](./docs/modules/timetable.md) | The class routine: three unique indexes doing all the work |
 | [docs/modules/notifications.md](./docs/modules/notifications.md) | Notifications: one send path, and the RLS hole that column grants close |
@@ -73,7 +73,8 @@ After any migration, regenerate types into
 - RLS on every table, with row-ownership rules for teachers, parents, students
 - Promotion: a dry-run preview whose rows an administrator can override, then
   applied — with unpaid balances carried forward as opening invoices
-- Exams and grading: papers, keyboard-first marks entry, and a rules engine
+- Exams and grading: papers (split into theory/practical parts where a school
+  needs it), keyboard-first marks entry, and a rules engine
   (grade bands, grace, best-of-N, optional subjects) stored as data per school
 - Reporting kernel: eight reports across five modules, run through one
   permission-checked dispatcher, with CSV export and print

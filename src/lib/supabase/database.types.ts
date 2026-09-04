@@ -768,6 +768,70 @@ export type Database = {
           },
         ]
       }
+      exam_components: {
+        Row: {
+          code: string
+          created_at: string
+          exam_subject_id: string
+          id: string
+          max_marks: number
+          name: string
+          pass_marks: number
+          position: number
+          session_id: string
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          exam_subject_id: string
+          id?: string
+          max_marks: number
+          name: string
+          pass_marks?: number
+          position?: number
+          session_id: string
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          exam_subject_id?: string
+          id?: string
+          max_marks?: number
+          name?: string
+          pass_marks?: number
+          position?: number
+          session_id?: string
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "exam_components_paper_fkey"
+            columns: ["tenant_id", "session_id", "exam_subject_id"]
+            isOneToOne: false
+            referencedRelation: "exam_subjects"
+            referencedColumns: ["tenant_id", "session_id", "id"]
+          },
+          {
+            foreignKeyName: "exam_components_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "academic_sessions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "exam_components_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       exam_remarks: {
         Row: {
           authored_by: string | null
@@ -2786,8 +2850,10 @@ export type Database = {
       }
       marks: {
         Row: {
+          component_max_marks: number | null
           created_at: string
           entered_by: string | null
+          exam_component_id: string | null
           exam_subject_id: string
           id: string
           is_absent: boolean
@@ -2800,8 +2866,10 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          component_max_marks?: number | null
           created_at?: string
           entered_by?: string | null
+          exam_component_id?: string | null
           exam_subject_id: string
           id?: string
           is_absent?: boolean
@@ -2814,8 +2882,10 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          component_max_marks?: number | null
           created_at?: string
           entered_by?: string | null
+          exam_component_id?: string | null
           exam_subject_id?: string
           id?: string
           is_absent?: boolean
@@ -2828,6 +2898,23 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "marks_component_fkey"
+            columns: [
+              "tenant_id",
+              "exam_subject_id",
+              "exam_component_id",
+              "component_max_marks",
+            ]
+            isOneToOne: false
+            referencedRelation: "exam_components"
+            referencedColumns: [
+              "tenant_id",
+              "exam_subject_id",
+              "id",
+              "max_marks",
+            ]
+          },
           {
             foreignKeyName: "marks_exam_subject_fkey"
             columns: ["tenant_id", "exam_subject_id", "max_marks"]
@@ -5530,6 +5617,7 @@ export type Database = {
         Args: { p_exam_subject_id: string }
         Returns: {
           admission_number: string
+          component_marks: Json
           is_absent: boolean
           marks_obtained: number
           remarks: string
@@ -5541,6 +5629,12 @@ export type Database = {
       exams_may_see_student: {
         Args: { p_student_id: string }
         Returns: boolean
+      }
+      exams_problems: {
+        Args: { p_exam_id: string }
+        Returns: {
+          problem: string
+        }[]
       }
       exams_publish: { Args: { p_exam_id: string }; Returns: number }
       exams_published_for_student: {
@@ -5610,6 +5704,10 @@ export type Database = {
         }[]
       }
       exams_rules_for: { Args: { p_exam_id: string }; Returns: Json }
+      exams_set_components: {
+        Args: { p_components: Json; p_exam_subject_id: string }
+        Returns: number
+      }
       exams_set_remark: {
         Args: { p_exam_id: string; p_remark: string; p_student_id: string }
         Returns: string
@@ -5617,6 +5715,7 @@ export type Database = {
       exams_subject_breakdown: {
         Args: { p_exam_id: string; p_student_id?: string }
         Returns: {
+          component_detail: Json
           counted: boolean
           effective_marks: number
           entered: boolean

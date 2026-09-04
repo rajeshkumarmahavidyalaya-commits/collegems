@@ -15,6 +15,7 @@ import {
   LockOpen,
   Pencil,
   Plus,
+  SplitSquareHorizontal,
   Trash2,
 } from "lucide-react";
 import { toast } from "sonner";
@@ -69,10 +70,12 @@ import {
   type PaperRow,
   type ResultRow,
 } from "./actions";
+import { ComponentsDialog } from "./components-dialog";
 
 type Props = {
   exam: ExamRow;
   papers: PaperRow[];
+  problems: string[];
   results: ResultRow[];
   sections: { id: string; label: string }[];
   subjects: { id: string; label: string }[];
@@ -83,6 +86,7 @@ type Props = {
 export function ExamDetail({
   exam,
   papers,
+  problems,
   results,
   sections,
   subjects,
@@ -91,6 +95,7 @@ export function ExamDetail({
 }: Props) {
   const [editing, setEditing] = useState<PaperRow | null>(null);
   const [paperOpen, setPaperOpen] = useState(false);
+  const [splitting, setSplitting] = useState<PaperRow | null>(null);
 
   const published = exam.status === "published";
 
@@ -110,8 +115,10 @@ export function ExamDetail({
         <PapersTab
           exam={exam}
           papers={papers}
+          problems={problems}
           canManage={canManage}
           canGrade={canGrade}
+          onSplit={(paper) => setSplitting(paper)}
           onAdd={() => {
             setEditing(null);
             setPaperOpen(true);
@@ -135,6 +142,13 @@ export function ExamDetail({
         sections={sections}
         subjects={subjects}
       />
+
+      <ComponentsDialog
+        paper={splitting}
+        open={splitting !== null}
+        onOpenChange={(open) => !open && setSplitting(null)}
+        isPublished={published}
+      />
     </Tabs>
   );
 }
@@ -146,17 +160,21 @@ export function ExamDetail({
 function PapersTab({
   exam,
   papers,
+  problems,
   canManage,
   canGrade,
   onAdd,
   onEdit,
+  onSplit,
 }: {
   exam: ExamRow;
   papers: PaperRow[];
+  problems: string[];
   canManage: boolean;
   canGrade: boolean;
   onAdd: () => void;
   onEdit: (paper: PaperRow) => void;
+  onSplit: (paper: PaperRow) => void;
 }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
@@ -196,7 +214,24 @@ function PapersTab({
           </Button>
         )}
       </CardHeader>
-      <CardContent>
+      <CardContent className="flex flex-col gap-4">
+        {problems.length > 0 && (
+          // From `exams_problems()`, in sentences, because a scheme and a set of
+          // papers can disagree in ways neither is wrong about on its own.
+          <Alert>
+            <AlertTriangle className="size-4" aria-hidden="true" />
+            <AlertTitle>
+              {problems.length === 1 ? "One thing to look at" : `${problems.length} things to look at`}
+            </AlertTitle>
+            <AlertDescription>
+              <ul className="list-inside list-disc">
+                {problems.map((problem) => (
+                  <li key={problem}>{problem}</li>
+                ))}
+              </ul>
+            </AlertDescription>
+          </Alert>
+        )}
         {papers.length === 0 ? (
           <div className="flex flex-col items-center gap-3 py-14 text-center">
             <span className="rounded-full bg-muted p-3">
@@ -226,6 +261,7 @@ function PapersTab({
                   <TableHead className="text-right">Max</TableHead>
                   <TableHead className="text-right">Pass</TableHead>
                   <TableHead className="text-right">Weight</TableHead>
+                  <TableHead>Parts</TableHead>
                   <TableHead>Marking</TableHead>
                   <TableHead className="w-32 text-right">Actions</TableHead>
                 </TableRow>
@@ -257,6 +293,25 @@ function PapersTab({
                         {paper.weight}
                       </TableCell>
                       <TableCell>
+                        {paper.components.length === 0 ? (
+                          <span className="text-sm text-muted-foreground">One paper</span>
+                        ) : (
+                          <span className="flex flex-wrap gap-1">
+                            {paper.components.map((component) => (
+                              <Badge
+                                key={component.id}
+                                variant="outline"
+                                className="font-normal"
+                                title={component.name}
+                              >
+                                {component.name} {component.maxMarks}
+                                {component.passMarks > 0 && ` · min ${component.passMarks}`}
+                              </Badge>
+                            ))}
+                          </span>
+                        )}
+                      </TableCell>
+                      <TableCell>
                         <span className="flex items-center gap-1.5 text-sm">
                           {complete ? (
                             <CheckCircle2
@@ -286,6 +341,14 @@ function PapersTab({
                           )}
                           {canManage && exam.status === "draft" && (
                             <>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => onSplit(paper)}
+                                aria-label={`Split ${paper.sectionLabel} ${paper.subjectName} into parts`}
+                              >
+                                <SplitSquareHorizontal className="size-4" aria-hidden="true" />
+                              </Button>
                               <Button
                                 variant="ghost"
                                 size="icon"

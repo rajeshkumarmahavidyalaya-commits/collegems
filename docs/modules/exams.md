@@ -56,13 +56,18 @@ a test asserting exactly that.
 
 ### Evaluation order, which is the part that matters
 
+0. **Components.** A split paper's raw mark is the **sum of its parts**, and
+   each part is checked against its own `pass_marks` on the raw mark — before
+   grace. See [Components](#components-a-paper-marked-in-more-than-one-sitting).
 1. **Raw marks.** Absent counts as zero; not-yet-entered also counts as zero but
    makes the whole result `incomplete`.
 2. **Grace.** Papers short of their pass mark by no more than `grace.max_marks`
    get exactly the marks they need — **cheapest gap first**, for at most
    `grace.max_subjects` papers. Cheapest-first is deliberate: it converts the
    most failures for the allowance, which is what a school means by grace.
-3. **Per-subject pass**, using the graced marks.
+3. **Per-subject pass**, using the graced marks — *and*, where the scheme sets
+   `components.must_pass_each`, no unmet part minimum. A paper can add up to a
+   pass and be failed on one of its parts; that is the whole point of the rule.
 4. **Optional substitution.** Where `optional_subject.replaces_worst` is set,
    each still-failed compulsory paper (worst first) is dropped in favour of a
    passed optional paper (best first), one for one.
@@ -76,7 +81,12 @@ a test asserting exactly that.
 
 Steps 2-before-3 and 4-before-5 are the two schools argue about, so each is
 pinned to an exact number in `tests/exams/grading-engine.test.ts` rather than
-described in a comment.
+described in a comment. Step 0-before-2 is the third, and it is pinned in
+`tests/exams/component-engine.test.ts`: **a part's minimum is checked on the raw
+mark, not on the graced one.** Grace is an allowance a school grants on an
+aggregate that just missed; a component minimum is a competency gate. A school
+that wants leniency in a practical lowers that part's `pass_marks`, which is one
+number in one place and says what it means.
 
 ### The demonstration
 
@@ -127,6 +137,105 @@ notice until a parent asks why their child never sat science and passed anyway.
 **This is the shape the whole module is built for.** The rule that was wrong was
 wrong in a JSON document, so fixing it for one school is a row and fixing it for
 everybody is one migration — not a release branch per customer.
+
+---
+
+## Components: a paper marked in more than one sitting
+
+Migration `0046`'s own header named "theory and practical weighted 70/30" as an
+example of the sort of rule a school ERP must not hardcode — and then did not
+build it. Every real board splits at least some papers, and until `0109` the
+only way to represent one was **two papers with weights**, which arithmetically
+works and reads wrong on a report card: a child sat one science paper, not two.
+
+```
+exam_subjects            the paper: (exam, section, subject), out of 100
+  └── exam_components    the parts: TH 70 (min 23), PR 30 (min 10)
+marks                    one row per student per part, or one per student
+                         when the paper is not split
+```
+
+Three decisions are worth knowing before touching it.
+
+**A part belongs to the paper, not to the subject.** Class 9 A may sit science
+split 70/30 in the annual exam while class 9 B sits the same subject unsplit in
+a unit test. `exam_subjects` is already keyed on (exam, section, subject), so
+that is the only place the split can be true.
+
+**The mark lives in `marks`, with a nullable `exam_component_id`.** A second
+`component_marks` table would duplicate six RLS policies whose entire content is
+"the mathematics teacher marks mathematics" — and it would put the paper's total
+in two places at once. **A paper's total is a sum, never a column**, which is
+rule 6's lesson from `book_issues.fine_paid` applied to marks. There is no
+`marks.total`, and `exams_subject_breakdown` is the only thing that adds them
+up.
+
+The ceiling comes from the part, via one composite foreign key doing two jobs at
+once:
+
+```sql
+constraint marks_component_fkey
+  foreign key (tenant_id, exam_subject_id, exam_component_id, component_max_marks)
+  references public.exam_components (tenant_id, exam_subject_id, id, max_marks)
+  on update cascade on delete cascade
+```
+
+`exam_subject_id` in the key is the *identity* use of the device (the part
+belongs to this paper, as `transport_assignments.route_id` does), and
+`max_marks` is the *value* use (as `marks.max_marks` already was for the whole
+paper). `on update cascade` means lowering a part's maximum below a mark already
+awarded is refused — the cascade rewrites the child and `marks_within_max_chk`
+re-evaluates. Migration `0112` puts a sentence in front of that refusal, because
+the raw one names a row and a constraint and nothing a person can act on.
+
+A paper is therefore in exactly one of two states — no parts and one mark row
+per student, or parts and one row per student per part — and the engine reads
+whichever matches the paper's own structure. A leftover row of the other kind is
+**ignored rather than added in**, and `exams_problems()` says so.
+
+### What no constraint can see
+
+Two of this module's rules are about several rows at once, so they live in
+`exams_set_components` under an advisory lock, with the numbers in the message:
+
+- **The parts add up to the paper.** *"The parts add up to 95 but the paper is
+  out of 100, so they are 5 short."*
+- **A part carrying marks cannot be removed**, because the foreign key would
+  cascade them away silently.
+
+Two more are refusals rather than checks, and each names the screen to use:
+splitting a paper that already has whole-paper marks, and merging one back whose
+parts already carry marks. Deleting the marks on the caller's behalf is the
+worse of the two available answers.
+
+### Absence is per part
+
+Absent from the practical and present for the theory is a state schools have.
+So:
+
+| Every part | The paper is |
+|---|---|
+| absent | absent |
+| marked or absent, at least one marked | **marked**, and its total is the sum |
+| any part still blank | not marked yet |
+
+The middle row is the one that matters: without it a child who missed the
+practical would leave the result `incomplete` forever, and somebody would
+"fix" it by typing a zero.
+
+### `must_pass_each` defaults to false
+
+Whether a shortfall in a part fails the whole paper is a `grading_schemes.rules`
+key, per rule 12 — and its default is the one place in this codebase where the
+conservative reading is the *lenient* one. Turning it on by default would change
+the meaning of every scheme already saved and fail children who had passed.
+
+What keeps that honest is `exams_problems()`, the exam-level sibling of
+`grading_scheme_problems()`: it says out loud when a paper's parts carry
+minimums the scheme will never enforce, when a scheme requires each part on an
+exam that has none, and when a paper carries both kinds of mark row. Criticism
+in sentences, in Postgres, next to the engine — same contract as the scheme
+critic, one level up.
 
 ---
 
@@ -197,8 +306,10 @@ exactly the drift freezing exists to prevent.
 |---|---|---|
 | `exams_subject_breakdown(exam, student?)` | invoker | The working: every paper, every rule that touched it, and why |
 | `exams_result_sheet(exam, section?)` | invoker | The aggregate, live |
-| `exams_mark_sheet(paper)` | invoker | One paper's column for the entry grid |
-| `exams_enter_marks(paper, entries)` | invoker | One whole column, atomically, idempotent |
+| `exams_mark_sheet(paper)` | invoker | One paper's column — or every part's — for the entry grid |
+| `exams_enter_marks(paper, entries)` | invoker | The whole grid, atomically, idempotent |
+| `exams_set_components(paper, parts)` | invoker | Replace how a paper is split; the parts must add up |
+| `exams_problems(exam)` | invoker | The scheme's criticism plus the exam's own, in sentences |
 | `exams_publish(exam)` | **definer** | Freeze, admin-guarded |
 | `exams_unpublish(exam)` | **definer** | Delete the frozen rows, audited |
 | `grading_grade_for(rules, percent)` | invoker | The highest band reached |
@@ -238,17 +349,25 @@ screens look similar and the difference is deliberate: a mistyped attendance
 mark is a correction; a mistyped exam mark that saved itself is a number a
 parent may already have seen.
 
-Ticking "absent" clears the mark box, because the database refuses the
-combination outright — better to make it impossible than to explain the
-constraint violation.
+**Absence is a token, not a control.** A cell accepts a number, a blank, or
+`AB` — which is what a mark register filled in by hand has, and what
+`formatMark` already prints. That is what lets a paper split three ways be three
+narrow boxes instead of three boxes and three checkboxes. The row checkbox is a
+shortcut that writes `AB` into every cell; a child absent only for the practical
+gets it in that one cell, and the engine still treats the paper as sat.
+
+On a split paper the grid grows a column per part, ← and → cross between them
+(only from the end of a cell, so they still move the caret inside one), and the
+row shows a running total once every part is filled in.
 
 ---
 
 ## What is not built
 
-- **No components within a paper.** Theory 80 + Practical 20 is currently two
-  papers with weights, not one paper with two parts. That works arithmetically
-  and reads wrong on a report card; a `exam_components` table is the fix.
+- ~~**No components within a paper.**~~ Built in `0109`–`0112`. Theory 80 +
+  Practical 20 is one paper with two parts, marked in one grid, summed by the
+  engine and printed part by part on the card. Whether a part's own minimum
+  fails the paper is `components.must_pass_each` in the scheme, not a branch.
 - ~~**No report card.**~~ Built in Phase 3.2 — a per-student card with the
   class teacher's remark and an attendance line, printing one child to a sheet.
   A *PDF* is still not built and is queued work per rule 7. See

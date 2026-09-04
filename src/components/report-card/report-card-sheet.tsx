@@ -108,6 +108,25 @@ export function ReportCardSheet({ card }: { card: ReportCard }) {
                         {paper.optional ? (
                           <span className="ml-2 text-xs text-muted-foreground">(additional)</span>
                         ) : null}
+                        {paper.components && paper.components.length > 0 ? (
+                          // The working, on the card. A parent looking at 68/100
+                          // with "Fail" beside it is owed the sentence that
+                          // explains it, and the sentence is the practical mark.
+                          <span className="block font-mono text-xs tabular-nums text-muted-foreground">
+                            {paper.components
+                              .map(
+                                (part) =>
+                                  `${part.name} ${
+                                    part.absent
+                                      ? "AB"
+                                      : part.obtained === null
+                                        ? "—"
+                                        : Number(part.obtained)
+                                  }/${Number(part.max)}`,
+                              )
+                              .join(" · ")}
+                          </span>
+                        ) : null}
                         {note ? (
                           <span className="block text-xs text-muted-foreground">{note}</span>
                         ) : null}

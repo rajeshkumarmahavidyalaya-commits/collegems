@@ -36,7 +36,7 @@ describe("marks are not numbers until they are", () => {
   });
 
   it("refuses text", () => {
-    expect(markProblem("absent", 100)).toBe("Not a number");
+    expect(markProblem("banana", 100)).toBe("A mark, or AB for absent");
   });
 
   it("accepts a half mark and the maximum itself", () => {
@@ -63,12 +63,17 @@ describe("displaying a mark", () => {
 
 describe("counting a mark sheet", () => {
   it("counts an absence as dealt with, and an empty box as not", () => {
-    const entries = [
-      { marks: "45", isAbsent: false },
-      { marks: "", isAbsent: true },
-      { marks: "", isAbsent: false },
+    const rows = [{ cells: ["45"] }, { cells: ["AB"] }, { cells: [""] }];
+    expect(enteredCount(rows, [100])).toBe(2);
+  });
+
+  it("counts a split paper only once every part is resolved", () => {
+    const rows = [
+      { cells: ["55", "24"] }, // both parts marked
+      { cells: ["55", "AB"] }, // absent for the practical, but resolved
+      { cells: ["55", ""] }, // the practical is still to mark
     ];
-    expect(enteredCount(entries)).toBe(2);
+    expect(enteredCount(rows, [70, 30])).toBe(2);
   });
 });
 

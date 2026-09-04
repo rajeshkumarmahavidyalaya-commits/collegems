@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { getUserContext } from "@/lib/auth/context";
 import {
+  examComponentSetSchema,
   examPaperSchema,
   examSchema,
   gradingSchemeSchema,
@@ -143,6 +144,16 @@ export type PaperRow = {
   examDate: string | null;
   markedCount: number;
   studentCount: number;
+  components: PaperComponent[];
+};
+
+export type PaperComponent = {
+  id: string;
+  code: string;
+  name: string;
+  maxMarks: number;
+  passMarks: number;
+  position: number;
 };
 
 export async function listPapers(examId: string): Promise<PaperRow[]> {
@@ -156,14 +167,18 @@ export async function listPapers(examId: string): Promise<PaperRow[]> {
   if (error) throw new Error(error.message);
   if (!papers?.length) return [];
 
-  const [sectionsRes, subjectsRes, marksRes, enrolmentsRes] = await Promise.all([
+  const [sectionsRes, subjectsRes, marksRes, enrolmentsRes, componentsRes] = await Promise.all([
     supabase.from("sections").select("id, name, class_levels ( name, sequence )"),
     supabase.from("subjects").select("id, name, code"),
     supabase
       .from("marks")
-      .select("exam_subject_id, marks_obtained, is_absent")
+      .select("exam_subject_id, exam_component_id, student_id, marks_obtained, is_absent")
       .in("exam_subject_id", papers.map((p) => p.id)),
     supabase.from("enrolments").select("section_id").eq("status", "active"),
+    supabase
+      .from("exam_components")
+      .select("id, exam_subject_id, code, name, max_marks, pass_marks, position")
+      .in("exam_subject_id", papers.map((p) => p.id)),
   ]);
 
   const sections = new Map(
@@ -177,13 +192,50 @@ export async function listPapers(examId: string): Promise<PaperRow[]> {
   );
   const subjects = new Map((subjectsRes.data ?? []).map((s) => [s.id, s]));
 
+  const components = new Map<string, PaperComponent[]>();
+  for (const c of componentsRes.data ?? []) {
+    const list = components.get(c.exam_subject_id) ?? [];
+    list.push({
+      id: c.id,
+      code: c.code,
+      name: c.name,
+      maxMarks: Number(c.max_marks),
+      passMarks: Number(c.pass_marks),
+      position: c.position,
+    });
+    components.set(c.exam_subject_id, list);
+  }
+  for (const list of components.values()) {
+    list.sort((a, b) => a.position - b.position || a.code.localeCompare(b.code));
+  }
+
   // "Marked" means resolved — a mark, or an absence. An unmarked paper is what
   // keeps a result incomplete, so the count that matters is how many are still
   // outstanding.
+  //
+  // A split paper counts a child once every one of its parts is resolved, which
+  // is the same rule `exams_subject_breakdown` applies: a paper with the
+  // practical still to mark is not marked, however full the theory column looks.
+  const resolvedParts = new Map<string, Set<string>>();
   const marked = new Map<string, number>();
   for (const m of marksRes.data ?? []) {
     if (m.marks_obtained === null && !m.is_absent) continue;
-    marked.set(m.exam_subject_id, (marked.get(m.exam_subject_id) ?? 0) + 1);
+    if (m.exam_component_id === null) {
+      if (components.has(m.exam_subject_id)) continue;
+      marked.set(m.exam_subject_id, (marked.get(m.exam_subject_id) ?? 0) + 1);
+    } else {
+      const key = `${m.exam_subject_id}:${m.student_id}`;
+      const seen = resolvedParts.get(key) ?? new Set<string>();
+      seen.add(m.exam_component_id);
+      resolvedParts.set(key, seen);
+    }
+  }
+  for (const [key, seen] of resolvedParts) {
+    const paperId = key.slice(0, key.indexOf(":"));
+    const expected = components.get(paperId)?.length ?? 0;
+    if (expected > 0 && seen.size === expected) {
+      marked.set(paperId, (marked.get(paperId) ?? 0) + 1);
+    }
   }
 
   const roll = new Map<string, number>();
@@ -210,6 +262,7 @@ export async function listPapers(examId: string): Promise<PaperRow[]> {
         examDate: p.exam_date,
         markedCount: marked.get(p.id) ?? 0,
         studentCount: roll.get(p.section_id) ?? 0,
+        components: components.get(p.id) ?? [],
       };
     })
     .sort(
@@ -298,6 +351,9 @@ export type MarkSheetRow = {
   marksObtained: number | null;
   isAbsent: boolean;
   remarks: string | null;
+  /** Keyed by component id, so a cell is found by identity rather than by
+   *  position — the one thing that goes wrong when a part is added later. */
+  componentMarks: Record<string, { marks: number | null; absent: boolean }>;
 };
 
 export async function getMarkSheet(examSubjectId: string): Promise<MarkSheetRow[]> {
@@ -315,6 +371,14 @@ export async function getMarkSheet(examSubjectId: string): Promise<MarkSheetRow[
     marksObtained: r.marks_obtained === null ? null : Number(r.marks_obtained),
     isAbsent: r.is_absent,
     remarks: r.remarks,
+    componentMarks: Object.fromEntries(
+      Object.entries(
+        (r.component_marks ?? {}) as Record<string, { marks: number | null; absent: boolean }>,
+      ).map(([id, cell]) => [
+        id,
+        { marks: cell.marks === null ? null : Number(cell.marks), absent: Boolean(cell.absent) },
+      ]),
+    ),
   }));
 }
 
@@ -326,6 +390,7 @@ export async function saveMarks(input: unknown): Promise<ActionResult<{ written:
 
   const entries = parsed.data.entries.map((e) => ({
     student_id: e.studentId,
+    exam_component_id: e.componentId,
     // An empty box is "not entered yet", which the RPC stores as null. It is
     // not zero, and collapsing the two would turn an unmarked paper into a
     // failed one.
@@ -343,6 +408,53 @@ export async function saveMarks(input: unknown): Promise<ActionResult<{ written:
 
   revalidatePath("/exams");
   return { ok: true, data: { written: data ?? 0 } };
+}
+
+// ---------------------------------------------------------------------------
+// Components — how a paper is split
+// ---------------------------------------------------------------------------
+
+/**
+ * Replace a paper's parts wholesale. The interesting refusals all live in
+ * `exams_set_components` — the parts have to add up, a part carrying marks
+ * cannot be removed or shrunk below one of them — and they arrive here as
+ * sentences already, so this passes them through rather than paraphrasing.
+ */
+export async function savePaperComponents(
+  input: unknown,
+): Promise<ActionResult<{ parts: number }>> {
+  const parsed = examComponentSetSchema.safeParse(input);
+  if (!parsed.success) return invalid(parsed.error);
+
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("exams_set_components", {
+    p_exam_subject_id: parsed.data.examSubjectId,
+    p_components: parsed.data.components.map((c, index) => ({
+      code: c.code.trim(),
+      name: c.name.trim(),
+      max_marks: c.maxMarks,
+      pass_marks: c.passMarks,
+      position: index,
+    })),
+  });
+
+  if (error) return fail(error.message);
+
+  revalidatePath("/exams");
+  return { ok: true, data: { parts: data ?? 0 } };
+}
+
+/**
+ * What is wrong with this exam, in sentences. The list comes from Postgres for
+ * the reason rule 12 gives: the thing that criticises a scheme has to live next
+ * to the thing that evaluates it, or the two drift and the criticism is the one
+ * that goes stale.
+ */
+export async function listExamProblems(examId: string): Promise<string[]> {
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("exams_problems", { p_exam_id: examId });
+  if (error) throw new Error(error.message);
+  return (data ?? []).map((row) => row.problem).filter((p): p is string => Boolean(p));
 }
 
 // ---------------------------------------------------------------------------

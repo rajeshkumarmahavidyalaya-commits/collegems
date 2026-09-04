@@ -108,6 +108,71 @@ export const examPaperSchema = z
 export type ExamPaperInput = z.infer<typeof examPaperSchema>;
 
 /**
+ * One part of a split paper. `code` is the column heading on the marks grid, so
+ * it is short and unique within the paper; the maximum is the part's own, and
+ * the parts' maxima have to add up to the paper's — a rule about several rows,
+ * which is why it is checked in `exams_set_components` and not here. What *is*
+ * checked here is what a single row can be wrong about on its own.
+ */
+export const examComponentSchema = z
+  .object({
+    code: z.string().min(1, "A part needs a short code").max(8, "Eight characters at most"),
+    name: z.string().min(1, "A part needs a name").max(60),
+    maxMarks: z
+      .number({ message: "Enter the maximum for this part" })
+      .positive("The maximum must be above zero")
+      .max(1000, "That is higher than any paper this system will mark"),
+    passMarks: z.number({ message: "Enter the minimum" }).min(0, "Cannot be negative"),
+  })
+  .refine((v) => v.passMarks <= v.maxMarks, {
+    message: "The minimum cannot exceed this part's maximum",
+    path: ["passMarks"],
+  });
+export type ExamComponentInput = z.infer<typeof examComponentSchema>;
+
+/**
+ * The whole set at once. An empty list means "this paper is not split", which
+ * is a legitimate thing to save; a single part is not, because a paper split
+ * into one part is a paper.
+ */
+export const examComponentSetSchema = z
+  .object({
+    examSubjectId: z.string().uuid(),
+    components: z.array(examComponentSchema).max(8, "Eight parts is more than any paper needs"),
+  })
+  .refine((v) => v.components.length !== 1, {
+    message: "Give the paper two or more parts, or none at all",
+    path: ["components"],
+  })
+  .refine(
+    (v) => new Set(v.components.map((c) => c.code.trim().toLowerCase())).size === v.components.length,
+    { message: "Two parts share a code", path: ["components"] },
+  );
+export type ExamComponentSetInput = z.infer<typeof examComponentSetSchema>;
+
+/**
+ * The other half of "the parts add up to the paper" — said in the browser while
+ * somebody is typing, so the total under the form moves as they go. Postgres
+ * still enforces it; this only means nobody presses Save to find out.
+ */
+export function componentTotal(components: { maxMarks: number }[]) {
+  return components.reduce((sum, c) => sum + (Number.isFinite(c.maxMarks) ? c.maxMarks : 0), 0);
+}
+
+export function componentTotalProblem(
+  components: { maxMarks: number }[],
+  paperMaxMarks: number,
+): string | null {
+  if (components.length === 0) return null;
+  const total = componentTotal(components);
+  if (total === paperMaxMarks) return null;
+  const gap = Math.abs(total - paperMaxMarks);
+  return `The parts add up to ${total} but the paper is out of ${paperMaxMarks}, so they are ${gap} ${
+    total < paperMaxMarks ? "short" : "over"
+  }.`;
+}
+
+/**
  * One student's cell in the marks grid. `marks` is a string because the input
  * is: an empty box means "not entered yet", which is a different thing from
  * zero, and `z.coerce` would collapse the two — as well as splitting the
@@ -115,6 +180,8 @@ export type ExamPaperInput = z.infer<typeof examPaperSchema>;
  */
 export const markEntrySchema = z.object({
   studentId: z.string().uuid(),
+  /** Null for a paper marked as a whole; the part's id for a split one. */
+  componentId: z.string().uuid().nullable().default(null),
   marks: z.string(),
   isAbsent: z.boolean(),
   remarks: z.string().max(200).optional(),
@@ -168,6 +235,15 @@ export const gradingRulesSchema = z.object({
       include: z.enum(["all", "passed"]).optional(),
     })
     .optional(),
+  /**
+   * Whether every part of a split paper has to be passed on its own, or only
+   * the paper's total. Absent means false, and that default is narrower than
+   * rule 12's usual "the conservative reading": turning it on by default would
+   * change what every scheme already saved means, and fail children who had
+   * passed. What keeps the lenient default honest is `exams_problems()`, which
+   * says out loud when a paper carries minimums the scheme will not enforce.
+   */
+  components: z.object({ must_pass_each: z.boolean() }).optional(),
   optional_subject: z
     .object({
       replaces_worst: z.boolean(),
@@ -252,23 +328,48 @@ export function formatMark(value: number | null | undefined, isAbsent: boolean) 
   return String(Number(value));
 }
 
-/** How full a mark sheet is, for the "12 of 40 entered" line. */
-export function enteredCount(entries: { marks: string; isAbsent: boolean }[]) {
-  return entries.filter((e) => e.isAbsent || e.marks.trim() !== "").length;
-}
-
 /**
- * Validate one typed mark against the paper's maximum, in the browser, so a
- * teacher typing 105 into a 100-mark paper is told at the keystroke rather than
- * when the whole sheet is refused. The database still enforces it.
+ * One typed cell on a mark sheet, understood.
+ *
+ * A mark register filled in by hand has three states in one column — a number,
+ * a blank, and "AB" — and so does this. Making absence a *token* rather than a
+ * second control is what lets a split paper have one narrow input per part
+ * instead of an input and a checkbox per part, and it keeps the grid what the
+ * design rules ask it to be: a column you can type down without reaching for
+ * the mouse. `formatMark` already renders an absence as "AB", so what a teacher
+ * types is what they see afterwards.
  */
-export function markProblem(raw: string, maxMarks: number): string | null {
+export type MarkCell =
+  | { kind: "empty" }
+  | { kind: "absent" }
+  | { kind: "value"; value: number }
+  | { kind: "problem"; message: string };
+
+const ABSENT_TOKENS = new Set(["a", "ab", "abs", "absent"]);
+
+export function parseMarkCell(raw: string, maxMarks: number): MarkCell {
   const text = raw.trim();
-  if (text === "") return null;
+  if (text === "") return { kind: "empty" };
+  if (ABSENT_TOKENS.has(text.toLowerCase())) return { kind: "absent" };
 
   const value = Number(text);
-  if (!Number.isFinite(value)) return "Not a number";
-  if (value < 0) return "Cannot be negative";
-  if (value > maxMarks) return `Above the maximum of ${maxMarks}`;
-  return null;
+  if (!Number.isFinite(value)) return { kind: "problem", message: "A mark, or AB for absent" };
+  if (value < 0) return { kind: "problem", message: "Cannot be negative" };
+  if (value > maxMarks) return { kind: "problem", message: `Above the maximum of ${maxMarks}` };
+  return { kind: "value", value };
+}
+
+/** The message for a cell that cannot be saved, or null when it can. */
+export function markProblem(raw: string, maxMarks: number): string | null {
+  const cell = parseMarkCell(raw, maxMarks);
+  return cell.kind === "problem" ? cell.message : null;
+}
+
+/** How full a mark sheet is, for the "12 of 40 entered" line. A row counts once
+ *  every one of its cells has been resolved — which for a split paper means
+ *  every part, because a paper with the practical still to mark is not marked. */
+export function enteredCount(rows: { cells: string[] }[], maxima: number[]) {
+  return rows.filter((row) =>
+    row.cells.every((cell, i) => parseMarkCell(cell, maxima[i] ?? 0).kind !== "empty"),
+  ).length;
 }

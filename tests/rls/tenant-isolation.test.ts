@@ -58,6 +58,7 @@ describe("cross-tenant isolation", () => {
     "grading_schemes",
     "exams",
     "exam_subjects",
+    "exam_components",
     "marks",
     "exam_results",
     "exam_remarks",
