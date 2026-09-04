@@ -293,6 +293,14 @@ Two consequences worth knowing before you touch this module:
   nothing, so a test that only asserts an error passes whatever the policy says.
   `enquiry_follow_ups` is the case that made this explicit: 9 rows readable, an
   update touching 0, a delete touching 0. Assert the count.
+
+  **There are two ways to be append-only and they fail differently.** A revoked
+  table (`ledger_entries`, `stock_movements`) *raises* `42501: permission
+  denied`; a table with no write policy (`enquiry_follow_ups`,
+  `notification_deliveries`) silently matches nothing. Prefer the revoke where
+  the table is the record of what happened and nobody should ever edit it;
+  the absent policy where one role writes through a definer function and the
+  rest simply have no way in. Test each for what it actually does.
 - **Amounts are signed, positive means "owes more", and the RPCs take positive
   numbers** and do the signing. Never ask a caller for a negative amount.
 
@@ -321,6 +329,19 @@ ledger. It is collected instead as a deduction line on the next payroll run and
 settled by stamping `book_issues.staff_fine_payslip_id` (migration `0065`), or
 written off with `library_waive_staff_fine`. This was an open gap until payroll
 existed to receive it; see `docs/modules/payroll.md`.
+
+### The same pattern, applied to things that are not money
+
+`stock_movements` is the fee ledger's shape with goods in it, and building it
+that way was not decoration — the alternative, an `items.quantity_on_hand`
+column kept in step by hand, is exactly the `book_issues.fine_paid` mistake rule
+6 already threw out once. **Quantity on hand is a sum, never a column.**
+
+The transferable part is the checklist: signed rows typed by kind, the sign
+constrained per kind, positive numbers in at the boundary with the signing done
+in the RPC, corrections as opposing rows, `UPDATE`/`DELETE` revoked, and the
+total computed by one function everything else calls. See
+`docs/modules/inventory.md`.
 
 ### The general ledger sits above all of this
 

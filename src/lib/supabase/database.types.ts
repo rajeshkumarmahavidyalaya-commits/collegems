@@ -1897,6 +1897,66 @@ export type Database = {
           },
         ]
       }
+      inventory_items: {
+        Row: {
+          category_id: string | null
+          created_at: string
+          id: string
+          is_active: boolean
+          is_asset: boolean
+          name: string
+          notes: string | null
+          reorder_level: number
+          sku: string
+          tenant_id: string
+          unit: string
+          updated_at: string
+        }
+        Insert: {
+          category_id?: string | null
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          is_asset?: boolean
+          name: string
+          notes?: string | null
+          reorder_level?: number
+          sku: string
+          tenant_id: string
+          unit?: string
+          updated_at?: string
+        }
+        Update: {
+          category_id?: string | null
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          is_asset?: boolean
+          name?: string
+          notes?: string | null
+          reorder_level?: number
+          sku?: string
+          tenant_id?: string
+          unit?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "inventory_items_category_fkey"
+            columns: ["tenant_id", "category_id"]
+            isOneToOne: false
+            referencedRelation: "item_categories"
+            referencedColumns: ["tenant_id", "id"]
+          },
+          {
+            foreignKeyName: "inventory_items_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       invitations: {
         Row: {
           accepted_at: string | null
@@ -2132,6 +2192,38 @@ export type Database = {
           },
           {
             foreignKeyName: "invoices_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      item_categories: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "item_categories_tenant_id_fkey"
             columns: ["tenant_id"]
             isOneToOne: false
             referencedRelation: "tenants"
@@ -4057,6 +4149,89 @@ export type Database = {
           },
         ]
       }
+      stock_movements: {
+        Row: {
+          created_at: string
+          happened_on: string
+          id: string
+          issued_to_note: string | null
+          issued_to_staff_id: string | null
+          item_id: string
+          kind: string
+          note: string | null
+          quantity: number
+          recorded_by: string | null
+          reference: string | null
+          session_id: string
+          supplier: string | null
+          tenant_id: string
+          unit_cost: number | null
+        }
+        Insert: {
+          created_at?: string
+          happened_on?: string
+          id?: string
+          issued_to_note?: string | null
+          issued_to_staff_id?: string | null
+          item_id: string
+          kind: string
+          note?: string | null
+          quantity: number
+          recorded_by?: string | null
+          reference?: string | null
+          session_id: string
+          supplier?: string | null
+          tenant_id: string
+          unit_cost?: number | null
+        }
+        Update: {
+          created_at?: string
+          happened_on?: string
+          id?: string
+          issued_to_note?: string | null
+          issued_to_staff_id?: string | null
+          item_id?: string
+          kind?: string
+          note?: string | null
+          quantity?: number
+          recorded_by?: string | null
+          reference?: string | null
+          session_id?: string
+          supplier?: string | null
+          tenant_id?: string
+          unit_cost?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "stock_movements_item_fkey"
+            columns: ["tenant_id", "item_id"]
+            isOneToOne: false
+            referencedRelation: "inventory_items"
+            referencedColumns: ["tenant_id", "id"]
+          },
+          {
+            foreignKeyName: "stock_movements_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "academic_sessions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stock_movements_staff_fkey"
+            columns: ["tenant_id", "issued_to_staff_id"]
+            isOneToOne: false
+            referencedRelation: "staff"
+            referencedColumns: ["tenant_id", "id"]
+          },
+          {
+            foreignKeyName: "stock_movements_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       students: {
         Row: {
           admission_date: string
@@ -5683,6 +5858,10 @@ export type Database = {
           write_offs: number
         }[]
       }
+      format_quantity: {
+        Args: { p_decimals?: number; p_value: number }
+        Returns: string
+      }
       front_office_next_number: { Args: { p_kind: string }; Returns: string }
       grading_grade_for: {
         Args: { p_percentage: number; p_rules: Json }
@@ -6332,6 +6511,68 @@ export type Database = {
           rls_enabled: boolean
           table_name: string
         }[]
+      }
+      stock_issued_assets: {
+        Args: never
+        Returns: {
+          holder: string
+          item_id: string
+          name: string
+          quantity: number
+          since: string
+          sku: string
+        }[]
+      }
+      stock_ledger: {
+        Args: { p_item_id: string; p_limit?: number }
+        Returns: {
+          counterparty: string
+          happened_on: string
+          id: string
+          kind: string
+          note: string
+          quantity: number
+          reference: string
+          running: number
+          unit_cost: number
+        }[]
+      }
+      stock_on_hand: {
+        Args: { p_as_of?: string }
+        Returns: {
+          average_cost: number
+          below_reorder: boolean
+          category_name: string
+          is_active: boolean
+          is_asset: boolean
+          issued_out: number
+          item_id: string
+          last_movement: string
+          name: string
+          on_hand: number
+          reorder_level: number
+          sku: string
+          unit: string
+        }[]
+      }
+      stock_record_movement: {
+        Args: {
+          p_happened_on?: string
+          p_issued_to_note?: string
+          p_issued_to_staff_id?: string
+          p_item_id: string
+          p_kind: string
+          p_note?: string
+          p_quantity: number
+          p_reference?: string
+          p_supplier?: string
+          p_unit_cost?: number
+        }
+        Returns: string
+      }
+      stock_reverse_movement: {
+        Args: { p_movement_id: string; p_reason: string }
+        Returns: string
       }
       storage_object_tenant_matches: {
         Args: { p_name: string }

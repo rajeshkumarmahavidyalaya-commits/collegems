@@ -10,6 +10,7 @@ import {
   DoorOpen,
   GraduationCap,
   BookOpenCheck,
+  Boxes,
   CalendarClock,
   CalendarRange,
   FileText,
@@ -245,6 +246,16 @@ export const NAV_GROUPS: NavGroup[] = [
         href: "/accounts/vouchers",
         icon: BookText,
         roles: ["admin", "accountant"],
+      },
+      // The store sits in Finance rather than with the academic modules: what
+      // people ask of it is "what did we spend and what is left", and the
+      // librarian is in here because in most schools the store keeper and the
+      // librarian are the same person.
+      {
+        title: "Store",
+        href: "/inventory",
+        icon: Boxes,
+        roles: ["admin", "accountant", "librarian", "teacher"],
       },
     ],
   },
