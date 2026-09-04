@@ -654,6 +654,19 @@ converges. Keep it `SECURITY INVOKER` where the tables it writes already have
 policies — reach for a definer function only when a table deliberately has no
 INSERT policy at all. See `docs/modules/promotion.md`.
 
+Bulk import is the second instance, and adds three things worth copying:
+
+- **Re-judge every row after any edit, not just the edited one.** Fixing row 4's
+  admission number clears row 2 as well, and a *new* duplicate introduced by the
+  fix is caught before applying rather than during it.
+- **Apply partially and record why.** A row that fails keeps its reason and the
+  batch carries on; stopping at the first failure leaves the office with half an
+  import and no list of what did not go in.
+- **Refuse an oversized input rather than truncating it.** Silently importing
+  the first 500 of 900 children is the worst available outcome, because nobody
+  notices until April. Bound it, and say the bound out loud. See
+  `docs/modules/import.md`.
+
 ---
 
 ## UI work — read this before writing any interface code

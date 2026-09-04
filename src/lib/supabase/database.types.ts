@@ -1897,6 +1897,188 @@ export type Database = {
           },
         ]
       }
+      import_rows: {
+        Row: {
+          address_line1: string | null
+          admission_date: string | null
+          admission_number: string | null
+          applied_student_id: string | null
+          apply_error: string | null
+          city: string | null
+          created_at: string
+          date_of_birth: string | null
+          email: string | null
+          first_name: string | null
+          gender: string | null
+          guardian_name: string | null
+          guardian_phone: string | null
+          guardian_relationship: string | null
+          id: string
+          last_name: string | null
+          line_number: number
+          middle_name: string | null
+          phone: string | null
+          problems: string[]
+          roll_number: string | null
+          run_id: string
+          run_status: string
+          section_id: string | null
+          skipped: boolean
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          address_line1?: string | null
+          admission_date?: string | null
+          admission_number?: string | null
+          applied_student_id?: string | null
+          apply_error?: string | null
+          city?: string | null
+          created_at?: string
+          date_of_birth?: string | null
+          email?: string | null
+          first_name?: string | null
+          gender?: string | null
+          guardian_name?: string | null
+          guardian_phone?: string | null
+          guardian_relationship?: string | null
+          id?: string
+          last_name?: string | null
+          line_number: number
+          middle_name?: string | null
+          phone?: string | null
+          problems?: string[]
+          roll_number?: string | null
+          run_id: string
+          run_status?: string
+          section_id?: string | null
+          skipped?: boolean
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          address_line1?: string | null
+          admission_date?: string | null
+          admission_number?: string | null
+          applied_student_id?: string | null
+          apply_error?: string | null
+          city?: string | null
+          created_at?: string
+          date_of_birth?: string | null
+          email?: string | null
+          first_name?: string | null
+          gender?: string | null
+          guardian_name?: string | null
+          guardian_phone?: string | null
+          guardian_relationship?: string | null
+          id?: string
+          last_name?: string | null
+          line_number?: number
+          middle_name?: string | null
+          phone?: string | null
+          problems?: string[]
+          roll_number?: string | null
+          run_id?: string
+          run_status?: string
+          section_id?: string | null
+          skipped?: boolean
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "import_rows_run_fkey"
+            columns: ["tenant_id", "run_id", "run_status"]
+            isOneToOne: false
+            referencedRelation: "import_runs"
+            referencedColumns: ["tenant_id", "id", "status"]
+          },
+          {
+            foreignKeyName: "import_rows_section_fkey"
+            columns: ["tenant_id", "section_id"]
+            isOneToOne: false
+            referencedRelation: "sections"
+            referencedColumns: ["tenant_id", "id"]
+          },
+          {
+            foreignKeyName: "import_rows_student_fkey"
+            columns: ["tenant_id", "applied_student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["tenant_id", "id"]
+          },
+          {
+            foreignKeyName: "import_rows_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      import_runs: {
+        Row: {
+          applied_at: string | null
+          applied_by: string | null
+          applied_count: number
+          created_at: string
+          created_by: string | null
+          file_name: string | null
+          id: string
+          kind: string
+          row_count: number
+          session_id: string
+          status: string
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          applied_at?: string | null
+          applied_by?: string | null
+          applied_count?: number
+          created_at?: string
+          created_by?: string | null
+          file_name?: string | null
+          id?: string
+          kind?: string
+          row_count?: number
+          session_id: string
+          status?: string
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          applied_at?: string | null
+          applied_by?: string | null
+          applied_count?: number
+          created_at?: string
+          created_by?: string | null
+          file_name?: string | null
+          id?: string
+          kind?: string
+          row_count?: number
+          session_id?: string
+          status?: string
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "import_runs_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "academic_sessions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "import_runs_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       inventory_items: {
         Row: {
           category_id: string | null
@@ -6108,6 +6290,27 @@ export type Database = {
         Args: { p_from: string; p_to: string }
         Returns: number
       }
+      import_apply_run: {
+        Args: { p_run_id: string }
+        Returns: {
+          applied: number
+          failed: number
+        }[]
+      }
+      import_discard_run: { Args: { p_run_id: string }; Returns: boolean }
+      import_match_section: { Args: { p_label: string }; Returns: string }
+      import_run_summary: {
+        Args: { p_run_id: string }
+        Returns: {
+          applied: number
+          failed: number
+          ready: number
+          skipped: number
+          total: number
+          with_problems: number
+        }[]
+      }
+      import_validate_run: { Args: { p_run_id: string }; Returns: number }
       library_issue_book: {
         Args: { p_book_id: string; p_due_at?: string; p_member_id: string }
         Returns: {

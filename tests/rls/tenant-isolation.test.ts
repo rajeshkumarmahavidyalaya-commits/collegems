@@ -74,6 +74,8 @@ describe("cross-tenant isolation", () => {
     "item_categories",
     "inventory_items",
     "stock_movements",
+    "import_runs",
+    "import_rows",
     "promotion_runs",
     "promotion_decisions",
     "leave_types",
