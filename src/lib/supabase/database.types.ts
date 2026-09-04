@@ -3142,6 +3142,73 @@ export type Database = {
           },
         ]
       }
+      route_stops: {
+        Row: {
+          created_at: string
+          drop_time: string | null
+          id: string
+          landmark: string | null
+          monthly_fare: number
+          name: string
+          pickup_time: string | null
+          route_id: string
+          sequence: number
+          session_id: string
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          drop_time?: string | null
+          id?: string
+          landmark?: string | null
+          monthly_fare?: number
+          name: string
+          pickup_time?: string | null
+          route_id: string
+          sequence: number
+          session_id: string
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          drop_time?: string | null
+          id?: string
+          landmark?: string | null
+          monthly_fare?: number
+          name?: string
+          pickup_time?: string | null
+          route_id?: string
+          sequence?: number
+          session_id?: string
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "route_stops_route_fkey"
+            columns: ["tenant_id", "route_id", "session_id"]
+            isOneToOne: false
+            referencedRelation: "transport_routes"
+            referencedColumns: ["tenant_id", "id", "session_id"]
+          },
+          {
+            foreignKeyName: "route_stops_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "academic_sessions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "route_stops_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       salary_structures: {
         Row: {
           components: Json
@@ -3917,6 +3984,177 @@ export type Database = {
           },
         ]
       }
+      transport_assignments: {
+        Row: {
+          created_at: string
+          direction: string
+          ends_on: string | null
+          id: string
+          monthly_fare: number
+          note: string | null
+          route_direction: string
+          route_id: string
+          session_id: string
+          starts_on: string
+          status: string
+          stop_id: string
+          student_id: string
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          direction?: string
+          ends_on?: string | null
+          id?: string
+          monthly_fare: number
+          note?: string | null
+          route_direction?: string
+          route_id: string
+          session_id: string
+          starts_on: string
+          status?: string
+          stop_id: string
+          student_id: string
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          direction?: string
+          ends_on?: string | null
+          id?: string
+          monthly_fare?: number
+          note?: string | null
+          route_direction?: string
+          route_id?: string
+          session_id?: string
+          starts_on?: string
+          status?: string
+          stop_id?: string
+          student_id?: string
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "transport_assignments_route_direction_fkey"
+            columns: ["tenant_id", "route_id", "route_direction"]
+            isOneToOne: false
+            referencedRelation: "transport_routes"
+            referencedColumns: ["tenant_id", "id", "direction"]
+          },
+          {
+            foreignKeyName: "transport_assignments_route_fkey"
+            columns: ["tenant_id", "route_id", "session_id"]
+            isOneToOne: false
+            referencedRelation: "transport_routes"
+            referencedColumns: ["tenant_id", "id", "session_id"]
+          },
+          {
+            foreignKeyName: "transport_assignments_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "academic_sessions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "transport_assignments_stop_on_route_fkey"
+            columns: ["tenant_id", "stop_id", "route_id"]
+            isOneToOne: false
+            referencedRelation: "route_stops"
+            referencedColumns: ["tenant_id", "id", "route_id"]
+          },
+          {
+            foreignKeyName: "transport_assignments_student_fkey"
+            columns: ["tenant_id", "student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["tenant_id", "id"]
+          },
+          {
+            foreignKeyName: "transport_assignments_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      transport_routes: {
+        Row: {
+          code: string
+          created_at: string
+          direction: string
+          fee_head_id: string | null
+          id: string
+          is_active: boolean
+          name: string
+          session_id: string
+          tenant_id: string
+          updated_at: string
+          vehicle_capacity: number | null
+          vehicle_id: string | null
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          direction?: string
+          fee_head_id?: string | null
+          id?: string
+          is_active?: boolean
+          name: string
+          session_id: string
+          tenant_id: string
+          updated_at?: string
+          vehicle_capacity?: number | null
+          vehicle_id?: string | null
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          direction?: string
+          fee_head_id?: string | null
+          id?: string
+          is_active?: boolean
+          name?: string
+          session_id?: string
+          tenant_id?: string
+          updated_at?: string
+          vehicle_capacity?: number | null
+          vehicle_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "transport_routes_fee_head_fkey"
+            columns: ["tenant_id", "fee_head_id"]
+            isOneToOne: false
+            referencedRelation: "fee_heads"
+            referencedColumns: ["tenant_id", "id"]
+          },
+          {
+            foreignKeyName: "transport_routes_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "academic_sessions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "transport_routes_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "transport_routes_vehicle_fkey"
+            columns: ["tenant_id", "vehicle_id", "vehicle_capacity"]
+            isOneToOne: false
+            referencedRelation: "vehicles"
+            referencedColumns: ["tenant_id", "id", "capacity"]
+          },
+        ]
+      }
       user_profiles: {
         Row: {
           created_at: string
@@ -3992,6 +4230,70 @@ export type Database = {
           },
           {
             foreignKeyName: "user_profiles_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      vehicles: {
+        Row: {
+          attendant_staff_id: string | null
+          capacity: number
+          created_at: string
+          driver_staff_id: string | null
+          id: string
+          is_active: boolean
+          model: string | null
+          notes: string | null
+          registration_number: string
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          attendant_staff_id?: string | null
+          capacity: number
+          created_at?: string
+          driver_staff_id?: string | null
+          id?: string
+          is_active?: boolean
+          model?: string | null
+          notes?: string | null
+          registration_number: string
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          attendant_staff_id?: string | null
+          capacity?: number
+          created_at?: string
+          driver_staff_id?: string | null
+          id?: string
+          is_active?: boolean
+          model?: string | null
+          notes?: string | null
+          registration_number?: string
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vehicles_attendant_fkey"
+            columns: ["tenant_id", "attendant_staff_id"]
+            isOneToOne: false
+            referencedRelation: "staff"
+            referencedColumns: ["tenant_id", "id"]
+          },
+          {
+            foreignKeyName: "vehicles_driver_fkey"
+            columns: ["tenant_id", "driver_staff_id"]
+            isOneToOne: false
+            referencedRelation: "staff"
+            referencedColumns: ["tenant_id", "id"]
+          },
+          {
+            foreignKeyName: "vehicles_tenant_id_fkey"
             columns: ["tenant_id"]
             isOneToOne: false
             referencedRelation: "tenants"
@@ -4336,6 +4638,19 @@ export type Database = {
         }[]
       }
       exams_unpublish: { Args: { p_exam_id: string }; Returns: number }
+      fees_billable_lines: {
+        Args: {
+          p_as_of?: string
+          p_fee_head_ids?: string[]
+          p_student_id: string
+        }
+        Returns: {
+          amount: number
+          description: string
+          fee_head_id: string
+          source: string
+        }[]
+      }
       fees_cancel_invoice: {
         Args: { p_invoice_id: string; p_reason: string }
         Returns: {
@@ -5385,6 +5700,110 @@ export type Database = {
           staff_id: string
           subjects: number
           teacher_name: string
+        }[]
+      }
+      transport_assign_student: {
+        Args: {
+          p_direction?: string
+          p_ends_on?: string
+          p_starts_on?: string
+          p_stop_id: string
+          p_student_id: string
+        }
+        Returns: string
+      }
+      transport_billing_conflicts: {
+        Args: never
+        Returns: {
+          problem: string
+        }[]
+      }
+      transport_cancel_assignment: {
+        Args: { p_assignment_id: string; p_reason?: string }
+        Returns: boolean
+      }
+      transport_end_assignment: {
+        Args: { p_assignment_id: string; p_ends_on?: string }
+        Returns: string
+      }
+      transport_fee_lines: {
+        Args: { p_as_of?: string; p_student_id: string }
+        Returns: {
+          amount: number
+          description: string
+          fee_head_id: string
+        }[]
+      }
+      transport_for_student: {
+        Args: { p_student_id: string }
+        Returns: {
+          assignment_id: string
+          direction: string
+          drop_time: string
+          ends_on: string
+          landmark: string
+          monthly_fare: number
+          pickup_time: string
+          registration_number: string
+          route_code: string
+          route_name: string
+          starts_on: string
+          status: string
+          stop_name: string
+        }[]
+      }
+      transport_manifest: {
+        Args: { p_route_id: string }
+        Returns: {
+          admission_number: string
+          direction: string
+          drop_time: string
+          guardian_name: string
+          guardian_phone: string
+          landmark: string
+          pickup_time: string
+          section_label: string
+          sequence: number
+          stop_id: string
+          stop_name: string
+          student_id: string
+          student_name: string
+        }[]
+      }
+      transport_route_load: {
+        Args: { p_session_id?: string }
+        Returns: {
+          assigned: number
+          capacity: number
+          code: string
+          direction: string
+          driver_name: string
+          is_active: boolean
+          monthly_revenue: number
+          name: string
+          registration_number: string
+          route_id: string
+          seats_free: number
+          stop_count: number
+          vehicle_id: string
+        }[]
+      }
+      transport_stop_options: {
+        Args: { p_session_id?: string }
+        Returns: {
+          drop_time: string
+          landmark: string
+          monthly_fare: number
+          pickup_time: string
+          route_code: string
+          route_direction: string
+          route_id: string
+          route_is_active: boolean
+          route_name: string
+          seats_free: number
+          sequence: number
+          stop_id: string
+          stop_name: string
         }[]
       }
       update_student: {

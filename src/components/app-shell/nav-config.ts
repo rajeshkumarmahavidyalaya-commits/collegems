@@ -3,6 +3,8 @@ import {
   BarChart3,
   Bell,
   BookOpen,
+  Bus,
+  MapPin,
   ClipboardCheck,
   GraduationCap,
   BookOpenCheck,
@@ -125,6 +127,23 @@ export const NAV_GROUPS: NavGroup[] = [
         href: "/report-card",
         icon: ScrollText,
         roles: ["parent", "student"],
+      },
+      // Transport sits with the academic group rather than with fees, because
+      // the question people bring to it is "which bus does my child take", not
+      // "what does it cost". No `roles` filter on the routes screen: staff see
+      // the fleet, and a family reaching it sees only their own arrangement,
+      // which RLS decides rather than the menu.
+      {
+        title: "Transport",
+        href: "/transport",
+        icon: Bus,
+        roles: ["admin", "teacher", "accountant"],
+      },
+      {
+        title: "Bus assignments",
+        href: "/transport/assignments",
+        icon: MapPin,
+        roles: ["admin"],
       },
     ],
   },

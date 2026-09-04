@@ -192,6 +192,26 @@ on `exams`; from that instant a remark cannot be edited by anybody, and
 unpublishing reopens it — which is what makes "fix a typo on a card that already
 went home" an audited unpublish/republish pair rather than a quiet edit.
 
+**The device now has five uses, and the carried column has been five things:**
+
+| Carried | Table | Enforces |
+|---|---|---|
+| a flag | `time_slots.schedulable` | a lesson lands in a real period |
+| a value | `marks.max_marks` | a mark cannot exceed its paper |
+| a status | `payslips.run_status`, `exam_remarks.exam_status` | the row is immutable once the parent is final |
+| an identity | `transport_assignments.route_id` | a child's stop is on the child's own route |
+| a term in a comparison | `transport_assignments.route_direction` | a pickup-only route cannot drop anybody |
+
+The last is the newest shape and worth naming: the rule there is
+**compatibility, not equality** — a `both` route carries anybody, a one-way
+route only its own direction — so the carried column feeds a CHECK
+(`route_direction = 'both' or direction = route_direction`) rather than being
+compared for equality. The cascade still does the second half of the work:
+narrowing a route from `both` to `pickup` while children on it still need
+dropping rewrites every assignment, the CHECK re-evaluates, and the route change
+is refused. Same shape as refusing to lower a paper's maximum below an awarded
+mark.
+
 ### Two rows that must not overlap need an EXCLUSION constraint
 
 A third thing no CHECK can see: a second row. "One approved leave per person per
@@ -307,6 +327,42 @@ unposted source documents, is idempotent on a partial unique index over
 `ledger_entries` would couple the modules and run inside the payment
 transaction; a sync keeps the subledgers independent and lets a backlog drain
 in pages.
+
+### A fee structure is not the only source of an invoice line
+
+`fee_structures` is keyed on `(session, class_level, fee_head)`, and until
+Phase 5.2 it was the only thing `fees_generate_invoice` read. Transport broke
+that assumption, permanently: **a bus fare depends on the stop a child boards
+at, not on their class**, so two children sitting next to each other in the same
+class pay different amounts and no row in `fee_structures` can say so.
+
+The fix was not another dimension on `fee_structures` — that would give every
+other fee a null column and still be wrong for the next fee that varies by
+something else (a hostel room, an optional subject, a music lesson). It was to
+demote it from *the* source to *a* source:
+
+```sql
+fees_billable_lines(student, as_of, heads)
+  -- from fee_structures  : what your class pays
+  -- from transport       : what your stop costs
+```
+
+Two rules come out of it, and both generalise to the next module that wants to
+bill something:
+
+- **One definition of "what would this child be charged", consulted by
+  everything.** `fees_generate_invoice` inserts what that function returns and
+  `fees_generate_section_invoices` asks it whether there is anything to bill, so
+  a preview and an invoice cannot disagree. A second implementation is a second
+  answer.
+- **Two sources feeding one fee head bills the family twice, and it looks
+  plausible.** That is a real migration hazard for any school moving a fee from
+  class-based to something-else-based. `transport_billing_conflicts()` names it
+  in sentences — the `grading_scheme_problems()` pattern — rather than deleting
+  a school's fee structure, because which of the two charges is real is a
+  bursar's decision, not a migration's.
+
+See `docs/modules/transport.md`.
 
 ### Secrets never enter the Next.js app
 
@@ -603,6 +659,14 @@ the calm, institutional feel this product is aiming for.
   never interpolate a client-supplied column name into `.order()`.
 - **Forms use the form primitives** (`src/components/forms/`): `TextField` /
   `SelectField` / `TextareaField`, `ErrorSummary`, `useUnsavedChangesGuard`.
+- **When a value must be singular, write a scalar subquery, not a one-row CTE.**
+  Postgres inlines a `language sql` function into its calling query, and a
+  correlated `... limit 1` CTE does not always survive that rewrite.
+  `fees_billable_lines` resolved a student's class level that way and was
+  correct when called alone — then returned every line three times, with three
+  different class levels, under `cross join lateral`. A scalar subquery returns
+  one value or null, so there is no join for the planner to widen. Migration
+  `0089`.
 - Generated DB types live in `src/lib/supabase/database.types.ts`. Regenerate
   after every migration.
 - Migrations are numbered and immutable once applied. Add a new one; never edit

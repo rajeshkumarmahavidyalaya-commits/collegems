@@ -702,6 +702,46 @@ enrols after the homework was set, which is a policy question rather than a
 missing trigger; per-question marking and rubrics; and bulk download of a
 class's submissions, which is unbounded work and belongs in `jobs`.
 
+### Transport
+
+```
+vehicles              tenant, registration, capacity, driver_staff_id.
+                      NOT session-scoped: a bus outlives an academic year
+transport_routes      tenant, session, code, direction (pickup|drop|both),
+                      vehicle_id + vehicle_capacity (mirrored via cascade),
+                      fee_head_id. A route is a TRIP, not a bus
+route_stops           route, name, sequence, times, monthly_fare
+transport_assignments student x stop, direction, date range, frozen fare
+```
+
+**The fare is on the stop, not the route and not the class.** That is the
+module's whole point: two children in the same class pay different transport
+fares because they board at different points, and `fee_structures`
+— keyed on `(session, class_level, fee_head)` — structurally cannot say so.
+`fees_billable_lines` is the answer: one definition of what a child would be
+billed, unioning the class-level structure with the stop-level fare, consulted
+by both `fees_generate_invoice` and `fees_generate_section_invoices`.
+
+Four rules, four devices, none of them a trigger:
+
+- **A stop must be on the child's own route** — composite foreign key into
+  `route_stops (tenant_id, id, route_id)`. The fourth use of the device, and
+  the first carrying an *identity* rather than a flag, a value or a status.
+- **A pickup-only route cannot drop anybody** — the route's `direction` is
+  carried onto the assignment by an `on update cascade` composite key, so the
+  rule is a CHECK over one row. Narrowing a route while children on it still
+  need the other run is refused by the same cascade.
+- **A child cannot be on two buses at once** — a GiST exclusion constraint over
+  the date range, partial on `status = 'active'`.
+- **A bus cannot be oversold** — a fact about other rows, so it is checked at
+  assign time under an advisory lock on the route, with the seat counts in the
+  message.
+
+`transport_assignments.monthly_fare` is frozen at assignment and deliberately
+**not** cascaded (an October fare revision must not restate a July invoice),
+while `transport_routes.vehicle_capacity` **is** cascaded (it is a mirror of the
+bus's licensed seats). See [docs/modules/transport.md](../modules/transport.md).
+
 ### Notifications — drivers only
 The service itself is **built** (see *Notifications* under Built). What remains
 is a driver per external channel: an Edge Function that calls
@@ -712,8 +752,7 @@ abstraction. Also unbuilt: scheduled sending, and wiring the existing modules
 their events.
 
 ### Later modules
-Inventory, transport (routes, stops, vehicle assignments), dormitory, front
-office (visitors, enquiries, calls). i18n + RTL. Public REST API for mobile
+Inventory, dormitory, front office (visitors, enquiries, calls). i18n + RTL. Public REST API for mobile
 (PostgREST is already there; what is missing is a versioned, documented surface
 and per-app keys). The reporting kernel is **built** (see *Reporting kernel*
 under Built); what remains there is queued exports through `jobs`, PDF
