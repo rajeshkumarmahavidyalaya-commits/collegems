@@ -7,6 +7,7 @@ import {
   Bus,
   MapPin,
   ClipboardCheck,
+  DoorOpen,
   GraduationCap,
   BookOpenCheck,
   CalendarClock,
@@ -58,6 +59,16 @@ export const NAV_GROUPS: NavGroup[] = [
         href: "/students",
         icon: GraduationCap,
         roles: ["admin", "teacher", "accountant", "librarian"],
+      },
+      // Before a student exists. An enquiry holds a child's date of birth and a
+      // family's phone number before either has any relationship with the
+      // school, so RLS keeps the whole module to the office and the menu says
+      // the same.
+      {
+        title: "Front office",
+        href: "/front-office",
+        icon: DoorOpen,
+        roles: ["admin", "accountant"],
       },
     ],
   },

@@ -535,6 +535,171 @@ export type Database = {
           },
         ]
       }
+      enquiries: {
+        Row: {
+          applicant_first_name: string
+          applicant_last_name: string
+          assigned_staff_id: string | null
+          class_level_id: string | null
+          contact_email: string | null
+          contact_name: string
+          contact_phone: string | null
+          converted_at: string | null
+          converted_student_id: string | null
+          created_at: string
+          date_of_birth: string | null
+          enquiry_number: string
+          gender: string | null
+          id: string
+          lost_reason: string | null
+          next_follow_up_on: string | null
+          notes: string | null
+          relationship: string | null
+          session_id: string
+          source: string
+          status: string
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          applicant_first_name: string
+          applicant_last_name: string
+          assigned_staff_id?: string | null
+          class_level_id?: string | null
+          contact_email?: string | null
+          contact_name: string
+          contact_phone?: string | null
+          converted_at?: string | null
+          converted_student_id?: string | null
+          created_at?: string
+          date_of_birth?: string | null
+          enquiry_number: string
+          gender?: string | null
+          id?: string
+          lost_reason?: string | null
+          next_follow_up_on?: string | null
+          notes?: string | null
+          relationship?: string | null
+          session_id: string
+          source?: string
+          status?: string
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          applicant_first_name?: string
+          applicant_last_name?: string
+          assigned_staff_id?: string | null
+          class_level_id?: string | null
+          contact_email?: string | null
+          contact_name?: string
+          contact_phone?: string | null
+          converted_at?: string | null
+          converted_student_id?: string | null
+          created_at?: string
+          date_of_birth?: string | null
+          enquiry_number?: string
+          gender?: string | null
+          id?: string
+          lost_reason?: string | null
+          next_follow_up_on?: string | null
+          notes?: string | null
+          relationship?: string | null
+          session_id?: string
+          source?: string
+          status?: string
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "enquiries_assigned_fkey"
+            columns: ["tenant_id", "assigned_staff_id"]
+            isOneToOne: false
+            referencedRelation: "staff"
+            referencedColumns: ["tenant_id", "id"]
+          },
+          {
+            foreignKeyName: "enquiries_class_level_fkey"
+            columns: ["tenant_id", "class_level_id"]
+            isOneToOne: false
+            referencedRelation: "class_levels"
+            referencedColumns: ["tenant_id", "id"]
+          },
+          {
+            foreignKeyName: "enquiries_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "academic_sessions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "enquiries_student_fkey"
+            columns: ["tenant_id", "converted_student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["tenant_id", "id"]
+          },
+          {
+            foreignKeyName: "enquiries_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      enquiry_follow_ups: {
+        Row: {
+          channel: string
+          created_at: string
+          enquiry_id: string
+          happened_at: string
+          id: string
+          note: string
+          outcome: string | null
+          recorded_by: string | null
+          tenant_id: string
+        }
+        Insert: {
+          channel?: string
+          created_at?: string
+          enquiry_id: string
+          happened_at?: string
+          id?: string
+          note: string
+          outcome?: string | null
+          recorded_by?: string | null
+          tenant_id: string
+        }
+        Update: {
+          channel?: string
+          created_at?: string
+          enquiry_id?: string
+          happened_at?: string
+          id?: string
+          note?: string
+          outcome?: string | null
+          recorded_by?: string | null
+          tenant_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "enquiry_follow_ups_enquiry_fkey"
+            columns: ["tenant_id", "enquiry_id"]
+            isOneToOne: false
+            referencedRelation: "enquiries"
+            referencedColumns: ["tenant_id", "id"]
+          },
+          {
+            foreignKeyName: "enquiry_follow_ups_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       enrolments: {
         Row: {
           created_at: string
@@ -4573,6 +4738,104 @@ export type Database = {
           },
         ]
       }
+      visitors: {
+        Row: {
+          checked_in_at: string
+          checked_in_by: string | null
+          checked_out_at: string | null
+          checked_out_by: string | null
+          created_at: string
+          host_note: string | null
+          host_staff_id: string | null
+          id: string
+          id_proof_kind: string | null
+          id_proof_last4: string | null
+          organisation: string | null
+          pass_number: string
+          phone: string | null
+          purpose: string
+          session_id: string
+          student_id: string | null
+          tenant_id: string
+          updated_at: string
+          vehicle_number: string | null
+          visitor_name: string
+        }
+        Insert: {
+          checked_in_at?: string
+          checked_in_by?: string | null
+          checked_out_at?: string | null
+          checked_out_by?: string | null
+          created_at?: string
+          host_note?: string | null
+          host_staff_id?: string | null
+          id?: string
+          id_proof_kind?: string | null
+          id_proof_last4?: string | null
+          organisation?: string | null
+          pass_number: string
+          phone?: string | null
+          purpose: string
+          session_id: string
+          student_id?: string | null
+          tenant_id: string
+          updated_at?: string
+          vehicle_number?: string | null
+          visitor_name: string
+        }
+        Update: {
+          checked_in_at?: string
+          checked_in_by?: string | null
+          checked_out_at?: string | null
+          checked_out_by?: string | null
+          created_at?: string
+          host_note?: string | null
+          host_staff_id?: string | null
+          id?: string
+          id_proof_kind?: string | null
+          id_proof_last4?: string | null
+          organisation?: string | null
+          pass_number?: string
+          phone?: string | null
+          purpose?: string
+          session_id?: string
+          student_id?: string | null
+          tenant_id?: string
+          updated_at?: string
+          vehicle_number?: string | null
+          visitor_name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "visitors_host_fkey"
+            columns: ["tenant_id", "host_staff_id"]
+            isOneToOne: false
+            referencedRelation: "staff"
+            referencedColumns: ["tenant_id", "id"]
+          },
+          {
+            foreignKeyName: "visitors_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "academic_sessions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "visitors_student_fkey"
+            columns: ["tenant_id", "student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["tenant_id", "id"]
+          },
+          {
+            foreignKeyName: "visitors_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       voucher_lines: {
         Row: {
           account_id: string
@@ -4784,6 +5047,114 @@ export type Database = {
       current_role_code: { Args: never; Returns: string }
       current_session_id: { Args: { p_tenant_id: string }; Returns: string }
       current_tenant_id: { Args: never; Returns: string }
+      enquiry_board: {
+        Args: { p_session_id?: string }
+        Returns: {
+          applicant_name: string
+          assigned_name: string
+          class_level_name: string
+          contact_email: string
+          contact_name: string
+          contact_phone: string
+          converted_student_id: string
+          created_at: string
+          enquiry_number: string
+          follow_up_count: number
+          id: string
+          last_contact: string
+          lost_reason: string
+          next_follow_up_on: string
+          overdue: boolean
+          source: string
+          status: string
+        }[]
+      }
+      enquiry_convert: {
+        Args: {
+          p_admission_date?: string
+          p_admission_number: string
+          p_enquiry_id: string
+          p_roll_number?: string
+          p_section_id?: string
+        }
+        Returns: {
+          admission_date: string
+          admission_number: string
+          created_at: string
+          id: string
+          person_id: string
+          status: string
+          tenant_id: string
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "students"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      enquiry_create: {
+        Args: {
+          p_applicant: Json
+          p_assigned_staff_id?: string
+          p_class_level_id?: string
+          p_contact: Json
+          p_next_follow_up_on?: string
+          p_notes?: string
+          p_source?: string
+        }
+        Returns: {
+          applicant_first_name: string
+          applicant_last_name: string
+          assigned_staff_id: string | null
+          class_level_id: string | null
+          contact_email: string | null
+          contact_name: string
+          contact_phone: string | null
+          converted_at: string | null
+          converted_student_id: string | null
+          created_at: string
+          date_of_birth: string | null
+          enquiry_number: string
+          gender: string | null
+          id: string
+          lost_reason: string | null
+          next_follow_up_on: string | null
+          notes: string | null
+          relationship: string | null
+          session_id: string
+          source: string
+          status: string
+          tenant_id: string
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "enquiries"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      enquiry_funnel: {
+        Args: { p_session_id?: string }
+        Returns: {
+          count: number
+          share: number
+          status: string
+        }[]
+      }
+      enquiry_log_follow_up: {
+        Args: {
+          p_channel?: string
+          p_enquiry_id: string
+          p_lost_reason?: string
+          p_next_follow_up_on?: string
+          p_note: string
+          p_outcome?: string
+        }
+        Returns: string
+      }
       exams_attendance_summary: {
         Args: { p_session_id: string; p_student_id: string; p_upto?: string }
         Returns: {
@@ -5312,6 +5683,7 @@ export type Database = {
           write_offs: number
         }[]
       }
+      front_office_next_number: { Args: { p_kind: string }; Returns: string }
       grading_grade_for: {
         Args: { p_percentage: number; p_rules: Json }
         Returns: {
@@ -6195,6 +6567,65 @@ export type Database = {
           isOneToOne: true
           isSetofReturn: false
         }
+      }
+      visitor_check_in: {
+        Args: {
+          p_host_note?: string
+          p_host_staff_id?: string
+          p_id_proof_kind?: string
+          p_id_proof_last4?: string
+          p_organisation?: string
+          p_phone?: string
+          p_purpose: string
+          p_student_id?: string
+          p_vehicle_number?: string
+          p_visitor_name: string
+        }
+        Returns: {
+          checked_in_at: string
+          checked_in_by: string | null
+          checked_out_at: string | null
+          checked_out_by: string | null
+          created_at: string
+          host_note: string | null
+          host_staff_id: string | null
+          id: string
+          id_proof_kind: string | null
+          id_proof_last4: string | null
+          organisation: string | null
+          pass_number: string
+          phone: string | null
+          purpose: string
+          session_id: string
+          student_id: string | null
+          tenant_id: string
+          updated_at: string
+          vehicle_number: string | null
+          visitor_name: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "visitors"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      visitor_check_out: { Args: { p_visitor_id: string }; Returns: string }
+      visitor_register: {
+        Args: { p_limit?: number; p_open_only?: boolean }
+        Returns: {
+          checked_in_at: string
+          checked_out_at: string
+          host_name: string
+          id: string
+          minutes_inside: number
+          organisation: string
+          pass_number: string
+          phone: string
+          purpose: string
+          student_name: string
+          visitor_name: string
+        }[]
       }
     }
     Enums: {

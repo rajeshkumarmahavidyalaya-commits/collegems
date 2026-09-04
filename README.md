@@ -57,6 +57,7 @@ After any migration, regenerate types into
 | [docs/modules/report-cards.md](./docs/modules/report-cards.md) | Report cards: a rank is a fact about the cohort, and the attendance line that moved |
 | [docs/modules/transport.md](./docs/modules/transport.md) | Transport: a fare keyed on a stop, and why that changed how invoices are built |
 | [docs/modules/hostel.md](./docs/modules/hostel.md) | Dormitory: the third billing source, and where the composite-key device stops |
+| [docs/modules/front-office.md](./docs/modules/front-office.md) | Front office: the funnel before a student exists, and how it is kept honest |
 | [docs/design/decisions.md](./docs/design/decisions.md) | Palette, type, spacing — and why |
 | `design-system/schoolos/MASTER.md` | Source of truth for all UI values |
 

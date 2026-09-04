@@ -288,6 +288,11 @@ Two consequences worth knowing before you touch this module:
   `ledger_entries` fails with `permission denied`, because the revoke is what
   makes the table append-only. Serialise on a unique index instead — that is
   what `ledger_entries_reversal_unique` is for.
+- **Proving a table is append-only means counting rows, not catching an error.**
+  An `UPDATE` that no policy matches **succeeds** under RLS while touching
+  nothing, so a test that only asserts an error passes whatever the policy says.
+  `enquiry_follow_ups` is the case that made this explicit: 9 rows readable, an
+  update touching 0, a delete touching 0. Assert the count.
 - **Amounts are signed, positive means "owes more", and the RPCs take positive
   numbers** and do the signing. Never ask a caller for a negative amount.
 
@@ -692,6 +697,14 @@ the calm, institutional feel this product is aiming for.
   never interpolate a client-supplied column name into `.order()`.
 - **Forms use the form primitives** (`src/components/forms/`): `TextField` /
   `SelectField` / `TextareaField`, `ErrorSummary`, `useUnsavedChangesGuard`.
+- **A list of valid values belongs in one place, and the constraint is usually
+  that place.** `fees_next_document_number_for` carried its own copy of which
+  document kinds exist, alongside the CHECK on `document_sequences.kind` that
+  already said so — so adding a kind failed at runtime, and migration `0073`
+  had already worked around it by hand-copying the whole numberer into
+  `accounts_next_voucher_number`. Migration `0101` deleted both copies: the
+  insert consults the constraint, and a bad kind fails with the constraint's own
+  error. Adding a kind is now one ALTER.
 - **When a value must be singular, write a scalar subquery, not a one-row CTE.**
   Postgres inlines a `language sql` function into its calling query, and a
   correlated `... limit 1` CTE does not always survive that rewrite.
