@@ -15,28 +15,95 @@ Migrations `0033`–`0039`.
 
 ---
 
-## What actually sends today: in-app, and only in-app
+## What actually sends, and how you know
 
 This is the thing to understand before reading anything else.
 
-| Channel | Status |
-|---|---|
-| `in_app` | **Delivers.** The row *is* the delivery, so it is `sent` the moment it exists. |
-| `email`, `sms`, `whatsapp`, `push` | **Queue only.** Real delivery rows, real preference handling, real retry state — and nothing drains them, because no provider is connected. |
+**Whether a message leaves the building has three parts**, and no single column
+carries the answer:
 
-That is deliberate, and it is the user's decision: *"wait for sending email for
-now."* The important part is that the product does not lie about it. The
-compose screen labels every channel `Delivers now` or `Queues only`, warns
-before sending when a queue-only channel is selected, and the delivery log
-raises a banner whenever anything is sitting in `queued`. A message that has
-not gone anywhere never appears as though it has.
+| Part | Where it lives | What it means |
+|---|---|---|
+| a driver | `CHANNELS[].driver` in `src/lib/validations/notifications.ts` | this *build* knows how to send on the channel |
+| the school's decision | `notification_channel_settings.is_enabled`, `from_address` | this *school* has turned it on and said who it comes from |
+| credentials | `notification_channel_settings.provider_configured` | the dispatcher looked for its API key and found one |
 
-Connecting a driver is a small, contained change: an Edge Function that calls
-`notify_claim_deliveries()`, sends, and calls `notify_record_result()`. No
-application code moves. The one thing that must change with it is
-`CHANNELS[].live` in `src/lib/validations/notifications.ts`, which is the single
-source of the UI's honesty — and `tests/notifications/notification-shapes.test.ts`
-asserts today's value so that flag cannot drift from reality silently.
+`channelState(status)` is the one place those three are combined, and every
+surface that offers a channel goes through it. Today's answer, on a deployment
+with no provider secrets set:
+
+| Channel | Driver | State |
+|---|---|---|
+| `in_app` | built | **Sends.** The row *is* the delivery, so it is `sent` the moment it exists. There is nothing to connect and nothing that can be down. |
+| `email` | Resend | Sends once `RESEND_API_KEY` is set on the Edge Function and the school has a from-address. |
+| `sms` | Twilio | Sends once `TWILIO_ACCOUNT_SID` / `TWILIO_AUTH_TOKEN` are set and there is a sender number. |
+| `whatsapp`, `push` | **none** | Kept, never sent. No driver exists in this build. |
+
+### The honesty used to be a constant, and could not stay one
+
+`CHANNELS[].live` was `false` for every external channel, and a test asserted
+that value so it could not drift. That was exactly right while the answer was
+*"never, for anybody"* — and became a lie the moment a driver shipped, because
+liveness turned into a fact about a deployment and a school rather than about
+the source tree. A constant compiled into the bundle cannot know whether a
+Supabase secret is set.
+
+So the flag was split. `driver` stays in the app and answers only *"does this
+build have a sender for this channel"*. The other two thirds moved into
+Postgres, where the dispatcher writes what it found. The test moved with it: it
+no longer pins today's values, it pins the *shape* of the answer — that a
+channel with no driver can never claim to send however it is configured, that a
+school which has not switched one on is told so first, and that *the dispatcher
+has never run* stays distinguishable from *it ran and found nothing*. That last
+distinction matters more than it sounds: conflating them tells a school its
+email is broken when in fact nothing has ever tried.
+
+### A held channel keeps its queue
+
+A channel that is off, unconfigured, or unbuilt does **not** get its deliveries
+marked `skipped`. They stay `queued`, they are counted on the Channels screen
+with the age of the oldest, and connecting a provider in March sends February's
+reminders. Dropping them would be tidier and would lose a school's mail.
+
+---
+
+## The dispatcher
+
+`supabase/functions/notify-dispatch` is the only thing in this repository that
+has heard of Resend or Twilio. It holds every provider credential, which is why
+it exists at all — the same split as the Razorpay functions, and the same rule:
+**secrets never enter the Next.js app.**
+
+Two callers, two scopes:
+
+- **the service role** → every tenant. The scheduled run.
+- **an administrator's JWT** → their own tenant, taken from the token's
+  `app_metadata` and never from the request body. That is the "send the queued
+  ones now" button, and reading the tenant from the body instead is how one
+  school ends up spending another school's SMS credit.
+
+**Report, then claim.** `notify_claim_deliveries` will not hand out work for a
+channel whose `provider_configured` is false, and the dispatcher is the only
+thing that can set it — so every run reports what each driver can do *before*
+asking for anything to send. Read the wrong way round that looks like a
+deadlock; it is the point. A dispatcher that only tried to send would turn one
+missing API key into a thousand failed deliveries with five attempts each.
+
+**Bounded, and it says the bound**: at most 200 deliveries or 40 seconds per
+invocation, and the reply carries `remaining`. That is what keeps it on the
+right side of rule 7 — a large backlog is a button pressed twice, not a request
+that times out.
+
+**At-least-once, deliberately.** A row left in `sending` by a dispatcher that
+ran out of wall clock is claimable again after fifteen minutes, so a provider
+that accepted a message just before the process died may send it twice. That is
+the right trade for this traffic — a duplicated fee reminder is a nuisance and a
+lost absence notice is a child nobody called about — and `provider_ref` is what
+lets somebody prove which happened.
+
+**A missing address is a dead letter, not a retry.** A recipient with no email
+or phone number recorded will not have one in four minutes, so that failure is
+recorded once rather than backed off five times.
 
 ---
 
@@ -91,8 +158,11 @@ action deletes rather than writing `enabled = true` for exactly this reason.
 | `notify_unread_count()` / `notify_mark_all_read()` | invoker | the bell |
 | `notify_outbox(limit, event_key)` | invoker | the log, outcomes rolled up |
 | `notify_event_types()` | invoker | the catalog, without exposing `reference` |
-| `notify_claim_deliveries(limit)` | **definer**, revoked from everyone | the dispatcher's claim |
-| `notify_record_result(id, ok, error)` | **definer**, revoked from everyone | the dispatcher's write-back |
+| `notify_claim_deliveries(limit, tenant?, channel?)` | **definer**, revoked from everyone | the dispatcher's claim |
+| `notify_record_result(id, ok, error, ref)` | **definer**, revoked from everyone | the dispatcher's write-back |
+| `notify_channel_report(tenant, channel, provider, configured, error)` | **definer**, revoked from everyone | what the dispatcher found |
+| `notify_channel_status()` | invoker | what a screen needs to tell the truth |
+| `notify_retry_failed(channel?, limit)` | **definer**, admin-guarded | put failures back in the queue |
 
 ### Why `notify_send` is `SECURITY DEFINER`
 
@@ -120,8 +190,36 @@ arguments.
 `anon` **and** `authenticated`. They exist for an Edge Function holding the
 service role. A JWT cannot claim a delivery or mark one sent, however it asks.
 `notify_claim_deliveries` uses `for update skip locked`, so two dispatcher
-instances never send the same message twice; `notify_record_result` backs off
-exponentially (`4^attempts` minutes) and gives up as `failed` after five tries.
+instances claim disjoint batches; `notify_record_result` backs off
+exponentially — 1, 4, 16, 64 and 256 minutes — and gives up as `failed` after
+five tries. A queue that retries for ever is how a dead SMS gateway turns into a
+bill.
+
+`notify_channel_report` is on the same footing and for the same reason: a school
+that could call it could claim its email was configured when it was not, and
+then wonder why nothing arrived.
+
+### A school configures a channel; it does not write its history
+
+`notification_channel_settings` has two writers with different rights on the
+same row — an administrator sets `is_enabled`, `from_address` and `sender_name`,
+and the dispatcher sets `provider`, `provider_configured`, `last_attempt_at`,
+`last_success_at` and `last_error`. A policy alone gives an administrator the
+whole row, and a school that can rewrite `last_error` can hide the fact that its
+parents stopped receiving anything.
+
+This is the case CLAUDE.md's "RLS cannot restrict columns" rule describes, and
+it takes the same answer as `notification_deliveries`: a column-level GRANT
+beside the policy. It works here — and not on `homework_submissions` — because
+only one role holding a JWT writes this table at all, so narrowing what
+`authenticated` may write narrows exactly the right person.
+
+INSERT and DELETE are revoked outright (migration `0116`). Deleting a channel
+row is worse than it looks: the claim query joins deliveries to settings, so a
+school with no email row does not get an error — its email simply stops being
+claimable and every screen goes quiet about a queue that is still filling up.
+The rows are created by the seed and by a trigger on `tenants`, one per tenant
+per channel, for ever.
 
 ---
 
@@ -227,8 +325,20 @@ and there is no single place a new permission would otherwise reach them from.
 
 ## What is not built
 
-- **No driver for any external channel.** Deliberate. See the top of this file.
-- **No scheduled sending.** A message goes out when it is composed.
+- ~~**No driver for any external channel.**~~ Email (Resend) and SMS (Twilio)
+  have drivers; WhatsApp and push do not, and say so rather than queueing in
+  silence. Adding one is a file in `supabase/functions/notify-dispatch/drivers.ts`
+  and a line in `DRIVERS` — no migration, no application change. That is what
+  rule 10 was for.
+- **No delivery-status callbacks.** `provider_ref` is stored and is what such a
+  callback would match on, but nothing consumes a provider webhook yet, so
+  "sent" means the provider accepted it — not that it arrived.
+- **No scheduled run is configured.** The dispatcher is deployed and can be run
+  from the Channels screen; wiring a cron to invoke it with the service role is
+  a deployment step, not a code change.
+- **No spend limits.** A school with a misconfigured audience can send a lot of
+  SMS. A per-tenant daily cap belongs next to `notification_channel_settings`
+  and is not built.
 - **No per-notification read receipts for the sender** beyond the delivery log's
   counts — `read_at` is stored per delivery, but the log rolls up status rather
   than showing who has opened what. That is a product decision to revisit, not

@@ -481,9 +481,15 @@ particular kind:
   the apply step is the half that ports cleanly: it is already row-by-row and
   already idempotent on `(tenant_id, session_id, student_id)`.
 
+- **The notification dispatcher is bounded at 200 deliveries or 40 seconds an
+  invocation** and returns how many are left, so a backlog is a button pressed
+  twice rather than a request that times out. It runs in an Edge Function
+  because that is where the provider secrets are, not because the work is
+  unbounded.
+
 So: bound it and say what the bound is, or queue it. What is still genuinely
-`jobs` work and is **not built**: full exports, PDF rendering, scheduled
-reports, bulk import, and every external notification channel.
+`jobs` work and is **not built**: full exports, PDF rendering and scheduled
+reports.
 
 ## 8. Storage
 
@@ -541,13 +547,41 @@ recipient per channel. Keep them separate — "did the notice go out" and "did
 Ravi's mother's SMS arrive" are different questions and collapsing them makes
 the second unanswerable.
 
-**Only `in_app` delivers today.** Email, SMS, WhatsApp and push are real
-channels with real preference handling and real delivery rows; they queue, and
-nothing drains them, because no provider is connected. That is deliberate. Any
-surface offering one of those channels must say so rather than implying a
-message went out — `CHANNELS[].live` in
-`src/lib/validations/notifications.ts` is the single source of that honesty, and
-a test asserts today's value so it cannot drift silently.
+**Whether a channel actually sends has three parts, and no constant can carry
+the answer.** `supabase/functions/notify-dispatch` now drains the queue, so
+liveness is a fact about a deployment and a school rather than about the source
+tree:
+
+1. **a driver** — `CHANNELS[].driver` says whether this *build* can send on the
+   channel at all. Email (Resend) and SMS (Twilio) can; WhatsApp and push
+   cannot.
+2. **the school's decision** — `notification_channel_settings.is_enabled` and
+   `from_address`.
+3. **credentials** — `provider_configured`, written by the dispatcher when it
+   looks for its API key. Null means *never tried*, which is a different thing
+   from *tried and found nothing*; a screen that conflates them tells a school
+   its email is broken when nothing has ever run.
+
+`channelState(status)` in `src/lib/validations/notifications.ts` is the single
+place those three are combined, every surface offering a channel goes through
+it, and the test pins the **shape** of the answer rather than today's values —
+a channel with no driver can never claim to send, however it is configured.
+
+This replaces the old rule, which made `CHANNELS[].live` the single source of
+that honesty. It was right while the answer was "never, for anybody" and became
+a lie the moment a driver shipped: a flag compiled into the bundle cannot know
+whether a Supabase secret is set.
+
+**A held channel keeps its queue.** A channel that is off, unconfigured or
+unbuilt does not mark its deliveries `skipped` — they stay `queued` and
+countable, so connecting a provider in March sends February's reminders.
+Dropping them would be tidier and would lose a school's mail.
+
+**The dispatcher reports before it claims.** `notify_claim_deliveries` refuses
+work for a channel whose `provider_configured` is false, and only the dispatcher
+can set it, so every run reports what each driver can do before asking for
+anything to send. Read the wrong way round that looks like a deadlock; it is
+what stops one missing API key becoming a thousand failed deliveries.
 
 `notification_deliveries` has **no INSERT policy at all** — that is what stops a
 student inventing a message from the principal — which is why `notify_send` is

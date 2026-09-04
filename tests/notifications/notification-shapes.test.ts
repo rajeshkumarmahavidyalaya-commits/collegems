@@ -2,9 +2,12 @@ import { describe, expect, it } from "vitest";
 import {
   CHANNELS,
   audienceToJson,
+  channelSends,
+  channelState,
   composeSchema,
   templateVariables,
   toAudience,
+  type ChannelStatus,
   type ComposeInput,
 } from "@/lib/validations/notifications";
 
@@ -113,11 +116,102 @@ describe("compose validation", () => {
 });
 
 describe("channel honesty", () => {
-  it("marks exactly one channel as actually delivering", () => {
-    // If a driver is ever connected, this test should fail and be updated
-    // deliberately -- the UI's "queues only" wording is derived from this flag,
-    // so it must not drift from reality by accident.
-    expect(CHANNELS.filter((c) => c.live).map((c) => c.value)).toEqual(["in_app"]);
+  /**
+   * This used to assert `CHANNELS.filter(c => c.live)` was exactly `in_app`,
+   * which was the whole of rule 10's honesty while nothing had a driver. It is
+   * no longer enough: liveness is now a fact about this deployment and this
+   * school, and a constant cannot know either. What is pinned instead is the
+   * *shape* of the answer -- that a channel with no driver can never claim to
+   * send, that a school which has not turned one on is told so, and that the
+   * dispatcher having never run is distinguishable from it having run and found
+   * nothing.
+   */
+  const base: ChannelStatus = {
+    channel: "email",
+    isEnabled: false,
+    fromAddress: null,
+    senderName: null,
+    provider: null,
+    providerConfigured: null,
+    lastAttemptAt: null,
+    lastSuccessAt: null,
+    lastError: null,
+    queued: 0,
+    oldestQueuedAt: null,
+    failed: 0,
+    sentRecently: 0,
+  };
+
+  it("names exactly the channels this build can send", () => {
+    expect(CHANNELS.filter((c) => c.driver === "built").map((c) => c.value)).toEqual([
+      "in_app",
+      "email",
+      "sms",
+    ]);
+  });
+
+  it("never claims a channel with no driver can send, however it is configured", () => {
+    for (const channel of ["whatsapp", "push"] as const) {
+      const state = channelState({
+        ...base,
+        channel,
+        isEnabled: true,
+        fromAddress: "office@school.example",
+        providerConfigured: true,
+      });
+      expect(state.kind, channel).toBe("unbuilt");
+      expect(channelSends({ ...base, channel, isEnabled: true, providerConfigured: true })).toBe(
+        false,
+      );
+    }
+  });
+
+  it("in-app always sends, because the row is the delivery", () => {
+    expect(channelSends({ ...base, channel: "in_app", isEnabled: true })).toBe(true);
+  });
+
+  it("tells a school it has the channel switched off, before anything else", () => {
+    const state = channelState({ ...base, isEnabled: false, providerConfigured: true });
+    expect(state.kind).toBe("held");
+    expect(state.sentence).toContain("Turned off");
+  });
+
+  it("distinguishes never-run from run-and-unconfigured", () => {
+    const neverRun = channelState({ ...base, isEnabled: true, providerConfigured: null });
+    expect(neverRun.sentence).toContain("has not run yet");
+
+    const unconfigured = channelState({
+      ...base,
+      isEnabled: true,
+      providerConfigured: false,
+      lastError: "No email provider is connected. Set RESEND_API_KEY.",
+    });
+    expect(unconfigured.kind).toBe("held");
+    expect(unconfigured.sentence).toContain("RESEND_API_KEY");
+  });
+
+  it("only says a channel sends when all three parts hold", () => {
+    const live = {
+      ...base,
+      isEnabled: true,
+      providerConfigured: true,
+      provider: "resend",
+      fromAddress: "office@school.example",
+    };
+    expect(channelSends(live)).toBe(true);
+    expect(channelState(live).sentence).toContain("resend");
+  });
+
+  it("still reports live when the last attempt failed, and says so", () => {
+    const state = channelState({
+      ...base,
+      isEnabled: true,
+      providerConfigured: true,
+      provider: "resend",
+      lastError: "550 sender domain not verified",
+    });
+    expect(state.kind).toBe("live");
+    expect(state.sentence).toContain("550 sender domain not verified");
   });
 });
 

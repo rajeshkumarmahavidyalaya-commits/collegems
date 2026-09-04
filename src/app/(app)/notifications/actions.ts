@@ -5,10 +5,13 @@ import { createClient } from "@/lib/supabase/server";
 import { getUserContext } from "@/lib/auth/context";
 import {
   audienceToJson,
+  channelSettingsSchema,
   composeSchema,
   preferenceSchema,
   templateSchema,
   toAudience,
+  type ChannelStatus,
+  type ChannelValue,
 } from "@/lib/validations/notifications";
 import type { ActionResult } from "../library/actions";
 
@@ -473,4 +476,125 @@ export async function setPreference(input: unknown): Promise<ActionResult> {
 
   revalidatePath("/notifications/preferences");
   return { ok: true, data: undefined };
+}
+
+// ---------------------------------------------------------------------------
+// Channels — what sends, and what only queues
+// ---------------------------------------------------------------------------
+
+/**
+ * `notify_channel_status()` is SECURITY INVOKER, so the counts here are the
+ * caller's own view through RLS: an administrator sees the school's queue, and
+ * anybody else sees only deliveries addressed to them. Both are the truthful
+ * answer to the question they asked.
+ */
+export async function listChannelStatus(): Promise<ChannelStatus[]> {
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("notify_channel_status");
+  if (error) throw new Error(error.message);
+
+  return (data ?? []).map((row) => ({
+    channel: row.channel as ChannelValue,
+    isEnabled: row.is_enabled,
+    fromAddress: row.from_address,
+    senderName: row.sender_name,
+    provider: row.provider,
+    providerConfigured: row.provider_configured,
+    lastAttemptAt: row.last_attempt_at,
+    lastSuccessAt: row.last_success_at,
+    lastError: row.last_error,
+    queued: row.queued,
+    oldestQueuedAt: row.oldest_queued_at,
+    failed: row.failed,
+    sentRecently: row.sent_recently,
+  }));
+}
+
+/**
+ * Turning a channel on, and saying who it comes from.
+ *
+ * A plain update, not an RPC: the policy admits administrators and a
+ * column-level GRANT admits exactly `is_enabled`, `from_address` and
+ * `sender_name`. Everything else on the row is the dispatcher's record of what
+ * happened, and a school that could rewrite `last_error` could hide the fact
+ * that its parents stopped receiving anything. The database refuses that
+ * without this function having to remember to.
+ */
+export async function saveChannelSettings(input: unknown): Promise<ActionResult> {
+  const parsed = channelSettingsSchema.safeParse(input);
+  if (!parsed.success) return invalid(parsed.error);
+
+  const ctx = await getUserContext();
+  if (!ctx) return fail("Not signed in.");
+
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("notification_channel_settings")
+    .update({
+      is_enabled: parsed.data.isEnabled,
+      from_address: parsed.data.fromAddress?.trim() || null,
+      sender_name: parsed.data.senderName?.trim() || null,
+    })
+    .eq("tenant_id", ctx.tenantId)
+    .eq("channel", parsed.data.channel);
+
+  if (error) {
+    if (error.code === "42501") {
+      return fail("Only an administrator can change how this school sends messages.");
+    }
+    return fail(error.message);
+  }
+
+  revalidatePath("/notifications/channels");
+  return { ok: true, data: undefined };
+}
+
+export async function retryFailedDeliveries(
+  channel?: string | null,
+): Promise<ActionResult<{ requeued: number }>> {
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("notify_retry_failed", {
+    p_channel: channel ?? undefined,
+    p_limit: 500,
+  });
+  if (error) return rpcError(error);
+
+  revalidatePath("/notifications/channels");
+  return { ok: true, data: { requeued: data ?? 0 } };
+}
+
+/**
+ * Runs the dispatcher now, for this school only.
+ *
+ * The Edge Function is invoked with the **caller's** token, not a service key —
+ * the app has never held one and must not start. It reads the tenant from that
+ * token's claims rather than from anything sent in the body, which is what
+ * stops one school draining another's queue, and it holds the provider
+ * credentials so that nothing here has ever heard of Resend or Twilio.
+ *
+ * It is bounded at 200 deliveries a run and says how many are left, so a large
+ * backlog is a button pressed twice rather than a request that times out.
+ */
+export async function dispatchQueuedNow(): Promise<
+  ActionResult<{ sent: number; failed: number; remaining: number }>
+> {
+  const supabase = await createClient();
+  const { data, error } = await supabase.functions.invoke("notify-dispatch", { body: {} });
+
+  if (error) {
+    return fail(
+      "The dispatcher did not run. If it has never been deployed, queued messages stay queued — nothing is lost.",
+    );
+  }
+
+  const result = data as { sent?: number; failed?: number; remaining?: number };
+  revalidatePath("/notifications/channels");
+  return {
+    ok: true,
+    data: {
+      sent: result.sent ?? 0,
+      failed: result.failed ?? 0,
+      remaining: result.remaining ?? 0,
+    },
+  };
 }

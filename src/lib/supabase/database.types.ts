@@ -3006,6 +3006,62 @@ export type Database = {
           },
         ]
       }
+      notification_channel_settings: {
+        Row: {
+          channel: string
+          created_at: string
+          from_address: string | null
+          id: string
+          is_enabled: boolean
+          last_attempt_at: string | null
+          last_error: string | null
+          last_success_at: string | null
+          provider: string | null
+          provider_configured: boolean | null
+          sender_name: string | null
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          channel: string
+          created_at?: string
+          from_address?: string | null
+          id?: string
+          is_enabled?: boolean
+          last_attempt_at?: string | null
+          last_error?: string | null
+          last_success_at?: string | null
+          provider?: string | null
+          provider_configured?: boolean | null
+          sender_name?: string | null
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          channel?: string
+          created_at?: string
+          from_address?: string | null
+          id?: string
+          is_enabled?: boolean
+          last_attempt_at?: string | null
+          last_error?: string | null
+          last_success_at?: string | null
+          provider?: string | null
+          provider_configured?: boolean | null
+          sender_name?: string | null
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notification_channel_settings_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       notification_deliveries: {
         Row: {
           address: string | null
@@ -3017,6 +3073,7 @@ export type Database = {
           last_error: string | null
           next_attempt_at: string
           notification_id: string
+          provider_ref: string | null
           read_at: string | null
           recipient_user_id: string | null
           sent_at: string | null
@@ -3034,6 +3091,7 @@ export type Database = {
           last_error?: string | null
           next_attempt_at?: string
           notification_id: string
+          provider_ref?: string | null
           read_at?: string | null
           recipient_user_id?: string | null
           sent_at?: string | null
@@ -3051,6 +3109,7 @@ export type Database = {
           last_error?: string | null
           next_attempt_at?: string
           notification_id?: string
+          provider_ref?: string | null
           read_at?: string | null
           recipient_user_id?: string | null
           sent_at?: string | null
@@ -6479,8 +6538,36 @@ export type Database = {
         }
         Returns: number
       }
+      notify_channel_report: {
+        Args: {
+          p_channel: string
+          p_configured: boolean
+          p_error?: string
+          p_provider: string
+          p_tenant_id: string
+        }
+        Returns: undefined
+      }
+      notify_channel_status: {
+        Args: never
+        Returns: {
+          channel: string
+          failed: number
+          from_address: string
+          is_enabled: boolean
+          last_attempt_at: string
+          last_error: string
+          last_success_at: string
+          oldest_queued_at: string
+          provider: string
+          provider_configured: boolean
+          queued: number
+          sender_name: string
+          sent_recently: number
+        }[]
+      }
       notify_claim_deliveries: {
-        Args: { p_limit?: number }
+        Args: { p_channel?: string; p_limit?: number; p_tenant_id?: string }
         Returns: {
           address: string | null
           attempts: number
@@ -6491,6 +6578,7 @@ export type Database = {
           last_error: string | null
           next_attempt_at: string
           notification_id: string
+          provider_ref: string | null
           read_at: string | null
           recipient_user_id: string | null
           sent_at: string | null
@@ -6548,7 +6636,12 @@ export type Database = {
         }[]
       }
       notify_record_result: {
-        Args: { p_delivery_id: string; p_error?: string; p_ok: boolean }
+        Args: {
+          p_delivery_id: string
+          p_error?: string
+          p_ok: boolean
+          p_provider_ref?: string
+        }
         Returns: undefined
       }
       notify_render: {
@@ -6560,6 +6653,10 @@ export type Database = {
         Returns: {
           user_id: string
         }[]
+      }
+      notify_retry_failed: {
+        Args: { p_channel?: string; p_limit?: number }
+        Returns: number
       }
       notify_send: {
         Args: {

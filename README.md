@@ -50,7 +50,7 @@ After any migration, regenerate types into
 | [docs/modules/exams.md](./docs/modules/exams.md) | Exams: grading rules as data, split papers, and two bugs the demo cohort surfaced |
 | [docs/modules/reports.md](./docs/modules/reports.md) | The reporting kernel: reports as data, not as forty pages |
 | [docs/modules/timetable.md](./docs/modules/timetable.md) | The class routine: three unique indexes doing all the work |
-| [docs/modules/notifications.md](./docs/modules/notifications.md) | Notifications: one send path, and the RLS hole that column grants close |
+| [docs/modules/notifications.md](./docs/modules/notifications.md) | Notifications: one send path, a dispatcher with real drivers, and the RLS hole that column grants close |
 | [docs/modules/homework.md](./docs/modules/homework.md) | Homework: files, signed URLs, and where a column grant stops working |
 | [docs/modules/payroll.md](./docs/modules/payroll.md) | HR and payroll: salary as data, and a payslip made immutable by a foreign key |
 | [docs/modules/accounts.md](./docs/modules/accounts.md) | The general ledger: three rules, three different devices, and books that tie |
@@ -89,7 +89,10 @@ After any migration, regenerate types into
 - Homework and study material: set, hand in, mark and return, with private
   file attachments served through signed URLs issued after a permission check
 - Notification service: one send path, in-app delivery, per-user opt-outs,
-  templates, and a delivery log (external channels queue — no driver connected)
+  templates, a delivery log, and a dispatcher Edge Function with email (Resend)
+  and SMS (Twilio) drivers. Whether a channel actually sends depends on the
+  build, the school's settings and the deployment's secrets — the Channels
+  screen says which of the three is missing
 - Library module end-to-end as the reference implementation
 - Students register: admission, editing, status changes, guardian links
 - Attendance: keyboard-first register, autosave, per-class report
@@ -99,8 +102,8 @@ After any migration, regenerate types into
 - Printable per-student invoices, itemised, on a configurable school letterhead
 - Razorpay payment links, settled into the ledger by a signature-verified
   webhook (needs keys on the Edge Functions before it does anything)
-- Invoice email queued to a school-configured address — **queue only, no
-  sender is connected**
+- Invoice email queued to a school-configured address, sent by the dispatcher
+  once `RESEND_API_KEY` is set on the Edge Function
 - App shell: role-driven nav, breadcrumbs, ⌘K command palette, theme toggle
 - DataTable and form primitives
 - Dashboard with KPIs and charts

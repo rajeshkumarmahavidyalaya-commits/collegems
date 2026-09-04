@@ -47,7 +47,7 @@ import { SelectField, TextField, TextareaField } from "@/components/forms/form-f
 import {
   CHANNELS,
   audienceKindLabel,
-  channelIsLive,
+  channelHasDriver,
   channelLabel,
   relativeTime,
   statusLabel,
@@ -345,9 +345,14 @@ function OutboxCard({
                           <TableCell>
                             <span className="flex items-center gap-1.5">
                               {channelLabel(d.channel)}
-                              {!channelIsLive(d.channel) && (
+                              {/* A build fact, always true wherever this runs.
+                                  Whether a *configured* channel is sending is
+                                  the delivery's own status, in the next
+                                  column — this badge is only for the channels
+                                  nothing in this build could ever send. */}
+                              {!channelHasDriver(d.channel) && (
                                 <Badge variant="outline" className="font-normal">
-                                  no provider
+                                  no driver
                                 </Badge>
                               )}
                             </span>

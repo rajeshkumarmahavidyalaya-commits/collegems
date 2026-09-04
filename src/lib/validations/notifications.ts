@@ -13,40 +13,48 @@ import { z } from "zod";
  * Channels, in the order a school thinks about them: the one that always works
  * first, then the ones that cost money.
  *
- * `live` is the honest bit. Only `in_app` has a driver; the rest queue real
- * delivery rows and nothing drains them, so every surface that offers a channel
- * has to say so rather than implying a message went out.
+ * `driver` is a fact about **this codebase**: whether `notify-dispatch` knows
+ * how to send on the channel at all. It is not the same question as whether a
+ * message will actually leave the building, and conflating the two is what this
+ * file used to do — a `live: false` constant was the truth while the answer was
+ * "never, for anybody", and became a lie the moment a driver shipped.
+ *
+ * The other two thirds of the answer are runtime facts and live in Postgres:
+ * `notification_channel_settings.is_enabled` (has this school turned it on and
+ * given it an address) and `provider_configured` (did the dispatcher find its
+ * credentials). `channelState` below is the one place those three are combined,
+ * and every surface that offers a channel goes through it.
  */
 export const CHANNELS = [
   {
     value: "in_app",
     label: "In-app",
-    live: true,
+    driver: "built",
     note: "Appears in the recipient's inbox immediately.",
   },
   {
     value: "email",
     label: "Email",
-    live: false,
-    note: "Queued. No email provider is connected yet, so nothing leaves the building.",
+    driver: "built",
+    note: "Sent by the dispatcher once an email provider is connected.",
   },
   {
     value: "sms",
     label: "SMS",
-    live: false,
-    note: "Queued. No SMS gateway is connected yet.",
+    driver: "built",
+    note: "Sent by the dispatcher once an SMS gateway is connected.",
   },
   {
     value: "whatsapp",
     label: "WhatsApp",
-    live: false,
-    note: "Queued. No WhatsApp provider is connected yet.",
+    driver: "none",
+    note: "This build has no WhatsApp driver. Messages are kept, not sent.",
   },
   {
     value: "push",
     label: "Push",
-    live: false,
-    note: "Queued. No push service is connected yet.",
+    driver: "none",
+    note: "This build has no push driver. Messages are kept, not sent.",
   },
 ] as const;
 
@@ -65,6 +73,117 @@ export const DELIVERY_STATUSES = [
 ] as const;
 
 export type DeliveryStatus = (typeof DELIVERY_STATUSES)[number]["value"];
+
+// ---------------------------------------------------------------------------
+// Whether a channel actually sends, which has three parts
+// ---------------------------------------------------------------------------
+
+/** One row of `notify_channel_status()`, as the app sees it. */
+export type ChannelStatus = {
+  channel: ChannelValue;
+  isEnabled: boolean;
+  fromAddress: string | null;
+  senderName: string | null;
+  provider: string | null;
+  providerConfigured: boolean | null;
+  lastAttemptAt: string | null;
+  lastSuccessAt: string | null;
+  lastError: string | null;
+  queued: number;
+  oldestQueuedAt: string | null;
+  failed: number;
+  sentRecently: number;
+};
+
+export type ChannelState =
+  /** Messages go out. */
+  | { kind: "live"; sentence: string }
+  /** Nothing goes out, and this says why, in one sentence a person can act on. */
+  | { kind: "held"; sentence: string }
+  /** Nothing will ever go out from this build. */
+  | { kind: "unbuilt"; sentence: string };
+
+/**
+ * The single source of rule 10's honesty, and the reason it is a function
+ * rather than a constant: the answer depends on the build, on the school's
+ * settings, and on what the dispatcher last found. Getting any of the three
+ * wrong produces a screen that says SMS is on while nothing leaves the
+ * building — which is the exact failure this rule exists to prevent.
+ *
+ * The order of the checks is the order a person would ask them in, and each
+ * branch names the next thing to do.
+ */
+export function channelState(status: ChannelStatus): ChannelState {
+  const meta = CHANNELS.find((c) => c.value === status.channel);
+
+  if (status.channel === "in_app") {
+    // Not a provider. The row IS the delivery, so there is nothing to connect
+    // and nothing that can be down.
+    return { kind: "live", sentence: "Appears in the recipient's inbox immediately." };
+  }
+
+  if (meta?.driver === "none") {
+    return {
+      kind: "unbuilt",
+      sentence: `This build has no ${meta.label} driver. Messages queued for ${meta.label} are kept, not sent.`,
+    };
+  }
+
+  if (!status.isEnabled) {
+    return {
+      kind: "held",
+      sentence: "Turned off for this school. Queued messages are kept and will go out if you turn it on.",
+    };
+  }
+
+  if (status.providerConfigured === null) {
+    // Never attempted is a different thing from attempted and unconfigured, and
+    // a screen that conflates them tells a school its email is broken when in
+    // fact nothing has ever tried.
+    return {
+      kind: "held",
+      sentence: "The dispatcher has not run yet, so nothing has been sent on this channel.",
+    };
+  }
+
+  if (!status.providerConfigured) {
+    return {
+      kind: "held",
+      sentence:
+        status.lastError ??
+        "The dispatcher could not find what it needs to send on this channel.",
+    };
+  }
+
+  return {
+    kind: "live",
+    sentence: status.lastError
+      ? `Connected via ${status.provider ?? "a provider"}, but the last attempt failed: ${status.lastError}`
+      : `Connected via ${status.provider ?? "a provider"}.`,
+  };
+}
+
+/** True only when a message chosen for this channel will actually be sent. */
+export function channelSends(status: ChannelStatus): boolean {
+  return channelState(status).kind === "live";
+}
+
+export const channelSettingsSchema = z
+  .object({
+    channel: channelEnum,
+    isEnabled: z.boolean(),
+    fromAddress: z.string().max(200).optional(),
+    senderName: z.string().max(120).optional(),
+  })
+  .refine((v) => v.channel !== "in_app", {
+    message: "In-app is not a provider and cannot be turned off",
+    path: ["channel"],
+  })
+  .refine(
+    (v) => v.channel !== "email" || !v.isEnabled || /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(v.fromAddress ?? ""),
+    { message: "An email channel needs a from-address", path: ["fromAddress"] },
+  );
+export type ChannelSettingsInput = z.infer<typeof channelSettingsSchema>;
 
 export const AUDIENCE_KINDS = [
   { value: "all", label: "Everyone with a login" },
@@ -181,8 +300,13 @@ export function channelLabel(value: string) {
   return CHANNELS.find((c) => c.value === value)?.label ?? value;
 }
 
-export function channelIsLive(value: string) {
-  return CHANNELS.find((c) => c.value === value)?.live ?? false;
+/**
+ * Whether this build has a driver for the channel at all. NOT "will a message
+ * be sent" — that needs `channelState` and a status row, because the answer
+ * also depends on the school's settings and on what the dispatcher found.
+ */
+export function channelHasDriver(value: string) {
+  return CHANNELS.find((c) => c.value === value)?.driver === "built";
 }
 
 export function statusLabel(value: string) {

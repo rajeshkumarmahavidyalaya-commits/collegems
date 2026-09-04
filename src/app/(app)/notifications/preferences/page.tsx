@@ -1,10 +1,14 @@
-import { listEventTypes, listPreferences } from "../actions";
+import { listChannelStatus, listEventTypes, listPreferences } from "../actions";
 import { PreferenceGrid } from "./preference-grid";
 
 export const metadata = { title: "Notification preferences" };
 
 export default async function PreferencesPage() {
-  const [eventTypes, preferences] = await Promise.all([listEventTypes(), listPreferences()]);
+  const [eventTypes, preferences, channelStatus] = await Promise.all([
+    listEventTypes(),
+    listPreferences(),
+    listChannelStatus(),
+  ]);
 
   return (
     <div className="flex flex-col gap-6">
@@ -16,7 +20,11 @@ export default async function PreferencesPage() {
         </p>
       </div>
 
-      <PreferenceGrid eventTypes={eventTypes} preferences={preferences} />
+      <PreferenceGrid
+        eventTypes={eventTypes}
+        preferences={preferences}
+        channelStatus={channelStatus}
+      />
     </div>
   );
 }

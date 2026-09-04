@@ -7,12 +7,18 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
-import { CHANNELS, channelLabel } from "@/lib/validations/notifications";
+import {
+  CHANNELS,
+  channelLabel,
+  channelState,
+  type ChannelStatus,
+} from "@/lib/validations/notifications";
 import { setPreference, type EventType, type PreferenceRow } from "../actions";
 
 type Props = {
   eventTypes: EventType[];
   preferences: PreferenceRow[];
+  channelStatus: ChannelStatus[];
 };
 
 /**
@@ -25,7 +31,7 @@ type Props = {
  * and the only record a person has of what they were told; letting somebody
  * turn it off would mean a fee reminder with nowhere to land.
  */
-export function PreferenceGrid({ eventTypes, preferences }: Props) {
+export function PreferenceGrid({ eventTypes, preferences, channelStatus }: Props) {
   const [pending, startTransition] = useTransition();
   const [optimistic, setOptimistic] = useOptimistic(
     preferences,
@@ -96,7 +102,15 @@ export function PreferenceGrid({ eventTypes, preferences }: Props) {
                       {inDefault
                         ? "Your school sends this one by default."
                         : "Your school does not currently send this one."}
-                      {!channel.live && " No provider is connected yet, so it queues rather than sends."}
+                      {/* The school's real state, not a constant: "SMS is on
+                          for you" is worth nothing if the school has not
+                          connected a gateway, and a preference screen that
+                          does not say so is the surface rule 10 warns about. */}
+                      {(() => {
+                        const status = channelStatus.find((s) => s.channel === channel.value);
+                        const state = status ? channelState(status) : null;
+                        return state && state.kind !== "live" ? ` ${state.sentence}` : null;
+                      })()}
                     </p>
                   </div>
                   <div className="flex shrink-0 items-center gap-2">

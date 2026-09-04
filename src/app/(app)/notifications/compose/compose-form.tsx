@@ -21,7 +21,10 @@ import {
   AUDIENCE_KINDS,
   CHANNELS,
   SECTION_WHO,
+  channelSends,
+  channelState,
   composeSchema,
+  type ChannelStatus,
   type ComposeInput,
 } from "@/lib/validations/notifications";
 import { previewAudience, sendNotification, type EventType } from "../actions";
@@ -31,9 +34,16 @@ type Props = {
   roles: { code: string; name: string }[];
   sections: { id: string; label: string }[];
   recipients: { id: string; label: string; roleName: string }[];
+  channelStatus: ChannelStatus[];
 };
 
-export function ComposeForm({ eventTypes, roles, sections, recipients }: Props) {
+export function ComposeForm({
+  eventTypes,
+  roles,
+  sections,
+  recipients,
+  channelStatus,
+}: Props) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [reach, setReach] = useState<number | null>(null);
@@ -115,9 +125,12 @@ export function ComposeForm({ eventTypes, roles, sections, recipients }: Props) 
   }, [audienceKey]);
 
   const chosenChannels = values.channels ?? [];
-  const queuedOnly = chosenChannels.filter(
-    (c) => !CHANNELS.find((known) => known.value === c)?.live,
-  );
+  // Not "has no driver" and not "is switched off" — the whole question, asked
+  // once, in the one place that can answer it.
+  const queuedOnly = chosenChannels.filter((c) => {
+    const status = channelStatus.find((s) => s.channel === c);
+    return !status || !channelSends(status);
+  });
 
   const filteredRecipients = useMemo(() => {
     const needle = search.trim().toLowerCase();
@@ -281,6 +294,8 @@ export function ComposeForm({ eventTypes, roles, sections, recipients }: Props) 
                   <legend className="sr-only">Channels</legend>
                   {CHANNELS.map((channel) => {
                     const checked = chosenChannels.includes(channel.value);
+                    const status = channelStatus.find((s) => s.channel === channel.value);
+                    const state = status ? channelState(status) : null;
                     return (
                       <div key={channel.value} className="flex items-start gap-3">
                         <Checkbox
@@ -295,15 +310,18 @@ export function ComposeForm({ eventTypes, roles, sections, recipients }: Props) 
                             className="flex flex-wrap items-center gap-1.5"
                           >
                             {channel.label}
-                            <Badge variant={channel.live ? "default" : "outline"} className="font-normal">
-                              {channel.live ? "Delivers now" : "Queues only"}
+                            <Badge
+                              variant={state?.kind === "live" ? "default" : "outline"}
+                              className="font-normal"
+                            >
+                              {state?.kind === "live" ? "Delivers now" : "Queues only"}
                             </Badge>
                           </Label>
                           <span
                             id={`channel-${channel.value}-note`}
                             className="text-xs text-muted-foreground"
                           >
-                            {channel.note}
+                            {state?.sentence ?? channel.note}
                           </span>
                         </div>
                       </div>
