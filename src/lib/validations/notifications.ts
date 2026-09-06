@@ -25,35 +25,45 @@ import { z } from "zod";
  * credentials). `channelState` below is the one place those three are combined,
  * and every surface that offers a channel goes through it.
  */
+/**
+ * Whether *this build* has a sender for a channel. Written as an explicit type
+ * rather than left to inference: every channel happens to be `"built"` today,
+ * and without this the compiler narrows the union and declares the "no driver"
+ * branch in `channelState` unreachable — deleting a branch that the next
+ * channel added will need, and that `unbuilt()` in the dispatcher exists to
+ * feed.
+ */
+export type DriverAvailability = "built" | "none";
+
 export const CHANNELS = [
   {
     value: "in_app",
     label: "In-app",
-    driver: "built",
+    driver: "built" as DriverAvailability,
     note: "Appears in the recipient's inbox immediately.",
   },
   {
     value: "email",
     label: "Email",
-    driver: "built",
+    driver: "built" as DriverAvailability,
     note: "Sent by the dispatcher once an email provider is connected.",
   },
   {
     value: "sms",
     label: "SMS",
-    driver: "built",
+    driver: "built" as DriverAvailability,
     note: "Sent by the dispatcher once an SMS gateway is connected.",
   },
   {
     value: "whatsapp",
     label: "WhatsApp",
-    driver: "none",
-    note: "This build has no WhatsApp driver. Messages are kept, not sent.",
+    driver: "built" as DriverAvailability,
+    note: "Sent by the dispatcher as an approved template once WhatsApp is connected.",
   },
   {
     value: "push",
     label: "Push",
-    driver: "built",
+    driver: "built" as DriverAvailability,
     note: "Sent by the dispatcher to registered devices once push is connected.",
   },
 ] as const;
@@ -276,14 +286,48 @@ export function audienceToJson(audience: AudienceInput) {
   }
 }
 
-export const templateSchema = z.object({
-  eventKey: z.string().min(1, "Choose an event"),
-  channel: channelEnum,
-  subject: z.string().max(200).optional(),
-  body: z.string().min(1, "A template needs a body").max(4000),
-  isActive: z.boolean(),
-});
+export const templateSchema = z
+  .object({
+    eventKey: z.string().min(1, "Choose an event"),
+    channel: channelEnum,
+    subject: z.string().max(200).optional(),
+    body: z.string().min(1, "A template needs a body").max(4000),
+    isActive: z.boolean(),
+    /**
+     * WhatsApp only. The name of the template registered and approved with
+     * Meta — this system never sees its text, only refers to it. `body` above
+     * stays our own rendering, for the delivery log and for a channel added
+     * later; the two can disagree, and knowing that is the point of keeping
+     * both.
+     */
+    providerTemplateName: z.string().max(120).optional(),
+    providerTemplateLocale: z.string().max(10).optional(),
+    /** Which payload keys fill Meta's {{1}}, {{2}} — in that order. */
+    providerTemplateParams: z.array(z.string().max(60)).max(10).optional(),
+  })
+  .refine(
+    (v) => v.channel === "whatsapp" || !v.providerTemplateName?.trim(),
+    {
+      message: "Only WhatsApp uses a registered template name",
+      path: ["providerTemplateName"],
+    },
+  );
 export type TemplateInput = z.infer<typeof templateSchema>;
+
+/**
+ * WhatsApp is the one channel where a template is not a convenience but the
+ * only way to send at all: outside a 24-hour window opened by the recipient
+ * writing first, Meta accepts nothing else. So a WhatsApp template row without
+ * a registered name cannot send, and saying that plainly is more useful than
+ * letting somebody discover it from a delivery log full of skips.
+ */
+export function templateProblem(
+  template: { channel: string; providerTemplateName?: string | null },
+): string | null {
+  if (template.channel !== "whatsapp") return null;
+  if (template.providerTemplateName?.trim()) return null;
+  return "WhatsApp needs the name of a template approved by Meta. Without one, messages for this event are skipped rather than sent.";
+}
 
 export const preferenceSchema = z.object({
   eventKey: z.string().min(1),

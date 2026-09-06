@@ -3132,7 +3132,9 @@ export type Database = {
           last_error: string | null
           next_attempt_at: string
           notification_id: string
+          provider_params: Json | null
           provider_ref: string | null
+          provider_template: string | null
           read_at: string | null
           recipient_user_id: string | null
           sent_at: string | null
@@ -3150,7 +3152,9 @@ export type Database = {
           last_error?: string | null
           next_attempt_at?: string
           notification_id: string
+          provider_params?: Json | null
           provider_ref?: string | null
+          provider_template?: string | null
           read_at?: string | null
           recipient_user_id?: string | null
           sent_at?: string | null
@@ -3168,7 +3172,9 @@ export type Database = {
           last_error?: string | null
           next_attempt_at?: string
           notification_id?: string
+          provider_params?: Json | null
           provider_ref?: string | null
+          provider_template?: string | null
           read_at?: string | null
           recipient_user_id?: string | null
           sent_at?: string | null
@@ -3242,6 +3248,9 @@ export type Database = {
           event_key: string
           id: string
           is_active: boolean
+          provider_template_locale: string
+          provider_template_name: string | null
+          provider_template_params: string[]
           subject: string | null
           tenant_id: string
           updated_at: string
@@ -3253,6 +3262,9 @@ export type Database = {
           event_key: string
           id?: string
           is_active?: boolean
+          provider_template_locale?: string
+          provider_template_name?: string | null
+          provider_template_params?: string[]
           subject?: string | null
           tenant_id: string
           updated_at?: string
@@ -3264,6 +3276,9 @@ export type Database = {
           event_key?: string
           id?: string
           is_active?: boolean
+          provider_template_locale?: string
+          provider_template_name?: string | null
+          provider_template_params?: string[]
           subject?: string | null
           tenant_id?: string
           updated_at?: string
@@ -6698,7 +6713,9 @@ export type Database = {
           last_error: string | null
           next_attempt_at: string
           notification_id: string
+          provider_params: Json | null
           provider_ref: string | null
+          provider_template: string | null
           read_at: string | null
           recipient_user_id: string | null
           sent_at: string | null
@@ -6760,6 +6777,7 @@ export type Database = {
           p_delivery_id: string
           p_error?: string
           p_ok: boolean
+          p_permanent?: boolean
           p_provider_ref?: string
         }
         Returns: undefined
@@ -6805,6 +6823,12 @@ export type Database = {
           isOneToOne: true
           isSetofReturn: false
         }
+      }
+      notify_template_problems: {
+        Args: never
+        Returns: {
+          problem: string
+        }[]
       }
       notify_unread_count: { Args: never; Returns: number }
       payroll_discard: { Args: { p_run_id: string }; Returns: undefined }

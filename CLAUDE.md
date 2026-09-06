@@ -553,8 +553,9 @@ liveness is a fact about a deployment and a school rather than about the source
 tree:
 
 1. **a driver** — `CHANNELS[].driver` says whether this *build* can send on the
-   channel at all. Email (Resend), SMS (Twilio) and push (FCM) can; WhatsApp
-   cannot.
+   channel at all. All five have one: in-app, email (Resend), SMS (Twilio),
+   push (FCM) and WhatsApp (Meta). The `"none"` state and the dispatcher's
+   `unbuilt()` stub stay, for the next channel.
 2. **the school's decision** — `notification_channel_settings.is_enabled` and
    `from_address`.
 3. **credentials** — `provider_configured`, written by the dispatcher when it
@@ -576,6 +577,23 @@ whether a Supabase secret is set.
 unbuilt does not mark its deliveries `skipped` — they stay `queued` and
 countable, so connecting a provider in March sends February's reminders.
 Dropping them would be tidier and would lose a school's mail.
+
+**One channel does not take a string, and pretending otherwise is how a
+WhatsApp integration ships broken.** Outside a 24-hour window opened by the
+*recipient* writing first, Meta accepts only templates registered and approved
+in advance — a name, a language, positional parameters. A school sending a fee
+reminder is always outside that window. So `notification_templates` carries the
+*pointer* to Meta's copy and the ordered payload keys that fill it,
+`notify_send` freezes both onto the delivery beside the address, and a WhatsApp
+delivery with **no registered template is skipped at compose time with a
+sentence** rather than queued. A queue that can never drain is worse than an
+honest skip, because it looks like progress.
+
+The 24-hour window is deliberately not modelled: using it would mean recording
+every inbound message to know when a window opened, which is an inbox — a
+second feature with its own webhook and unread state, built so that a fee
+reminder could occasionally be free text. Say no to that once, here, rather
+than rediscovering it.
 
 **A failure can be permanent, and push is why.** Email and SMS fail transiently
 almost always — a timeout, a rate limit — so `notify_record_result` backs off

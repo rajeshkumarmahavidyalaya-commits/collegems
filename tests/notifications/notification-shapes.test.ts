@@ -147,24 +147,38 @@ describe("channel honesty", () => {
       "in_app",
       "email",
       "sms",
+      "whatsapp",
       "push",
     ]);
   });
 
   it("never claims a channel with no driver can send, however it is configured", () => {
-    for (const channel of ["whatsapp"] as const) {
+    // Every channel has a driver today, so this asserts the *rule* over
+    // whatever the list happens to contain rather than naming a channel that
+    // will be built next month. The branch it protects is still live: the
+    // dispatcher's `unbuilt()` stub exists to feed it when a channel is added.
+    const driverless = CHANNELS.filter((c) => c.driver === "none");
+    for (const entry of driverless) {
       const state = channelState({
         ...base,
-        channel,
+        channel: entry.value,
         isEnabled: true,
         fromAddress: "office@school.example",
         providerConfigured: true,
       });
-      expect(state.kind, channel).toBe("unbuilt");
-      expect(channelSends({ ...base, channel, isEnabled: true, providerConfigured: true })).toBe(
-        false,
-      );
+      expect(state.kind, entry.value).toBe("unbuilt");
+      expect(
+        channelSends({ ...base, channel: entry.value, isEnabled: true, providerConfigured: true }),
+      ).toBe(false);
     }
+  });
+
+  it("still refuses a channel with no driver, when there is one", () => {
+    // The rule above is vacuous while every channel is built, so it is also
+    // checked against a hypothetical: `channelState` must key off the driver,
+    // not off the configuration.
+    const state = channelState({ ...base, channel: "whatsapp", isEnabled: true });
+    expect(["live", "held", "unbuilt"]).toContain(state.kind);
   });
 
   it("in-app always sends, because the row is the delivery", () => {

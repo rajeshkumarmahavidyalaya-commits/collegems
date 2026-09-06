@@ -98,7 +98,8 @@ After any migration, regenerate types into
   additive-only contract, and device registration for push
 - Notification service: one send path, in-app delivery, per-user opt-outs,
   templates, a delivery log, and a dispatcher Edge Function with email (Resend),
-  SMS (Twilio) and push (FCM) drivers. Whether a channel actually sends depends on the
+  SMS (Twilio), push (FCM) and WhatsApp
+  (Meta, template-only) drivers. Whether a channel actually sends depends on the
   build, the school's settings and the deployment's secrets — the Channels
   screen says which of the three is missing
 - Library module end-to-end as the reference implementation

@@ -38,7 +38,7 @@ with no provider secrets set:
 | `email` | Resend | Sends once `RESEND_API_KEY` is set on the Edge Function and the school has a from-address. |
 | `sms` | Twilio | Sends once `TWILIO_ACCOUNT_SID` / `TWILIO_AUTH_TOKEN` are set and there is a sender number. |
 | `push` | FCM | Sends once `FCM_SERVICE_ACCOUNT` is set. No from-address: a push notification carries the school's name in its own title. |
-| `whatsapp` | **none** | Kept, never sent. No driver exists in this build. |
+| `whatsapp` | Meta | Sends once `WHATSAPP_ACCESS_TOKEN` is set — **as an approved template**, never as free text. See below. |
 
 ### The honesty used to be a constant, and could not stay one
 
@@ -139,6 +139,74 @@ A permanently failed row also leaves `next_attempt_at` where it was (migration
 row marked `failed` next to "retry in 1 minute" costs a reader the time to work
 out which of the two is lying, and a column that means nothing is worse than a
 column that is absent.
+
+### WhatsApp: the template *is* the message
+
+Every other channel takes a string. WhatsApp does not, and building it as though
+it did is the single most likely way to ship a WhatsApp integration that appears
+to work and does not.
+
+Outside a 24-hour window opened by the **recipient** messaging the school first,
+Meta accepts only templates registered and approved in advance: a name, a
+language, and positional parameters. Free text is rejected. A school sending a
+fee reminder is always outside that window — nobody replies to a fee reminder —
+so for this product the template path is not a fallback, it is the only path.
+
+**The 24-hour window is deliberately not modelled.** Using it would mean
+recording every inbound message to know when a window opened, which is an
+inbox: a second feature, with its own webhook, its own storage and its own
+unread state, built so that a fee reminder could occasionally be sent as free
+text. That is not a trade worth making.
+
+So a WhatsApp template has two halves in two places:
+
+| | where | what |
+|---|---|---|
+| Meta's copy | registered with Meta | the text actually delivered. This system never sees it. |
+| our copy | `notification_templates.body` | what the delivery log shows a human, and what a channel added later could re-render. |
+
+`notification_templates` gained the pointer — `provider_template_name`,
+`provider_template_locale` — and `provider_template_params`, the payload keys in
+the order Meta's `{{1}}`, `{{2}}` expect. Positional because that is Meta's API;
+named in our data because `{{2}}` in a configuration screen is unreadable and
+gets filled in wrong.
+
+Both are **frozen onto the delivery** at compose time, beside the address and
+for the same reason: a school that renames or re-registers a template must not
+change what a delivery from six weeks ago says it sent.
+
+A WhatsApp delivery with no registered template is **skipped with a sentence**,
+not queued. Queuing it would put a message in a queue that can never drain, and
+sending it as free text would have Meta reject it after five retries and blame
+the recipient rather than the configuration.
+
+A CHECK refuses `provider_template_name` on any channel but WhatsApp — otherwise
+somebody fills it in on the email row and wonders why nothing changes.
+
+#### The critic, and the wrong question it asked first
+
+`notify_template_problems()` reports in sentences, like
+`grading_scheme_problems()`. Its first version asked *which events default to
+WhatsApp and have no template?* — and on this schema the answer is always none,
+because `reference.notification_types.default_channels` lists in-app, SMS and
+email and never WhatsApp. **The sentence that mattered most could never fire.**
+
+Two things were wrong with that question. The narrow one: WhatsApp is in nobody's
+defaults yet. The broader one: **the defaults are the wrong evidence** — a school
+chooses channels per message at compose time, so an event that does not default
+to WhatsApp can still be sent on it fifty times a term.
+
+The right evidence was already in the delivery log. `notify_send` skips and says
+why, so the skips *are* the record of what a school tried and could not do.
+Migration `0125` counts them:
+
+> WhatsApp messages for "Library book overdue" have been skipped 1 time(s): no
+> template is registered for it, and WhatsApp only accepts templates approved in
+> advance. Register one, or stop choosing WhatsApp for that event.
+
+Widening it to *every* event instead would have been the other mistake: nine
+complaints the moment somebody enables the channel, most about events they will
+never send that way, which is the kind of list people learn to scroll past.
 
 ### Push has no sender, and that is not an omission
 

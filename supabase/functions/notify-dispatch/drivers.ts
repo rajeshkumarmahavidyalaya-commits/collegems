@@ -9,12 +9,18 @@
  * key into a thousand failed deliveries with five attempts each; a dispatcher
  * that reports first turns it into one sentence on a screen.
  *
- * Adding WhatsApp is a file here plus a line in `DRIVERS`. That is the whole
+ * Adding a channel is a file here plus a line in `DRIVERS`. That is the whole
  * point of rule 10: a new channel is a driver, not a migration through twelve
  * modules.
  */
 
 import { accessTokenFor, isPermanentFailure, readCredentials } from "./fcm.ts";
+import {
+  isPermanentFailure as isPermanentWhatsAppFailure,
+  normaliseNumber,
+  readCredentials as readWhatsAppCredentials,
+  readTemplate,
+} from "./whatsapp.ts";
 
 export type Channel = "email" | "sms" | "whatsapp" | "push";
 
@@ -24,6 +30,13 @@ export type OutgoingMessage = {
   body: string;
   fromAddress: string | null;
   senderName: string | null;
+  /**
+   * Frozen onto the delivery at compose time for the one channel that cannot
+   * take a string. Null everywhere else -- see `whatsapp.ts` for why WhatsApp
+   * is different in kind rather than in detail.
+   */
+  providerTemplate?: string | null;
+  providerParams?: unknown;
 };
 
 export type SendResult =
@@ -262,17 +275,135 @@ const push: Driver = {
 };
 
 // ---------------------------------------------------------------------------
+// WhatsApp -- Meta Cloud API
+// ---------------------------------------------------------------------------
+
+const whatsapp: Driver = {
+  channel: "whatsapp",
+  provider: "meta",
+
+  configure(fromAddress) {
+    // `fromAddress` is the school's own WhatsApp Business phone number ID where
+    // it has one; the deployment's is the fallback. The access token is always
+    // the deployment's -- it is a secret, and secrets do not live in a table a
+    // school can edit.
+    if (!Deno.env.get("WHATSAPP_ACCESS_TOKEN")) {
+      return {
+        ok: false,
+        reason:
+          "No WhatsApp provider is connected. Set WHATSAPP_ACCESS_TOKEN and " +
+          "WHATSAPP_PHONE_NUMBER_ID on this Edge Function to enable WhatsApp.",
+      };
+    }
+    if (!readWhatsAppCredentials(fromAddress)) {
+      return {
+        ok: false,
+        reason:
+          "WhatsApp is connected but there is no sender number. Set this school's " +
+          "WhatsApp phone number ID under Notifications \u2192 Channels, or set " +
+          "WHATSAPP_PHONE_NUMBER_ID for every school on this deployment.",
+      };
+    }
+    return { ok: true };
+  },
+
+  async send({ address, body, fromAddress, providerTemplate, providerParams }) {
+    const credentials = readWhatsAppCredentials(fromAddress);
+    if (!credentials) {
+      return { ok: false, error: "WhatsApp credentials went away mid-run.", permanent: false };
+    }
+
+    const to = normaliseNumber(address);
+    if (!to) {
+      return {
+        ok: false,
+        error:
+          `"${address}" is not a number WhatsApp can deliver to. It needs the full ` +
+          "international number, including the country code.",
+        // Retrying will not add a country code.
+        permanent: true,
+      };
+    }
+
+    const template = readTemplate(providerTemplate ?? null, providerParams);
+    if (!template) {
+      // Should be unreachable: `notify_send` skips these at compose time rather
+      // than queueing them. Kept because "unreachable" and "never happens" are
+      // different, and free text would be rejected by Meta anyway.
+      return {
+        ok: false,
+        error:
+          "No WhatsApp template was recorded for this message, and WhatsApp does not " +
+          "accept free text outside a conversation the recipient started.",
+        permanent: true,
+      };
+    }
+
+    const response = await fetch(
+      `https://graph.facebook.com/v21.0/${encodeURIComponent(credentials.phoneNumberId)}/messages`,
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${credentials.accessToken}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          messaging_product: "whatsapp",
+          to,
+          type: "template",
+          template: {
+            name: template.name,
+            language: { code: template.locale },
+            // Meta rejects an empty `components` array, so it is only sent when
+            // the template actually has placeholders to fill.
+            ...(template.params.length > 0
+              ? {
+                  components: [
+                    {
+                      type: "body",
+                      parameters: template.params.map((text) => ({ type: "text", text })),
+                    },
+                  ],
+                }
+              : {}),
+          },
+        }),
+      },
+    );
+
+    if (!response.ok) {
+      const detail = await errorText(response);
+      return {
+        ok: false,
+        error: detail,
+        permanent: isPermanentWhatsAppFailure(response.status, detail),
+      };
+    }
+
+    const payload = (await response.json().catch(() => ({}))) as {
+      messages?: { id?: string }[];
+    };
+    // `body` is our own rendering of the message, kept for the delivery log.
+    // What Meta actually sent is its approved copy of the template, which this
+    // system has never seen -- worth remembering when the two disagree.
+    void body;
+    return { ok: true, ref: payload.messages?.[0]?.id ?? null };
+  },
+};
+
+// ---------------------------------------------------------------------------
 // The channels with no driver yet
 // ---------------------------------------------------------------------------
 
 /**
- * A stub is not a placeholder here, it is the honest answer. Without one,
- * WhatsApp would have no row reported at all, and a null
- * `provider_configured` means "never tried" -- which reads on screen as an
- * unknown rather than as "this build cannot do that". It also refuses to send,
- * so nothing can accidentally mark a WhatsApp message as delivered.
+ * A stub for a channel this build cannot send on. Nothing uses it today --
+ * every channel in `CHANNELS` now has a driver -- and it is kept because the
+ * next channel added will need a row reported for it before its driver exists.
+ * Without a stub the channel has no row at all, and a null
+ * `provider_configured` reads on screen as "never tried" rather than as "this
+ * build cannot do that".
  */
-function unbuilt(channel: Channel, reason: string): Driver {
+export function unbuilt(channel: Channel, reason: string): Driver {
   return {
     channel,
     provider: "none",
@@ -283,12 +414,4 @@ function unbuilt(channel: Channel, reason: string): Driver {
   };
 }
 
-export const DRIVERS: Driver[] = [
-  email,
-  sms,
-  push,
-  unbuilt(
-    "whatsapp",
-    "This build has no WhatsApp driver. Messages queued for WhatsApp are kept, not sent.",
-  ),
-];
+export const DRIVERS: Driver[] = [email, sms, push, whatsapp];

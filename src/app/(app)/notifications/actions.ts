@@ -345,13 +345,19 @@ export type TemplateRow = {
   subject: string | null;
   body: string;
   isActive: boolean;
+  /** WhatsApp only: the name of the template approved by Meta. */
+  providerTemplateName: string | null;
+  providerTemplateLocale: string;
+  providerTemplateParams: string[];
 };
 
 export async function listTemplates(): Promise<TemplateRow[]> {
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("notification_templates")
-    .select("id, event_key, channel, subject, body, is_active")
+    .select(
+      "id, event_key, channel, subject, body, is_active, provider_template_name, provider_template_locale, provider_template_params",
+    )
     .order("event_key");
 
   if (error) throw new Error(error.message);
@@ -363,6 +369,9 @@ export async function listTemplates(): Promise<TemplateRow[]> {
     subject: t.subject,
     body: t.body,
     isActive: t.is_active,
+    providerTemplateName: t.provider_template_name,
+    providerTemplateLocale: t.provider_template_locale,
+    providerTemplateParams: t.provider_template_params ?? [],
   }));
 }
 
@@ -384,6 +393,18 @@ export async function saveTemplate(
     subject: parsed.data.subject?.trim() || null,
     body: parsed.data.body,
     is_active: parsed.data.isActive,
+    // A CHECK refuses a provider template on any channel but WhatsApp, so the
+    // null is not defensive tidying — it is what keeps the constraint quiet
+    // when somebody switches an existing row's channel.
+    provider_template_name:
+      parsed.data.channel === "whatsapp"
+        ? parsed.data.providerTemplateName?.trim() || null
+        : null,
+    provider_template_locale: parsed.data.providerTemplateLocale?.trim() || "en",
+    provider_template_params:
+      parsed.data.channel === "whatsapp"
+        ? (parsed.data.providerTemplateParams ?? []).map((p) => p.trim()).filter(Boolean)
+        : [],
   };
 
   const { data, error } = id
@@ -629,4 +650,19 @@ export async function listDeviceSummary(): Promise<DeviceSummaryRow[]> {
     revoked: row.revoked,
     lastSeenAt: row.last_seen_at,
   }));
+}
+
+/**
+ * What is wrong with this school's message templates, in sentences.
+ *
+ * The `grading_scheme_problems()` shape, one more time, and the motivating case
+ * is specific: WhatsApp switched on with half the events unregistered shows up
+ * as a delivery log full of skips that nobody reads until a parent asks why
+ * they were never told.
+ */
+export async function listTemplateProblems(): Promise<string[]> {
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("notify_template_problems");
+  if (error) throw new Error(error.message);
+  return (data ?? []).map((row) => row.problem).filter((p): p is string => Boolean(p));
 }

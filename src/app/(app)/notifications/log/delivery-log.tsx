@@ -20,6 +20,7 @@ import { cn } from "@/lib/utils";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Dialog,
@@ -642,12 +643,18 @@ function TemplateDialog({
       subject: template?.subject ?? "",
       body: template?.body ?? "",
       isActive: template?.isActive ?? true,
+      providerTemplateName: template?.providerTemplateName ?? "",
+      providerTemplateLocale: template?.providerTemplateLocale ?? "en",
+      providerTemplateParams: template?.providerTemplateParams ?? [],
     },
   });
 
   const body = form.watch("body");
   const subject = form.watch("subject");
+  const channel = form.watch("channel");
   const variables = templateVariables(`${subject ?? ""} ${body ?? ""}`);
+  // WhatsApp is the one channel where the text below is *not* what gets sent.
+  const isWhatsApp = channel === "whatsapp";
 
   function onSubmit(input: TemplateInput) {
     startTransition(async () => {
@@ -712,8 +719,49 @@ function TemplateDialog({
               label="Body"
               required
               rows={6}
-              description="Use {{variable}} for values the sending module supplies."
+              description={
+                isWhatsApp
+                  ? "What the delivery log will show. WhatsApp sends Meta's approved copy of the template below, not this text — keep them saying the same thing."
+                  : "Use {{variable}} for values the sending module supplies."
+              }
             />
+
+            {isWhatsApp && (
+              <div className="flex flex-col gap-4 rounded-md border border-dashed p-3">
+                <div>
+                  <p className="text-sm font-medium">Meta&rsquo;s approved template</p>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    WhatsApp does not accept free text: outside a conversation the recipient
+                    started, only templates registered and approved in advance can be sent. This
+                    system never sees that text — it refers to it by name, and fills its
+                    placeholders in the order below.
+                  </p>
+                </div>
+
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <TextField
+                    control={form.control}
+                    name="providerTemplateName"
+                    label="Template name"
+                    description="Exactly as registered with Meta."
+                  />
+                  <TextField
+                    control={form.control}
+                    name="providerTemplateLocale"
+                    label="Template language"
+                    description="Meta stores one copy per language and refuses the wrong code."
+                  />
+                </div>
+
+                <TemplateParameters
+                  value={form.watch("providerTemplateParams") ?? []}
+                  variables={variables}
+                  onChange={(next: string[]) =>
+                    form.setValue("providerTemplateParams", next, { shouldDirty: true })
+                  }
+                />
+              </div>
+            )}
 
             <div className="rounded-md border bg-muted/40 p-3">
               <p className="text-xs font-medium">Variables this template uses</p>
@@ -788,6 +836,84 @@ function EmptyState({
         <p className="mt-1 max-w-md text-sm text-muted-foreground">{description}</p>
       </div>
       {action}
+    </div>
+  );
+}
+
+/**
+ * The ordered list of payload keys that fill Meta's {{1}}, {{2}}, {{3}}.
+ *
+ * Positional, because that is what Meta's API takes — and named here, because
+ * `{{2}}` in a configuration screen is unreadable and gets filled in wrong. The
+ * variables the body already uses are offered as suggestions, since in practice
+ * they are the same values in the same order.
+ */
+function TemplateParameters({
+  value,
+  variables,
+  onChange,
+}: {
+  value: string[];
+  variables: string[];
+  onChange: (next: string[]) => void;
+}) {
+  const unused = variables.filter((v) => !value.includes(v));
+
+  return (
+    <div className="flex flex-col gap-2">
+      <p className="text-sm font-medium">Placeholders, in order</p>
+
+      {value.length === 0 ? (
+        <p className="text-xs text-muted-foreground">
+          None. If Meta&rsquo;s copy has placeholders, they will arrive empty.
+        </p>
+      ) : (
+        <ol className="flex flex-col gap-2">
+          {value.map((key, index) => (
+            <li key={index} className="flex items-center gap-2">
+              <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">
+                {`{{${index + 1}}}`}
+              </code>
+              <Input
+                value={key}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                  onChange(value.map((v, i) => (i === index ? e.target.value : v)))
+                }
+                className="h-8 font-mono"
+                aria-label={`The value for placeholder ${index + 1}`}
+              />
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                onClick={() => onChange(value.filter((_, i) => i !== index))}
+                aria-label={`Remove placeholder ${index + 1}`}
+              >
+                <Trash2 className="size-4" aria-hidden="true" />
+              </Button>
+            </li>
+          ))}
+        </ol>
+      )}
+
+      <div className="flex flex-wrap items-center gap-2">
+        <Button type="button" variant="outline" size="sm" onClick={() => onChange([...value, ""])}>
+          <Plus className="size-4" aria-hidden="true" />
+          Add a placeholder
+        </Button>
+        {unused.map((v) => (
+          <Button
+            key={v}
+            type="button"
+            variant="ghost"
+            size="sm"
+            className="font-mono text-xs"
+            onClick={() => onChange([...value, v])}
+          >
+            + {v}
+          </Button>
+        ))}
+      </div>
     </div>
   );
 }

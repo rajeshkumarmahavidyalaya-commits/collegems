@@ -143,35 +143,22 @@ describe("the notification dispatcher", () => {
         failed: row.failed,
         sentRecently: row.sent_recently,
       };
+
+      // Every state has to be explainable in a sentence somebody can act on.
       expect(channelState(status).sentence.length).toBeGreaterThan(10);
+
+      // Every channel has a driver in this build, so the old assertion -- that
+      // WhatsApp and push can never send -- would now be an empty loop
+      // asserting nothing. The rule underneath it still holds: a channel only
+      // reports itself sending when all three parts are true.
+      if (row.channel !== "in_app" && (!row.is_enabled || !row.provider_configured)) {
+        expect(channelSends(status), `${row.channel} is not fully configured`).toBe(false);
+      }
     }
 
     // In-app is the one channel that always sends, because the row is the
     // delivery. Every other channel needs three separate things to be true.
-    const inApp = rows.find((r) => r.channel === "in_app")!;
-    expect(inApp.is_enabled).toBe(true);
-
-    for (const channel of ["whatsapp"] as const) {
-      const row = rows.find((r) => r.channel === channel)!;
-      expect(
-        channelSends({
-          channel,
-          isEnabled: row.is_enabled,
-          fromAddress: row.from_address,
-          senderName: row.sender_name,
-          provider: row.provider,
-          providerConfigured: row.provider_configured,
-          lastAttemptAt: row.last_attempt_at,
-          lastSuccessAt: row.last_success_at,
-          lastError: row.last_error,
-          queued: row.queued,
-          oldestQueuedAt: row.oldest_queued_at,
-          failed: row.failed,
-          sentRecently: row.sent_recently,
-        }),
-        `${channel} has no driver in this build`,
-      ).toBe(false);
-    }
+    expect(rows.find((r) => r.channel === "in_app")!.is_enabled).toBe(true);
   });
 
   it("keeps a held channel's queue rather than dropping it", async () => {

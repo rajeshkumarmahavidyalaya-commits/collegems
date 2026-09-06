@@ -54,9 +54,15 @@ import {
 export function ChannelsPanel({
   channels,
   devices,
+  problems,
 }: {
   channels: ChannelStatus[];
   devices: DeviceSummaryRow[];
+  /** From `notify_template_problems()` — sentences, in Postgres, next to the
+   *  thing that sends. The motivating case is WhatsApp switched on with no
+   *  registered templates, which otherwise shows up only as a delivery log
+   *  full of skips nobody reads. */
+  problems: string[];
 }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
@@ -102,6 +108,24 @@ export function ChannelsPanel({
           Send queued messages now
         </Button>
       </div>
+
+      {problems.length > 0 && (
+        <Alert>
+          <AlertTriangle className="size-4" aria-hidden="true" />
+          <AlertTitle>
+            {problems.length === 1
+              ? "One thing to look at"
+              : `${problems.length} things to look at`}
+          </AlertTitle>
+          <AlertDescription>
+            <ul className="list-inside list-disc">
+              {problems.map((problem) => (
+                <li key={problem}>{problem}</li>
+              ))}
+            </ul>
+          </AlertDescription>
+        </Alert>
+      )}
 
       <div className="grid gap-4 lg:grid-cols-2">
         {channels.map((channel) => (
@@ -179,7 +203,8 @@ function ChannelCard({ status }: { status: ChannelStatus }) {
   // own title, and offering a "from address" that the driver ignores is worse
   // than offering nothing — somebody would fill it in and wonder why it never
   // appeared.
-  const needsSender = status.channel === "email" || status.channel === "sms";
+  const needsSender =
+    status.channel === "email" || status.channel === "sms" || status.channel === "whatsapp";
 
   const tone =
     state.kind === "live"
@@ -268,14 +293,24 @@ function ChannelCard({ status }: { status: ChannelStatus }) {
             <div className="grid gap-3 sm:grid-cols-2">
               <div className="grid gap-1.5">
                 <Label htmlFor={`from-${status.channel}`}>
-                  {status.channel === "sms" ? "Sender number" : "From address"}
+                  {status.channel === "sms"
+                    ? "Sender number"
+                    : status.channel === "whatsapp"
+                      ? "WhatsApp phone number ID"
+                      : "From address"}
                 </Label>
                 <Input
                   id={`from-${status.channel}`}
                   value={fromAddress}
                   disabled={pending}
                   onChange={(e) => setFromAddress(e.target.value)}
-                  placeholder={status.channel === "sms" ? "+911234567890" : "office@school.example"}
+                  placeholder={
+                    status.channel === "sms"
+                      ? "+911234567890"
+                      : status.channel === "whatsapp"
+                        ? "109... (from Meta, not a phone number)"
+                        : "office@school.example"
+                  }
                   className="font-mono"
                 />
               </div>

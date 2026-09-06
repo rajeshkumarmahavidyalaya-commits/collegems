@@ -7,7 +7,7 @@ import { DRIVERS, type Driver } from "./drivers.ts";
  *
  * This is the thing rule 10 promised and did not have: one dispatcher, holding
  * every provider credential, so that no module in the Next.js app has ever
- * heard of Resend or Twilio. Adding WhatsApp is a driver here.
+ * heard of Resend or Twilio. Adding a channel is a driver here.
  *
  * TWO CALLERS, AND THEY GET DIFFERENT SCOPES
  *
@@ -177,6 +177,11 @@ Deno.serve(async (req) => {
             body: delivery.body,
             fromAddress: channelSettings?.from_address ?? null,
             senderName: channelSettings?.sender_name ?? null,
+            // Frozen at compose time, like the address. A school that renames a
+            // WhatsApp template must not change what a delivery from six weeks
+            // ago says it sent.
+            providerTemplate: delivery.provider_template,
+            providerParams: delivery.provider_params,
           });
           result = outcome.ok
             ? { ok: true, ref: outcome.ref }
