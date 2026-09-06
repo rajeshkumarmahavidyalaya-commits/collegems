@@ -598,3 +598,35 @@ export async function dispatchQueuedNow(): Promise<
     },
   };
 }
+
+// ---------------------------------------------------------------------------
+// Devices — where a push notification would go
+// ---------------------------------------------------------------------------
+
+/**
+ * Counts, never tokens. `devices` has no administrator read policy, on purpose:
+ * a push token is a capability, and anyone holding one plus the provider's key
+ * can push a message to that handset that looks like the school's. So this
+ * wraps a definer function that aggregates and returns nothing identifying —
+ * enough to answer "is the app installed anywhere", which is the actual support
+ * question.
+ */
+export type DeviceSummaryRow = {
+  platform: string;
+  live: number;
+  revoked: number;
+  lastSeenAt: string | null;
+};
+
+export async function listDeviceSummary(): Promise<DeviceSummaryRow[]> {
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("mobile_device_summary");
+  if (error) throw new Error(error.message);
+
+  return (data ?? []).map((row) => ({
+    platform: row.platform,
+    live: row.live,
+    revoked: row.revoked,
+    lastSeenAt: row.last_seen_at,
+  }));
+}

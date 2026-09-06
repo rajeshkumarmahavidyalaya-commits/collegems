@@ -50,6 +50,7 @@ After any migration, regenerate types into
 | [docs/modules/exams.md](./docs/modules/exams.md) | Exams: grading rules as data, split papers, and two bugs the demo cohort surfaced |
 | [docs/modules/reports.md](./docs/modules/reports.md) | The reporting kernel: reports as data, not as forty pages |
 | [docs/modules/timetable.md](./docs/modules/timetable.md) | The class routine: three unique indexes doing all the work |
+| [docs/modules/mobile-api.md](./docs/modules/mobile-api.md) | The mobile API: three calls, a versioned contract, and why a push token is not an address |
 | [docs/modules/notifications.md](./docs/modules/notifications.md) | Notifications: one send path, a dispatcher with real drivers, and the RLS hole that column grants close |
 | [docs/modules/homework.md](./docs/modules/homework.md) | Homework: files, signed URLs, and where a column grant stops working |
 | [docs/modules/payroll.md](./docs/modules/payroll.md) | HR and payroll: salary as data, and a payslip made immutable by a foreign key |
@@ -88,6 +89,9 @@ After any migration, regenerate types into
   one update that makes every payslip immutable through a composite key
 - Homework and study material: set, hand in, mark and return, with private
   file attachments served through signed URLs issued after a permission check
+- Mobile API: three `jsonb` read models (`mobile_bootstrap`, `mobile_home`,
+  `mobile_student`) so a phone renders a screen in one round trip, a versioned
+  additive-only contract, and device registration for push
 - Notification service: one send path, in-app delivery, per-user opt-outs,
   templates, a delivery log, and a dispatcher Edge Function with email (Resend)
   and SMS (Twilio) drivers. Whether a channel actually sends depends on the

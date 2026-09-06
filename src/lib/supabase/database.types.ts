@@ -487,6 +487,65 @@ export type Database = {
           },
         ]
       }
+      devices: {
+        Row: {
+          app_version: string | null
+          created_at: string
+          device_name: string | null
+          id: string
+          last_seen_at: string
+          locale: string | null
+          os_version: string | null
+          platform: string
+          push_token: string
+          revoked_at: string | null
+          revoked_reason: string | null
+          tenant_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          app_version?: string | null
+          created_at?: string
+          device_name?: string | null
+          id?: string
+          last_seen_at?: string
+          locale?: string | null
+          os_version?: string | null
+          platform: string
+          push_token: string
+          revoked_at?: string | null
+          revoked_reason?: string | null
+          tenant_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          app_version?: string | null
+          created_at?: string
+          device_name?: string | null
+          id?: string
+          last_seen_at?: string
+          locale?: string | null
+          os_version?: string | null
+          platform?: string
+          push_token?: string
+          revoked_at?: string | null
+          revoked_reason?: string | null
+          tenant_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "devices_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       document_sequences: {
         Row: {
           created_at: string
@@ -6538,6 +6597,51 @@ export type Database = {
         }
         Returns: number
       }
+      mobile_bootstrap: { Args: never; Returns: Json }
+      mobile_device_summary: {
+        Args: never
+        Returns: {
+          last_seen_at: string
+          live: number
+          platform: string
+          revoked: number
+        }[]
+      }
+      mobile_home: { Args: { p_on?: string }; Returns: Json }
+      mobile_my_students: {
+        Args: never
+        Returns: {
+          admission_number: string
+          full_name: string
+          photo_path: string
+          relationship: string
+          roll_number: string
+          section_id: string
+          section_label: string
+          student_id: string
+        }[]
+      }
+      mobile_register_device: {
+        Args: {
+          p_app_version?: string
+          p_device_name?: string
+          p_locale?: string
+          p_os_version?: string
+          p_platform: string
+          p_push_token: string
+        }
+        Returns: string
+      }
+      mobile_revoke_device: {
+        Args: { p_push_token: string; p_reason?: string }
+        Returns: number
+      }
+      mobile_student: { Args: { p_student_id: string }; Returns: Json }
+      mobile_student_card: {
+        Args: { p_on?: string; p_student_id: string }
+        Returns: Json
+      }
+      mobile_today: { Args: never; Returns: string }
       notify_channel_report: {
         Args: {
           p_channel: string

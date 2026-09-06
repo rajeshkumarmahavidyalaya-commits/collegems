@@ -718,6 +718,49 @@ Bulk import is the second instance, and adds three things worth copying:
   notices until April. Bound it, and say the bound out loud. See
   `docs/modules/import.md`.
 
+## 14. A client you cannot redeploy needs a versioned contract
+
+The web app ships with the server. A **phone does not** — somebody is running
+last April's build until they reinstall — so anything a mobile client reads is a
+published contract rather than an internal shape.
+
+`mobile_bootstrap()`, `mobile_home()` and `mobile_student()` are that contract:
+one `jsonb` document each, `SECURITY INVOKER` so RLS decides what goes in, and
+assembled in Postgres because a parent's home screen is eleven round trips
+otherwise. **There is no second authorization layer** — a phone reads through
+the same policies the web app does, and inventing a mobile-only gate would be
+inventing a second place to get it wrong.
+
+Four rules, and the first is the one that gets broken:
+
+- **Additive only within a version.** A new key is safe; a renamed or removed
+  one is not. Every schema in `src/lib/validations/mobile.ts` is
+  `.passthrough()` on purpose — a client compiled in April must keep parsing
+  when the server starts sending a field added in September, and removing it
+  turns every additive change into a breaking one.
+- **A breaking change is a new function** (`mobile_home_v2`), with the old one
+  kept until nobody is on it. `min_supported_version` is how a build too old to
+  render the document is told to update, and it is never lowered.
+- **Bound every list and say the bound in the document**, per rule 7 — ten
+  children, twenty homework items, eight results. A family larger than that is
+  real; a response larger than that is a bug.
+- **Wrap the module's own read path**, per rule 11. A phone that disagreed with
+  the screen the money is taken on is worse than a phone with no fee balance.
+
+**"My children" is a relationship, not a visibility.** RLS lets a teacher read
+every child they teach; a home screen is not a roster. `mobile_my_students()`
+spells the relationship out and returns an empty list for staff, and a test pins
+that — "make the admin's home screen show the whole school" is a plausible
+mistake nobody would report as a bug.
+
+**A push token is a capability, not an address.** Anyone holding one plus the
+provider's key can push a message to that handset that looks like the school's,
+so `devices` has policies scoped to `auth.uid()` and **no administrator read
+policy at all**; `mobile_device_summary()` returns counts instead. See
+`docs/modules/mobile-api.md`.
+
+---
+
 ---
 
 ## UI work — read this before writing any interface code

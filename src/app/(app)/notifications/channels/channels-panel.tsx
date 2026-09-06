@@ -10,6 +10,7 @@ import {
   PauseCircle,
   RotateCcw,
   Send,
+  Smartphone,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -25,6 +26,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
+import { PLATFORMS } from "@/lib/validations/mobile";
 import {
   CHANNELS,
   channelLabel,
@@ -32,7 +34,12 @@ import {
   relativeTime,
   type ChannelStatus,
 } from "@/lib/validations/notifications";
-import { dispatchQueuedNow, retryFailedDeliveries, saveChannelSettings } from "../actions";
+import {
+  dispatchQueuedNow,
+  retryFailedDeliveries,
+  saveChannelSettings,
+  type DeviceSummaryRow,
+} from "../actions";
 
 /**
  * One card per channel, and every card answers the same question in the same
@@ -44,7 +51,13 @@ import { dispatchQueuedNow, retryFailedDeliveries, saveChannelSettings } from ".
  * March sends February's reminders rather than losing them — and a school needs
  * to be able to see that number before it decides.
  */
-export function ChannelsPanel({ channels }: { channels: ChannelStatus[] }) {
+export function ChannelsPanel({
+  channels,
+  devices,
+}: {
+  channels: ChannelStatus[];
+  devices: DeviceSummaryRow[];
+}) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
 
@@ -95,7 +108,61 @@ export function ChannelsPanel({ channels }: { channels: ChannelStatus[] }) {
           <ChannelCard key={channel.channel} status={channel} />
         ))}
       </div>
+
+      <DevicesCard devices={devices} />
     </div>
+  );
+}
+
+/**
+ * Counts, never tokens. `devices` deliberately has no administrator read
+ * policy — a push token is a capability, and anyone holding one plus the
+ * provider's key can push a message to that handset that looks like the
+ * school's. What an administrator actually needs is the answer to "is the app
+ * installed anywhere", and that is a number.
+ */
+function DevicesCard({ devices }: { devices: DeviceSummaryRow[] }) {
+  const live = devices.reduce((total, d) => total + d.live, 0);
+
+  return (
+    <Card>
+      <CardHeader className="gap-1">
+        <CardTitle className="flex items-center gap-2">
+          <Smartphone className="size-4" aria-hidden="true" />
+          Registered devices
+        </CardTitle>
+        <CardDescription>
+          Where a push notification would go. Tokens are never shown here or anywhere else — a
+          push token is a capability, not an address, so only the counts are readable.
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        {live === 0 ? (
+          <p className="text-sm text-muted-foreground">
+            Nobody has registered a device yet, so every push message is kept rather than sent.
+            Devices appear here when somebody signs in on the mobile app.
+          </p>
+        ) : (
+          <dl className="flex flex-wrap gap-x-8 gap-y-3">
+            {devices.map((device) => (
+              <div key={device.platform}>
+                <dt className="text-xs text-muted-foreground">
+                  {PLATFORMS.find((p) => p.value === device.platform)?.label ?? device.platform}
+                </dt>
+                <dd className="font-mono text-lg tabular-nums">
+                  {device.live}
+                  {device.revoked > 0 && (
+                    <span className="ml-2 text-xs font-normal text-muted-foreground">
+                      + {device.revoked} revoked
+                    </span>
+                  )}
+                </dd>
+              </div>
+            ))}
+          </dl>
+        )}
+      </CardContent>
+    </Card>
   );
 }
 

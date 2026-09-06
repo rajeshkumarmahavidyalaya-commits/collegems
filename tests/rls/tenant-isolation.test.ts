@@ -114,6 +114,7 @@ describe("cross-tenant isolation", () => {
     "notification_deliveries",
     "notification_templates",
     "notification_channel_settings",
+    "devices",
     "notification_preferences",
     "roles",
     "role_permissions",

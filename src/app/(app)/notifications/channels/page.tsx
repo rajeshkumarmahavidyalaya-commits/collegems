@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import { hasPermission } from "@/lib/auth/permissions";
-import { listChannelStatus } from "../actions";
+import { listChannelStatus, listDeviceSummary } from "../actions";
 import { ChannelsPanel } from "./channels-panel";
 
 export const metadata = { title: "Notification channels" };
@@ -11,7 +11,7 @@ export default async function ChannelsPage() {
   const canManage = await hasPermission("settings.manage");
   if (!canManage) redirect("/notifications");
 
-  const channels = await listChannelStatus();
+  const [channels, devices] = await Promise.all([listChannelStatus(), listDeviceSummary()]);
 
   return (
     <div className="flex flex-col gap-6">
@@ -25,7 +25,7 @@ export default async function ChannelsPage() {
         </p>
       </div>
 
-      <ChannelsPanel channels={channels} />
+      <ChannelsPanel channels={channels} devices={devices} />
     </div>
   );
 }
