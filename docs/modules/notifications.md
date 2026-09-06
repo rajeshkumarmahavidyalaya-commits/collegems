@@ -37,7 +37,8 @@ with no provider secrets set:
 | `in_app` | built | **Sends.** The row *is* the delivery, so it is `sent` the moment it exists. There is nothing to connect and nothing that can be down. |
 | `email` | Resend | Sends once `RESEND_API_KEY` is set on the Edge Function and the school has a from-address. |
 | `sms` | Twilio | Sends once `TWILIO_ACCOUNT_SID` / `TWILIO_AUTH_TOKEN` are set and there is a sender number. |
-| `whatsapp`, `push` | **none** | Kept, never sent. No driver exists in this build. |
+| `push` | FCM | Sends once `FCM_SERVICE_ACCOUNT` is set. No from-address: a push notification carries the school's name in its own title. |
+| `whatsapp` | **none** | Kept, never sent. No driver exists in this build. |
 
 ### The honesty used to be a constant, and could not stay one
 
@@ -104,6 +105,54 @@ lets somebody prove which happened.
 **A missing address is a dead letter, not a retry.** A recipient with no email
 or phone number recorded will not have one in four minutes, so that failure is
 recorded once rather than backed off five times.
+
+### A failure can be permanent
+
+Email and SMS fail transiently almost always. Push does not: a token is a
+*capability that expires*, and once the handset is wiped or the app uninstalled,
+FCM answers `UNREGISTERED` for ever. Five attempts with exponential backoff then
+cost five requests and five lines of delivery log **per message, per dead
+handset**, until somebody reads the log and works out why.
+
+So `SendResult` carries `permanent`, and `notify_record_result` believes it: the
+delivery is `failed` at once, with no retry and no backoff — and, for push, **the
+device is revoked in the same statement**. That pairing is the point rather than
+a tidiness. "The provider says this handset is gone" is one fact; recording it
+against the delivery and not against the device would queue another delivery to
+the same dead token with the next notification, and the one after that.
+
+`isPermanentFailure()` in `fcm.ts` is the classification: a 404, an
+`INVALID_ARGUMENT`, and a sender-id mismatch are dead; a quota error and a 503
+are not. It is not unit-tested from vitest because it lives in the Deno runtime
+and reads `Deno.env` — the consequential half, what the database does when told
+a failure is permanent, is what the tests and the live probe cover.
+
+The probe, run against the demo tenant:
+
+| token | told | status | attempts | device |
+|---|---|---|---|---|
+| `probe_live` | `UNAVAILABLE: try again` | `queued`, retry in 1 min | 1 | untouched |
+| `probe_dead` | `UNREGISTERED: the app was uninstalled` | `failed` | 1, not 5 | **revoked**, with the provider's reason |
+
+A permanently failed row also leaves `next_attempt_at` where it was (migration
+`0123`). Nothing reads it — the claim query only looks at `queued` rows — but a
+row marked `failed` next to "retry in 1 minute" costs a reader the time to work
+out which of the two is lying, and a column that means nothing is worse than a
+column that is absent.
+
+### Push has no sender, and that is not an omission
+
+Every other channel has a from-address the school sets. Push does not: the
+notification carries the school's name in its own title, so the Channels screen
+hides the sender fields for push rather than offering a box the driver ignores.
+Somebody would fill it in and wonder why it never appeared.
+
+One service account covers iOS, Android and web, which is why FCM was chosen
+over Expo or a direct APNs integration — `devices.platform` already carries all
+three and the driver needs no branch per handset. The credentials are **one**
+environment variable holding Google's service-account JSON verbatim; splitting
+it into three invites a private key pasted with its newlines mangled, which
+fails at signing time with a message that explains nothing.
 
 ---
 

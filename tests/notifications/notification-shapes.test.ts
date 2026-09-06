@@ -147,11 +147,12 @@ describe("channel honesty", () => {
       "in_app",
       "email",
       "sms",
+      "push",
     ]);
   });
 
   it("never claims a channel with no driver can send, however it is configured", () => {
-    for (const channel of ["whatsapp", "push"] as const) {
+    for (const channel of ["whatsapp"] as const) {
       const state = channelState({
         ...base,
         channel,

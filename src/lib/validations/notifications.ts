@@ -53,8 +53,8 @@ export const CHANNELS = [
   {
     value: "push",
     label: "Push",
-    driver: "none",
-    note: "This build has no push driver. Messages are kept, not sent.",
+    driver: "built",
+    note: "Sent by the dispatcher to registered devices once push is connected.",
   },
 ] as const;
 

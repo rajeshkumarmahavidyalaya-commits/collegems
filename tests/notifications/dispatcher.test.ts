@@ -151,7 +151,7 @@ describe("the notification dispatcher", () => {
     const inApp = rows.find((r) => r.channel === "in_app")!;
     expect(inApp.is_enabled).toBe(true);
 
-    for (const channel of ["whatsapp", "push"] as const) {
+    for (const channel of ["whatsapp"] as const) {
       const row = rows.find((r) => r.channel === channel)!;
       expect(
         channelSends({

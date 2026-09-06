@@ -175,10 +175,11 @@ Vanishing silently is the one outcome that table exists to prevent.
 
 ## What is not built
 
-- **No push driver.** Registering a device makes a push delivery *addressable*;
-  sending it still needs a driver in `supabase/functions/notify-dispatch`, and
-  `CHANNELS[].driver` says `none` for push until there is one. Deliveries queue
-  and are counted rather than being silently dropped.
+- ~~**No push driver.**~~ Built. A registered device is now not only
+  *addressable* but reachable, and a token the provider rejects is revoked
+  automatically — see [notifications.md](./notifications.md#a-failure-can-be-permanent).
+  What still does not exist is a **delivery receipt**: "sent" means FCM accepted
+  the message, not that a handset displayed it.
 - **No signed-URL path for the phone.** The web app issues signed URLs only
   after reading the row back through RLS (rule 8). A phone can create its own
   signed URL through supabase-js, and Storage RLS would enforce the tenant

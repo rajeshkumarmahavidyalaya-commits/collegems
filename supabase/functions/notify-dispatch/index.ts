@@ -152,13 +152,22 @@ Deno.serve(async (req) => {
       const key = `${delivery.tenant_id}:${delivery.channel}`;
       const channelSettings = settingsFor.get(key);
 
-      // A claimed delivery with no address is a dead letter, not a retry: the
-      // recipient had no email or phone number recorded when the message was
-      // composed, and trying again in four minutes will not give them one.
-      let result: { ok: boolean; ref?: string | null; error?: string };
+      // `permanent` is the difference between "the provider was busy" and "the
+      // address is dead". The first backs off; the second fails at once and, for
+      // push, revokes the handset.
+      let result: { ok: boolean; ref?: string | null; error?: string; permanent?: boolean };
       if (!delivery.address) {
-        result = { ok: false, error: "No address was recorded for this recipient." };
+        // Permanent: a recipient with no address recorded will not have one in
+        // four minutes, so this is a dead letter rather than a retry.
+        result = {
+          ok: false,
+          error: "No address was recorded for this recipient.",
+          permanent: true,
+        };
       } else if (!driver || !configured.get(key)) {
+        // NOT permanent: the deployment could be configured tomorrow, and
+        // failing these outright would throw away a queue the Channels screen
+        // promises is being kept.
         result = { ok: false, error: "This channel cannot send from this deployment." };
       } else {
         try {
@@ -171,7 +180,7 @@ Deno.serve(async (req) => {
           });
           result = outcome.ok
             ? { ok: true, ref: outcome.ref }
-            : { ok: false, error: outcome.error };
+            : { ok: false, error: outcome.error, permanent: outcome.permanent };
         } catch (thrown) {
           // A provider that times out must not take the whole batch with it.
           result = { ok: false, error: String(thrown).slice(0, 400) };
@@ -186,6 +195,10 @@ Deno.serve(async (req) => {
         p_ok: result.ok,
         p_error: result.error ?? null,
         p_provider_ref: result.ref ?? null,
+        // A permanent failure also revokes the device, inside the same
+        // statement, so "the provider says this handset is gone" cannot be
+        // recorded against the delivery and forgotten against the device.
+        p_permanent: result.permanent ?? false,
       });
       if (error) return json({ error: error.message }, 500);
     }

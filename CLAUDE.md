@@ -553,7 +553,7 @@ liveness is a fact about a deployment and a school rather than about the source
 tree:
 
 1. **a driver** — `CHANNELS[].driver` says whether this *build* can send on the
-   channel at all. Email (Resend) and SMS (Twilio) can; WhatsApp and push
+   channel at all. Email (Resend), SMS (Twilio) and push (FCM) can; WhatsApp
    cannot.
 2. **the school's decision** — `notification_channel_settings.is_enabled` and
    `from_address`.
@@ -576,6 +576,17 @@ whether a Supabase secret is set.
 unbuilt does not mark its deliveries `skipped` — they stay `queued` and
 countable, so connecting a provider in March sends February's reminders.
 Dropping them would be tidier and would lose a school's mail.
+
+**A failure can be permanent, and push is why.** Email and SMS fail transiently
+almost always — a timeout, a rate limit — so `notify_record_result` backs off
+and gives up after five attempts. A push token is not an address but a
+*capability that expires*: once the app is uninstalled the provider answers
+`UNREGISTERED` for ever, and retrying five times costs five requests and five
+lines of log per message until somebody notices. So a driver may mark a failure
+`permanent`, and the delivery fails at once **and the device is revoked in the
+same statement** — "the provider says this handset is gone" is one fact, and
+recording it against the delivery but not the device would queue another
+delivery to the same dead token tomorrow.
 
 **The dispatcher reports before it claims.** `notify_claim_deliveries` refuses
 work for a channel whose `provider_configured` is false, and only the dispatcher

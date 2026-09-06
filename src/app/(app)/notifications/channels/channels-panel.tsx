@@ -175,6 +175,11 @@ function ChannelCard({ status }: { status: ChannelStatus }) {
   const state = channelState(status);
   const meta = CHANNELS.find((c) => c.value === status.channel);
   const configurable = status.channel !== "in_app" && meta?.driver === "built";
+  // Push has no sender address. A notification carries the school's name in its
+  // own title, and offering a "from address" that the driver ignores is worse
+  // than offering nothing — somebody would fill it in and wonder why it never
+  // appeared.
+  const needsSender = status.channel === "email" || status.channel === "sms";
 
   const tone =
     state.kind === "live"
@@ -259,6 +264,7 @@ function ChannelCard({ status }: { status: ChannelStatus }) {
 
         {configurable && (
           <div className="flex flex-col gap-3">
+            {needsSender && (
             <div className="grid gap-3 sm:grid-cols-2">
               <div className="grid gap-1.5">
                 <Label htmlFor={`from-${status.channel}`}>
@@ -284,6 +290,7 @@ function ChannelCard({ status }: { status: ChannelStatus }) {
                 />
               </div>
             </div>
+            )}
 
             <div className="flex flex-wrap items-center gap-3">
               <div className="flex items-center gap-2">
@@ -298,16 +305,18 @@ function ChannelCard({ status }: { status: ChannelStatus }) {
                 </Label>
               </div>
 
-              <Button
-                variant="outline"
-                size="sm"
-                className="ms-auto"
-                disabled={pending}
-                onClick={() => save(status.isEnabled)}
-              >
-                {pending && <Loader2 className="size-4 animate-spin" aria-hidden="true" />}
-                Save sender
-              </Button>
+              {needsSender && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="ms-auto"
+                  disabled={pending}
+                  onClick={() => save(status.isEnabled)}
+                >
+                  {pending && <Loader2 className="size-4 animate-spin" aria-hidden="true" />}
+                  Save sender
+                </Button>
+              )}
 
               {status.failed > 0 && (
                 <Button variant="outline" size="sm" disabled={pending} onClick={retry}>

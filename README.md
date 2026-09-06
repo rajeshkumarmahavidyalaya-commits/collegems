@@ -97,8 +97,8 @@ After any migration, regenerate types into
   `mobile_student`) so a phone renders a screen in one round trip, a versioned
   additive-only contract, and device registration for push
 - Notification service: one send path, in-app delivery, per-user opt-outs,
-  templates, a delivery log, and a dispatcher Edge Function with email (Resend)
-  and SMS (Twilio) drivers. Whether a channel actually sends depends on the
+  templates, a delivery log, and a dispatcher Edge Function with email (Resend),
+  SMS (Twilio) and push (FCM) drivers. Whether a channel actually sends depends on the
   build, the school's settings and the deployment's secrets — the Channels
   screen says which of the three is missing
 - Library module end-to-end as the reference implementation
