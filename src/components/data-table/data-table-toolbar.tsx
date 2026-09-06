@@ -47,21 +47,21 @@ export function DataTableToolbar<TData>({
       {onSearchChange && (
         <div className="relative w-full max-w-xs">
           <Search
-            className="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground"
+            className="pointer-events-none absolute top-1/2 start-2.5 size-4 -translate-y-1/2 text-muted-foreground"
             aria-hidden="true"
           />
           <Input
             value={searchValue ?? ""}
             onChange={(e) => onSearchChange(e.target.value)}
             placeholder={searchPlaceholder}
-            className="pl-8"
+            className="ps-8"
             aria-label={searchPlaceholder}
           />
           {searchValue && (
             <button
               type="button"
               onClick={() => onSearchChange("")}
-              className="absolute top-1/2 right-2 -translate-y-1/2 text-muted-foreground hover:text-foreground cursor-pointer"
+              className="absolute top-1/2 end-2 -translate-y-1/2 text-muted-foreground hover:text-foreground cursor-pointer"
               aria-label="Clear search"
             >
               <X className="size-3.5" />
@@ -72,7 +72,7 @@ export function DataTableToolbar<TData>({
 
       {children}
 
-      <div className="ml-auto flex items-center gap-2">
+      <div className="ms-auto flex items-center gap-2">
         {viewsKey && (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>

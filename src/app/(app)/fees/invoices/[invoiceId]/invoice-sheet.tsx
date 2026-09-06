@@ -99,7 +99,7 @@ export function InvoiceSheet({ doc }: { doc: InvoiceDocument }) {
             )}
           </div>
 
-          <div className="text-right">
+          <div className="text-end">
             <p className="text-xs tracking-wide text-muted-foreground uppercase">Fee invoice</p>
             <p className="font-mono text-lg font-semibold">{invoice.number}</p>
             {doc.sessionName && (
@@ -132,7 +132,7 @@ export function InvoiceSheet({ doc }: { doc: InvoiceDocument }) {
             )}
           </div>
 
-          <dl className="grid grid-cols-2 gap-x-4 gap-y-1 text-sm sm:justify-self-end sm:text-right">
+          <dl className="grid grid-cols-2 gap-x-4 gap-y-1 text-sm sm:justify-self-end sm:text-end">
             <dt className="text-muted-foreground">Issued</dt>
             <dd className="tabular-nums">{formatDate(invoice.issueDate)}</dd>
             <dt className="text-muted-foreground">Due</dt>
@@ -164,10 +164,10 @@ export function InvoiceSheet({ doc }: { doc: InvoiceDocument }) {
               </caption>
               <thead>
                 <tr className="border-b border-border text-xs text-muted-foreground">
-                  <th scope="col" className="py-2 text-left font-medium">
+                  <th scope="col" className="py-2 text-start font-medium">
                     Particulars
                   </th>
-                  <th scope="col" className="py-2 text-right font-medium">
+                  <th scope="col" className="py-2 text-end font-medium">
                     Amount
                   </th>
                 </tr>
@@ -176,7 +176,7 @@ export function InvoiceSheet({ doc }: { doc: InvoiceDocument }) {
                 {lines.map((line) => (
                   <tr key={line.id} className="border-b border-border/60">
                     <td className="py-2">{line.description}</td>
-                    <td className="py-2 text-right font-mono tabular-nums">
+                    <td className="py-2 text-end font-mono tabular-nums">
                       {formatMoney(line.amount)}
                     </td>
                   </tr>
@@ -184,10 +184,10 @@ export function InvoiceSheet({ doc }: { doc: InvoiceDocument }) {
               </tbody>
               <tfoot>
                 <tr className="border-b border-border">
-                  <th scope="row" className="py-2 text-left font-medium">
+                  <th scope="row" className="py-2 text-start font-medium">
                     Total charged
                   </th>
-                  <td className="py-2 text-right font-mono font-medium tabular-nums">
+                  <td className="py-2 text-end font-mono font-medium tabular-nums">
                     {formatMoney(doc.total)}
                   </td>
                 </tr>
@@ -213,10 +213,10 @@ export function InvoiceSheet({ doc }: { doc: InvoiceDocument }) {
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-border text-xs text-muted-foreground">
-                    <th scope="col" className="py-2 text-left font-medium">Date</th>
-                    <th scope="col" className="py-2 text-left font-medium">Receipt</th>
-                    <th scope="col" className="py-2 text-left font-medium">Mode</th>
-                    <th scope="col" className="py-2 text-right font-medium">Amount</th>
+                    <th scope="col" className="py-2 text-start font-medium">Date</th>
+                    <th scope="col" className="py-2 text-start font-medium">Receipt</th>
+                    <th scope="col" className="py-2 text-start font-medium">Mode</th>
+                    <th scope="col" className="py-2 text-end font-medium">Amount</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -227,12 +227,12 @@ export function InvoiceSheet({ doc }: { doc: InvoiceDocument }) {
                       <td className="py-2">
                         {methodLabel(p.method)}
                         {p.isReversal && (
-                          <Badge variant="outline" className="ml-1.5">
+                          <Badge variant="outline" className="ms-1.5">
                             Reversal
                           </Badge>
                         )}
                       </td>
-                      <td className="py-2 text-right font-mono tabular-nums">
+                      <td className="py-2 text-end font-mono tabular-nums">
                         {p.amount < 0 ? "−" : ""}
                         {formatMoney(Math.abs(p.amount))}
                       </td>
@@ -246,7 +246,7 @@ export function InvoiceSheet({ doc }: { doc: InvoiceDocument }) {
 
         {/* ---------------- the arithmetic ---------------- */}
         <section data-print="keep" className="border-t border-border pt-6">
-          <dl className="ml-auto flex max-w-xs flex-col gap-1 text-sm">
+          <dl className="ms-auto flex max-w-xs flex-col gap-1 text-sm">
             <div className="flex justify-between gap-4">
               <dt className="text-muted-foreground">Total charged</dt>
               <dd className="font-mono tabular-nums">{formatMoney(doc.total)}</dd>

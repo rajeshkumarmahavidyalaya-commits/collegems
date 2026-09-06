@@ -227,7 +227,7 @@ export function PromotionPlanner({ sessions, runs }: Props) {
             </CardDescription>
           </CardHeader>
           <CardContent className="flex flex-col gap-4">
-            <ol className="flex list-decimal flex-col gap-1 pl-4 text-xs text-muted-foreground">
+            <ol className="flex list-decimal flex-col gap-1 ps-4 text-xs text-muted-foreground">
               {EVALUATION_ORDER.map((line) => (
                 <li key={line}>{line}</li>
               ))}
@@ -359,7 +359,7 @@ export function PromotionPlanner({ sessions, runs }: Props) {
             <AlertTriangle className="size-4" aria-hidden="true" />
             <AlertTitle>Worth a look at these rules</AlertTitle>
             <AlertDescription>
-              <ul className="flex list-disc flex-col gap-1 pl-4">
+              <ul className="flex list-disc flex-col gap-1 ps-4">
                 {preview.problems.map((p) => (
                   <li key={p}>{p}</li>
                 ))}
@@ -407,7 +407,7 @@ export function PromotionPlanner({ sessions, runs }: Props) {
                 <table className="w-full border-collapse text-sm">
                   <caption className="sr-only">Promotion dry run</caption>
                   <thead>
-                    <tr className="border-b bg-muted/40 text-left">
+                    <tr className="border-b bg-muted/40 text-start">
                       <th scope="col" className="px-3 py-2 font-medium">Student</th>
                       <th scope="col" className="px-3 py-2 font-medium">From</th>
                       <th scope="col" className="px-3 py-2 font-medium">Decision</th>

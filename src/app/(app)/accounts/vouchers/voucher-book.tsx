@@ -107,8 +107,8 @@ export function VoucherBook({ vouchers, lines, postable, today, canPost }: Props
                     <TableHead className="w-28">Date</TableHead>
                     <TableHead>Narration</TableHead>
                     <TableHead>Source</TableHead>
-                    <TableHead className="text-right">Amount</TableHead>
-                    <TableHead className="w-28 text-right">Actions</TableHead>
+                    <TableHead className="text-end">Amount</TableHead>
+                    <TableHead className="w-28 text-end">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -199,10 +199,10 @@ function VoucherRowView({
         <TableCell className="text-muted-foreground">
           {sourceKindLabel(voucher.sourceKind)}
         </TableCell>
-        <TableCell className="text-right font-mono tabular-nums">
+        <TableCell className="text-end font-mono tabular-nums">
           {formatAmount(voucher.total)}
         </TableCell>
-        <TableCell className="text-right">
+        <TableCell className="text-end">
           <div className="flex justify-end gap-1">
             <Button
               variant="ghost"
@@ -238,8 +238,8 @@ function VoucherRowView({
                   <TableRow>
                     <TableHead>Account</TableHead>
                     <TableHead>Narration</TableHead>
-                    <TableHead className="text-right">Debit</TableHead>
-                    <TableHead className="text-right">Credit</TableHead>
+                    <TableHead className="text-end">Debit</TableHead>
+                    <TableHead className="text-end">Credit</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -254,10 +254,10 @@ function VoucherRowView({
                       <TableCell className="text-sm text-muted-foreground">
                         {line.narration ?? "—"}
                       </TableCell>
-                      <TableCell className="text-right font-mono tabular-nums">
+                      <TableCell className="text-end font-mono tabular-nums">
                         {formatColumn(line.debit)}
                       </TableCell>
-                      <TableCell className="text-right font-mono tabular-nums">
+                      <TableCell className="text-end font-mono tabular-nums">
                         {formatColumn(line.credit)}
                       </TableCell>
                     </TableRow>
@@ -370,8 +370,8 @@ function JournalDialog({
               <TableHeader>
                 <TableRow>
                   <TableHead>Account</TableHead>
-                  <TableHead className="w-32 text-right">Debit</TableHead>
-                  <TableHead className="w-32 text-right">Credit</TableHead>
+                  <TableHead className="w-32 text-end">Debit</TableHead>
+                  <TableHead className="w-32 text-end">Credit</TableHead>
                   <TableHead className="w-10" />
                 </TableRow>
               </TableHeader>
@@ -399,7 +399,7 @@ function JournalDialog({
                       <Input
                         type="number"
                         inputMode="decimal"
-                        className="text-right font-mono tabular-nums"
+                        className="text-end font-mono tabular-nums"
                         aria-label={`Debit for line ${index + 1}`}
                         value={line.debit}
                         onChange={(e) => update(index, { debit: e.target.value, credit: "" })}
@@ -409,7 +409,7 @@ function JournalDialog({
                       <Input
                         type="number"
                         inputMode="decimal"
-                        className="text-right font-mono tabular-nums"
+                        className="text-end font-mono tabular-nums"
                         aria-label={`Credit for line ${index + 1}`}
                         value={line.credit}
                         onChange={(e) => update(index, { credit: e.target.value, debit: "" })}
@@ -431,10 +431,10 @@ function JournalDialog({
                 ))}
                 <TableRow className="border-t-2 font-medium">
                   <TableCell>Total</TableCell>
-                  <TableCell className="text-right font-mono tabular-nums">
+                  <TableCell className="text-end font-mono tabular-nums">
                     {formatAmount(debit)}
                   </TableCell>
-                  <TableCell className="text-right font-mono tabular-nums">
+                  <TableCell className="text-end font-mono tabular-nums">
                     {formatAmount(credit)}
                   </TableCell>
                   <TableCell />

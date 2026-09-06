@@ -224,7 +224,7 @@ export function AttendanceReport({ sections }: { sections: SectionOption[] }) {
           />
         </div>
 
-        <p className="ml-auto flex items-center gap-1.5 text-sm text-muted-foreground">
+        <p className="ms-auto flex items-center gap-1.5 text-sm text-muted-foreground">
           <CalendarDays className="size-4" aria-hidden="true" />
           <span aria-live="polite">
             {markedDays} {markedDays === 1 ? "day" : "days"} marked in this range

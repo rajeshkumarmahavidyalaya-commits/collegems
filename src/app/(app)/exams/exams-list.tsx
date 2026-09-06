@@ -200,9 +200,9 @@ function ExamsTab({
                   <TableHead>Exam</TableHead>
                   <TableHead>Kind</TableHead>
                   <TableHead>Scheme</TableHead>
-                  <TableHead className="text-right">Papers</TableHead>
+                  <TableHead className="text-end">Papers</TableHead>
                   <TableHead>Status</TableHead>
-                  <TableHead className="w-28 text-right">Actions</TableHead>
+                  <TableHead className="w-28 text-end">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -231,7 +231,7 @@ function ExamsTab({
                     <TableCell className="text-muted-foreground">
                       {exam.gradingSchemeName ?? "School default"}
                     </TableCell>
-                    <TableCell className="text-right font-mono tabular-nums">
+                    <TableCell className="text-end font-mono tabular-nums">
                       {exam.paperCount}
                     </TableCell>
                     <TableCell>
@@ -239,7 +239,7 @@ function ExamsTab({
                         {exam.status === "published" ? "Published" : "Draft"}
                       </Badge>
                     </TableCell>
-                    <TableCell className="text-right">
+                    <TableCell className="text-end">
                       {canManage && (
                         <div className="flex justify-end gap-1">
                           <Button

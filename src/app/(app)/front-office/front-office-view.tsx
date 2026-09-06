@@ -288,7 +288,7 @@ function EnquiryTable({
                   <TableHead>Source</TableHead>
                   <TableHead>Stage</TableHead>
                   <TableHead>Follow up</TableHead>
-                  <TableHead className="w-32 text-right">Actions</TableHead>
+                  <TableHead className="w-32 text-end">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -351,7 +351,7 @@ function EnquiryTable({
                           {e.followUpCount} contact{e.followUpCount === 1 ? "" : "s"}
                         </span>
                       </TableCell>
-                      <TableCell className="text-right">
+                      <TableCell className="text-end">
                         {canManage && e.status !== "admitted" && (
                           <Button
                             variant="ghost"
@@ -454,7 +454,7 @@ function GateTable({
                   <TableHead>Seeing</TableHead>
                   <TableHead>In</TableHead>
                   <TableHead>Time</TableHead>
-                  {canManage && <TableHead className="w-16 text-right">Out</TableHead>}
+                  {canManage && <TableHead className="w-16 text-end">Out</TableHead>}
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -499,7 +499,7 @@ function GateTable({
                       )}
                     </TableCell>
                     {canManage && (
-                      <TableCell className="text-right">
+                      <TableCell className="text-end">
                         {v.checkedOutAt === null && (
                           <Button
                             variant="ghost"

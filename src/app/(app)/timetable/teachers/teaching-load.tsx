@@ -106,9 +106,9 @@ export function TeachingLoad({ rows }: { rows: TeacherLoadRow[] }) {
                   <TableRow>
                     <TableHead>Teacher</TableHead>
                     <TableHead>Code</TableHead>
-                    <TableHead className="text-right">Periods</TableHead>
-                    <TableHead className="text-right">Classes</TableHead>
-                    <TableHead className="text-right">Subjects</TableHead>
+                    <TableHead className="text-end">Periods</TableHead>
+                    <TableHead className="text-end">Classes</TableHead>
+                    <TableHead className="text-end">Subjects</TableHead>
                     <TableHead className="w-24" />
                   </TableRow>
                 </TableHeader>
@@ -119,7 +119,7 @@ export function TeachingLoad({ rows }: { rows: TeacherLoadRow[] }) {
                       <TableCell className="font-mono text-xs text-muted-foreground">
                         {row.employeeCode}
                       </TableCell>
-                      <TableCell className="text-right">
+                      <TableCell className="text-end">
                         {/* Number and word together — a bar alone would make
                             "busy" a matter of colour. */}
                         {row.periods === 0 ? (
@@ -130,13 +130,13 @@ export function TeachingLoad({ rows }: { rows: TeacherLoadRow[] }) {
                           <span className="font-mono tabular-nums">{row.periods}</span>
                         )}
                       </TableCell>
-                      <TableCell className="text-right font-mono tabular-nums text-muted-foreground">
+                      <TableCell className="text-end font-mono tabular-nums text-muted-foreground">
                         {row.sections}
                       </TableCell>
-                      <TableCell className="text-right font-mono tabular-nums text-muted-foreground">
+                      <TableCell className="text-end font-mono tabular-nums text-muted-foreground">
                         {row.subjects}
                       </TableCell>
-                      <TableCell className="text-right">
+                      <TableCell className="text-end">
                         <Button
                           variant="ghost"
                           size="sm"

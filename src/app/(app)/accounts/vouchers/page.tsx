@@ -31,7 +31,7 @@ export default async function VouchersPage() {
   return (
     <div className="flex flex-col gap-6">
       <div>
-        <Button asChild variant="ghost" size="sm" className="-ml-2 mb-2">
+        <Button asChild variant="ghost" size="sm" className="-ms-2 mb-2">
           <Link href="/accounts">
             <ArrowLeft className="size-4" aria-hidden="true" />
             Accounts

@@ -251,3 +251,52 @@
     margin: 14mm;
   }
 }
+
+/* ---------------------------------------------------------------------------
+   Right-to-left
+   --------------------------------------------------------------------------- */
+
+/*
+ * Layout is handled by Tailwind's logical utilities -- `ms-`/`me-`, `ps-`/`pe-`,
+ * `text-start`/`text-end`, `border-s`/`border-e`, `start-`/`end-` -- which read
+ * `dir` from <html> and need no rules here. Migration to those was mechanical
+ * and exact: every one is identical to its physical twin in LTR.
+ *
+ * Icons are the part that cannot be mechanical. An arrow meaning "back" points
+ * the other way in Urdu, and an arrow meaning "download" does not. lucide-react
+ * puts the icon's own name in a class, so the directional ones can be flipped
+ * by name -- a heuristic, deliberately narrow, and easier to audit than a
+ * `rtl:rotate-180` scattered across thirty call sites.
+ *
+ * Chevrons in a `<details>`, a pagination control and a breadcrumb are all
+ * "further along the reading direction", so they flip. Arrows that mean up,
+ * down, or a compass point do not appear here on purpose.
+ */
+[dir="rtl"] svg.lucide-arrow-left,
+[dir="rtl"] svg.lucide-arrow-right,
+[dir="rtl"] svg.lucide-arrow-big-left,
+[dir="rtl"] svg.lucide-arrow-big-right,
+[dir="rtl"] svg.lucide-chevron-left,
+[dir="rtl"] svg.lucide-chevron-right,
+[dir="rtl"] svg.lucide-chevrons-left,
+[dir="rtl"] svg.lucide-chevrons-right,
+[dir="rtl"] svg.lucide-corner-down-left,
+[dir="rtl"] svg.lucide-log-out,
+[dir="rtl"] svg.lucide-move-left,
+[dir="rtl"] svg.lucide-move-right,
+[dir="rtl"] svg.lucide-undo-2,
+[dir="rtl"] svg.lucide-redo-2 {
+  transform: scaleX(-1);
+}
+
+/*
+ * Numbers stay left-to-right inside a right-to-left sentence. The Unicode
+ * bidirectional algorithm mostly gets this right on its own; it does not when a
+ * number is followed by punctuation, which is exactly the shape of a receipt
+ * number, a percentage and a time. Isolating them is cheap and removes a class
+ * of bug that only appears on somebody else's screen.
+ */
+[dir="rtl"] .tabular-nums,
+[dir="rtl"] .font-mono {
+  unicode-bidi: isolate;
+}

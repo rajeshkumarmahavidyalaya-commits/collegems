@@ -193,14 +193,14 @@ export function RunRegister({ run, rows, lines, canProcess }: Props) {
                   <TableRow>
                     <TableHead className="w-24">Code</TableHead>
                     <TableHead>Name</TableHead>
-                    <TableHead className="text-right">Days</TableHead>
-                    <TableHead className="text-right">Gross</TableHead>
-                    <TableHead className="text-right">Deductions</TableHead>
-                    <TableHead className="text-right">Net</TableHead>
+                    <TableHead className="text-end">Days</TableHead>
+                    <TableHead className="text-end">Gross</TableHead>
+                    <TableHead className="text-end">Deductions</TableHead>
+                    <TableHead className="text-end">Net</TableHead>
                     {run.status === "finalised" && (
-                      <TableHead className="text-right">Paid</TableHead>
+                      <TableHead className="text-end">Paid</TableHead>
                     )}
-                    <TableHead className="w-28 text-right">Actions</TableHead>
+                    <TableHead className="w-28 text-end">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -312,7 +312,7 @@ function PayslipRow({
             )}
           </span>
         </TableCell>
-        <TableCell className="text-right font-mono tabular-nums">
+        <TableCell className="text-end font-mono tabular-nums">
           {formatDays(row.paidDays)}
           <span className="text-muted-foreground"> / {formatDays(row.workingDays)}</span>
           {row.employedDays < row.workingDays && (
@@ -324,17 +324,17 @@ function PayslipRow({
             <p className="text-xs text-destructive">{formatDays(row.lopDays)} unpaid</p>
           )}
         </TableCell>
-        <TableCell className="text-right font-mono tabular-nums">
+        <TableCell className="text-end font-mono tabular-nums">
           {formatMoney(row.grossEarnings)}
         </TableCell>
-        <TableCell className="text-right font-mono tabular-nums text-muted-foreground">
+        <TableCell className="text-end font-mono tabular-nums text-muted-foreground">
           {formatMoney(row.totalDeductions)}
         </TableCell>
-        <TableCell className="text-right font-mono font-medium tabular-nums">
+        <TableCell className="text-end font-mono font-medium tabular-nums">
           {formatMoney(row.netPay)}
         </TableCell>
         {isFinalised && (
-          <TableCell className="text-right">
+          <TableCell className="text-end">
             {row.netPay <= 0 ? (
               <span className="text-xs text-muted-foreground">—</span>
             ) : fullyPaid ? (
@@ -348,7 +348,7 @@ function PayslipRow({
             )}
           </TableCell>
         )}
-        <TableCell className="text-right">
+        <TableCell className="text-end">
           <div className="flex justify-end gap-1">
             {isFinalised && canProcess && row.netPay > 0 && !fullyPaid && (
               <Button
@@ -418,7 +418,7 @@ function PayslipRow({
                       <TableRow>
                         <TableHead>Component</TableHead>
                         <TableHead>How it was worked out</TableHead>
-                        <TableHead className="text-right">Amount</TableHead>
+                        <TableHead className="text-end">Amount</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -426,14 +426,14 @@ function PayslipRow({
                         <TableRow key={line.id}>
                           <TableCell>
                             <span className="font-medium">{line.name}</span>
-                            <span className="ml-2 font-mono text-xs text-muted-foreground">
+                            <span className="ms-2 font-mono text-xs text-muted-foreground">
                               {line.code}
                             </span>
                           </TableCell>
                           <TableCell className="text-sm text-muted-foreground">
                             {line.basis ?? "—"}
                           </TableCell>
-                          <TableCell className="text-right font-mono tabular-nums">
+                          <TableCell className="text-end font-mono tabular-nums">
                             {line.kind === "deduction" ? "−" : ""}
                             {formatMoney(line.amount)}
                           </TableCell>

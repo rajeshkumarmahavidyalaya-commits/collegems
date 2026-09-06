@@ -66,7 +66,7 @@ export function NotificationInbox({ rows }: { rows: InboxRow[] }) {
             <TabsTrigger value="unread">
               Unread
               {unreadCount > 0 && (
-                <span className="ml-1.5 rounded-full bg-primary px-1.5 py-0.5 font-mono text-[10px] leading-none text-primary-foreground">
+                <span className="ms-1.5 rounded-full bg-primary px-1.5 py-0.5 font-mono text-[10px] leading-none text-primary-foreground">
                   {unreadCount}
                 </span>
               )}
@@ -111,7 +111,7 @@ export function NotificationInbox({ rows }: { rows: InboxRow[] }) {
                       type="button"
                       onClick={() => open(row)}
                       aria-expanded={isOpen}
-                      className="flex w-full flex-col gap-1.5 rounded-lg p-4 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                      className="flex w-full flex-col gap-1.5 rounded-lg p-4 text-start focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                     >
                       <div className="flex flex-wrap items-center gap-2">
                         <Badge variant="secondary" className="font-normal">
@@ -130,7 +130,7 @@ export function NotificationInbox({ rows }: { rows: InboxRow[] }) {
                             Read
                           </span>
                         )}
-                        <span className="ml-auto shrink-0 text-xs text-muted-foreground">
+                        <span className="ms-auto shrink-0 text-xs text-muted-foreground">
                           <time dateTime={row.createdAt} title={new Date(row.createdAt).toLocaleString("en-IN")}>
                             {relativeTime(row.createdAt)}
                           </time>

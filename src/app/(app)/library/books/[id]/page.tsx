@@ -137,7 +137,7 @@ export default async function BookDetailPage({ params }: { params: Promise<{ id:
                   <TableHead>Issued</TableHead>
                   <TableHead>Due</TableHead>
                   <TableHead>Status</TableHead>
-                  <TableHead className="text-right">Fine</TableHead>
+                  <TableHead className="text-end">Fine</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -169,7 +169,7 @@ export default async function BookDetailPage({ params }: { params: Promise<{ id:
                           <Badge variant="outline">Issued</Badge>
                         )}
                       </TableCell>
-                      <TableCell className="text-right font-mono tabular-nums">
+                      <TableCell className="text-end font-mono tabular-nums">
                         {Number(issue.fine_amount) > 0 ? `₹${Number(issue.fine_amount).toFixed(2)}` : "—"}
                       </TableCell>
                     </TableRow>

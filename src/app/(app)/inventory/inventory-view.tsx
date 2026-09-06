@@ -189,9 +189,9 @@ function StockTab({
                   <TableHead>Item</TableHead>
                   <TableHead>Category</TableHead>
                   <TableHead>On hand</TableHead>
-                  <TableHead className="text-right">Unit cost</TableHead>
+                  <TableHead className="text-end">Unit cost</TableHead>
                   <TableHead>Last moved</TableHead>
-                  <TableHead className="w-24 text-right">Actions</TableHead>
+                  <TableHead className="w-24 text-end">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -234,13 +234,13 @@ function StockTab({
                           </span>
                         )}
                       </TableCell>
-                      <TableCell className="text-right font-mono tabular-nums text-muted-foreground">
+                      <TableCell className="text-end font-mono tabular-nums text-muted-foreground">
                         {item.averageCost === null ? "—" : formatMoney(item.averageCost)}
                       </TableCell>
                       <TableCell className="font-mono tabular-nums text-muted-foreground">
                         {item.lastMovement ?? "—"}
                       </TableCell>
-                      <TableCell className="text-right">
+                      <TableCell className="text-end">
                         {(canManage || canAdjust) && (
                           <Button
                             variant="ghost"
@@ -306,7 +306,7 @@ function AssetsOutTab({ assetsOut }: { assetsOut: AssetOutRow[] }) {
                 <TableRow>
                   <TableHead>Item</TableHead>
                   <TableHead>With</TableHead>
-                  <TableHead className="text-right">How many</TableHead>
+                  <TableHead className="text-end">How many</TableHead>
                   <TableHead>Since</TableHead>
                 </TableRow>
               </TableHeader>
@@ -325,7 +325,7 @@ function AssetsOutTab({ assetsOut }: { assetsOut: AssetOutRow[] }) {
                       </span>
                     </TableCell>
                     <TableCell>{row.holder}</TableCell>
-                    <TableCell className="text-right font-mono tabular-nums">
+                    <TableCell className="text-end font-mono tabular-nums">
                       {formatQuantity(row.quantity)}
                     </TableCell>
                     <TableCell className="font-mono tabular-nums text-muted-foreground">

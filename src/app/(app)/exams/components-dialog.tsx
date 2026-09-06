@@ -187,17 +187,17 @@ export function ComponentsDialog({
             <div className="overflow-x-auto">
               <table className="w-full border-collapse text-sm">
                 <thead>
-                  <tr className="border-b text-left">
-                    <th scope="col" className="py-2 pr-3 font-medium">
+                  <tr className="border-b text-start">
+                    <th scope="col" className="py-2 pe-3 font-medium">
                       Code
                     </th>
-                    <th scope="col" className="py-2 pr-3 font-medium">
+                    <th scope="col" className="py-2 pe-3 font-medium">
                       Name
                     </th>
-                    <th scope="col" className="py-2 pr-3 font-medium">
+                    <th scope="col" className="py-2 pe-3 font-medium">
                       Out of
                     </th>
-                    <th scope="col" className="py-2 pr-3 font-medium">
+                    <th scope="col" className="py-2 pe-3 font-medium">
                       Minimum
                     </th>
                     <th scope="col" className="w-10 py-2" />
@@ -206,7 +206,7 @@ export function ComponentsDialog({
                 <tbody>
                   {drafts.map((draft, index) => (
                     <tr key={index} className="border-b last:border-0">
-                      <td className="py-1.5 pr-3">
+                      <td className="py-1.5 pe-3">
                         <Label htmlFor={`part-code-${index}`} className="sr-only">
                           Code for part {index + 1}
                         </Label>
@@ -219,7 +219,7 @@ export function ComponentsDialog({
                           className="h-8 w-20 font-mono uppercase"
                         />
                       </td>
-                      <td className="py-1.5 pr-3">
+                      <td className="py-1.5 pe-3">
                         <Label htmlFor={`part-name-${index}`} className="sr-only">
                           Name for part {index + 1}
                         </Label>
@@ -231,7 +231,7 @@ export function ComponentsDialog({
                           className="h-8"
                         />
                       </td>
-                      <td className="py-1.5 pr-3">
+                      <td className="py-1.5 pe-3">
                         <Label htmlFor={`part-max-${index}`} className="sr-only">
                           Maximum for part {index + 1}
                         </Label>
@@ -246,7 +246,7 @@ export function ComponentsDialog({
                           className="h-8 w-24 font-mono tabular-nums"
                         />
                       </td>
-                      <td className="py-1.5 pr-3">
+                      <td className="py-1.5 pe-3">
                         <Label htmlFor={`part-pass-${index}`} className="sr-only">
                           Minimum for part {index + 1}
                         </Label>
@@ -296,7 +296,7 @@ export function ComponentsDialog({
               )}
               <p
                 className={cn(
-                  "ml-auto font-mono text-sm tabular-nums",
+                  "ms-auto font-mono text-sm tabular-nums",
                   totalProblem ? "text-destructive" : "text-muted-foreground",
                 )}
                 aria-live="polite"

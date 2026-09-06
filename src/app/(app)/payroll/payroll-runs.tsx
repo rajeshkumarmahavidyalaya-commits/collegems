@@ -83,10 +83,10 @@ export function PayrollRuns({ runs, canProcess }: { runs: RunRow[]; canProcess: 
               <TableHeader>
                 <TableRow>
                   <TableHead>Month</TableHead>
-                  <TableHead className="text-right">Payslips</TableHead>
-                  <TableHead className="text-right">Total net</TableHead>
+                  <TableHead className="text-end">Payslips</TableHead>
+                  <TableHead className="text-end">Total net</TableHead>
                   <TableHead>Status</TableHead>
-                  <TableHead className="w-20 text-right">Actions</TableHead>
+                  <TableHead className="w-20 text-end">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -138,8 +138,8 @@ function RunRowView({ run, canProcess }: { run: RunRow; canProcess: boolean }) {
         </Link>
         {run.note && <p className="text-xs text-muted-foreground">{run.note}</p>}
       </TableCell>
-      <TableCell className="text-right font-mono tabular-nums">{run.payslipCount}</TableCell>
-      <TableCell className="text-right font-mono tabular-nums">
+      <TableCell className="text-end font-mono tabular-nums">{run.payslipCount}</TableCell>
+      <TableCell className="text-end font-mono tabular-nums">
         {formatMoney(run.totalNet)}
       </TableCell>
       <TableCell>
@@ -164,7 +164,7 @@ function RunRowView({ run, canProcess }: { run: RunRow; canProcess: boolean }) {
           </p>
         )}
       </TableCell>
-      <TableCell className="text-right">
+      <TableCell className="text-end">
         {canProcess && run.status === "draft" && (
           <Button
             variant="ghost"
@@ -308,18 +308,18 @@ export function MyPayslips({
               <TableHeader>
                 <TableRow>
                   <TableHead>Month</TableHead>
-                  <TableHead className="text-right">Gross</TableHead>
-                  <TableHead className="text-right">Net</TableHead>
+                  <TableHead className="text-end">Gross</TableHead>
+                  <TableHead className="text-end">Net</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {payslips.map((p) => (
                   <TableRow key={p.id}>
                     <TableCell className="font-medium">{formatMonth(p.periodMonth)}</TableCell>
-                    <TableCell className="text-right font-mono tabular-nums">
+                    <TableCell className="text-end font-mono tabular-nums">
                       {formatMoney(p.grossEarnings)}
                     </TableCell>
-                    <TableCell className="text-right font-mono tabular-nums">
+                    <TableCell className="text-end font-mono tabular-nums">
                       {formatMoney(p.netPay)}
                     </TableCell>
                   </TableRow>

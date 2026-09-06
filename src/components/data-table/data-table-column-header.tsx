@@ -34,7 +34,7 @@ export function DataTableColumnHeader<TData, TValue>({
           <Button
             variant="ghost"
             size="sm"
-            className="-ml-3 h-8 data-[state=open]:bg-accent"
+            className="-ms-3 h-8 data-[state=open]:bg-accent"
             aria-label={`Sort by ${title}`}
           >
             <span>{title}</span>
@@ -49,18 +49,18 @@ export function DataTableColumnHeader<TData, TValue>({
         </DropdownMenuTrigger>
         <DropdownMenuContent align="start">
           <DropdownMenuItem onClick={() => column.toggleSorting(false)}>
-            <ArrowUp className="mr-2 size-3.5 text-muted-foreground" aria-hidden="true" />
+            <ArrowUp className="me-2 size-3.5 text-muted-foreground" aria-hidden="true" />
             Ascending
           </DropdownMenuItem>
           <DropdownMenuItem onClick={() => column.toggleSorting(true)}>
-            <ArrowDown className="mr-2 size-3.5 text-muted-foreground" aria-hidden="true" />
+            <ArrowDown className="me-2 size-3.5 text-muted-foreground" aria-hidden="true" />
             Descending
           </DropdownMenuItem>
           {column.getCanHide() && (
             <>
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={() => column.toggleVisibility(false)}>
-                <EyeOff className="mr-2 size-3.5 text-muted-foreground" aria-hidden="true" />
+                <EyeOff className="me-2 size-3.5 text-muted-foreground" aria-hidden="true" />
                 Hide column
               </DropdownMenuItem>
             </>

@@ -104,7 +104,7 @@ export function HostelView({
           <AlertTriangle className="size-4" aria-hidden="true" />
           <AlertTitle>Some families would be billed twice</AlertTitle>
           <AlertDescription>
-            <ul className="mt-1 flex list-disc flex-col gap-1 pl-4">
+            <ul className="mt-1 flex list-disc flex-col gap-1 ps-4">
               {conflicts.map((problem) => (
                 <li key={problem}>{problem}</li>
               ))}
@@ -223,9 +223,9 @@ function RoomsTab({
                   <TableHead>Room</TableHead>
                   <TableHead>Floor</TableHead>
                   <TableHead>Beds</TableHead>
-                  <TableHead className="text-right">Monthly fare</TableHead>
+                  <TableHead className="text-end">Monthly fare</TableHead>
                   <TableHead>Status</TableHead>
-                  {canManage && <TableHead className="w-16 text-right">Edit</TableHead>}
+                  {canManage && <TableHead className="w-16 text-end">Edit</TableHead>}
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -260,7 +260,7 @@ function RoomsTab({
                           {bedsSentence(room.beds, room.occupied)}
                         </Badge>
                       </TableCell>
-                      <TableCell className="text-right font-mono tabular-nums">
+                      <TableCell className="text-end font-mono tabular-nums">
                         {room.monthlyFare > 0 ? formatFare(room.monthlyFare) : "Free"}
                       </TableCell>
                       <TableCell>
@@ -269,7 +269,7 @@ function RoomsTab({
                         </Badge>
                       </TableCell>
                       {canManage && (
-                        <TableCell className="text-right">
+                        <TableCell className="text-end">
                           <Button
                             variant="ghost"
                             size="icon"
@@ -336,10 +336,10 @@ function HousesTab({
                   <TableHead>House</TableHead>
                   <TableHead>Takes</TableHead>
                   <TableHead>Warden</TableHead>
-                  <TableHead className="text-right">Rooms</TableHead>
+                  <TableHead className="text-end">Rooms</TableHead>
                   <TableHead>Beds</TableHead>
                   <TableHead>Status</TableHead>
-                  {canManage && <TableHead className="w-16 text-right">Edit</TableHead>}
+                  {canManage && <TableHead className="w-16 text-end">Edit</TableHead>}
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -359,7 +359,7 @@ function HousesTab({
                     <TableCell className="text-muted-foreground">
                       {hostel.wardenName ?? "Not recorded"}
                     </TableCell>
-                    <TableCell className="text-right font-mono tabular-nums">
+                    <TableCell className="text-end font-mono tabular-nums">
                       {hostel.roomCount}
                     </TableCell>
                     <TableCell className="font-mono tabular-nums">
@@ -371,7 +371,7 @@ function HousesTab({
                       </Badge>
                     </TableCell>
                     {canManage && (
-                      <TableCell className="text-right">
+                      <TableCell className="text-end">
                         <Button
                           variant="ghost"
                           size="icon"
@@ -491,12 +491,12 @@ function AllocateCard({ rooms }: { rooms: RoomRow[] }) {
             <>
               <div className="relative">
                 <Search
-                  className="pointer-events-none absolute left-2.5 top-2.5 size-4 text-muted-foreground"
+                  className="pointer-events-none absolute start-2.5 top-2.5 size-4 text-muted-foreground"
                   aria-hidden="true"
                 />
                 <Input
                   id="boarder-search"
-                  className="pl-8"
+                  className="ps-8"
                   placeholder="Name or admission number"
                   value={term}
                   onChange={(event) => setTerm(event.target.value)}
@@ -517,7 +517,7 @@ function AllocateCard({ rooms }: { rooms: RoomRow[] }) {
                       <button
                         type="button"
                         onClick={() => setStudent(hit)}
-                        className="flex w-full cursor-pointer flex-col items-start gap-0.5 border-b border-border p-2 text-left transition-colors duration-200 last:border-0 hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                        className="flex w-full cursor-pointer flex-col items-start gap-0.5 border-b border-border p-2 text-start transition-colors duration-200 last:border-0 hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                       >
                         <span className="text-sm font-medium">{hit.fullName}</span>
                         <span className="text-xs text-muted-foreground">

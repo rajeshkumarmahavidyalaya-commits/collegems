@@ -761,6 +761,56 @@ policy at all**; `mobile_device_summary()` returns counts instead. See
 
 ---
 
+## 15. The locale is a property of a person, and RTL is a requirement
+
+**No `[locale]` route segment.** Every screen is behind a login, nothing is
+indexed, and a link sent between two members of staff should open in the
+*reader's* language rather than the sender's — so the locale is resolved
+server-side, exactly as the tenant and the session are, and `/students` stays
+`/students` in every language. The cost is real and stated: no per-locale HTTP
+caching by URL. See `docs/modules/i18n.md`.
+
+Resolution order: `user_profiles.locale` → the cookie → `Accept-Language` →
+`tenants.default_locale` → `en`. The cookie step is the one that is easy to
+leave out: somebody who cannot read the default has no profile yet, so it is the
+only place their choice can live on the login page. A **null** profile locale
+means *"follow the school"*, which is not the same as having chosen the school's
+current language.
+
+`set_my_locale` is `SECURITY DEFINER` for the plain rule-4 reason, not the
+column-grant one: `user_profiles` carries only an *administrator* UPDATE policy,
+so the other five roles match no policy at all and have no way to write their
+own row. A GRANT would have had no policy to narrow.
+
+**English is the source catalogue; every other locale is a `Partial` of it.**
+An incomplete translation must be *representable*, because a catalogue that has
+to be complete to compile is a catalogue nobody adds a language to. At runtime
+the fallback to English is silent — a parent is better served by an English
+sentence than by a raw key — so the honesty lives in `coverageProblems()` and in
+a per-locale **floor** in `tests/i18n/i18n.test.ts`. Raise a floor when a
+translation is finished; **never lower one**, because a dropped key is the only
+way it can fail and lowering it is deleting somebody's work and calling it a fix.
+
+**Layout uses logical utilities only** — `ms-`/`me-`, `ps-`/`pe-`,
+`text-start`/`text-end`, `border-s`/`border-e`, `start-`/`end-`. Every one is an
+exact equivalent of its physical twin in LTR, so writing the physical form is
+never *more* correct, only less portable. `dir` goes on `<html>`, never on a
+wrapper.
+
+**Keep at least one RTL locale in the list.** Urdu is there so that right-to-left
+is exercised rather than declared; RTL that nothing uses is RTL that is broken
+and nobody has noticed. Icons are the part no codemod can do — an arrow meaning
+"back" flips and an arrow meaning "download" does not — so directional lucide
+icons are flipped by name in `globals.css` rather than by an `rtl:` variant at
+thirty call sites.
+
+**Never hardcode a locale tag in a formatter.** `toLocaleDateString("en-IN")` is
+the same class of mistake as hardcoding a grading rule: it works for the first
+customer. Go through `src/lib/i18n/format.ts`, which also keeps money in INR —
+the rupee is a fact about the money, not about the reader.
+
+---
+
 ---
 
 ## UI work — read this before writing any interface code

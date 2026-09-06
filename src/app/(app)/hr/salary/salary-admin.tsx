@@ -152,7 +152,7 @@ export function SalaryAdmin({ structures, assignments, staff, canManage }: Props
                         <AlertTriangle className="size-4 text-brand-accent" aria-hidden="true" />
                         Worth a look
                       </p>
-                      <ul className="mt-1 list-disc pl-5 text-sm text-muted-foreground">
+                      <ul className="mt-1 list-disc ps-5 text-sm text-muted-foreground">
                         {structure.problems.map((problem) => (
                           <li key={problem}>{problem}</li>
                         ))}
@@ -215,7 +215,7 @@ export function SalaryAdmin({ structures, assignments, staff, canManage }: Props
                       <TableHead>Structure</TableHead>
                       <TableHead>Amounts</TableHead>
                       <TableHead>In force</TableHead>
-                      <TableHead className="w-16 text-right">Edit</TableHead>
+                      <TableHead className="w-16 text-end">Edit</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -244,7 +244,7 @@ export function SalaryAdmin({ structures, assignments, staff, canManage }: Props
                           {row.effectiveFrom}
                           {row.effectiveTo ? ` – ${row.effectiveTo}` : " onwards"}
                         </TableCell>
-                        <TableCell className="text-right">
+                        <TableCell className="text-end">
                           {canManage && (
                             <Button
                               variant="ghost"
@@ -344,7 +344,7 @@ function ComponentTable({ components }: { components: unknown }) {
             <TableRow key={`${c.code}-${i}`}>
               <TableCell>
                 <span className="font-medium">{c.name ?? c.code}</span>
-                <span className="ml-2 font-mono text-xs text-muted-foreground">{c.code}</span>
+                <span className="ms-2 font-mono text-xs text-muted-foreground">{c.code}</span>
               </TableCell>
               <TableCell>
                 <Badge variant={c.kind === "deduction" ? "outline" : "secondary"}>

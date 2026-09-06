@@ -179,7 +179,7 @@ export function RoutineGrid({
           <Button
             variant="outline"
             size="sm"
-            className="ml-auto"
+            className="ms-auto"
             onClick={() => setCopyOpen(true)}
             disabled={!entries}
           >
@@ -287,7 +287,7 @@ export function RoutineGrid({
                   <tr className="border-b bg-muted/40">
                     <th
                       scope="col"
-                      className="sticky left-0 z-10 w-32 bg-muted/40 px-3 py-2 text-left font-medium backdrop-blur"
+                      className="sticky start-0 z-10 w-32 bg-muted/40 px-3 py-2 text-start font-medium backdrop-blur"
                     >
                       Period
                     </th>
@@ -295,7 +295,7 @@ export function RoutineGrid({
                       <th
                         key={d.value}
                         scope="col"
-                        className="min-w-40 px-2 py-2 text-left font-medium"
+                        className="min-w-40 px-2 py-2 text-start font-medium"
                       >
                         {d.label}
                       </th>
@@ -314,7 +314,7 @@ export function RoutineGrid({
                       <tr key={slot.id} className="border-b last:border-0">
                         <th
                           scope="row"
-                          className="sticky left-0 z-10 bg-background px-3 py-2 text-left align-top font-medium"
+                          className="sticky start-0 z-10 bg-background px-3 py-2 text-start align-top font-medium"
                         >
                           <span className="block">
                             {periodLabel(slot.periodNumber, slot.label)}
@@ -463,7 +463,7 @@ function Cell({
       type="button"
       onClick={onEdit}
       aria-label={`Edit ${entry.subjectName}: ${label}`}
-      className="flex min-h-16 w-full flex-col gap-0.5 rounded-md border bg-card px-2 py-1.5 text-left transition-colors hover:border-primary hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+      className="flex min-h-16 w-full flex-col gap-0.5 rounded-md border bg-card px-2 py-1.5 text-start transition-colors hover:border-primary hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
     >
       {body}
     </button>

@@ -55,7 +55,7 @@ export function ErrorSummary<TFieldValues extends FieldValues>({
         <TriangleAlert className="size-4" aria-hidden="true" />
         <span id="form-error-summary-title">There is a problem</span>
       </div>
-      <ul className="mt-2 ml-6 list-disc space-y-1 text-sm text-destructive">
+      <ul className="mt-2 ms-6 list-disc space-y-1 text-sm text-destructive">
         {messages.map((m) => (
           <li key={m.id}>
             <button

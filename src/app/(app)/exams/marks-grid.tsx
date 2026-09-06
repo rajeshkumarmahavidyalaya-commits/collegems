@@ -245,19 +245,19 @@ export function MarksGrid({
           <span className="font-mono font-medium tabular-nums text-foreground">{entered}</span> of{" "}
           {rows.length} marked
           {problemCount > 0 && (
-            <span className="ml-2 font-medium text-destructive">
+            <span className="ms-2 font-medium text-destructive">
               · {problemCount} need{problemCount === 1 ? "s" : ""} fixing
             </span>
           )}
           {savedAt && !isDirty && (
-            <span className="ml-2 text-muted-foreground">
+            <span className="ms-2 text-muted-foreground">
               · saved at {savedAt.toLocaleTimeString("en-IN")}
             </span>
           )}
         </p>
 
         {canEdit && !isPublished && (
-          <div className="ml-auto flex flex-wrap gap-2">
+          <div className="ms-auto flex flex-wrap gap-2">
             <Button variant="outline" size="sm" onClick={markRestAbsent}>
               <UserX className="size-4" aria-hidden="true" />
               Mark the rest absent
@@ -288,7 +288,7 @@ export function MarksGrid({
               `, split into ${columns.map((c) => `${c.label} out of ${c.maxMarks}`).join(", ")}`}
           </caption>
           <thead>
-            <tr className="border-b bg-muted/40 text-left">
+            <tr className="border-b bg-muted/40 text-start">
               <th scope="col" className="w-16 px-3 py-2 font-medium">
                 Roll
               </th>
@@ -342,12 +342,12 @@ export function MarksGrid({
                     {/* Text, not just a red cell: "below the pass mark" has to
                         survive being read aloud and being seen without colour. */}
                     {isFail && (
-                      <Badge variant="outline" className="ml-2 font-normal text-destructive">
+                      <Badge variant="outline" className="ms-2 font-normal text-destructive">
                         Below {passMarks}
                       </Badge>
                     )}
                     {columns.length > 1 && complete && !allAbsent && (
-                      <span className="ml-2 font-mono text-xs tabular-nums text-muted-foreground">
+                      <span className="ms-2 font-mono text-xs tabular-nums text-muted-foreground">
                         {totalSoFar} / {maxMarks}
                       </span>
                     )}

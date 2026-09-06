@@ -206,10 +206,10 @@ export function FeeSetup({
               <table className="w-full min-w-[560px] text-sm">
                 <thead className="bg-muted/60 text-xs text-muted-foreground">
                   <tr>
-                    <th scope="col" className="px-3 py-2 text-left font-medium">Code</th>
-                    <th scope="col" className="px-3 py-2 text-left font-medium">Name</th>
-                    <th scope="col" className="px-3 py-2 text-left font-medium">Category</th>
-                    <th scope="col" className="px-3 py-2 text-left font-medium">Status</th>
+                    <th scope="col" className="px-3 py-2 text-start font-medium">Code</th>
+                    <th scope="col" className="px-3 py-2 text-start font-medium">Name</th>
+                    <th scope="col" className="px-3 py-2 text-start font-medium">Category</th>
+                    <th scope="col" className="px-3 py-2 text-start font-medium">Status</th>
                   </tr>
                 </thead>
                 <tbody>

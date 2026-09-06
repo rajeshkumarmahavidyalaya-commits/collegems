@@ -116,9 +116,9 @@ export function LeaveBoard({
                     <TableHead>Who</TableHead>
                     <TableHead>Kind</TableHead>
                     <TableHead>Dates</TableHead>
-                    <TableHead className="text-right">Days</TableHead>
+                    <TableHead className="text-end">Days</TableHead>
                     <TableHead>Status</TableHead>
-                    <TableHead className="w-40 text-right">Actions</TableHead>
+                    <TableHead className="w-40 text-end">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -259,7 +259,7 @@ function RequestRow({
         )}
         {request.reason && <p className="text-xs text-muted-foreground">{request.reason}</p>}
       </TableCell>
-      <TableCell className="text-right font-mono tabular-nums">{formatDays(days)}</TableCell>
+      <TableCell className="text-end font-mono tabular-nums">{formatDays(days)}</TableCell>
       <TableCell>
         <Badge
           variant={
@@ -278,7 +278,7 @@ function RequestRow({
           </p>
         )}
       </TableCell>
-      <TableCell className="text-right">
+      <TableCell className="text-end">
         <div className="flex justify-end gap-1">
           {canDecide && request.status === "pending" && (
             <>

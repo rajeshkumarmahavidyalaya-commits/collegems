@@ -57,7 +57,7 @@ export default async function AccountLedgerPage({
   return (
     <div className="flex flex-col gap-6">
       <div>
-        <Button asChild variant="ghost" size="sm" className="-ml-2 mb-2">
+        <Button asChild variant="ghost" size="sm" className="-ms-2 mb-2">
           <Link href="/accounts">
             <ArrowLeft className="size-4" aria-hidden="true" />
             Chart of accounts
@@ -87,7 +87,7 @@ export default async function AccountLedgerPage({
                 : `${rows.filter((r) => !r.isOpening).length} entries`}
             </CardDescription>
           </div>
-          <div className="text-right">
+          <div className="text-end">
             <p className="text-xs text-muted-foreground">Closing balance</p>
             <p className="font-mono text-xl font-semibold tabular-nums">
               {formatBalance(closing)}
@@ -117,9 +117,9 @@ export default async function AccountLedgerPage({
                     <TableHead className="w-28">Date</TableHead>
                     <TableHead className="w-36">Voucher</TableHead>
                     <TableHead>Narration</TableHead>
-                    <TableHead className="text-right">Debit</TableHead>
-                    <TableHead className="text-right">Credit</TableHead>
-                    <TableHead className="text-right">Balance</TableHead>
+                    <TableHead className="text-end">Debit</TableHead>
+                    <TableHead className="text-end">Credit</TableHead>
+                    <TableHead className="text-end">Balance</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -154,13 +154,13 @@ export default async function AccountLedgerPage({
                           </>
                         )}
                       </TableCell>
-                      <TableCell className="text-right font-mono tabular-nums">
+                      <TableCell className="text-end font-mono tabular-nums">
                         {formatColumn(row.debit)}
                       </TableCell>
-                      <TableCell className="text-right font-mono tabular-nums">
+                      <TableCell className="text-end font-mono tabular-nums">
                         {formatColumn(row.credit)}
                       </TableCell>
-                      <TableCell className="text-right font-mono tabular-nums">
+                      <TableCell className="text-end font-mono tabular-nums">
                         {formatBalance(row.runningBalance)}
                       </TableCell>
                     </TableRow>

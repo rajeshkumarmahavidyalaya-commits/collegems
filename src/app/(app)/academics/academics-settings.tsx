@@ -251,11 +251,11 @@ function SubjectsTab({ subjects, canManage }: { subjects: SubjectRow[]; canManag
           <table className="w-full min-w-[560px] text-sm">
             <thead className="bg-muted/60 text-xs text-muted-foreground">
               <tr>
-                <th scope="col" className="px-3 py-2 text-left font-medium">Code</th>
-                <th scope="col" className="px-3 py-2 text-left font-medium">Subject</th>
-                <th scope="col" className="px-3 py-2 text-left font-medium">Type</th>
-                <th scope="col" className="px-3 py-2 text-left font-medium">Classes</th>
-                <th scope="col" className="px-3 py-2 text-right font-medium">
+                <th scope="col" className="px-3 py-2 text-start font-medium">Code</th>
+                <th scope="col" className="px-3 py-2 text-start font-medium">Subject</th>
+                <th scope="col" className="px-3 py-2 text-start font-medium">Type</th>
+                <th scope="col" className="px-3 py-2 text-start font-medium">Classes</th>
+                <th scope="col" className="px-3 py-2 text-end font-medium">
                   <span className="sr-only">Actions</span>
                 </th>
               </tr>
@@ -270,13 +270,13 @@ function SubjectsTab({ subjects, canManage }: { subjects: SubjectRow[]; canManag
                       {s.kind === "practical" ? "Practical" : "Theory"}
                     </Badge>
                     {!s.isActive && (
-                      <Badge variant="outline" className="ml-1.5">
+                      <Badge variant="outline" className="ms-1.5">
                         Inactive
                       </Badge>
                     )}
                   </td>
                   <td className="px-3 py-2 tabular-nums">{s.assignmentCount}</td>
-                  <td className="px-3 py-2 text-right">
+                  <td className="px-3 py-2 text-end">
                     {canManage && (
                       <span className="flex justify-end gap-1">
                         <Button size="sm" variant="ghost" onClick={() => setEditing(s)}>
@@ -720,10 +720,10 @@ function PeriodsTab({ slots, canManage }: { slots: TimeSlotRow[]; canManage: boo
           <table className="w-full min-w-[520px] text-sm">
             <thead className="bg-muted/60 text-xs text-muted-foreground">
               <tr>
-                <th scope="col" className="px-3 py-2 text-left font-medium">#</th>
-                <th scope="col" className="px-3 py-2 text-left font-medium">Label</th>
-                <th scope="col" className="px-3 py-2 text-left font-medium">Time</th>
-                <th scope="col" className="px-3 py-2 text-right font-medium">
+                <th scope="col" className="px-3 py-2 text-start font-medium">#</th>
+                <th scope="col" className="px-3 py-2 text-start font-medium">Label</th>
+                <th scope="col" className="px-3 py-2 text-start font-medium">Time</th>
+                <th scope="col" className="px-3 py-2 text-end font-medium">
                   <span className="sr-only">Actions</span>
                 </th>
               </tr>
@@ -735,7 +735,7 @@ function PeriodsTab({ slots, canManage }: { slots: TimeSlotRow[]; canManage: boo
                   <td className="px-3 py-2">
                     {s.label ?? `Period ${s.periodNumber}`}
                     {s.isBreak && (
-                      <Badge variant="secondary" className="ml-1.5">
+                      <Badge variant="secondary" className="ms-1.5">
                         Break
                       </Badge>
                     )}
@@ -743,7 +743,7 @@ function PeriodsTab({ slots, canManage }: { slots: TimeSlotRow[]; canManage: boo
                   <td className="px-3 py-2 font-mono tabular-nums">
                     {formatSlotRange(s.startsAt, s.endsAt)}
                   </td>
-                  <td className="px-3 py-2 text-right">
+                  <td className="px-3 py-2 text-end">
                     {canManage && (
                       <span className="flex justify-end gap-1">
                         <Button size="sm" variant="ghost" onClick={() => setEditing(s)}>
@@ -1157,11 +1157,11 @@ function HolidaysTab({ holidays, canManage }: { holidays: HolidayRow[]; canManag
           <table className="w-full min-w-[560px] text-sm">
             <thead className="bg-muted/60 text-xs text-muted-foreground">
               <tr>
-                <th scope="col" className="px-3 py-2 text-left font-medium">Holiday</th>
-                <th scope="col" className="px-3 py-2 text-left font-medium">From</th>
-                <th scope="col" className="px-3 py-2 text-left font-medium">To</th>
-                <th scope="col" className="px-3 py-2 text-left font-medium">Days</th>
-                <th scope="col" className="px-3 py-2 text-right font-medium">
+                <th scope="col" className="px-3 py-2 text-start font-medium">Holiday</th>
+                <th scope="col" className="px-3 py-2 text-start font-medium">From</th>
+                <th scope="col" className="px-3 py-2 text-start font-medium">To</th>
+                <th scope="col" className="px-3 py-2 text-start font-medium">Days</th>
+                <th scope="col" className="px-3 py-2 text-end font-medium">
                   <span className="sr-only">Actions</span>
                 </th>
               </tr>
@@ -1178,7 +1178,7 @@ function HolidaysTab({ holidays, canManage }: { holidays: HolidayRow[]; canManag
                   <td className="px-3 py-2 tabular-nums">{formatDate(h.startsOn)}</td>
                   <td className="px-3 py-2 tabular-nums">{formatDate(h.endsOn)}</td>
                   <td className="px-3 py-2 tabular-nums">{h.days}</td>
-                  <td className="px-3 py-2 text-right">
+                  <td className="px-3 py-2 text-end">
                     {canManage && (
                       <span className="flex justify-end gap-1">
                         <Button size="sm" variant="ghost" onClick={() => setEditing(h)}>

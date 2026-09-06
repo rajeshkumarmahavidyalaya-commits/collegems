@@ -319,12 +319,12 @@ function RunEditor({
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="w-12 text-right">Row</TableHead>
+                  <TableHead className="w-12 text-end">Row</TableHead>
                   <TableHead>Child</TableHead>
                   <TableHead>Admission no.</TableHead>
                   <TableHead>Class</TableHead>
                   <TableHead>Status</TableHead>
-                  <TableHead className="w-16 text-right">Skip</TableHead>
+                  <TableHead className="w-16 text-end">Skip</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -401,7 +401,7 @@ function RowEditor({
 
   return (
     <TableRow className={row.skipped ? "opacity-60" : undefined}>
-      <TableCell className="text-right font-mono tabular-nums text-muted-foreground">
+      <TableCell className="text-end font-mono tabular-nums text-muted-foreground">
         {row.lineNumber}
       </TableCell>
       <TableCell>
@@ -494,7 +494,7 @@ function RowEditor({
           <Badge variant="outline">Ready</Badge>
         )}
       </TableCell>
-      <TableCell className="text-right">
+      <TableCell className="text-end">
         <Button
           variant="ghost"
           size="icon"
@@ -543,8 +543,8 @@ function PastRuns({ past }: { past: ImportRunRow[] }) {
                 <TableRow>
                   <TableHead>File</TableHead>
                   <TableHead>When</TableHead>
-                  <TableHead className="text-right">Rows</TableHead>
-                  <TableHead className="text-right">Imported</TableHead>
+                  <TableHead className="text-end">Rows</TableHead>
+                  <TableHead className="text-end">Imported</TableHead>
                   <TableHead>Status</TableHead>
                 </TableRow>
               </TableHeader>
@@ -555,10 +555,10 @@ function PastRuns({ past }: { past: ImportRunRow[] }) {
                     <TableCell className="text-muted-foreground">
                       {new Date(r.appliedAt ?? r.createdAt).toLocaleDateString()}
                     </TableCell>
-                    <TableCell className="text-right font-mono tabular-nums">
+                    <TableCell className="text-end font-mono tabular-nums">
                       {r.rowCount}
                     </TableCell>
-                    <TableCell className="text-right font-mono tabular-nums">
+                    <TableCell className="text-end font-mono tabular-nums">
                       {r.appliedCount}
                     </TableCell>
                     <TableCell>

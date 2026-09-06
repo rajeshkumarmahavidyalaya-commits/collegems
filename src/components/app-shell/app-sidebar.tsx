@@ -11,6 +11,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import type { NavGroup } from "./nav-config";
+import { useI18n, useT } from "@/components/providers/i18n-provider";
 
 function NavLink({
   href,
@@ -25,6 +26,7 @@ function NavLink({
   collapsed: boolean;
   active: boolean;
 }) {
+  const { direction } = useI18n();
   const link = (
     <Link
       href={href}
@@ -47,7 +49,7 @@ function NavLink({
   return (
     <Tooltip>
       <TooltipTrigger asChild>{link}</TooltipTrigger>
-      <TooltipContent side="right">{title}</TooltipContent>
+      <TooltipContent side={direction === "rtl" ? "left" : "right"}>{title}</TooltipContent>
     </Tooltip>
   );
 }
@@ -64,6 +66,7 @@ export function SidebarContent({
   onNavigate?: () => void;
 }) {
   const pathname = usePathname();
+  const t = useT();
 
   return (
     <div className="flex h-full flex-col gap-1 bg-sidebar text-sidebar-foreground">
@@ -77,7 +80,9 @@ export function SidebarContent({
           <div key={group.title} className="mb-4">
             {!collapsed && (
               <p className="px-3 pb-1 text-xs font-medium text-sidebar-foreground/60 uppercase tracking-wide">
-                {group.title}
+                {/* The English title is the fallback, so a nav entry added
+                    before its translation still reads as something. */}
+                {group.messageKey ? t(group.messageKey) : group.title}
               </p>
             )}
             <div className="flex flex-col gap-0.5">
@@ -86,7 +91,7 @@ export function SidebarContent({
                   key={item.href}
                   href={item.href}
                   icon={item.icon}
-                  title={item.title}
+                  title={item.messageKey ? t(item.messageKey) : item.title}
                   collapsed={collapsed}
                   active={pathname === item.href}
                 />
@@ -114,7 +119,7 @@ export function DesktopSidebar({
     <aside
       data-print="hide"
       className={cn(
-        "hidden shrink-0 border-r border-sidebar-border transition-[width] duration-200 lg:flex lg:flex-col",
+        "hidden shrink-0 border-e border-sidebar-border transition-[width] duration-200 lg:flex lg:flex-col",
         collapsed ? "w-16" : "w-64",
       )}
     >

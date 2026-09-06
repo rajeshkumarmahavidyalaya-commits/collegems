@@ -231,9 +231,9 @@ export function HomeworkList({ homework, curriculum, today, canManage }: Props) 
                   <TableHead>Homework</TableHead>
                   <TableHead>Class</TableHead>
                   <TableHead>Due</TableHead>
-                  <TableHead className="text-right">Handed in</TableHead>
+                  <TableHead className="text-end">Handed in</TableHead>
                   <TableHead>Status</TableHead>
-                  <TableHead className="w-40 text-right">Actions</TableHead>
+                  <TableHead className="w-40 text-end">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -268,7 +268,7 @@ export function HomeworkList({ homework, curriculum, today, canManage }: Props) 
                       </span>
                       <p className="text-xs text-muted-foreground">{dueLabel(row.dueOn, today)}</p>
                     </TableCell>
-                    <TableCell className="text-right font-mono tabular-nums">
+                    <TableCell className="text-end font-mono tabular-nums">
                       {row.collectsSubmissions ? (
                         <>
                           {row.handedIn}
@@ -283,7 +283,7 @@ export function HomeworkList({ homework, curriculum, today, canManage }: Props) 
                         {row.status === "published" ? "Set" : "Draft"}
                       </Badge>
                     </TableCell>
-                    <TableCell className="text-right">
+                    <TableCell className="text-end">
                       {canManage && (
                         <div className="flex justify-end gap-1">
                           {row.status === "draft" ? (

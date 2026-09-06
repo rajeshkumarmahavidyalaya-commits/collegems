@@ -258,12 +258,12 @@ function PapersTab({
                 <TableRow>
                   <TableHead>Class</TableHead>
                   <TableHead>Subject</TableHead>
-                  <TableHead className="text-right">Max</TableHead>
-                  <TableHead className="text-right">Pass</TableHead>
-                  <TableHead className="text-right">Weight</TableHead>
+                  <TableHead className="text-end">Max</TableHead>
+                  <TableHead className="text-end">Pass</TableHead>
+                  <TableHead className="text-end">Weight</TableHead>
                   <TableHead>Parts</TableHead>
                   <TableHead>Marking</TableHead>
-                  <TableHead className="w-32 text-right">Actions</TableHead>
+                  <TableHead className="w-32 text-end">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -283,13 +283,13 @@ function PapersTab({
                           )}
                         </span>
                       </TableCell>
-                      <TableCell className="text-right font-mono tabular-nums">
+                      <TableCell className="text-end font-mono tabular-nums">
                         {paper.maxMarks}
                       </TableCell>
-                      <TableCell className="text-right font-mono tabular-nums text-muted-foreground">
+                      <TableCell className="text-end font-mono tabular-nums text-muted-foreground">
                         {paper.passMarks}
                       </TableCell>
-                      <TableCell className="text-right font-mono tabular-nums text-muted-foreground">
+                      <TableCell className="text-end font-mono tabular-nums text-muted-foreground">
                         {paper.weight}
                       </TableCell>
                       <TableCell>
@@ -332,7 +332,7 @@ function PapersTab({
                           </span>
                         </span>
                       </TableCell>
-                      <TableCell className="text-right">
+                      <TableCell className="text-end">
                         <div className="flex justify-end gap-1">
                           {canGrade && (
                             <Button asChild variant="ghost" size="sm">
@@ -717,7 +717,7 @@ function ResultsTab({
           )}
         </p>
 
-        <div className="ml-auto flex flex-wrap gap-2">
+        <div className="ms-auto flex flex-wrap gap-2">
           <Button variant="outline" size="sm" onClick={exportCsv} disabled={rows.length === 0}>
             <Download className="size-4" aria-hidden="true" />
             CSV
@@ -769,8 +769,8 @@ function ResultsTab({
                 <TableHead className="w-16">Roll</TableHead>
                 <TableHead>Student</TableHead>
                 <TableHead>Class</TableHead>
-                <TableHead className="text-right">Total</TableHead>
-                <TableHead className="text-right">Percentage</TableHead>
+                <TableHead className="text-end">Total</TableHead>
+                <TableHead className="text-end">Percentage</TableHead>
                 <TableHead>Grade</TableHead>
                 <TableHead>Result</TableHead>
               </TableRow>
@@ -783,10 +783,10 @@ function ResultsTab({
                   </TableCell>
                   <TableCell className="font-medium">{row.studentName}</TableCell>
                   <TableCell className="text-muted-foreground">{row.sectionLabel}</TableCell>
-                  <TableCell className="text-right font-mono tabular-nums">
+                  <TableCell className="text-end font-mono tabular-nums">
                     {row.totalMarks} / {row.maxMarks}
                   </TableCell>
-                  <TableCell className="text-right font-mono tabular-nums">
+                  <TableCell className="text-end font-mono tabular-nums">
                     {formatPercent(row.percentage)}
                   </TableCell>
                   <TableCell>
@@ -813,7 +813,7 @@ function ResultsTab({
                       {resultLabel(row.result)}
                     </Badge>
                     {row.subjectsUnmarked > 0 && (
-                      <span className="ml-2 text-xs text-muted-foreground">
+                      <span className="ms-2 text-xs text-muted-foreground">
                         {row.subjectsUnmarked} unmarked
                       </span>
                     )}

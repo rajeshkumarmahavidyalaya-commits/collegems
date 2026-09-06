@@ -106,9 +106,9 @@ export function SubmissionSheet({ homework, rows, filesFor, canManage }: Props) 
                   <TableHead>Status</TableHead>
                   <TableHead>Handed in</TableHead>
                   {homework.maxMarks !== null && (
-                    <TableHead className="text-right">Mark</TableHead>
+                    <TableHead className="text-end">Mark</TableHead>
                   )}
-                  <TableHead className="w-24 text-right">Work</TableHead>
+                  <TableHead className="w-24 text-end">Work</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -210,11 +210,11 @@ function StudentRow({
             : "—"}
         </TableCell>
         {homework.maxMarks !== null && (
-          <TableCell className="text-right font-mono tabular-nums">
+          <TableCell className="text-end font-mono tabular-nums">
             {formatMark(row.marksObtained, row.maxMarks)}
           </TableCell>
         )}
-        <TableCell className="text-right">
+        <TableCell className="text-end">
           <Button
             variant="ghost"
             size="sm"

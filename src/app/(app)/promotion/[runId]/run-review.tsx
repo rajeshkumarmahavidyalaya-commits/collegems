@@ -202,14 +202,14 @@ export function RunReview({ run, decisions, sections }: Props) {
       <div className="flex flex-wrap items-center gap-3">
         <div className="relative">
           <Search
-            className="pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground"
+            className="pointer-events-none absolute start-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground"
             aria-hidden="true"
           />
           <Input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Find a student"
-            className="w-56 pl-8"
+            className="w-56 ps-8"
             aria-label="Find a student in this run"
           />
         </div>
@@ -233,7 +233,7 @@ export function RunReview({ run, decisions, sections }: Props) {
           {overrides > 0 && ` · ${overrides} overridden`}
         </p>
 
-        <div className="ml-auto flex flex-wrap gap-2">
+        <div className="ms-auto flex flex-wrap gap-2">
           <Button variant="outline" size="sm" onClick={exportCsv} disabled={rows.length === 0}>
             <Download className="size-4" aria-hidden="true" />
             CSV
@@ -270,13 +270,13 @@ export function RunReview({ run, decisions, sections }: Props) {
               Promotion decisions for {run.fromSessionName} into {run.toSessionName}
             </caption>
             <thead>
-              <tr className="border-b bg-muted/40 text-left">
+              <tr className="border-b bg-muted/40 text-start">
                 <th scope="col" className="px-3 py-2 font-medium">Student</th>
                 <th scope="col" className="px-3 py-2 font-medium">From</th>
                 <th scope="col" className="px-3 py-2 font-medium">Decision</th>
                 <th scope="col" className="px-3 py-2 font-medium">Into</th>
                 <th scope="col" className="px-3 py-2 font-medium">Why</th>
-                <th scope="col" className="px-3 py-2 text-right font-medium">Carried</th>
+                <th scope="col" className="px-3 py-2 text-end font-medium">Carried</th>
                 {!applied && <th scope="col" className="w-20 px-3 py-2" />}
               </tr>
             </thead>
@@ -306,11 +306,11 @@ export function RunReview({ run, decisions, sections }: Props) {
                   <td className="max-w-sm px-3 py-1.5 text-xs text-muted-foreground">
                     {row.reason}
                   </td>
-                  <td className="px-3 py-1.5 text-right font-mono tabular-nums">
+                  <td className="px-3 py-1.5 text-end font-mono tabular-nums">
                     {row.carryForward > 0 ? formatMoney(row.carryForward) : "—"}
                   </td>
                   {!applied && (
-                    <td className="px-3 py-1.5 text-right">
+                    <td className="px-3 py-1.5 text-end">
                       <Button
                         variant="ghost"
                         size="icon"

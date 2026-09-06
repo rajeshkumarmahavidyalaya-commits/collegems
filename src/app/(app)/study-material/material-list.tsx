@@ -165,7 +165,7 @@ export function MaterialList({ material, sections, subjects, canManage }: Props)
                   <TableHead>Subject</TableHead>
                   <TableHead>Kind</TableHead>
                   {canManage && <TableHead>Visibility</TableHead>}
-                  <TableHead className="w-28 text-right">Actions</TableHead>
+                  <TableHead className="w-28 text-end">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -206,7 +206,7 @@ export function MaterialList({ material, sections, subjects, canManage }: Props)
                           </Badge>
                         </TableCell>
                       )}
-                      <TableCell className="text-right">
+                      <TableCell className="text-end">
                         <div className="flex justify-end gap-1">
                           {row.externalUrl ? (
                             <Button

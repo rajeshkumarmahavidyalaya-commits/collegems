@@ -430,7 +430,7 @@ function RecipientPicker({
 
       <div className="relative">
         <Search
-          className="pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground"
+          className="pointer-events-none absolute start-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground"
           aria-hidden="true"
         />
         <Input
@@ -438,7 +438,7 @@ function RecipientPicker({
           value={search}
           onChange={(e) => onSearch(e.target.value)}
           placeholder="Search by name or role"
-          className="pl-8"
+          className="ps-8"
         />
       </div>
 

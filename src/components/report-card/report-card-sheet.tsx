@@ -70,17 +70,17 @@ export function ReportCardSheet({ card }: { card: ReportCard }) {
               Subject-wise marks for {card.student.name} in {card.exam.name}
             </caption>
             <thead>
-              <tr className="border-b border-border text-left">
-                <th scope="col" className="py-2 pr-3 font-medium">
+              <tr className="border-b border-border text-start">
+                <th scope="col" className="py-2 pe-3 font-medium">
                   Subject
                 </th>
-                <th scope="col" className="py-2 pr-3 text-right font-medium">
+                <th scope="col" className="py-2 pe-3 text-end font-medium">
                   Marks
                 </th>
-                <th scope="col" className="py-2 pr-3 text-right font-medium">
+                <th scope="col" className="py-2 pe-3 text-end font-medium">
                   Out of
                 </th>
-                <th scope="col" className="py-2 pr-3 text-right font-medium">
+                <th scope="col" className="py-2 pe-3 text-end font-medium">
                   Pass mark
                 </th>
                 <th scope="col" className="py-2 font-medium">
@@ -103,10 +103,10 @@ export function ReportCardSheet({ card }: { card: ReportCard }) {
                       key={`${paper.code ?? paper.subject}-${index}`}
                       className="border-b border-border/60 last:border-0"
                     >
-                      <th scope="row" className="py-2 pr-3 text-left font-normal">
+                      <th scope="row" className="py-2 pe-3 text-start font-normal">
                         <span className="font-medium">{paper.subject}</span>
                         {paper.optional ? (
-                          <span className="ml-2 text-xs text-muted-foreground">(additional)</span>
+                          <span className="ms-2 text-xs text-muted-foreground">(additional)</span>
                         ) : null}
                         {paper.components && paper.components.length > 0 ? (
                           // The working, on the card. A parent looking at 68/100
@@ -131,13 +131,13 @@ export function ReportCardSheet({ card }: { card: ReportCard }) {
                           <span className="block text-xs text-muted-foreground">{note}</span>
                         ) : null}
                       </th>
-                      <td className="py-2 pr-3 text-right font-mono tabular-nums">
+                      <td className="py-2 pe-3 text-end font-mono tabular-nums">
                         {paperMark(paper)}
                       </td>
-                      <td className="py-2 pr-3 text-right font-mono tabular-nums text-muted-foreground">
+                      <td className="py-2 pe-3 text-end font-mono tabular-nums text-muted-foreground">
                         {Number(paper.max)}
                       </td>
-                      <td className="py-2 pr-3 text-right font-mono tabular-nums text-muted-foreground">
+                      <td className="py-2 pe-3 text-end font-mono tabular-nums text-muted-foreground">
                         {Number(paper.pass)}
                       </td>
                       <td className="py-2">

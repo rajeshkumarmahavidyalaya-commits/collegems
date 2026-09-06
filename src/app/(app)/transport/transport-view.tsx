@@ -75,7 +75,7 @@ export function TransportView({
           <AlertTriangle className="size-4" aria-hidden="true" />
           <AlertTitle>Some families would be billed twice</AlertTitle>
           <AlertDescription>
-            <ul className="mt-1 flex list-disc flex-col gap-1 pl-4">
+            <ul className="mt-1 flex list-disc flex-col gap-1 ps-4">
               {conflicts.map((problem) => (
                 <li key={problem}>{problem}</li>
               ))}
@@ -181,10 +181,10 @@ function RoutesTab({
                   <TableHead>Route</TableHead>
                   <TableHead>Runs</TableHead>
                   <TableHead>Vehicle</TableHead>
-                  <TableHead className="text-right">Stops</TableHead>
+                  <TableHead className="text-end">Stops</TableHead>
                   <TableHead>Seats</TableHead>
-                  <TableHead className="text-right">Monthly fares</TableHead>
-                  <TableHead className="w-20 text-right">Edit</TableHead>
+                  <TableHead className="text-end">Monthly fares</TableHead>
+                  <TableHead className="w-20 text-end">Edit</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -200,7 +200,7 @@ function RoutesTab({
                           <span className="font-mono">{route.code}</span> · {route.name}
                         </Link>
                         {!route.isActive && (
-                          <span className="ml-2 text-xs text-muted-foreground">(not running)</span>
+                          <span className="ms-2 text-xs text-muted-foreground">(not running)</span>
                         )}
                       </TableCell>
                       <TableCell className="text-muted-foreground">
@@ -216,7 +216,7 @@ function RoutesTab({
                           <span className="block text-xs">{route.driverName}</span>
                         )}
                       </TableCell>
-                      <TableCell className="text-right font-mono tabular-nums">
+                      <TableCell className="text-end font-mono tabular-nums">
                         {route.stopCount}
                       </TableCell>
                       <TableCell>
@@ -234,10 +234,10 @@ function RoutesTab({
                           {seatsSentence(route.capacity, route.assigned)}
                         </Badge>
                       </TableCell>
-                      <TableCell className="text-right font-mono tabular-nums">
+                      <TableCell className="text-end font-mono tabular-nums">
                         {formatFare(route.monthlyRevenue)}
                       </TableCell>
-                      <TableCell className="text-right">
+                      <TableCell className="text-end">
                         {canManage && (
                           <Button
                             variant="ghost"
@@ -304,11 +304,11 @@ function FleetTab({
                 <TableRow>
                   <TableHead>Registration</TableHead>
                   <TableHead>Model</TableHead>
-                  <TableHead className="text-right">Seats</TableHead>
+                  <TableHead className="text-end">Seats</TableHead>
                   <TableHead>Driver</TableHead>
-                  <TableHead className="text-right">Routes</TableHead>
+                  <TableHead className="text-end">Routes</TableHead>
                   <TableHead>Status</TableHead>
-                  <TableHead className="w-20 text-right">Edit</TableHead>
+                  <TableHead className="w-20 text-end">Edit</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -318,13 +318,13 @@ function FleetTab({
                       {vehicle.registrationNumber}
                     </TableCell>
                     <TableCell className="text-muted-foreground">{vehicle.model ?? "—"}</TableCell>
-                    <TableCell className="text-right font-mono tabular-nums">
+                    <TableCell className="text-end font-mono tabular-nums">
                       {vehicle.capacity}
                     </TableCell>
                     <TableCell className="text-muted-foreground">
                       {vehicle.driverName ?? "Not recorded"}
                     </TableCell>
-                    <TableCell className="text-right font-mono tabular-nums">
+                    <TableCell className="text-end font-mono tabular-nums">
                       {vehicle.routeCount}
                     </TableCell>
                     <TableCell>
@@ -332,7 +332,7 @@ function FleetTab({
                         {vehicle.isActive ? "In service" : "Off the road"}
                       </Badge>
                     </TableCell>
-                    <TableCell className="text-right">
+                    <TableCell className="text-end">
                       {canManage && (
                         <Button
                           variant="ghost"

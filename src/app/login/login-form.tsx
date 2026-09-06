@@ -6,10 +6,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { login, type LoginActionState } from "./actions";
+import { useT } from "@/components/providers/i18n-provider";
 
 const initialState: LoginActionState = { error: null };
 
 export function LoginForm({ next }: { next?: string }) {
+  const t = useT();
   const [state, formAction, isPending] = useActionState(login, initialState);
   const [showPassword, setShowPassword] = useState(false);
   const errorSummaryRef = useRef<HTMLDivElement>(null);
@@ -42,7 +44,7 @@ export function LoginForm({ next }: { next?: string }) {
       )}
 
       <div className="grid gap-2">
-        <Label htmlFor={emailId}>Email address</Label>
+        <Label htmlFor={emailId}>{t("login.email")}</Label>
         <Input
           id={emailId}
           name="email"
@@ -61,7 +63,7 @@ export function LoginForm({ next }: { next?: string }) {
 
       <div className="grid gap-2">
         <div className="flex items-center justify-between">
-          <Label htmlFor={passwordId}>Password</Label>
+          <Label htmlFor={passwordId}>{t("login.password")}</Label>
         </div>
         <div className="relative">
           <Input
@@ -72,13 +74,13 @@ export function LoginForm({ next }: { next?: string }) {
             required
             aria-invalid={!!passwordErrors}
             aria-describedby={passwordErrors ? `${passwordId}-error` : undefined}
-            className="pr-10"
+            className="pe-10"
           />
           <button
             type="button"
             onClick={() => setShowPassword((v) => !v)}
-            className="absolute inset-y-0 right-0 flex w-10 items-center justify-center text-muted-foreground hover:text-foreground cursor-pointer"
-            aria-label={showPassword ? "Hide password" : "Show password"}
+            className="absolute inset-y-0 end-0 flex w-10 items-center justify-center text-muted-foreground hover:text-foreground cursor-pointer"
+            aria-label={showPassword ? t("login.hidePassword") : t("login.showPassword")}
           >
             {showPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
           </button>
@@ -92,7 +94,7 @@ export function LoginForm({ next }: { next?: string }) {
 
       <Button type="submit" disabled={isPending} className="mt-1">
         {isPending && <Loader2 className="size-4 animate-spin" aria-hidden="true" />}
-        Sign in
+        {isPending ? t("login.submitting") : t("login.submit")}
       </Button>
     </form>
   );

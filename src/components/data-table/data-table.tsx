@@ -133,7 +133,7 @@ export function DataTable<TData, TValue>({
       {bulkActions && selectedRows.length > 0 && (
         <div className="mb-2 flex items-center gap-2 rounded-lg border bg-muted/50 px-3 py-2">
           <span className="text-sm font-medium">{selectedRows.length} selected</span>
-          <div className="ml-auto flex items-center gap-2">{bulkActions(selectedRows)}</div>
+          <div className="ms-auto flex items-center gap-2">{bulkActions(selectedRows)}</div>
         </div>
       )}
 

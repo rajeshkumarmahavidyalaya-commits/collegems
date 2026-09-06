@@ -132,8 +132,8 @@ export function ChartView({
                       <TableHead className="w-24">Code</TableHead>
                       <TableHead>Account</TableHead>
                       <TableHead>Type</TableHead>
-                      <TableHead className="text-right">Balance</TableHead>
-                      {canManage && <TableHead className="w-14 text-right" />}
+                      <TableHead className="text-end">Balance</TableHead>
+                      {canManage && <TableHead className="w-14 text-end" />}
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -158,7 +158,7 @@ export function ChartView({
                               row.name
                             )}
                           </span>
-                          <span className="ml-2 inline-flex gap-1">
+                          <span className="ms-2 inline-flex gap-1">
                             {!row.isPostable && (
                               <Badge variant="outline" className="text-[10px]">
                                 Heading
@@ -174,11 +174,11 @@ export function ChartView({
                         <TableCell className="text-muted-foreground">
                           {accountTypeLabel(row.accountType)}
                         </TableCell>
-                        <TableCell className="text-right font-mono tabular-nums">
+                        <TableCell className="text-end font-mono tabular-nums">
                           {formatBalance(row.balance)}
                         </TableCell>
                         {canManage && (
-                          <TableCell className="text-right">
+                          <TableCell className="text-end">
                             <Button
                               variant="ghost"
                               size="icon"
@@ -349,8 +349,8 @@ function TrialBalance({ rows }: { rows: TrialBalanceRow[] }) {
                 <TableRow>
                   <TableHead className="w-24">Code</TableHead>
                   <TableHead>Account</TableHead>
-                  <TableHead className="text-right">Debit</TableHead>
-                  <TableHead className="text-right">Credit</TableHead>
+                  <TableHead className="text-end">Debit</TableHead>
+                  <TableHead className="text-end">Credit</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -366,24 +366,24 @@ function TrialBalance({ rows }: { rows: TrialBalanceRow[] }) {
                       >
                         {row.name}
                       </Link>
-                      <span className="ml-2 text-xs text-muted-foreground">
+                      <span className="ms-2 text-xs text-muted-foreground">
                         {accountTypeLabel(row.accountType)}
                       </span>
                     </TableCell>
-                    <TableCell className="text-right font-mono tabular-nums">
+                    <TableCell className="text-end font-mono tabular-nums">
                       {formatColumn(row.debit)}
                     </TableCell>
-                    <TableCell className="text-right font-mono tabular-nums">
+                    <TableCell className="text-end font-mono tabular-nums">
                       {formatColumn(row.credit)}
                     </TableCell>
                   </TableRow>
                 ))}
                 <TableRow className="border-t-2 font-medium">
                   <TableCell colSpan={2}>Total</TableCell>
-                  <TableCell className="text-right font-mono tabular-nums">
+                  <TableCell className="text-end font-mono tabular-nums">
                     {formatAmount(totals.debit)}
                   </TableCell>
-                  <TableCell className="text-right font-mono tabular-nums">
+                  <TableCell className="text-end font-mono tabular-nums">
                     {formatAmount(totals.credit)}
                   </TableCell>
                 </TableRow>

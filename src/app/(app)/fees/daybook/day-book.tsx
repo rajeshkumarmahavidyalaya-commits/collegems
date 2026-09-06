@@ -95,7 +95,7 @@ export function DayBookView() {
         <Button
           variant="outline"
           size="sm"
-          className="ml-auto"
+          className="ms-auto"
           disabled={!book || book.entries.length === 0}
           onClick={() =>
             exportRowsToCsv(
@@ -192,23 +192,23 @@ export function DayBookView() {
                   </caption>
                   <thead className="bg-muted/60 text-xs text-muted-foreground">
                     <tr>
-                      <th scope="col" className="px-3 py-2 text-left font-medium">Mode</th>
-                      <th scope="col" className="px-3 py-2 text-right font-medium">Received</th>
-                      <th scope="col" className="px-3 py-2 text-right font-medium">Paid out</th>
-                      <th scope="col" className="px-3 py-2 text-right font-medium">Net</th>
+                      <th scope="col" className="px-3 py-2 text-start font-medium">Mode</th>
+                      <th scope="col" className="px-3 py-2 text-end font-medium">Received</th>
+                      <th scope="col" className="px-3 py-2 text-end font-medium">Paid out</th>
+                      <th scope="col" className="px-3 py-2 text-end font-medium">Net</th>
                     </tr>
                   </thead>
                   <tbody>
                     {book.byMethod.map((m) => (
                       <tr key={m.method} className="border-t border-border">
                         <td className="px-3 py-2">{methodLabel(m.method)}</td>
-                        <td className="px-3 py-2 text-right font-mono tabular-nums">
+                        <td className="px-3 py-2 text-end font-mono tabular-nums">
                           {formatMoney(m.received)}
                         </td>
-                        <td className="px-3 py-2 text-right font-mono tabular-nums">
+                        <td className="px-3 py-2 text-end font-mono tabular-nums">
                           {m.refunded > 0 ? formatMoney(m.refunded) : "—"}
                         </td>
-                        <td className="px-3 py-2 text-right font-mono font-medium tabular-nums">
+                        <td className="px-3 py-2 text-end font-mono font-medium tabular-nums">
                           {formatMoney(m.net)}
                         </td>
                       </tr>
@@ -241,11 +241,11 @@ export function DayBookView() {
                   </caption>
                   <thead className="bg-muted/60 text-xs text-muted-foreground">
                     <tr>
-                      <th scope="col" className="px-3 py-2 text-left font-medium">Time</th>
-                      <th scope="col" className="px-3 py-2 text-left font-medium">Receipt</th>
-                      <th scope="col" className="px-3 py-2 text-left font-medium">Student</th>
-                      <th scope="col" className="px-3 py-2 text-left font-medium">Mode</th>
-                      <th scope="col" className="px-3 py-2 text-right font-medium">Amount</th>
+                      <th scope="col" className="px-3 py-2 text-start font-medium">Time</th>
+                      <th scope="col" className="px-3 py-2 text-start font-medium">Receipt</th>
+                      <th scope="col" className="px-3 py-2 text-start font-medium">Student</th>
+                      <th scope="col" className="px-3 py-2 text-start font-medium">Mode</th>
+                      <th scope="col" className="px-3 py-2 text-end font-medium">Amount</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -293,7 +293,7 @@ export function DayBookView() {
                           </td>
                           <td
                             className={cn(
-                              "px-3 py-2 text-right font-mono font-medium tabular-nums whitespace-nowrap",
+                              "px-3 py-2 text-end font-mono font-medium tabular-nums whitespace-nowrap",
                               isIn && "text-success",
                             )}
                           >

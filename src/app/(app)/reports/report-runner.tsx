@@ -226,17 +226,17 @@ export function ReportRunner({ reports, options }: Props) {
           )}
 
           {result && result.rows.length > 0 && (
-            <div className="ml-auto flex flex-wrap gap-2">
+            <div className="ms-auto flex flex-wrap gap-2">
               <div className="relative">
                 <Search
-                  className="pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground"
+                  className="pointer-events-none absolute start-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground"
                   aria-hidden="true"
                 />
                 <Input
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                   placeholder="Filter these rows"
-                  className="w-48 pl-8"
+                  className="w-48 ps-8"
                   aria-label="Filter the rows already returned"
                 />
               </div>
@@ -309,7 +309,7 @@ export function ReportRunner({ reports, options }: Props) {
                   {report?.columns.map((c) => (
                     <TableHead
                       key={c.key}
-                      className={cn("whitespace-nowrap", alignFor(c) === "right" && "text-right")}
+                      className={cn("whitespace-nowrap", alignFor(c) === "right" && "text-end")}
                     >
                       {c.label}
                     </TableHead>
@@ -325,7 +325,7 @@ export function ReportRunner({ reports, options }: Props) {
                         <TableCell
                           key={c.key}
                           className={cn(
-                            alignFor(c) === "right" && "text-right font-mono tabular-nums",
+                            alignFor(c) === "right" && "text-end font-mono tabular-nums",
                             c.type === "text" && "max-w-64 truncate",
                           )}
                         >

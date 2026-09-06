@@ -142,7 +142,7 @@ function Manifest({ routeLabel, rows }: { routeLabel: string; rows: ManifestRow[
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="w-12 text-right">#</TableHead>
+                  <TableHead className="w-12 text-end">#</TableHead>
                   <TableHead>Stop</TableHead>
                   <TableHead>Time</TableHead>
                   <TableHead>Child</TableHead>
@@ -154,7 +154,7 @@ function Manifest({ routeLabel, rows }: { routeLabel: string; rows: ManifestRow[
               <TableBody>
                 {riders.map((row, index) => (
                   <TableRow key={`${row.stopId}-${row.studentId}-${index}`} data-print="keep">
-                    <TableCell className="text-right font-mono tabular-nums text-muted-foreground">
+                    <TableCell className="text-end font-mono tabular-nums text-muted-foreground">
                       {row.sequence}
                     </TableCell>
                     <TableCell>
@@ -274,18 +274,18 @@ function StopsTab({
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="w-12 text-right">#</TableHead>
+                  <TableHead className="w-12 text-end">#</TableHead>
                   <TableHead>Stop</TableHead>
                   <TableHead>Pickup</TableHead>
                   <TableHead>Drop</TableHead>
-                  <TableHead className="text-right">Monthly fare</TableHead>
-                  <TableHead className="w-24 text-right">Actions</TableHead>
+                  <TableHead className="text-end">Monthly fare</TableHead>
+                  <TableHead className="w-24 text-end">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {stops.map((stop) => (
                   <TableRow key={stop.id}>
-                    <TableCell className="text-right font-mono tabular-nums text-muted-foreground">
+                    <TableCell className="text-end font-mono tabular-nums text-muted-foreground">
                       {stop.sequence}
                     </TableCell>
                     <TableCell>
@@ -300,7 +300,7 @@ function StopsTab({
                     <TableCell className="font-mono tabular-nums text-muted-foreground">
                       {formatStopTime(stop.dropTime)}
                     </TableCell>
-                    <TableCell className="text-right">
+                    <TableCell className="text-end">
                       {stop.monthlyFare > 0 ? (
                         <span className="font-mono tabular-nums">
                           {formatFare(stop.monthlyFare)}
@@ -309,7 +309,7 @@ function StopsTab({
                         <Badge variant="secondary">Free</Badge>
                       )}
                     </TableCell>
-                    <TableCell className="text-right">
+                    <TableCell className="text-end">
                       {canManage && (
                         <>
                           <Button

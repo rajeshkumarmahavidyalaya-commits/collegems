@@ -277,12 +277,12 @@ export function StudentAccountView({
                 </caption>
                 <thead className="bg-muted/60 text-xs text-muted-foreground">
                   <tr>
-                    <th scope="col" className="px-3 py-2 text-left font-medium">Date</th>
-                    <th scope="col" className="px-3 py-2 text-left font-medium">Entry</th>
-                    <th scope="col" className="px-3 py-2 text-left font-medium">Receipt</th>
-                    <th scope="col" className="px-3 py-2 text-left font-medium">Method</th>
-                    <th scope="col" className="px-3 py-2 text-right font-medium">Amount</th>
-                    <th scope="col" className="px-3 py-2 text-right font-medium">
+                    <th scope="col" className="px-3 py-2 text-start font-medium">Date</th>
+                    <th scope="col" className="px-3 py-2 text-start font-medium">Entry</th>
+                    <th scope="col" className="px-3 py-2 text-start font-medium">Receipt</th>
+                    <th scope="col" className="px-3 py-2 text-start font-medium">Method</th>
+                    <th scope="col" className="px-3 py-2 text-end font-medium">Amount</th>
+                    <th scope="col" className="px-3 py-2 text-end font-medium">
                       <span className="sr-only">Actions</span>
                     </th>
                   </tr>
@@ -336,10 +336,10 @@ export function StudentAccountView({
                           </span>
                         )}
                       </td>
-                      <td className="px-3 py-2 text-right whitespace-nowrap">
+                      <td className="px-3 py-2 text-end whitespace-nowrap">
                         {amountCell(entry.amount)}
                       </td>
-                      <td className="px-3 py-2 text-right">
+                      <td className="px-3 py-2 text-end">
                         {canCollect && !entry.isReversed && !entry.reversesEntryId && (
                           <Button
                             size="sm"

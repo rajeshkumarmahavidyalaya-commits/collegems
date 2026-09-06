@@ -132,19 +132,19 @@ export function InstalmentsView({
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead className="w-12 text-right">#</TableHead>
+                    <TableHead className="w-12 text-end">#</TableHead>
                     <TableHead>Period</TableHead>
                     <TableHead>Due</TableHead>
                     <TableHead>Collects</TableHead>
-                    <TableHead className="text-right">Invoices</TableHead>
+                    <TableHead className="text-end">Invoices</TableHead>
                     <TableHead>Status</TableHead>
-                    {canManage && <TableHead className="w-16 text-right">Edit</TableHead>}
+                    {canManage && <TableHead className="w-16 text-end">Edit</TableHead>}
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {instalments.map((row) => (
                     <TableRow key={row.id}>
-                      <TableCell className="text-right font-mono tabular-nums text-muted-foreground">
+                      <TableCell className="text-end font-mono tabular-nums text-muted-foreground">
                         {row.sequence}
                       </TableCell>
                       <TableCell>
@@ -161,7 +161,7 @@ export function InstalmentsView({
                       <TableCell className="text-muted-foreground">
                         {collectsSentence(row.collects)}
                       </TableCell>
-                      <TableCell className="text-right font-mono tabular-nums">
+                      <TableCell className="text-end font-mono tabular-nums">
                         {row.invoiceCount}
                       </TableCell>
                       <TableCell>
@@ -170,7 +170,7 @@ export function InstalmentsView({
                         </Badge>
                       </TableCell>
                       {canManage && (
-                        <TableCell className="text-right">
+                        <TableCell className="text-end">
                           <Button
                             variant="ghost"
                             size="icon"
@@ -356,8 +356,8 @@ function RunCard({
                   <TableHeader>
                     <TableRow>
                       <TableHead>Child</TableHead>
-                      <TableHead className="text-right">Lines</TableHead>
-                      <TableHead className="text-right">Amount</TableHead>
+                      <TableHead className="text-end">Lines</TableHead>
+                      <TableHead className="text-end">Amount</TableHead>
                       <TableHead>Status</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -372,10 +372,10 @@ function RunCard({
                             </span>
                           )}
                         </TableCell>
-                        <TableCell className="text-right font-mono tabular-nums">
+                        <TableCell className="text-end font-mono tabular-nums">
                           {row.lineCount}
                         </TableCell>
-                        <TableCell className="text-right font-mono tabular-nums">
+                        <TableCell className="text-end font-mono tabular-nums">
                           {row.total > 0 ? formatMoney(row.total) : "—"}
                         </TableCell>
                         <TableCell>

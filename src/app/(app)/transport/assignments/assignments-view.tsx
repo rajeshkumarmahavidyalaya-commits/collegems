@@ -176,12 +176,12 @@ function AssignForm({ stops }: { stops: StopOption[] }) {
             <>
               <div className="relative">
                 <Search
-                  className="pointer-events-none absolute left-2.5 top-2.5 size-4 text-muted-foreground"
+                  className="pointer-events-none absolute start-2.5 top-2.5 size-4 text-muted-foreground"
                   aria-hidden="true"
                 />
                 <Input
                   id="student-search"
-                  className="pl-8"
+                  className="ps-8"
                   placeholder="Name or admission number"
                   value={term}
                   onChange={(event) => setTerm(event.target.value)}
@@ -202,7 +202,7 @@ function AssignForm({ stops }: { stops: StopOption[] }) {
                       <button
                         type="button"
                         onClick={() => setStudent(hit)}
-                        className="flex w-full cursor-pointer flex-col items-start gap-0.5 border-b border-border p-2 text-left transition-colors duration-200 last:border-0 hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                        className="flex w-full cursor-pointer flex-col items-start gap-0.5 border-b border-border p-2 text-start transition-colors duration-200 last:border-0 hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                       >
                         <span className="text-sm font-medium">{hit.fullName}</span>
                         <span className="text-xs text-muted-foreground">
@@ -392,9 +392,9 @@ function AssignmentList({
                   <TableHead>Route</TableHead>
                   <TableHead>Stop</TableHead>
                   <TableHead>Runs</TableHead>
-                  <TableHead className="text-right">Fare</TableHead>
+                  <TableHead className="text-end">Fare</TableHead>
                   <TableHead>From</TableHead>
-                  {canAssign && <TableHead className="w-28 text-right">Actions</TableHead>}
+                  {canAssign && <TableHead className="w-28 text-end">Actions</TableHead>}
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -416,19 +416,19 @@ function AssignmentList({
                     <TableCell className="text-muted-foreground">
                       {directionLabel(row.direction)}
                     </TableCell>
-                    <TableCell className="text-right font-mono tabular-nums">
+                    <TableCell className="text-end font-mono tabular-nums">
                       {formatFare(row.monthlyFare)}
                     </TableCell>
                     <TableCell className="text-muted-foreground">
                       {row.startsOn}
                       {row.endsOn && (
-                        <Badge variant="secondary" className="ml-2">
+                        <Badge variant="secondary" className="ms-2">
                           ends {row.endsOn}
                         </Badge>
                       )}
                     </TableCell>
                     {canAssign && (
-                      <TableCell className="text-right">
+                      <TableCell className="text-end">
                         <Button
                           variant="ghost"
                           size="icon"

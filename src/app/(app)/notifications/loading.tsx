@@ -24,7 +24,7 @@ export default function NotificationsLoading() {
             <div className="flex items-center gap-2">
               <Skeleton className="h-5 w-28" />
               <Skeleton className="h-5 w-16" />
-              <Skeleton className="ml-auto h-4 w-20" />
+              <Skeleton className="ms-auto h-4 w-20" />
             </div>
             <Skeleton className="mt-3 h-4 w-56" />
             <Skeleton className="mt-2 h-4 w-full" />

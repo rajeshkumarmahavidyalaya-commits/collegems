@@ -312,7 +312,7 @@ export function AttendanceMarker({
           />
         </div>
 
-        <div className="ml-auto flex flex-wrap items-center gap-2">
+        <div className="ms-auto flex flex-wrap items-center gap-2">
           <SaveIndicator state={saveState} onRetry={() => void flush(draft)} />
           {dirty && (
             <Button variant="ghost" size="sm" onClick={revert}>
@@ -407,7 +407,7 @@ export function AttendanceMarker({
                   "focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-ring",
                   "sm:grid sm:grid-cols-[3rem_1fr_auto] sm:items-center sm:gap-3",
                   index === focusIndex && "bg-accent/60",
-                  !value && "border-l-2 border-l-[var(--brand-accent)]",
+                  !value && "border-s-2 border-s-[var(--brand-accent)]",
                 )}
               >
                 <span role="gridcell" className="font-mono text-xs tabular-nums text-muted-foreground">

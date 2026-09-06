@@ -93,7 +93,7 @@ export function ChannelsPanel({
             </>
           )}
         </p>
-        <Button size="sm" className="ml-auto" onClick={dispatch} disabled={pending}>
+        <Button size="sm" className="ms-auto" onClick={dispatch} disabled={pending}>
           {pending ? (
             <Loader2 className="size-4 animate-spin" aria-hidden="true" />
           ) : (
@@ -152,7 +152,7 @@ function DevicesCard({ devices }: { devices: DeviceSummaryRow[] }) {
                 <dd className="font-mono text-lg tabular-nums">
                   {device.live}
                   {device.revoked > 0 && (
-                    <span className="ml-2 text-xs font-normal text-muted-foreground">
+                    <span className="ms-2 text-xs font-normal text-muted-foreground">
                       + {device.revoked} revoked
                     </span>
                   )}
@@ -301,7 +301,7 @@ function ChannelCard({ status }: { status: ChannelStatus }) {
               <Button
                 variant="outline"
                 size="sm"
-                className="ml-auto"
+                className="ms-auto"
                 disabled={pending}
                 onClick={() => save(status.isEnabled)}
               >

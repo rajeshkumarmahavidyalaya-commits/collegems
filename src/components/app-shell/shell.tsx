@@ -10,7 +10,9 @@ import { CommandPalette } from "./command-palette";
 import { NotificationBell } from "./notification-bell";
 import { ThemeToggle } from "./theme-toggle";
 import { UserMenu } from "./user-menu";
+import { LanguageSwitcher } from "./language-switcher";
 import { navForRole } from "./nav-config";
+import { useI18n, useT } from "@/components/providers/i18n-provider";
 
 export function AppShell({
   roleCode,
@@ -37,6 +39,7 @@ export function AppShell({
   unreadCount: number;
   children: React.ReactNode;
 }) {
+  const { t, direction } = useI18n();
   const navGroups = navForRole(roleCode);
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -64,9 +67,11 @@ export function AppShell({
       />
 
       <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
-        <SheetContent side="left" className="w-72 p-0">
+        {/* The drawer comes in from the side the reader starts on. Left in
+            Urdu would slide in from where the page ends. */}
+        <SheetContent side={direction === "rtl" ? "right" : "left"} className="w-72 p-0">
           <SheetHeader className="sr-only">
-            <SheetTitle>Navigation</SheetTitle>
+            <SheetTitle>{t("app.navigation")}</SheetTitle>
           </SheetHeader>
           <SidebarContent navGroups={navGroups} tenantName={tenantName} onNavigate={() => setMobileOpen(false)} />
         </SheetContent>
@@ -82,7 +87,7 @@ export function AppShell({
             size="icon"
             className="lg:hidden"
             onClick={() => setMobileOpen(true)}
-            aria-label="Open navigation menu"
+            aria-label={t("app.openNav")}
           >
             <Menu className="size-5" />
           </Button>
@@ -95,9 +100,10 @@ export function AppShell({
             </span>
           )}
 
-          <div className="ml-auto flex items-center gap-1">
+          <div className="ms-auto flex items-center gap-1">
             <CommandPaletteTrigger />
             <NotificationBell unreadCount={unreadCount} />
+            <LanguageSwitcher />
             <ThemeToggle />
             <UserMenu displayName={displayName} roleName={roleName} />
           </div>
@@ -114,6 +120,7 @@ export function AppShell({
 }
 
 function CommandPaletteTrigger() {
+  const t = useT();
   const isMac = typeof navigator !== "undefined" && /Mac/.test(navigator.platform);
 
   return (
@@ -124,8 +131,8 @@ function CommandPaletteTrigger() {
       onClick={() => document.dispatchEvent(new KeyboardEvent("keydown", { key: "k", metaKey: true }))}
     >
       <Search className="size-3.5" aria-hidden="true" />
-      Search
-      <kbd className="ml-2 rounded border bg-muted px-1.5 font-mono text-[10px]">
+      {t("app.search")}
+      <kbd className="ms-2 rounded border bg-muted px-1.5 font-mono text-[10px]">
         {isMac ? "⌘K" : "Ctrl K"}
       </kbd>
     </Button>

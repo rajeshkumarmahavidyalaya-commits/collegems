@@ -116,7 +116,7 @@ export function PreferenceGrid({ eventTypes, preferences, channelStatus }: Props
                   <div className="flex shrink-0 items-center gap-2">
                     {/* The word, not just the switch position: a toggle read
                         aloud without a state word is ambiguous. */}
-                    <span className="w-16 text-right text-xs text-muted-foreground">
+                    <span className="w-16 text-end text-xs text-muted-foreground">
                       {enabled ? "Allowed" : "Muted"}
                     </span>
                     <Switch

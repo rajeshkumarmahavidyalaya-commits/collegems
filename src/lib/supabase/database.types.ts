@@ -4813,6 +4813,7 @@ export type Database = {
       tenants: {
         Row: {
           created_at: string
+          default_locale: string
           id: string
           name: string
           slug: string
@@ -4821,6 +4822,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          default_locale?: string
           id?: string
           name: string
           slug: string
@@ -4829,6 +4831,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          default_locale?: string
           id?: string
           name?: string
           slug?: string
@@ -5160,6 +5163,7 @@ export type Database = {
           guardian_id: string | null
           id: string
           is_active: boolean
+          locale: string | null
           person_id: string | null
           role_id: string
           staff_id: string | null
@@ -5172,6 +5176,7 @@ export type Database = {
           guardian_id?: string | null
           id: string
           is_active?: boolean
+          locale?: string | null
           person_id?: string | null
           role_id: string
           staff_id?: string | null
@@ -5184,6 +5189,7 @@ export type Database = {
           guardian_id?: string | null
           id?: string
           is_active?: boolean
+          locale?: string | null
           person_id?: string | null
           role_id?: string
           staff_id?: string | null
@@ -5601,6 +5607,16 @@ export type Database = {
           isOneToOne: true
           isSetofReturn: false
         }
+      }
+      available_locales: {
+        Args: never
+        Returns: {
+          code: string
+          direction: string
+          english_name: string
+          is_default: boolean
+          native_name: string
+        }[]
       }
       current_role_allows: {
         Args: { p_permission_code: string }
@@ -7015,6 +7031,7 @@ export type Database = {
           table_name: string
         }[]
       }
+      set_my_locale: { Args: { p_locale: string }; Returns: string }
       stock_issued_assets: {
         Args: never
         Returns: {

@@ -1,4 +1,5 @@
 import type { LucideIcon } from "lucide-react";
+import type { MessageKey } from "@/lib/i18n/messages/en";
 import {
   BarChart3,
   BedDouble,
@@ -33,12 +34,20 @@ import {
   Radio,
   ScrollText,
   Settings2,
+  Languages,
   ArrowUpNarrowWide,
   Users,
 } from "lucide-react";
 
 export type NavItem = {
+  /**
+   * The English label, kept as the fallback and as the thing a reader of this
+   * file recognises. `messageKey` is what actually renders — leaving both here
+   * means a new entry works before its translation exists, which is the same
+   * bargain the message catalogue makes everywhere else.
+   */
   title: string;
+  messageKey?: MessageKey;
   href: string;
   icon: LucideIcon;
   roles?: string[]; // omit = every role
@@ -46,19 +55,24 @@ export type NavItem = {
 
 export type NavGroup = {
   title: string;
+  messageKey?: MessageKey;
   items: NavItem[];
 };
 
 export const NAV_GROUPS: NavGroup[] = [
   {
     title: "Overview",
-    items: [{ title: "Dashboard", href: "/", icon: LayoutDashboard }],
+    messageKey: "nav.overview",
+    items: [{ title: "Dashboard",
+ messageKey: "nav.dashboard", href: "/", icon: LayoutDashboard }],
   },
   {
     title: "People",
+    messageKey: "nav.people",
     items: [
       {
         title: "Students",
+        messageKey: "nav.students",
         href: "/students",
         icon: GraduationCap,
         roles: ["admin", "teacher", "accountant", "librarian"],
@@ -69,12 +83,14 @@ export const NAV_GROUPS: NavGroup[] = [
       // the same.
       {
         title: "Front office",
+        messageKey: "nav.frontOffice",
         href: "/front-office",
         icon: DoorOpen,
         roles: ["admin", "accountant"],
       },
       {
         title: "Import students",
+        messageKey: "nav.importStudents",
         href: "/students/import",
         icon: FileUp,
         roles: ["admin"],
@@ -83,44 +99,52 @@ export const NAV_GROUPS: NavGroup[] = [
   },
   {
     title: "Academics",
+    messageKey: "nav.academics",
     items: [
       {
         title: "Academics",
+        messageKey: "nav.academics",
         href: "/academics",
         icon: Library,
         roles: ["admin", "teacher", "accountant"],
       },
       {
         title: "Class routine",
+        messageKey: "nav.classRoutine",
         href: "/timetable",
         icon: CalendarRange,
       },
       {
         title: "My week",
+        messageKey: "nav.myWeek",
         href: "/timetable/me",
         icon: CalendarClock,
         roles: ["admin", "teacher"],
       },
       {
         title: "Attendance",
+        messageKey: "nav.attendance",
         href: "/attendance",
         icon: ClipboardCheck,
         roles: ["admin", "teacher"],
       },
       {
         title: "Attendance report",
+        messageKey: "nav.attendanceReport",
         href: "/attendance/report",
         icon: BarChart3,
         roles: ["admin", "teacher", "accountant"],
       },
       {
         title: "Exams",
+        messageKey: "nav.exams",
         href: "/exams",
         icon: PenSquare,
         roles: ["admin", "teacher"],
       },
       {
         title: "Promotion",
+        messageKey: "nav.promotion",
         href: "/promotion",
         icon: ArrowUpNarrowWide,
         roles: ["admin"],
@@ -131,11 +155,13 @@ export const NAV_GROUPS: NavGroup[] = [
       // their child is exactly the kind of thing that gets a product ignored.
       {
         title: "Homework",
+        messageKey: "nav.homework",
         href: "/homework",
         icon: NotebookPen,
       },
       {
         title: "Study material",
+        messageKey: "nav.studyMaterial",
         href: "/study-material",
         icon: FolderOpen,
       },
@@ -145,6 +171,7 @@ export const NAV_GROUPS: NavGroup[] = [
       // card to look at.
       {
         title: "Report cards",
+        messageKey: "nav.reportCards",
         href: "/report-card",
         icon: ScrollText,
         roles: ["parent", "student"],
@@ -156,18 +183,21 @@ export const NAV_GROUPS: NavGroup[] = [
       // which RLS decides rather than the menu.
       {
         title: "Transport",
+        messageKey: "nav.transport",
         href: "/transport",
         icon: Bus,
         roles: ["admin", "teacher", "accountant"],
       },
       {
         title: "Bus assignments",
+        messageKey: "nav.busAssignments",
         href: "/transport/assignments",
         icon: MapPin,
         roles: ["admin"],
       },
       {
         title: "Hostel",
+        messageKey: "nav.hostel",
         href: "/hostel",
         icon: BedDouble,
         roles: ["admin", "teacher", "accountant"],
@@ -176,18 +206,22 @@ export const NAV_GROUPS: NavGroup[] = [
   },
   {
     title: "Staff",
+    messageKey: "nav.staff",
     items: [
       {
         title: "Staff attendance",
+        messageKey: "nav.staffAttendance",
         href: "/hr",
         icon: CalendarCheck,
         roles: ["admin", "teacher", "accountant", "librarian"],
       },
       // No `roles` filter: everybody employed here has leave, and hiding the
       // screen from the people who take it is how a form ends up on paper.
-      { title: "Leave", href: "/hr/leave", icon: Plane },
+      { title: "Leave",
+ messageKey: "nav.leave", href: "/hr/leave", icon: Plane },
       {
         title: "Salary structures",
+        messageKey: "nav.salaryStructures",
         href: "/hr/salary",
         icon: Sigma,
         roles: ["admin", "accountant"],
@@ -195,32 +229,38 @@ export const NAV_GROUPS: NavGroup[] = [
       // No `roles` filter, same reason as `/homework`: one address, two
       // screens. A teacher gets their own payslips here, an accountant gets
       // the runs.
-      { title: "Payroll", href: "/payroll", icon: Wallet },
+      { title: "Payroll",
+ messageKey: "nav.payroll", href: "/payroll", icon: Wallet },
     ],
   },
   {
     title: "Finance",
+    messageKey: "nav.finance",
     items: [
       {
         title: "Fee counter",
+        messageKey: "nav.feeCounter",
         href: "/fees/counter",
         icon: IndianRupee,
         roles: ["admin", "accountant"],
       },
       {
         title: "Balances",
+        messageKey: "nav.balances",
         href: "/fees",
         icon: BarChart3,
         roles: ["admin", "accountant"],
       },
       {
         title: "Invoices",
+        messageKey: "nav.invoices",
         href: "/fees/invoices",
         icon: FileText,
         roles: ["admin", "accountant"],
       },
       {
         title: "Day book",
+        messageKey: "nav.dayBook",
         href: "/fees/daybook",
         icon: BookOpenCheck,
         roles: ["admin", "accountant"],
@@ -230,12 +270,14 @@ export const NAV_GROUPS: NavGroup[] = [
       // when each of those is collected. Neither is any use alone.
       {
         title: "Billing periods",
+        messageKey: "nav.billingPeriods",
         href: "/fees/instalments",
         icon: CalendarRange,
         roles: ["admin", "accountant"],
       },
       {
         title: "Fee setup",
+        messageKey: "nav.feeSetup",
         href: "/fees/setup",
         icon: Settings2,
         roles: ["admin", "accountant"],
@@ -245,12 +287,14 @@ export const NAV_GROUPS: NavGroup[] = [
       // page that would render empty.
       {
         title: "Accounts",
+        messageKey: "nav.accounts",
         href: "/accounts",
         icon: Landmark,
         roles: ["admin", "accountant"],
       },
       {
         title: "Voucher book",
+        messageKey: "nav.voucherBook",
         href: "/accounts/vouchers",
         icon: BookText,
         roles: ["admin", "accountant"],
@@ -261,6 +305,7 @@ export const NAV_GROUPS: NavGroup[] = [
       // librarian are the same person.
       {
         title: "Store",
+        messageKey: "nav.inventory",
         href: "/inventory",
         icon: Boxes,
         roles: ["admin", "accountant", "librarian", "teacher"],
@@ -269,34 +314,41 @@ export const NAV_GROUPS: NavGroup[] = [
   },
   {
     title: "Insight",
+    messageKey: "nav.insight",
     items: [
       // No `roles` filter: `report_list` already narrows the catalog to what a
       // role may run, so a librarian sees the two reports they can run rather
       // than a menu item that leads to an empty page.
-      { title: "Reports", href: "/reports", icon: FileSpreadsheet },
+      { title: "Reports",
+ messageKey: "nav.reports", href: "/reports", icon: FileSpreadsheet },
     ],
   },
   {
     title: "Communication",
+    messageKey: "nav.communication",
     items: [
       // No `roles` filter: every account has an inbox, and hiding it from
       // students and parents is exactly how a "we told you" message ends up
       // nowhere.
-      { title: "Notifications", href: "/notifications", icon: Bell },
+      { title: "Notifications",
+ messageKey: "nav.notifications", href: "/notifications", icon: Bell },
       {
         title: "Compose",
+        messageKey: "nav.compose",
         href: "/notifications/compose",
         icon: PenLine,
         roles: ["admin"],
       },
       {
         title: "Delivery log",
+        messageKey: "nav.deliveryLog",
         href: "/notifications/log",
         icon: ScrollText,
         roles: ["admin"],
       },
       {
         title: "Channels",
+        messageKey: "nav.channels",
         href: "/notifications/channels",
         icon: Radio,
         roles: ["admin"],
@@ -305,21 +357,32 @@ export const NAV_GROUPS: NavGroup[] = [
   },
   {
     title: "Library",
+    messageKey: "nav.library",
     items: [
-      { title: "Catalog", href: "/library/books", icon: BookOpen },
+      { title: "Catalog",
+ messageKey: "nav.catalog", href: "/library/books", icon: BookOpen },
       {
         title: "Members",
+        messageKey: "nav.members",
         href: "/library/members",
         icon: Users,
         roles: ["admin", "librarian", "teacher", "accountant"],
       },
       {
         title: "Issues & returns",
+        messageKey: "nav.issuesReturns",
         href: "/library/issues",
         icon: ListChecks,
         roles: ["admin", "librarian", "teacher", "accountant"],
       },
     ],
+  },
+  {
+    // No `roles` filter anywhere in this group: which language the application
+    // speaks to somebody is theirs to choose, whatever they are here to do.
+    title: "Settings",
+    messageKey: "nav.settings",
+    items: [{ title: "Language", messageKey: "app.language", href: "/settings/language", icon: Languages }],
   },
 ];
 

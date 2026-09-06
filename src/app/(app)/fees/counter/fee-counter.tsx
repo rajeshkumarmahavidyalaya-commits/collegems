@@ -167,7 +167,7 @@ export function FeeCounter({
         </Label>
         <div className="relative">
           <Search
-            className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground"
+            className="pointer-events-none absolute top-1/2 start-3 size-4 -translate-y-1/2 text-muted-foreground"
             aria-hidden="true"
           />
           <Input
@@ -181,7 +181,7 @@ export function FeeCounter({
             }}
             onKeyDown={onSearchKeyDown}
             placeholder="Admission number or name…"
-            className="pl-9"
+            className="ps-9"
             autoComplete="off"
             role="combobox"
             aria-expanded={hits.length > 0 && !selected}
@@ -192,7 +192,7 @@ export function FeeCounter({
             <Button
               size="icon"
               variant="ghost"
-              className="absolute top-1/2 right-1 -translate-y-1/2"
+              className="absolute top-1/2 end-1 -translate-y-1/2"
               onClick={clear}
               aria-label="Clear and search again"
             >
@@ -242,7 +242,7 @@ export function FeeCounter({
                       onMouseEnter={() => setHighlight(index)}
                       onClick={() => choose(hit)}
                       className={cn(
-                        "flex w-full items-center justify-between gap-3 rounded-md border px-3 py-2 text-left transition-colors",
+                        "flex w-full items-center justify-between gap-3 rounded-md border px-3 py-2 text-start transition-colors",
                         "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring",
                         index === highlight
                           ? "border-ring bg-accent"
@@ -257,7 +257,7 @@ export function FeeCounter({
                           {hit.rollNumber && ` · Roll ${hit.rollNumber}`}
                         </span>
                       </span>
-                      <span className="shrink-0 text-right">
+                      <span className="shrink-0 text-end">
                         <span className="block font-mono text-sm tabular-nums">
                           {formatMoney(Math.abs(hit.balance))}
                         </span>

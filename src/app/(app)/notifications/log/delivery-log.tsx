@@ -177,7 +177,7 @@ function SentTab({ outbox, eventTypes }: { outbox: OutboxRow[]; eventTypes: Even
           size="sm"
           onClick={exportCsv}
           disabled={rows.length === 0}
-          className="ml-auto"
+          className="ms-auto"
         >
           <Download className="size-4" aria-hidden="true" />
           Export CSV
@@ -269,7 +269,7 @@ function OutboxCard({
             type="button"
             onClick={toggle}
             aria-expanded={isOpen}
-            className="flex w-full flex-col gap-2 rounded-lg p-4 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+            className="flex w-full flex-col gap-2 rounded-lg p-4 text-start focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
           >
             <div className="flex flex-wrap items-center gap-2">
               <Badge variant="secondary" className="font-normal">
@@ -278,7 +278,7 @@ function OutboxCard({
               <span className="text-xs text-muted-foreground">
                 {describeAudience(row.audience)}
               </span>
-              <span className="ml-auto flex items-center gap-2 text-xs text-muted-foreground">
+              <span className="ms-auto flex items-center gap-2 text-xs text-muted-foreground">
                 <time dateTime={row.createdAt} title={new Date(row.createdAt).toLocaleString("en-IN")}>
                   {relativeTime(row.createdAt)}
                 </time>
@@ -302,7 +302,7 @@ function OutboxCard({
               <CountChip label="Failed" count={row.failed} tone="danger" />
               <CountChip label="Skipped" count={row.skipped} tone="warning" />
               {row.createdByName && (
-                <span className="ml-auto text-muted-foreground">by {row.createdByName}</span>
+                <span className="ms-auto text-muted-foreground">by {row.createdByName}</span>
               )}
             </div>
           </button>
@@ -335,7 +335,7 @@ function OutboxCard({
                         <TableHead>Channel</TableHead>
                         <TableHead>Sent to</TableHead>
                         <TableHead>Status</TableHead>
-                        <TableHead className="text-right">Attempts</TableHead>
+                        <TableHead className="text-end">Attempts</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -368,7 +368,7 @@ function OutboxCard({
                               </p>
                             )}
                           </TableCell>
-                          <TableCell className="text-right font-mono tabular-nums">
+                          <TableCell className="text-end font-mono tabular-nums">
                             {d.attempts}
                           </TableCell>
                         </TableRow>
@@ -546,7 +546,7 @@ function TemplatesTab({
                     <TableHead>Channel</TableHead>
                     <TableHead>Text</TableHead>
                     <TableHead>Status</TableHead>
-                    {canManage && <TableHead className="w-24 text-right">Actions</TableHead>}
+                    {canManage && <TableHead className="w-24 text-end">Actions</TableHead>}
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -578,7 +578,7 @@ function TemplatesTab({
                           </Badge>
                         </TableCell>
                         {canManage && (
-                          <TableCell className="text-right">
+                          <TableCell className="text-end">
                             <div className="flex justify-end gap-1">
                               <Button
                                 variant="ghost"

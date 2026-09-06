@@ -79,11 +79,11 @@ export function ItemLedger({
                   <TableRow>
                     <TableHead>Date</TableHead>
                     <TableHead>What</TableHead>
-                    <TableHead className="text-right">Quantity</TableHead>
-                    <TableHead className="text-right">Balance</TableHead>
-                    <TableHead className="text-right">Unit cost</TableHead>
+                    <TableHead className="text-end">Quantity</TableHead>
+                    <TableHead className="text-end">Balance</TableHead>
+                    <TableHead className="text-end">Unit cost</TableHead>
                     <TableHead>Who / reference</TableHead>
-                    {canAdjust && <TableHead className="w-16 text-right">Reverse</TableHead>}
+                    {canAdjust && <TableHead className="w-16 text-end">Reverse</TableHead>}
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -97,15 +97,15 @@ export function ItemLedger({
                           {movementLabel(row.kind)}
                         </Badge>
                       </TableCell>
-                      <TableCell className="text-right font-mono tabular-nums">
+                      <TableCell className="text-end font-mono tabular-nums">
                         {/* The sign is the story; showing it plainly beats a colour. */}
                         {row.quantity > 0 ? "+" : ""}
                         {formatQuantity(row.quantity)}
                       </TableCell>
-                      <TableCell className="text-right font-mono tabular-nums font-medium">
+                      <TableCell className="text-end font-mono tabular-nums font-medium">
                         {quantityWithUnit(row.running, unit)}
                       </TableCell>
-                      <TableCell className="text-right font-mono tabular-nums text-muted-foreground">
+                      <TableCell className="text-end font-mono tabular-nums text-muted-foreground">
                         {row.unitCost === null ? "—" : formatMoney(row.unitCost)}
                       </TableCell>
                       <TableCell className="text-muted-foreground">
@@ -116,7 +116,7 @@ export function ItemLedger({
                         {row.note && <span className="block text-xs">{row.note}</span>}
                       </TableCell>
                       {canAdjust && (
-                        <TableCell className="text-right">
+                        <TableCell className="text-end">
                           <Button
                             variant="ghost"
                             size="icon"
