@@ -13,9 +13,19 @@ there.
 > check there is.
 
 Supabase's default `grant all on tables to anon, authenticated` includes it.
-Every one of the 184 tables in `public` carried it — `audit_log`,
+Every one of the 93 tables in `public` carried it — `audit_log`,
 `ledger_entries`, `students`, all of them — behind policies that were correct
 and irrelevant.
+
+> **A correction.** Migration `0159`'s header, and the first version of this
+> page, said *184 tables*. That was the row count of
+> `information_schema.role_table_grants`, which has one row per table **per
+> grantee** — 92 tables times `anon` and `authenticated`. `public` has 93
+> tables. The finding is unchanged; the number overstated it by a factor of two,
+> which is the direction that costs a reader's trust in the rest of the
+> paragraph. `0159` keeps its wrong number because migrations are immutable, and
+> `0161` carries the right one. Counting grants never answers "how many tables":
+> use `count(distinct table_name)`, or count `pg_class`.
 
 ---
 

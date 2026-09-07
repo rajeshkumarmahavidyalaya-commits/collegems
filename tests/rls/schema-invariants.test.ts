@@ -37,4 +37,17 @@ describe("schema invariants", () => {
     expect(error).toBeNull();
     expect(data ?? []).toEqual([]);
   });
+
+  it("every table carries an audit trigger, bar the four named exemptions", async () => {
+    // Rule 9. Eighty-seven of ninety-three had one and nothing would ever have
+    // said so — which is the failure that matters, because an audit log with
+    // holes answers "who changed this" with silence, and silence reads as
+    // "nobody did". The exemptions are in migration 0162, each a table whose
+    // row IS the record and can never be edited.
+    const client = await tenantAClient();
+    const { data, error } = await client.rpc("audit_guard_violations");
+
+    expect(error).toBeNull();
+    expect(data ?? []).toEqual([]);
+  });
 });

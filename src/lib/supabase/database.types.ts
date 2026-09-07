@@ -6240,6 +6240,30 @@ export type Database = {
           working_days: number
         }[]
       }
+      audit_actor_label: { Args: { p_actor_id: string }; Returns: string }
+      audit_changed_fields: {
+        Args: { p_new: Json; p_old: Json }
+        Returns: Json
+      }
+      audit_guard_violations: {
+        Args: never
+        Returns: {
+          reason: string
+          table_name: string
+        }[]
+      }
+      audit_history: {
+        Args: { p_limit?: number; p_row_id: string; p_table_name: string }
+        Returns: {
+          action: string
+          actor: string
+          actor_id: string
+          changed_at: string
+          changed_fields: Json
+          field_count: number
+          id: string
+        }[]
+      }
       available_locales: {
         Args: never
         Returns: {
@@ -7762,6 +7786,12 @@ export type Database = {
         }[]
       }
       report_attendance_summary: {
+        Args: { p_params: Json }
+        Returns: {
+          row_data: Json
+        }[]
+      }
+      report_audit_trail: {
         Args: { p_params: Json }
         Returns: {
           row_data: Json

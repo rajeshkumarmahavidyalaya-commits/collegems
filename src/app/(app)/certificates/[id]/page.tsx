@@ -7,6 +7,7 @@ import { getCertificate } from "../actions";
 import { kindLabel } from "@/lib/validations/certificates";
 import { CancelCertificate } from "./cancel-certificate";
 import { PrintButton } from "./print-button";
+import { AuditTrail } from "@/components/audit/audit-trail";
 
 export const metadata = { title: "Certificate" };
 
@@ -98,6 +99,14 @@ export default async function CertificatePage({ params }: PageProps<"/certificat
           </div>
         </footer>
       </article>
+
+      {/* A certificate is a legal record that can be cancelled, so "who
+          cancelled this, and when" is the question the audit log exists to
+          answer. `data-print="hide"` keeps it off the printed sheet -- it is
+          the school's record of the document, not part of the document. */}
+      <div data-print="hide" className="mx-auto w-full max-w-3xl">
+        <AuditTrail table="certificates" rowId={certificate.id} title="Record history" />
+      </div>
     </div>
   );
 }

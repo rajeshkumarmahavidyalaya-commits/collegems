@@ -40,7 +40,7 @@ statement a policy can see, and that qualification is load-bearing:
 > only check there is.
 
 Supabase's default `grant all on tables to anon, authenticated` includes it, so
-all 184 tables in `public` were truncatable by any signed-in user — `audit_log`
+all 93 tables in `public` were truncatable by any signed-in user — `audit_log`
 and `ledger_entries` among them — behind policies that were correct and
 irrelevant. Probed on a scratch table whose policy read `for select using
 (false)`: a caller acting as `parent`, unable to see a single row, emptied it.
@@ -755,6 +755,57 @@ constants so callers have one import to remember.
 timestamp to `audit_log` on every insert/update/delete of a core table. When
 you add a table, add its trigger — see migration `0008` and the four triggers
 at the end of `0015`.
+
+**A trigger you have to remember is a trigger somebody forgets.** Eighty-seven
+of the ninety-three tables in `public` had one, and nothing anywhere would have
+said so. `audit_guard_violations()` is rule 9's executable half — the third
+guard beside `schema_guard_violations()` and `privilege_guard_violations()` —
+and the failure it prevents is specific:
+
+> An audit log with holes in it is worse than no audit log. It answers "who
+> changed this" with silence, and **silence reads as "nobody did".**
+
+Four tables are exempt, named in migration `0162`, and the test for adding a
+fifth is not "it is noisy":
+
+> A table is exempt when **the row *is* the record** — append-only, written
+> once, never edited. Auditing it stores a second copy of a fact that cannot
+> change. Everything else is audited, including the boring ones.
+
+`jobs` is the one exemption resting on volume instead, and it is called out as
+such rather than blended in, because volume is the argument that eventually
+exempts everything.
+
+### An audit log nobody can read is a table, not an audit
+
+24,000 rows, an admin-only policy since `0008`, and not one caller in the
+application. Rule 9 got the writing right and stopped there. Migration `0163`
+is the read path, and three things about it generalise:
+
+- **The policy on `audit_log` is the strictest in the schema, and must stay
+  that way.** It is a copy of every row in every table, so anything that could
+  read it broadly is a way around every other policy in the database. Every
+  function here is `SECURITY INVOKER`; a definer one would be exactly that hole.
+  `audit.view` sits beside the policy — not redundant, because the matrix is
+  what lets a school withhold the trail from one administrator without touching
+  a policy.
+- **`updated_at` comes out of the diff.** Every table carries a `set_updated_at`
+  trigger, so it moves on every write — a diff that keeps it reports a change
+  for a write that changed nothing and pads every real change with a line nobody
+  wants. Observed live: a no-op touch recorded as *"1 field changed:
+  updated_at"*, and a genuine template edit as *"body, updated_at"* where the
+  only honest answer is *body*. `created_at` is deliberately **not** on that
+  list — `created_at` moving is a fact somebody should see.
+- **"Nobody was signed in" and "that login is gone" are two different
+  unanswerables**, and one blank cell hides the difference. A null `actor_id` is
+  a seed, a migration or a background job — never a person. A non-null one with
+  no profile *was* a person. `audit_actor_label` returns *System* and *Deleted
+  login*; same instinct as `attendance_coverage`, applied to a name.
+
+And the surface splits the way rule 11 says it should: **"what happened to this
+row" is not a report** — it has no parameters a person would type and belongs
+beside the record, so it is `audit_history` on the page. "What did anybody
+change on Tuesday" is a catalog row. See `docs/modules/audit.md`.
 
 ## 10. Nobody calls a provider
 
