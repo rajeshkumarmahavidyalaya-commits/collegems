@@ -1057,6 +1057,50 @@ matter** — `exam_results` stores the numbers *and* a `rules_snapshot`, so
 editing a scheme two years later cannot change a report card that was already
 handed to somebody. See `docs/modules/exams.md`.
 
+### A rules document needs a schema, or nobody knows what is in it
+
+`public.settings` is the oldest instance of this rule — configuration as data,
+since migration `0007` — and it is the instance that shows what the rule leaves
+out. Seven keys, no description of any of them, and no screen. Two consequences,
+one broken and one waiting:
+
+- **`school.profile` was all null and there was no way to fill it in.** That is
+  why `0136` had to strip `{{school.city}}` out of the shipped transfer
+  certificate: a school could not print its own city on its own leaving
+  certificate, and the fix was to delete the city.
+- **A default written in five places is five answers.**
+  `library.fine_per_day` defaulted to 2.00 in the seed row, in
+  `library_return_book`, in the overdue report, in an old function signature and
+  in TypeScript. They agreed, so nobody was charged wrongly — the cost is the
+  one migration `0101` already paid once for document kinds: changing it means
+  finding five copies, and the sixth reader invents its own.
+
+So `reference.settings_catalog` is the `reference.reports` pattern applied to
+configuration — key, label, declared shape, **the** default, the permission to
+edit it. `setting_value` is the only place a default is applied, `/settings`
+renders any key without being edited, and `settings_problems()` says what is not
+filled in. Three rules for adding one:
+
+- **Declare it or it does not exist.** `setting_set` refuses a key with no
+  catalogue row, which is what makes this a catalogue rather than the bag it
+  replaced.
+- **Catalogue the shape that exists, do not reshape underneath a live reader.**
+  `library.fine_per_day` is stored as `{"amount": 2.00}` rather than a bare
+  number, and it is catalogued that way, because five readers already parse it.
+- **"Set" and "left at the default" are two states and one value cannot carry
+  both** — `attendance_coverage`'s lesson again. A school reading *"fine: 2.00"*
+  needs to know whether somebody chose it.
+
+And the one that is a security boundary rather than a nicety:
+
+> **There is no `secret` value type, deliberately.** `settings` is readable by
+> **every tenant member** — a parent, a student — which is correct for a fine
+> rate and a school address. A credential there would be published to four
+> hundred families. Provider keys live on the Edge Functions (rule 6) and
+> nowhere else. **If a setting needs to be secret, it is not a setting.**
+
+See `docs/modules/settings.md`.
+
 ### A rate hides what was never measured
 
 This codebase says, in several modules, that an attendance percentage is **over

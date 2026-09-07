@@ -8008,6 +8008,54 @@ export type Database = {
         }[]
       }
       set_my_locale: { Args: { p_locale: string }; Returns: string }
+      setting_number: {
+        Args: { p_field?: string; p_key: string }
+        Returns: number
+      }
+      setting_set: {
+        Args: { p_key: string; p_value: Json }
+        Returns: {
+          id: string
+          key: string
+          tenant_id: string
+          updated_at: string
+          updated_by: string | null
+          value: Json
+        }
+        SetofOptions: {
+          from: "*"
+          to: "settings"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      setting_value: { Args: { p_key: string }; Returns: Json }
+      settings_effective: {
+        Args: never
+        Returns: {
+          default_value: Json
+          description: string
+          fields: Json
+          is_required: boolean
+          is_set: boolean
+          key: string
+          label: string
+          module: string
+          sort_order: number
+          updated_at: string
+          updated_by_label: string
+          value: Json
+          value_type: string
+        }[]
+      }
+      settings_problems: {
+        Args: never
+        Returns: {
+          key: string
+          message: string
+          severity: string
+        }[]
+      }
       staff_is_away: {
         Args: { p_date: string; p_staff_id: string }
         Returns: boolean

@@ -198,6 +198,15 @@ was left in.
 > Everything else is the school's to add once, deliberately, to their own copy
 > of the wording — which is what makes it a template rather than a form.
 
+**There is now somewhere to add it from.** That sentence described a thing a
+school could not actually do: `school.profile` was all null in every tenant and
+nothing in the application wrote it, so *"add it to your own copy"* meant
+editing a JSON blob in the database. `/settings/school` (migration `0166`) is
+the missing half, and `certificate_snapshot` now resolves `school.city` and
+`school.address` once the profile is filled in. The seeded template still does
+not use them — the rule above is unchanged — but a school that wants the
+sentence can have it. See `docs/modules/settings.md`.
+
 Only untouched copies were rewritten. A school that had already adjusted its own
 wording owns it now, and a migration silently rewriting it would be worse than
 the bug.

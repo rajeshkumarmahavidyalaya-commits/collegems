@@ -440,7 +440,21 @@ export const NAV_GROUPS: NavGroup[] = [
     // speaks to somebody is theirs to choose, whatever they are here to do.
     title: "Settings",
     messageKey: "nav.settings",
-    items: [{ title: "Language", messageKey: "app.language", href: "/settings/language", icon: Languages }],
+    items: [
+      // Not every role, though `settings` is readable by every tenant member
+      // and the page renders read-only without `settings.manage`. These are the
+      // three who act on a setting's consequences -- a librarian wants to know
+      // the fine rate, an accountant whether online payments are on. A parent
+      // has no question this screen answers.
+      {
+        title: "School settings",
+        messageKey: "nav.schoolSettings",
+        href: "/settings/school",
+        icon: Settings2,
+        roles: ["admin", "accountant", "librarian"],
+      },
+      { title: "Language", messageKey: "app.language", href: "/settings/language", icon: Languages },
+    ],
   },
 ];
 

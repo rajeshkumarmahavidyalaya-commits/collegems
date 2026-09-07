@@ -292,20 +292,22 @@ export type IssueRow = {
 };
 
 /**
- * The per-day fine, from `settings`, so the estimate shown in the library and
- * the amount `library_return_book()` actually charges come from one place.
- * Falls back to the historical default if a tenant has no row.
+ * The per-day fine, so the estimate shown in the library and the amount
+ * `library_return_book()` actually charges come from one place — now literally
+ * one function rather than three that agree. See migration 0167.
  */
 export async function getFinePerDay(): Promise<number> {
   const supabase = await createClient();
-  const { data } = await supabase
-    .from("settings")
-    .select("value")
-    .eq("key", "library.fine_per_day")
-    .maybeSingle();
+  // `setting_number` is the only place a default is applied — migration 0167
+  // deleted the four other copies of 2.00, this one included. A literal here
+  // would be the fifth answer again.
+  const { data } = await supabase.rpc("setting_number", {
+    p_key: "library.fine_per_day",
+    p_field: "amount",
+  });
 
-  const amount = (data?.value as { amount?: number } | null)?.amount;
-  return typeof amount === "number" ? amount : 2;
+  const amount = typeof data === "string" ? Number(data) : data;
+  return typeof amount === "number" && Number.isFinite(amount) ? amount : 0;
 }
 
 export async function listIssues(params: ListParams): Promise<{ rows: IssueRow[]; total: number }> {
