@@ -4326,6 +4326,122 @@ export type Database = {
           },
         ]
       }
+      schedule_runs: {
+        Row: {
+          created_at: string
+          finished_at: string | null
+          id: string
+          matched: number
+          note: string | null
+          notified: number
+          occurrence_at: string
+          schedule_id: string
+          started_at: string
+          status: string
+          tenant_id: string
+        }
+        Insert: {
+          created_at?: string
+          finished_at?: string | null
+          id?: string
+          matched?: number
+          note?: string | null
+          notified?: number
+          occurrence_at: string
+          schedule_id: string
+          started_at?: string
+          status?: string
+          tenant_id: string
+        }
+        Update: {
+          created_at?: string
+          finished_at?: string | null
+          id?: string
+          matched?: number
+          note?: string | null
+          notified?: number
+          occurrence_at?: string
+          schedule_id?: string
+          started_at?: string
+          status?: string
+          tenant_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "schedule_runs_schedule_fkey"
+            columns: ["tenant_id", "schedule_id"]
+            isOneToOne: false
+            referencedRelation: "schedules"
+            referencedColumns: ["tenant_id", "id"]
+          },
+          {
+            foreignKeyName: "schedule_runs_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      schedules: {
+        Row: {
+          channels: string[] | null
+          created_at: string
+          created_by: string | null
+          day_of_month: number | null
+          grace_minutes: number
+          id: string
+          is_enabled: boolean
+          kind: string
+          name: string
+          params: Json
+          run_at: string
+          tenant_id: string
+          updated_at: string
+          weekdays: number[]
+        }
+        Insert: {
+          channels?: string[] | null
+          created_at?: string
+          created_by?: string | null
+          day_of_month?: number | null
+          grace_minutes?: number
+          id?: string
+          is_enabled?: boolean
+          kind: string
+          name: string
+          params?: Json
+          run_at: string
+          tenant_id: string
+          updated_at?: string
+          weekdays?: number[]
+        }
+        Update: {
+          channels?: string[] | null
+          created_at?: string
+          created_by?: string | null
+          day_of_month?: number | null
+          grace_minutes?: number
+          id?: string
+          is_enabled?: boolean
+          kind?: string
+          name?: string
+          params?: Json
+          run_at?: string
+          tenant_id?: string
+          updated_at?: string
+          weekdays?: number[]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "schedules_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       section_subjects: {
         Row: {
           created_at: string
@@ -7056,6 +7172,37 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      notify_send_for: {
+        Args: {
+          p_actor?: string
+          p_audience: Json
+          p_body: string
+          p_channels?: string[]
+          p_event_key: string
+          p_payload?: Json
+          p_require_recipients?: boolean
+          p_subject: string
+          p_tenant_id: string
+        }
+        Returns: {
+          audience: Json
+          body: string
+          created_at: string
+          created_by: string | null
+          event_key: string
+          id: string
+          payload: Json
+          session_id: string
+          subject: string | null
+          tenant_id: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "notifications"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       notify_template_problems: {
         Args: never
         Returns: {
@@ -7269,6 +7416,12 @@ export type Database = {
           total_count: number
         }[]
       }
+      report_schedule_runs: {
+        Args: { p_params: Json }
+        Returns: {
+          row_data: Json
+        }[]
+      }
       report_section_routine: {
         Args: { p_params: Json }
         Returns: {
@@ -7302,6 +7455,68 @@ export type Database = {
       salary_structure_problems: {
         Args: { p_components: Json }
         Returns: string[]
+      }
+      schedule_fee_defaulters: {
+        Args: { p_min_amount?: number; p_tenant_id: string }
+        Returns: {
+          balance: number
+          full_name: string
+          student_id: string
+        }[]
+      }
+      schedule_problems: {
+        Args: never
+        Returns: {
+          message: string
+          schedule_id: string
+          severity: string
+        }[]
+      }
+      schedule_run: {
+        Args: {
+          p_max_recipients?: number
+          p_occurrence_at: string
+          p_schedule_id: string
+        }
+        Returns: {
+          created_at: string
+          finished_at: string | null
+          id: string
+          matched: number
+          note: string | null
+          notified: number
+          occurrence_at: string
+          schedule_id: string
+          started_at: string
+          status: string
+          tenant_id: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "schedule_runs"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      schedule_student_audience: {
+        Args: { p_student_id: string; p_tenant_id: string }
+        Returns: Json
+      }
+      schedules_due: {
+        Args: { p_limit?: number }
+        Returns: {
+          kind: string
+          minutes_late: number
+          name: string
+          occurrence_at: string
+          schedule_id: string
+          tenant_id: string
+          within_grace: boolean
+        }[]
+      }
+      schedules_tick: {
+        Args: { p_limit?: number; p_max_recipients?: number }
+        Returns: Json
       }
       schema_guard_violations: {
         Args: never

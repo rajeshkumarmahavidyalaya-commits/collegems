@@ -464,6 +464,21 @@ callback-driven write, copy that shape: definer, narrow, revoked from people,
 and taking its authority from a row this system wrote rather than from the
 callback body.
 
+The scheduler needed the same shape and made the boundary of it explicit.
+`notify_send_for` takes the tenant as an argument and is revoked from everybody
+holding a JWT; `notify_send` is now a thin wrapper doing the admin check — one
+body, two doors, because a copy is where the WhatsApp template freeze quietly
+stops being applied. But:
+
+> **That split is only safe where the invoker version's protection is a tenant
+> or role check, not a row-ownership one.** `notify_send` guards with an
+> explicit admin test, so parameterising the tenant is exactly equivalent.
+> `fees_student_balances` is protected *row by row* through RLS — a parent
+> calling it sees their own children — so a definer twin would hand a parent the
+> whole school, and an invoker wrapper cannot delegate row ownership to a
+> definer helper. Where that is the case, a background job gets a **narrower**
+> function answering only its own question, and a test pins the two together.
+
 ## 7. Heavy work goes through the jobs table
 
 Bulk SMS/email, imports, and anything unbounded are queued in `jobs` and
@@ -496,8 +511,51 @@ particular kind:
   unbounded.
 
 So: bound it and say what the bound is, or queue it. What is still genuinely
-`jobs` work and is **not built**: full exports, PDF rendering and scheduled
-reports.
+`jobs` work and is **not built**: full exports and PDF rendering. Scheduled
+*notifications* are now built — see below — and scheduled *reports* are not, for
+a reason worth keeping.
+
+### Work that runs on a timer
+
+`schedules` + `schedule_runs` + the `schedule-tick` Edge Function. Four rules,
+and the first is the one every scheduler gets wrong:
+
+- **A time of day is a wall clock, not an instant.** A cron expression fires in
+  one timezone; two schools on one deployment do not share one. So a schedule
+  stores a local `time`, and the runner asks each tenant *"is it half past seven
+  where you are?"*. Local time first, instant second — which is also what
+  survives daylight saving.
+- **An occurrence runs once, at a unique index.** `schedule_runs` is unique on
+  `(schedule_id, occurrence_at)` and the run begins with `on conflict do
+  nothing`. `occurrence_at` is the instant the schedule was *for*, never the
+  instant it ran, so a tick a minute late is still the same occurrence.
+  `accounts_sync`'s rule applied to time: make the natural key the thing that
+  cannot repeat.
+- **Missed work does not catch up, and says so.** The due-check looks back at
+  most one day, and each schedule carries its own `grace_minutes` because the
+  right answer differs by kind — an absence notice two hours late is worse than
+  none, a fee reminder is not. Past its grace the occurrence is written down as
+  `missed` rather than skipped silently, or *"why did nothing go out on the 3rd"*
+  has no answer.
+- **A schedule that runs is not a schedule that works.** A school that switches
+  SMS off gets a green *"Ran · 40 matched"* every night while every delivery is
+  skipped. The register says what ran; `schedule_problems()` says whether
+  anybody heard.
+
+And anything seeded or created **arrives switched off**. A school that installs
+this and finds four hundred parents were texted without anybody deciding to has
+been badly served, however useful the feature is.
+
+**Scheduled reports are the thing this deliberately stops short of**, because:
+
+> A scheduled job has no user, so anything it does must be expressible without
+> one.
+
+Sending a message about a row is. Running a catalog report is not — `report_run`
+gates on `role_permissions` for `current_role_code()`, and a scheduler has no
+role. Making it work means deciding *whose authority* a schedule runs under, and
+that is a bigger decision than the module should make quietly. See
+`docs/modules/schedules.md`.
 
 ## 8. Storage
 

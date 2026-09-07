@@ -34,6 +34,7 @@ import {
   Radio,
   ScrollText,
   FileBadge,
+  AlarmClock,
   Settings2,
   Languages,
   ArrowUpNarrowWide,
@@ -364,6 +365,16 @@ export const NAV_GROUPS: NavGroup[] = [
         href: "/notifications/channels",
         icon: Radio,
         roles: ["admin"],
+      },
+      // The only screen in this group that sends without anybody pressing
+      // anything, which is why an accountant may look at it and only an
+      // administrator may switch one on.
+      {
+        title: "Automatic messages",
+        messageKey: "nav.schedules",
+        href: "/notifications/schedules",
+        icon: AlarmClock,
+        roles: ["admin", "accountant"],
       },
     ],
   },

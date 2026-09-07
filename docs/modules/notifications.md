@@ -464,3 +464,17 @@ and there is no single place a new permission would otherwise reach them from.
   `attendance.absent`, `fees.invoice_raised` and `library.book_overdue` into
   their modules is the next step, and each is a single `notify_send` call at the
   point the event becomes true.
+
+---
+
+## …and the part that sends without anybody asking
+
+Everything above needs somebody to press Compose. `schedules` is the part that
+does not: an evening absence notice, a fee reminder, an overdue-book reminder,
+each running on the school's own wall clock.
+
+It reaches this module through **`notify_send_for`** — the tenant-taking,
+JWT-revoked twin of `notify_send`, in the `fees_settle_gateway_payment` shape —
+and `notify_send` is now a thin wrapper over the same body, so a scheduled
+message and a composed one are frozen, addressed and preference-checked by
+exactly the same code. See `docs/modules/schedules.md`.
