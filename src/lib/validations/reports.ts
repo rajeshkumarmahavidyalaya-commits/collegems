@@ -1,5 +1,7 @@
 import { z } from "zod";
 import { formatMoney } from "./fees";
+import { formatNumber } from "@/lib/i18n/format";
+import { DEFAULT_LOCALE, type Locale } from "@/lib/i18n/config";
 
 /**
  * Phase 6.1 — the reporting kernel's client half.
@@ -72,6 +74,11 @@ export const runReportSchema = z.object({
   key: z.string().min(1, "Choose a report"),
   params: z.record(z.string(), z.string()),
   limit: z.number().int().min(1).max(5000).optional(),
+  /**
+   * Which page. `report_run` caps a call at 5,000 rows and returns the true
+   * total alongside, so an export walks the offsets — see `planExport` below.
+   */
+  offset: z.number().int().min(0).optional(),
 });
 export type RunReportInput = z.infer<typeof runReportSchema>;
 
@@ -182,4 +189,87 @@ export function defaultDateRange(): { from: string; to: string } {
  */
 export function exportFilename(reportKey: string): string {
   return `${reportKey.replace(/\./g, "-")}-${new Date().toISOString().slice(0, 10)}.csv`;
+}
+
+// ---------------------------------------------------------------------------
+// Exporting more than one page
+// ---------------------------------------------------------------------------
+
+/**
+ * How a full export works, and why it is here rather than in a job.
+ *
+ * Rule 7 listed "full exports" as unbuilt `jobs` work, and the obstacle was
+ * never the size of the answer — it was **who runs it**. `report_run` gates on
+ * the caller's role, so a worker draining a queue has no role and cannot run a
+ * report at all; every way round ends in inventing a service identity, which
+ * rule 7 already refuses to do quietly for scheduled reports.
+ *
+ * A person asking for an export is *present while it runs*, and that changes
+ * everything:
+ *
+ * > **A long export is the browser's job, not the server's.** The server
+ * > answers bounded pages as the person who asked; the client assembles them.
+ * > RLS stays the only gate, no service identity is invented, and progress and
+ * > cancellation come free.
+ */
+
+/** One call's worth. The database caps at this too, so asking for more is moot. */
+export const EXPORT_PAGE_SIZE = 5000;
+
+/**
+ * The ceiling, stated out loud rather than silently applied.
+ *
+ * Rule 13's instruction, twice learnt: *"Refuse an oversized input rather than
+ * truncating it... nobody notices until April."* A spreadsheet with the first
+ * 100,000 of 340,000 rows looks complete, so an export past this refuses and
+ * says the number.
+ */
+export const EXPORT_MAX_ROWS = 100_000;
+
+export type ExportPlan =
+  | { ok: true; pages: number[]; rows: number }
+  | { ok: false; reason: string };
+
+/**
+ * The offsets to fetch, or a sentence saying why not.
+ *
+ * Pure and separately tested, because the two ways this goes wrong are both
+ * silent: an off-by-one in the page walk drops the last partial page, and an
+ * unchecked total turns a mis-parameterised report into a browser that stops
+ * responding.
+ */
+export function planExport(totalRows: number, locale: Locale = DEFAULT_LOCALE): ExportPlan {
+  // Through `formatNumber`, never a locale tag written here: rule 15. It also
+  // matters more than usual for these numbers — `en-IN` groups a hundred
+  // thousand as "1,00,000", which is what a bursar in Nagpur reads and what
+  // "100,000" is not.
+  const n = (value: number) => formatNumber(value, locale);
+
+  if (totalRows <= 0) {
+    return { ok: false, reason: "There is nothing to export — the report returned no rows." };
+  }
+  if (totalRows > EXPORT_MAX_ROWS) {
+    return {
+      ok: false,
+      reason:
+        `That is ${n(totalRows)} rows, and an export here stops at ${n(EXPORT_MAX_ROWS)}. ` +
+        `Narrow the date range or the class and try again — a spreadsheet with only part of ` +
+        `the answer in it is worse than none.`,
+    };
+  }
+
+  const pages: number[] = [];
+  for (let offset = 0; offset < totalRows; offset += EXPORT_PAGE_SIZE) {
+    pages.push(offset);
+  }
+  return { ok: true, pages, rows: totalRows };
+}
+
+/** A count somebody can watch rather than a spinner. */
+export function exportProgressSentence(
+  fetched: number,
+  total: number,
+  locale: Locale = DEFAULT_LOCALE,
+): string {
+  return `Fetching ${formatNumber(fetched, locale)} of ${formatNumber(total, locale)} rows…`;
 }

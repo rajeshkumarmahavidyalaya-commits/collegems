@@ -243,3 +243,56 @@ with no permissions is unambiguously a defect.
 - **The existing module exports were left alone.** The day book, the attendance
   report and the notification delivery log still have their own CSV buttons.
   Folding them into the kernel is a follow-on cleanup, not part of building it.
+
+---
+
+## A full export
+
+`report_run` caps a call at 5,000 rows, and "full exports" sat on rule 7's
+unbuilt list from the day this module shipped. The obstacle was never the size
+of the answer — it was **who runs it**. `report_run` gates on the caller's role,
+so a worker draining a queue has no role and cannot run a report at all. Every
+way round ends in inventing a service identity, and rule 7 already refuses to do
+that quietly for scheduled reports.
+
+The way through is that **a person asking for an export is present while it
+runs**, which a scheduled report's asker is not:
+
+> **A long export is the browser's job, not the server's.** The server answers
+> bounded pages as the person who asked; the client assembles them.
+
+So migration `0154` gave `report_run` an offset and that is the whole database
+change. The permission check runs **on every page** — an export is the same
+report run several times, not a second door into it — and `total_count` is the
+whole answer's size whatever page you asked for, so page two of three cannot
+report itself as complete.
+
+`planExport()` in `src/lib/validations/reports.ts` is the pure half, and it is
+separately tested because both ways it goes wrong are silent:
+
+- an off-by-one in the page walk drops the last partial page from a spreadsheet
+  somebody then acts on;
+- an unchecked total turns a mis-parameterised report into a browser that stops
+  responding.
+
+**The ceiling is refused, not applied.** Past 100,000 rows the export declines
+and names the number, which is rule 13's lesson a third time: *a spreadsheet
+with the first hundred thousand of three hundred and forty thousand rows looks
+complete.* The message reads "1,00,000" rather than "100,000" because it goes
+through the i18n formatter rather than a hardcoded tag — rule 15 — and that
+grouping is what a bursar in Nagpur actually reads.
+
+Two smaller decisions:
+
+- **Cancelling is a flag, not an `AbortController`.** There is nothing to abort:
+  each page is a completed server action, and what "stop" means here is *do not
+  ask for the next one*.
+- **The button only appears when there is more than one page.** For an answer
+  that fits in a call the ordinary CSV button already exports all of it, and two
+  buttons doing the same thing is a question nobody should have to answer.
+
+### What this did *not* make possible
+
+A **scheduled** export still is not, and for the same reason it never was: the
+asker is not there. That remains `jobs` work whose real blocker is deciding
+whose authority a schedule runs under. See `docs/modules/schedules.md`.

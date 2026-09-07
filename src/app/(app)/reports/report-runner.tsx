@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState, useTransition } from "react";
 import {
   AlertTriangle,
   Download,
+  DownloadCloud,
   FileSpreadsheet,
   Loader2,
   Play,
@@ -35,10 +36,14 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { exportRowsToCsv } from "@/components/data-table/data-table";
+import { useI18n } from "@/components/providers/i18n-provider";
 import {
   alignFor,
   defaultDateRange,
   exportFilename,
+  EXPORT_PAGE_SIZE,
+  exportProgressSentence,
+  planExport,
   formatCell,
   missingRequired,
   type ParamDescriptor,
@@ -62,12 +67,26 @@ type Props = {
  * stores that description as data rather than as forty React components.
  */
 export function ReportRunner({ reports, options }: Props) {
+  // The reader's locale, resolved server-side and provided by the shell. Every
+  // number below goes through it rather than through a hardcoded tag — rule 15.
+  const { locale } = useI18n();
   const [selectedKey, setSelectedKey] = useState(reports[0]?.key ?? "");
   const [params, setParams] = useState<Record<string, string>>({});
   const [touched, setTouched] = useState(false);
   const [result, setResult] = useState<ReportResult | null>(null);
   const [pending, startTransition] = useTransition();
   const [search, setSearch] = useState("");
+  /**
+   * An export in flight. `controller` is a plain object rather than an
+   * `AbortController` because there is nothing to abort — each page is a
+   * completed server action — and what "cancel" means here is *stop asking for
+   * the next one*, which a flag says exactly.
+   */
+  const [exportJob, setExportJob] = useState<{
+    fetched: number;
+    total: number;
+    controller: { cancelled: boolean };
+  } | null>(null);
 
   const report = reports.find((r) => r.key === selectedKey);
 
@@ -144,6 +163,69 @@ export function ReportRunner({ reports, options }: Props) {
       report.columns.map((c) => ({ key: c.key, label: c.label })),
       exportFilename(report.key),
     );
+  }
+
+  /**
+   * Everything, not just the page on screen.
+   *
+   * The server answers bounded pages **as the person who asked** and this walks
+   * them — which is why a full export needs no queue and no service identity.
+   * `report_run` gates on the caller's role on every single call, so cancelling
+   * halfway simply stops asking.
+   *
+   * Rows accumulate here rather than in a file on the server: assembling in the
+   * browser is what makes progress and cancellation free, and a hundred
+   * thousand rows of a school report is a few megabytes.
+   */
+  function exportEverything() {
+    if (!report || !result) return;
+
+    const plan = planExport(result.totalCount, locale);
+    if (!plan.ok) {
+      toast.error(plan.reason);
+      return;
+    }
+
+    const controller = { cancelled: false };
+    setExportJob({ fetched: 0, total: plan.rows, controller });
+
+    void (async () => {
+      const collected: Record<string, unknown>[] = [];
+
+      for (const offset of plan.pages) {
+        if (controller.cancelled) {
+          setExportJob(null);
+          toast.info(`Export stopped. ${collected.length.toLocaleString("en-IN")} rows were discarded.`);
+          return;
+        }
+
+        const response = await runReport({
+          key: report.key,
+          params,
+          limit: EXPORT_PAGE_SIZE,
+          offset,
+        });
+
+        if (!response.ok) {
+          setExportJob(null);
+          toast.error(response.error);
+          return;
+        }
+
+        collected.push(...response.data.rows);
+        setExportJob({ fetched: collected.length, total: plan.rows, controller });
+      }
+
+      setExportJob(null);
+      exportRowsToCsv(
+        collected.map((row) =>
+          Object.fromEntries(report.columns.map((c) => [c.key, formatCell(row[c.key], c.type)])),
+        ),
+        report.columns.map((c) => ({ key: c.key, label: c.label })),
+        exportFilename(report.key),
+      );
+      toast.success(`${collected.length.toLocaleString("en-IN")} rows exported.`);
+    })();
   }
 
   if (reports.length === 0) {
@@ -240,10 +322,25 @@ export function ReportRunner({ reports, options }: Props) {
                   aria-label="Filter the rows already returned"
                 />
               </div>
-              <Button variant="outline" size="sm" onClick={exportCsv}>
+              <Button variant="outline" size="sm" onClick={exportCsv} disabled={exportJob !== null}>
                 <Download className="size-4" aria-hidden="true" />
                 CSV
               </Button>
+              {/* Only offered when there is more than this page to get. For a
+                  report that fits in one call the button above already exports
+                  the whole answer, and two buttons doing the same thing is a
+                  question nobody should have to answer. */}
+              {result.truncated && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={exportEverything}
+                  disabled={exportJob !== null}
+                >
+                  <DownloadCloud className="size-4" aria-hidden="true" />
+                  All {result.totalCount.toLocaleString("en-IN")}
+                </Button>
+              )}
               <Button variant="outline" size="sm" onClick={() => window.print()}>
                 <Printer className="size-4" aria-hidden="true" />
                 Print
@@ -252,15 +349,39 @@ export function ReportRunner({ reports, options }: Props) {
           )}
         </div>
 
-        {result?.truncated && (
+        {exportJob && (
+          <Alert data-print="hide">
+            <DownloadCloud className="size-4" aria-hidden="true" />
+            <AlertTitle>Exporting</AlertTitle>
+            <AlertDescription className="flex flex-wrap items-center gap-3">
+              {/* A count somebody can watch, not a spinner. `aria-live` because
+                  it changes while they are looking at something else. */}
+              <span aria-live="polite">
+                {exportProgressSentence(exportJob.fetched, exportJob.total, locale)}
+              </span>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  exportJob.controller.cancelled = true;
+                }}
+              >
+                Stop
+              </Button>
+            </AlertDescription>
+          </Alert>
+        )}
+
+        {result?.truncated && !exportJob && (
           <Alert data-print="hide">
             <AlertTriangle className="size-4" aria-hidden="true" />
             <AlertTitle>Showing the first {result.rows.length.toLocaleString("en-IN")} rows</AlertTitle>
             <AlertDescription>
               This report matched {result.totalCount.toLocaleString("en-IN")} rows. Narrow the
-              filters to get a complete answer — an export of everything is queued work that is
-              not built yet, so this deliberately shows a prefix rather than pretending it is the
-              whole set.
+              filters to look at a smaller answer, or use <strong>All{" "}
+              {result.totalCount.toLocaleString("en-IN")}</strong> above to download every row —
+              that walks the report in pages as you, so it obeys exactly the permissions this
+              screen does.
             </AlertDescription>
           </Alert>
         )}

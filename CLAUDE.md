@@ -519,9 +519,44 @@ particular kind:
   unbounded.
 
 So: bound it and say what the bound is, or queue it. What is still genuinely
-`jobs` work and is **not built**: full exports and PDF rendering. Scheduled
-*notifications* are now built — see below — and scheduled *reports* are not, for
-a reason worth keeping.
+`jobs` work and is **not built**: PDF rendering, and scheduled reports. Scheduled
+*notifications* are built — see below — and **full exports turned out not to be
+queued work at all**.
+
+### A long export is the browser's job, not the server's
+
+"Full exports" sat on the unbuilt list since the reporting kernel shipped, and
+the obstacle was never the size of the answer. It was **who runs it**:
+`report_run` gates on `role_permissions` for `current_role_code()`, so a worker
+draining a queue has no role and cannot run a report at all. Every way round
+ends in inventing a service identity, which the scheduled-reports note below
+already refuses to do quietly.
+
+The way through is to notice that **a person asking for an export is present
+while it runs**, which a scheduled report's asker is not:
+
+> The server answers bounded pages as the person who asked; the client
+> assembles them. RLS stays the only gate, no service identity is invented, and
+> progress and cancellation come free.
+
+So `report_run` gained an offset (migration `0154`) and that is the entire
+database change — the same permission check **on every page**, the same 5,000
+cap per call, the same `total_count` alongside. Three things this makes
+load-bearing:
+
+- **Every read model's `order by` is now part of the contract.** Paging with
+  `limit`/`offset` over an unordered query returns an arbitrary slice each time,
+  so an export could contain one row twice and miss another. Every catalogue
+  function already ended in one; a new report that sorts on a single
+  low-cardinality column should add a tiebreak.
+- **The ceiling is refused, not applied.** Past 100,000 rows the export declines
+  and says the number, because rule 13's lesson holds here too — a spreadsheet
+  with the first hundred thousand of three hundred and forty thousand rows looks
+  complete.
+- **`create or replace` with a new parameter leaves the old function behind.**
+  The three-argument `report_run` was dropped rather than kept, because two
+  bodies is where the permission check quietly stops being updated in one of
+  them; `p_offset` defaults, so every existing caller is unaffected.
 
 ### Work that runs on a timer
 
@@ -752,9 +787,10 @@ Three rules for writing one:
   built in Node. Vercel runs in UTC; the school does not.
 
 Reports are bounded (1,000 rows by default, 5,000 at most) with the true total
-returned alongside, which is why they run inline without breaking rule 7. The
-unbounded cases — a full export, a PDF, a scheduled report — belong in `jobs`
-and are not built. See `docs/modules/reports.md`.
+returned alongside, which is why they run inline without breaking rule 7. A
+**full export** is that same call walked in pages by the browser, as the person
+who asked — see rule 7. A PDF and a scheduled report remain `jobs` work and are
+not built. See `docs/modules/reports.md`.
 
 ### …and a dashboard is not a report
 

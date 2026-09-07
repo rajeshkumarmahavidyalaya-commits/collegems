@@ -1,6 +1,10 @@
 import { describe, expect, it } from "vitest";
 import {
   alignFor,
+  EXPORT_MAX_ROWS,
+  EXPORT_PAGE_SIZE,
+  exportProgressSentence,
+  planExport,
   cleanParams,
   exportFilename,
   formatCell,
@@ -141,5 +145,72 @@ describe("export filename", () => {
     // one carrying a student's name is a privacy problem in a downloads folder.
     const name = exportFilename("fees.defaulters");
     expect(name).toMatch(/^fees-defaulters-\d{4}-\d{2}-\d{2}\.csv$/);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Exporting more than one page
+// ---------------------------------------------------------------------------
+
+describe("planning a full export", () => {
+  it("returns one page for an answer that fits in a call", () => {
+    expect(planExport(1)).toEqual({ ok: true, pages: [0], rows: 1 });
+    expect(planExport(EXPORT_PAGE_SIZE)).toEqual({
+      ok: true,
+      pages: [0],
+      rows: EXPORT_PAGE_SIZE,
+    });
+  });
+
+  it("does not drop the last partial page", () => {
+    // The off-by-one that would matter: 5,001 rows is two pages, and a `<`
+    // written as `<=` or a page count taken with a bare division loses the
+    // final row — silently, in a spreadsheet somebody then acts on.
+    const plan = planExport(EXPORT_PAGE_SIZE + 1);
+    expect(plan.ok).toBe(true);
+    if (plan.ok) {
+      expect(plan.pages).toEqual([0, EXPORT_PAGE_SIZE]);
+    }
+  });
+
+  it("walks the offsets in order, with no gap and no overlap", () => {
+    const plan = planExport(EXPORT_PAGE_SIZE * 3 + 7);
+    expect(plan.ok).toBe(true);
+    if (!plan.ok) return;
+
+    expect(plan.pages).toEqual([0, EXPORT_PAGE_SIZE, EXPORT_PAGE_SIZE * 2, EXPORT_PAGE_SIZE * 3]);
+    for (let i = 1; i < plan.pages.length; i += 1) {
+      expect(plan.pages[i] - plan.pages[i - 1]).toBe(EXPORT_PAGE_SIZE);
+    }
+  });
+
+  it("refuses an oversized export rather than truncating it", () => {
+    // Rule 13, twice learnt: a spreadsheet with the first 100,000 of 340,000
+    // rows looks complete, and nobody notices until it matters.
+    const plan = planExport(EXPORT_MAX_ROWS + 1);
+    expect(plan.ok).toBe(false);
+    if (!plan.ok) {
+      // `en-IN` groups by lakh, which is the point of going through the i18n
+      // formatter rather than writing a locale tag: a bursar in Nagpur reads
+      // "1,00,000", and "100,000" is a number from somewhere else.
+      expect(plan.reason).toContain("1,00,000");
+      expect(plan.reason).toMatch(/narrow/i);
+    }
+  });
+
+  it("allows exactly the ceiling", () => {
+    expect(planExport(EXPORT_MAX_ROWS).ok).toBe(true);
+  });
+
+  it("says there is nothing to export rather than producing an empty file", () => {
+    // An empty CSV downloads and opens as a blank sheet, which reads as a
+    // broken export rather than as an empty answer.
+    expect(planExport(0).ok).toBe(false);
+    expect(planExport(-1).ok).toBe(false);
+  });
+
+  it("counts rows for a person rather than for a machine", () => {
+    expect(exportProgressSentence(10000, 42318)).toBe("Fetching 10,000 of 42,318 rows…");
+    expect(exportProgressSentence(100000, 342318)).toBe("Fetching 1,00,000 of 3,42,318 rows…");
   });
 });

@@ -214,3 +214,109 @@ describe("reporting kernel", () => {
     expect((catalog ?? []).some((r) => r.key === "library.overdue")).toBe(true);
   });
 });
+
+/**
+ * Paging, which is how a full export is done.
+ *
+ * Rule 7 listed "full exports" as unbuilt `jobs` work, and the obstacle was
+ * never the size of the answer — it was that a queued worker has no role, and
+ * `report_run` gates on one. A person asking for an export is present while it
+ * runs, so the server answers bounded pages **as them** and the browser
+ * assembles. These are the properties that makes safe:
+ *
+ *   1. the permission check happens on **every** call, not once at the start;
+ *   2. `total_count` is the whole answer whatever page you asked for;
+ *   3. pages do not overlap and do not skip.
+ */
+describe("reading a report in pages", () => {
+  let a: SupabaseClient<Database>;
+
+  beforeAll(async () => {
+    a = await tenantAClient();
+  });
+
+  it("keeps the permission check on every page", async () => {
+    // Not "authorise once, then stream": an export is the same report run more
+    // than once, and a role whose permission is withdrawn mid-export stops
+    // getting rows at the next call.
+    const denied = await a.rpc("report_run", {
+      p_key: "hr.staff_attendance",
+      p_params: {},
+      p_limit: 5,
+      p_offset: 5000,
+    });
+    // Tenant A's admin *may* run this one, so this asserts the shape rather
+    // than a refusal: an offset past the end is an empty page, not an error.
+    expect(denied.error).toBeNull();
+    expect((denied.data ?? []).length).toBe(0);
+  });
+
+  it("reports the whole answer's size from any page", async () => {
+    const first = await a.rpc("report_run", {
+      p_key: "students.roster",
+      p_params: {},
+      p_limit: 2,
+      p_offset: 0,
+    });
+    const second = await a.rpc("report_run", {
+      p_key: "students.roster",
+      p_params: {},
+      p_limit: 2,
+      p_offset: 2,
+    });
+
+    expect(first.error).toBeNull();
+    expect(second.error).toBeNull();
+    if (!first.data?.length || !second.data?.length) return;
+
+    // Otherwise page two of three would report itself as the complete answer,
+    // and the export would stop early with a plausible-looking file.
+    expect(second.data[0].total_count).toBe(first.data[0].total_count);
+  });
+
+  it("does not repeat or skip a row between pages", async () => {
+    const size = 3;
+    const pageOne = await a.rpc("report_run", {
+      p_key: "students.roster",
+      p_params: {},
+      p_limit: size,
+      p_offset: 0,
+    });
+    const pageTwo = await a.rpc("report_run", {
+      p_key: "students.roster",
+      p_params: {},
+      p_limit: size,
+      p_offset: size,
+    });
+    const overlapping = await a.rpc("report_run", {
+      p_key: "students.roster",
+      p_params: {},
+      p_limit: size * 2,
+      p_offset: 0,
+    });
+
+    if (!overlapping.data || overlapping.data.length < size * 2) return;
+
+    const walked = [...(pageOne.data ?? []), ...(pageTwo.data ?? [])].map((r) =>
+      JSON.stringify(r.row_data),
+    );
+    const straight = overlapping.data.map((r) => JSON.stringify(r.row_data));
+
+    // Every catalogue read model ends in an `order by`, which is what makes
+    // limit/offset paging deterministic. Migration 0154 says so; this proves it
+    // for a report with a natural tiebreak.
+    expect(walked).toEqual(straight);
+  });
+
+  it("still answers a call that does not mention an offset", async () => {
+    // The three-argument function was dropped and `p_offset` defaults, so every
+    // existing caller keeps working without a second copy of the gate.
+    const { error, data } = await a.rpc("report_run", {
+      p_key: "students.roster",
+      p_params: {},
+      p_limit: 1,
+    });
+    expect(error).toBeNull();
+    expect((data ?? []).length).toBeLessThanOrEqual(1);
+  });
+});

@@ -65,6 +65,7 @@ export async function runReport(input: unknown): Promise<ActionResult<ReportResu
     p_key: parsed.data.key,
     p_params: cleanParams(parsed.data.params),
     p_limit: limit,
+    p_offset: parsed.data.offset ?? 0,
   });
 
   if (error) {
@@ -75,10 +76,14 @@ export async function runReport(input: unknown): Promise<ActionResult<ReportResu
 
   const rows = (data ?? []).map((row) => (row.row_data ?? {}) as Record<string, unknown>);
   const totalCount = data?.[0]?.total_count ?? 0;
+  const offset = parsed.data.offset ?? 0;
 
   return {
     ok: true,
-    data: { rows, totalCount, truncated: totalCount > rows.length },
+    // `total_count` is the whole answer's size whatever page this is, so
+    // "truncated" has to account for the offset — otherwise page two of three
+    // reports itself as complete.
+    data: { rows, totalCount, truncated: totalCount > offset + rows.length },
   };
 }
 
