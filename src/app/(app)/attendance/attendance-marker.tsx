@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import {
   AlertCircle,
+  CalendarOff,
   Check,
   CircleSlash,
   ClipboardCheck,
@@ -328,6 +329,23 @@ export function AttendanceMarker({
           )}
         </div>
       </div>
+
+      {/* A warning, never a block. `holidays` and `weekends` have existed since
+          migration 0031 and nothing in student attendance read them until 0152,
+          so a register could be taken on Republic Day with no indication --
+          but a school that holds a class on a Saturday must still be able to
+          record it. */}
+      {query.data && !query.data.dayStatus.isWorking && (
+        <Alert>
+          <CalendarOff className="size-4" aria-hidden="true" />
+          <AlertTitle>The school is closed on this date</AlertTitle>
+          <AlertDescription>
+            {query.data.dayStatus.reason ?? "Not a school day"}. You can still take a register —
+            an extra class on a closed day is a real thing — but this day is not counted as a
+            working day when the school looks for registers that were never taken.
+          </AlertDescription>
+        </Alert>
+      )}
 
       <SummaryStrip counts={counts} total={students.length} />
 

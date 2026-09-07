@@ -187,6 +187,70 @@ query here.
 
 ---
 
+## Coverage — which registers were never taken
+
+This module says, in four places, that a percentage is **over what was marked,
+never over the calendar**: a register half taken must read as half taken, not as
+a school half empty. That rule is right, and it has a blind spot which was open
+from the day the module shipped:
+
+> The rule that stops a percentage lying is the same rule that hides the
+> register nobody took. Those need **two numbers, not one changed one.**
+
+94% over eleven marked days in a forty-day term is not a good month; it is
+twenty-nine days nobody wrote down, and no percentage can say so however it is
+computed. So migration `0152` adds the second number and leaves every existing
+percentage exactly as it was:
+
+| | |
+|---|---|
+| `attendance_calendar(from, to)` | one row per day: open or closed, and why |
+| `attendance_coverage(from, to, section)` | working days against days a register exists for |
+| `attendance.gaps` | the catalog report — one row per class per unmarked school day |
+
+The demo tenant made the point immediately: every class showed a healthy
+attendance percentage for August and **19 of 26 school days marked**, seven days
+per class with no register at all.
+
+### One definition of "is the school open"
+
+Migration `0152` shipped `attendance_calendar` describing itself as a second
+reader of `hr_working_days`, pinned by a test. It was wrong about the count —
+there were **three**:
+
+| | | |
+|---|---|---|
+| `academics_is_teaching_day(date)` | `0031` | a boolean |
+| `hr_working_days(from, to)` | `0057` | a count, for payroll |
+| `attendance_calendar(from, to)` | `0152` | a day and a reason |
+
+And two of them disagreed. `academics_is_teaching_day` filtered holidays by
+`session_id` and `hr_working_days` did not, so a query about last April counted
+last year's Diwali as a working day in one function and a closure in the other.
+
+> **The date is the discriminator, not the session.** A holiday row already says
+> which year it belongs to, in its own date range. Filtering by the *current*
+> session is redundant inside that session and wrong outside it — which is
+> exactly when somebody is looking at history and least able to tell.
+
+Migration `0153` makes `attendance_calendar` the one definition and the other
+two wrappers over it. Payroll prorates on `hr_working_days` in six places, so
+the switch was verified numerically first and after: **26 = 26** over August
+2026 and **313 = 313** over the whole 2025–26 session.
+
+`attendance_calendar` also **refuses a range over 400 days rather than
+truncating it** — `0152` silently capped, which is the shape rule 13 threw out
+once already for bulk import, with a payslip on the end of it this time.
+
+### The marking screen warns and does not block
+
+A closed day now says so — *"Weekly holiday"*, or the holiday's name — above the
+register. It is a warning, never a block: a school that holds an extra class on
+a Saturday must still be able to record it, and that day simply is not counted
+as a working day when the school looks for registers that were never taken.
+
+---
+
 ## Known, deliberate gaps
 
 - **`attendance_records_session_id_fkey` has no covering index.** Supabase's
@@ -199,6 +263,8 @@ query here.
   `current_role_code()`, so at most one ever evaluates its subquery.
 - **Period-wise marking is not exposed.** The column exists and defaults to 0;
   the UI needs the timetable tables before it can offer a period picker.
-- **Holidays are not modelled.** The report says "20 days marked in this range"
-  rather than "20 of 22 school days", because a school calendar table does not
-  exist yet.
+- ~~**Holidays are not modelled.**~~ Closed by migrations `0152`–`0153` — and
+  the note was stale long before that. `holidays` and `weekends` arrived in
+  migration `0031`, one migration after this module, and are editable on
+  `/academics`; what was missing was student attendance *reading* them. See
+  **Coverage** above.

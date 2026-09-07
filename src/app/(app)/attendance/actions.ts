@@ -32,6 +32,13 @@ export type RegisterStudent = {
   onLeave: { kind: string; reason: string } | null;
 };
 
+export type DayStatus = {
+  /** Whether the school is open. A closed day is a warning, never a block. */
+  isWorking: boolean;
+  /** Why it is closed — a holiday's name, or "Weekly holiday". */
+  reason: string | null;
+};
+
 export type Register = {
   sectionId: string;
   date: string;
@@ -39,6 +46,15 @@ export type Register = {
   students: RegisterStudent[];
   /** When the register was last written, for the "saved at" indicator. */
   lastMarkedAt: string | null;
+  /**
+   * Whether this is a school day at all.
+   *
+   * `holidays` and `weekends` have existed since migration 0031 and nothing in
+   * student attendance ever read them, so a register could be taken on
+   * Republic Day with no indication. It is a **warning, not a block**: a school
+   * that holds a class on a Saturday should be able to record it.
+   */
+  dayStatus: DayStatus;
 };
 
 type SectionRow = {
@@ -195,7 +211,17 @@ export async function getRegister(
     null,
   );
 
-  return { sectionId, date, period, students, lastMarkedAt };
+  const { data: calendar } = await supabase.rpc("attendance_calendar", {
+    p_from: date,
+    p_to: date,
+  });
+  const today = calendar?.[0];
+  const dayStatus: DayStatus = {
+    isWorking: today?.is_working ?? true,
+    reason: today?.reason ?? null,
+  };
+
+  return { sectionId, date, period, students, lastMarkedAt, dayStatus };
 }
 
 /**
@@ -387,4 +413,47 @@ export async function getMarkedDates(params: {
 
   if (error) throw new Error(error.message);
   return [...new Set((data ?? []).map((r) => r.attendance_date))].sort();
+}
+
+// ---------------------------------------------------------------------------
+// Coverage
+// ---------------------------------------------------------------------------
+
+export type CoverageRow = {
+  sectionId: string;
+  sectionLabel: string;
+  workingDays: number;
+  daysMarked: number;
+  daysMissing: number;
+  coveragePercent: number | null;
+};
+
+/**
+ * Working days against days a register exists for, worst covered first.
+ *
+ * This is the number every attendance percentage in this codebase deliberately
+ * cannot express. The percentage is over *what was marked* — a register half
+ * taken must read as half taken, not as a school half empty — and that same
+ * rule is why a class nobody has taken a register for since August looks
+ * perfect. Two numbers, not one changed one.
+ */
+export async function getCoverage(from: string, to: string): Promise<CoverageRow[]> {
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("attendance_coverage", {
+    p_from: from,
+    p_to: to,
+  });
+
+  // The calendar refuses a range over 400 days rather than truncating it, so
+  // an over-long range is an error with a sentence in it, not a wrong answer.
+  if (error) throw new Error(error.message);
+
+  return (data ?? []).map((r) => ({
+    sectionId: r.section_id,
+    sectionLabel: r.section_label,
+    workingDays: r.working_days,
+    daysMarked: r.days_marked,
+    daysMissing: r.days_missing,
+    coveragePercent: r.coverage_percent === null ? null : Number(r.coverage_percent),
+  }));
 }

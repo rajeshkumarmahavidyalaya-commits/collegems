@@ -6140,6 +6140,25 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      attendance_calendar: {
+        Args: { p_from: string; p_to: string }
+        Returns: {
+          day: string
+          is_working: boolean
+          reason: string
+        }[]
+      }
+      attendance_coverage: {
+        Args: { p_from: string; p_section_id?: string; p_to: string }
+        Returns: {
+          coverage_percent: number
+          days_marked: number
+          days_missing: number
+          section_id: string
+          section_label: string
+          working_days: number
+        }[]
+      }
       available_locales: {
         Args: never
         Returns: {
@@ -7645,6 +7664,12 @@ export type Database = {
           p_to_session_id: string
         }
         Returns: string
+      }
+      report_attendance_gaps: {
+        Args: { p_params: Json }
+        Returns: {
+          row_data: Json
+        }[]
       }
       report_attendance_summary: {
         Args: { p_params: Json }

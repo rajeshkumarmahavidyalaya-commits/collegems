@@ -865,6 +865,30 @@ matter** — `exam_results` stores the numbers *and* a `rules_snapshot`, so
 editing a scheme two years later cannot change a report card that was already
 handed to somebody. See `docs/modules/exams.md`.
 
+### A rate hides what was never measured
+
+This codebase says, in several modules, that an attendance percentage is **over
+what was marked, never over the calendar** — a register half taken must read as
+half taken, not as a school half empty. That is right, and it has a blind spot
+which was open from the day the attendance module shipped:
+
+> The rule that stops a rate lying is the same rule that hides the measurement
+> nobody took. Those need **two numbers, not one changed one.**
+
+94% over eleven marked days in a forty-day term is not a good month; it is
+twenty-nine days nobody wrote down, and no percentage can say so however it is
+computed. `attendance_coverage` and the `attendance.gaps` report are the second
+number, and every existing percentage was left exactly as it was.
+
+**And one fact gets one definition.** "Is the school open today" had grown three
+implementations — `academics_is_teaching_day`, `hr_working_days` and, briefly,
+`attendance_calendar` — and two of them disagreed about any holiday outside the
+current session, because one filtered by `session_id` and one did not. The date
+is the discriminator, not the session: a holiday row already says which year it
+belongs to. Migration `0153` makes one of them the definition and the other two
+wrappers, verified numerically before and after because payroll prorates on it.
+See `docs/modules/attendance.md`.
+
 ### A record of an observation is not a place to write a decision
 
 Approving a child's leave must not stamp `excused` across the register, however
