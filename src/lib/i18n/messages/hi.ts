@@ -42,6 +42,7 @@ export const hi: Messages = {
   "nav.overview": "अवलोकन",
   "nav.people": "लोग",
   "nav.importStudents": "विद्यार्थी आयात",
+  "nav.certificates": "प्रमाणपत्र",
   "nav.classRoutine": "कक्षा समय-सारणी",
   "nav.myWeek": "मेरा सप्ताह",
   "nav.attendanceReport": "उपस्थिति रिपोर्ट",

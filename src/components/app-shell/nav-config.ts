@@ -33,6 +33,7 @@ import {
   PenLine,
   Radio,
   ScrollText,
+  FileBadge,
   Settings2,
   Languages,
   ArrowUpNarrowWide,
@@ -94,6 +95,17 @@ export const NAV_GROUPS: NavGroup[] = [
         href: "/students/import",
         icon: FileUp,
         roles: ["admin"],
+      },
+      // Certificates sit with People rather than under Reports: a leaving
+      // certificate is an act performed on a child's record -- it takes them
+      // off the roll -- and not a way of looking something up. The register
+      // report is separately in the catalog for the auditor.
+      {
+        title: "Certificates",
+        messageKey: "nav.certificates",
+        href: "/certificates",
+        icon: FileBadge,
+        roles: ["admin", "teacher", "accountant"],
       },
     ],
   },

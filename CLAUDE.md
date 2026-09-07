@@ -122,6 +122,14 @@ the missing policy" hands every child their own mark sheet, so the absence is
 commented at the point where it would be added. See
 `docs/modules/homework.md`.
 
+`certificates` is the column-grant shape's second instance, and two instances
+are what make it a pattern rather than a decision. Only an administrator has an
+UPDATE policy there, so `grant update (status, cancelled_at, cancelled_by,
+cancel_reason)` narrows exactly the right thing: **nobody, administrator
+included, can rewrite what a certificate says.** DELETE is revoked outright,
+because a cancelled certificate has to keep its serial — a gapless sequence with
+a hole in it is a sequence nobody can audit.
+
 ### A CHECK cannot reach another table
 
 The same genre of mistake. When a rule depends on a column of a *different*
@@ -751,6 +759,42 @@ Derived values are computed while they are provisional and **frozen when they
 matter** — `exam_results` stores the numbers *and* a `rules_snapshot`, so
 editing a scheme two years later cannot change a report card that was already
 handed to somebody. See `docs/modules/exams.md`.
+
+### A document a person keeps is frozen, and its wording is data too
+
+Report cards said the first half of this. Certificates — transfer, bonafide,
+character — say both halves, because a leaving certificate is a legal record
+rather than a printout and every board prescribes different words for it.
+
+> **Preview computes; issue freezes.** `certificate_preview` may be called a
+> hundred times and stores nothing; `certificate_issue` calls it once more
+> *server-side*, allocates a gapless serial, renders with it, and writes the
+> rendered text down. From that moment the document is a row, and a duplicate
+> printed in 2034 reads that row rather than recomputing.
+
+Recomputing is not merely stale — by then the child has left, the enrolment is
+over and the class has different children in it, so it would produce a
+**plausible document that is not the one the family was given.**
+
+Three rules follow, and the first is the one that feels wrong and is not:
+
+- **A missing value stops the document; it is not smoothed over.** A null leaves
+  its `{{placeholder}}` standing, the preview names it, and issuing refuses. A
+  certificate reading *"Father's Name: —"* is a document a school has to
+  apologise for, and it goes out because nobody noticed. The way to fill it is
+  the template's own declared `fields`.
+- **…but a policy question is a sentence, not a refusal.** Whether unpaid fees
+  withhold a leaving certificate is a real school's real policy and unlawful in
+  some states, so the engine says *"4,200.00 is still outstanding"* and a person
+  decides — the `grading_scheme_problems()` pattern again.
+- **A seeded default may only use values the database is guaranteed to have.**
+  The shipped transfer certificate printed `{{school.city}}` and therefore could
+  not be issued until an unrelated settings page had been filled in. Everything
+  beyond the guaranteed set is the school's to add to its own copy of the
+  wording, deliberately — which is what makes it a template rather than a form.
+  Migration `0136`.
+
+See `docs/modules/certificates.md`.
 
 
 ## 13. A bulk operation's preview is editable rows, not a report

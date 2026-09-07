@@ -417,6 +417,148 @@ export type Database = {
           },
         ]
       }
+      certificate_templates: {
+        Row: {
+          body: string
+          created_at: string
+          created_by: string | null
+          fields: Json
+          id: string
+          is_active: boolean
+          is_default: boolean
+          kind: string
+          name: string
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          body: string
+          created_at?: string
+          created_by?: string | null
+          fields?: Json
+          id?: string
+          is_active?: boolean
+          is_default?: boolean
+          kind: string
+          name: string
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          body?: string
+          created_at?: string
+          created_by?: string | null
+          fields?: Json
+          id?: string
+          is_active?: boolean
+          is_default?: boolean
+          kind?: string
+          name?: string
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "certificate_templates_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      certificates: {
+        Row: {
+          body: string
+          cancel_reason: string | null
+          cancelled_at: string | null
+          cancelled_by: string | null
+          created_at: string
+          id: string
+          issued_by: string | null
+          issued_on: string
+          kind: string
+          serial_no: string
+          session_id: string
+          snapshot: Json
+          status: string
+          student_id: string
+          template_id: string | null
+          template_name: string
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          body: string
+          cancel_reason?: string | null
+          cancelled_at?: string | null
+          cancelled_by?: string | null
+          created_at?: string
+          id?: string
+          issued_by?: string | null
+          issued_on: string
+          kind: string
+          serial_no: string
+          session_id: string
+          snapshot: Json
+          status?: string
+          student_id: string
+          template_id?: string | null
+          template_name: string
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          body?: string
+          cancel_reason?: string | null
+          cancelled_at?: string | null
+          cancelled_by?: string | null
+          created_at?: string
+          id?: string
+          issued_by?: string | null
+          issued_on?: string
+          kind?: string
+          serial_no?: string
+          session_id?: string
+          snapshot?: Json
+          status?: string
+          student_id?: string
+          template_id?: string | null
+          template_name?: string
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "certificates_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "academic_sessions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "certificates_student_fkey"
+            columns: ["tenant_id", "student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["tenant_id", "id"]
+          },
+          {
+            foreignKeyName: "certificates_template_fkey"
+            columns: ["tenant_id", "template_id"]
+            isOneToOne: false
+            referencedRelation: "certificate_templates"
+            referencedColumns: ["tenant_id", "id"]
+          },
+          {
+            foreignKeyName: "certificates_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       class_levels: {
         Row: {
           created_at: string
@@ -5633,6 +5775,94 @@ export type Database = {
           native_name: string
         }[]
       }
+      certificate_cancel: {
+        Args: { p_certificate_id: string; p_reason: string }
+        Returns: {
+          body: string
+          cancel_reason: string | null
+          cancelled_at: string | null
+          cancelled_by: string | null
+          created_at: string
+          id: string
+          issued_by: string | null
+          issued_on: string
+          kind: string
+          serial_no: string
+          session_id: string
+          snapshot: Json
+          status: string
+          student_id: string
+          template_id: string | null
+          template_name: string
+          tenant_id: string
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "certificates"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      certificate_issue: {
+        Args: {
+          p_extra?: Json
+          p_issued_on?: string
+          p_student_id: string
+          p_template_id: string
+        }
+        Returns: {
+          body: string
+          cancel_reason: string | null
+          cancelled_at: string | null
+          cancelled_by: string | null
+          created_at: string
+          id: string
+          issued_by: string | null
+          issued_on: string
+          kind: string
+          serial_no: string
+          session_id: string
+          snapshot: Json
+          status: string
+          student_id: string
+          template_id: string | null
+          template_name: string
+          tenant_id: string
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "certificates"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      certificate_placeholders: { Args: { p_body: string }; Returns: string[] }
+      certificate_preview: {
+        Args: {
+          p_extra?: Json
+          p_issued_on?: string
+          p_student_id: string
+          p_template_id: string
+        }
+        Returns: Json
+      }
+      certificate_render: {
+        Args: { p_body: string; p_values: Json }
+        Returns: string
+      }
+      certificate_snapshot: {
+        Args: { p_extra?: Json; p_issued_on?: string; p_student_id: string }
+        Returns: Json
+      }
+      certificate_template_problems: {
+        Args: { p_template_id: string }
+        Returns: {
+          message: string
+          severity: string
+        }[]
+      }
       current_role_allows: {
         Args: { p_permission_code: string }
         Returns: boolean
@@ -5640,6 +5870,7 @@ export type Database = {
       current_role_code: { Args: never; Returns: string }
       current_session_id: { Args: { p_tenant_id: string }; Returns: string }
       current_tenant_id: { Args: never; Returns: string }
+      dashboard_enrolment_by_grade: { Args: never; Returns: Json }
       dashboard_summary: { Args: never; Returns: Json }
       enquiry_board: {
         Args: { p_session_id?: string }
@@ -6956,6 +7187,12 @@ export type Database = {
         Returns: string
       }
       report_attendance_summary: {
+        Args: { p_params: Json }
+        Returns: {
+          row_data: Json
+        }[]
+      }
+      report_certificate_register: {
         Args: { p_params: Json }
         Returns: {
           row_data: Json
