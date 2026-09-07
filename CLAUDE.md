@@ -1354,6 +1354,34 @@ the rupee is a fact about the money, not about the reader.
    - Long names, URLs and chip groups reflow without clipping at 200% zoom.
    - Destructive actions are confirmed and, where data permits, undoable.
 
+### A conditional render is not a conditional load
+
+Next bundles what is **imported**, not what is rendered, so `{open && <Big/>}`
+ships `Big` to everybody and then does not draw it. Three of the six things that
+made this app heavy were that mistake — most expensively a 404 kB Recharts
+bundle on `/`, the **first page anybody sees after signing in**, which made the
+dashboard the heaviest route in the product at 235 kB. It is 117 kB now.
+
+- **Reach for `next/dynamic` for anything behind an interaction** — a dialog, a
+  drawer, a chart below the fold. A dialog needs no `loading:` state (it is
+  fetched on the click that opens it); a chart needs `ssr: false` and a skeleton
+  **the same height as the chart**, or the page jumps when it arrives.
+- `ssr: false` is illegal inside a Server Component, so the dynamic import lives
+  in a small client module — see `src/components/dashboard/charts.tsx`. The page
+  stays a Server Component.
+- **A barrel that mixes a Zod schema with a label helper charges every importer
+  for Zod** (91 kB, on 53 of 78 routes here). A schema belongs in the browser
+  when a form validates against it; a label does not.
+  `src/lib/validations/fees-display.ts` is the split, and it has **no imports at
+  all** — one `import { z }` and it silently becomes the thing it was extracted
+  from.
+
+**Measure before and after, and say the number.** `npm run build` prints First
+Load JS per route, `ls -S .next/static/chunks` says what is actually big, and
+`.next/app-build-manifest.json` says which routes carry it — which is the
+question that matters, because the worst chunk in this app was on exactly one
+route. See `docs/performance.md`.
+
 ### Amber is not a hover colour
 
 The generated palette's amber (`--brand-accent`) is for **sparing emphasis** —

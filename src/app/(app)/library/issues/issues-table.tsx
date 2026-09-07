@@ -5,7 +5,6 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { keepPreviousData, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { ColumnDef, SortingState, VisibilityState } from "@tanstack/react-table";
-import { format } from "date-fns";
 import { toast } from "sonner";
 import { IndianRupee, Undo2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -19,7 +18,9 @@ import {
 } from "@/components/ui/select";
 import { DataTable, exportRowsToCsv } from "@/components/data-table/data-table";
 import { DataTableToolbar } from "@/components/data-table/data-table-toolbar";
-import { formatMoney } from "@/lib/validations/fees";
+import { formatMoney } from "@/lib/validations/fees-display";
+import { formatDate } from "@/lib/i18n/format";
+import { useI18n } from "@/components/providers/i18n-provider";
 import { listIssues, returnBook, waiveStaffFine, type IssueRow } from "../actions";
 
 function StatusBadge({ row }: { row: IssueRow }) {
@@ -30,6 +31,10 @@ function StatusBadge({ row }: { row: IssueRow }) {
 
 export function IssuesTable({ canManage }: { canManage: boolean }) {
   const queryClient = useQueryClient();
+  // Rule 15: the reader's locale, never a hardcoded tag. This also removed the
+  // last two `date-fns` calls in the app -- a whole date library for one
+  // `format()`, when `Intl` is already in the runtime.
+  const { locale } = useI18n();
   const router = useRouter();
   const [pageIndex, setPageIndex] = useState(0);
   const [pageSize, setPageSize] = useState(25);
@@ -134,7 +139,7 @@ export function IssuesTable({ canManage }: { canManage: boolean }) {
       header: "Issued",
       cell: ({ row }) => (
         <span className="tabular-nums">
-          {format(new Date(row.original.issuedAt), "d MMM yyyy")}
+          {formatDate(row.original.issuedAt, locale)}
         </span>
       ),
       enableSorting: false,
@@ -144,7 +149,7 @@ export function IssuesTable({ canManage }: { canManage: boolean }) {
       accessorKey: "dueAt",
       header: "Due",
       cell: ({ row }) => (
-        <span className="tabular-nums">{format(new Date(row.original.dueAt), "d MMM yyyy")}</span>
+        <span className="tabular-nums">{formatDate(row.original.dueAt, locale)}</span>
       ),
       enableSorting: false,
       meta: { label: "Due" },

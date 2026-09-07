@@ -6,8 +6,36 @@ import { supabasePublishableKey, supabaseUrl } from "@/lib/supabase/env";
 // deployments that cannot authenticate in the first place.
 const PUBLIC_PATHS = ["/login", "/auth", "/api/health"];
 
+/** Not an error: "this request has no session and never claimed to". */
+class SignedOut extends Error {}
+
 function isPublicPath(pathname: string) {
   return PUBLIC_PATHS.some((p) => pathname === p || pathname.startsWith(`${p}/`));
+}
+
+/**
+ * Whether this request carries anything that could be a session.
+ *
+ * Supabase's cookie-based auth stores the session under `sb-<ref>-auth-token`,
+ * chunked across `.0`, `.1`, ... when it is long. If none of those is present
+ * there is nothing to refresh and nothing to validate, so calling
+ * `auth.getUser()` would be a network round trip to Supabase whose only
+ * possible answer is "no user".
+ *
+ * That call was happening on **every request from every signed-out visitor**,
+ * in front of every route, before they could be redirected to /login. Skipping
+ * it removes a round trip from the slowest path a new user has — the first one.
+ *
+ * Deliberately a prefix test rather than the exact project-scoped name: the
+ * project ref is part of the cookie name, and a middleware that has to parse
+ * the Supabase URL to know what to look for is a middleware that breaks when
+ * the URL is missing — which is exactly the failure the try/catch below exists
+ * to survive. A false positive here costs one round trip and is then handled
+ * normally; a false negative would sign somebody out, so the test is
+ * deliberately generous.
+ */
+function hasAuthCookie(request: NextRequest): boolean {
+  return request.cookies.getAll().some((c) => c.name.startsWith("sb-") && c.name.includes("auth-token"));
 }
 
 export async function middleware(request: NextRequest) {
@@ -30,7 +58,13 @@ export async function middleware(request: NextRequest) {
   //      attempt can reject at the network layer.
   //
   // Both mean the same thing for routing: treat this request as signed out.
+  //
+  // ...and so does having no auth cookie at all, without asking anybody.
   try {
+    if (!hasAuthCookie(request)) {
+      throw new SignedOut();
+    }
+
     const supabase = createServerClient(supabaseUrl(), supabasePublishableKey(), {
       cookies: {
         getAll() {
@@ -53,7 +87,12 @@ export async function middleware(request: NextRequest) {
     const result = await supabase.auth.getUser();
     user = result.data?.user ?? null;
   } catch (error) {
-    console.error("[middleware] auth check failed, treating request as signed out:", error);
+    // A missing cookie is the ordinary case, not a fault, so it is not logged —
+    // logging every signed-out request would bury the two failures above in
+    // noise, and those are the ones somebody needs to find.
+    if (!(error instanceof SignedOut)) {
+      console.error("[middleware] auth check failed, treating request as signed out:", error);
+    }
     user = null;
   }
 

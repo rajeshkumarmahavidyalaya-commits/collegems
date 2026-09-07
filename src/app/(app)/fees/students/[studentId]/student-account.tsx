@@ -23,14 +23,25 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { entryTypeLabel, formatMoney, methodLabel } from "@/lib/validations/fees";
-import {
-  RecordAdjustmentDialog,
-  RecordPaymentDialog,
-  RecordRefundDialog,
-  ReverseEntryDialog,
-  type StudentTarget,
-} from "../../fee-dialogs";
+import { entryTypeLabel, formatMoney, methodLabel } from "@/lib/validations/fees-display";
+import dynamic from "next/dynamic";
+import type { StudentTarget } from "../../fee-dialogs";
+
+// Four dialogs, all rendered conditionally and all statically imported, which
+// put the whole fee-entry form stack in this page's first load. See the note in
+// `fees-table.tsx`: a conditional render is not a conditional load.
+const RecordAdjustmentDialog = dynamic(() =>
+  import("../../fee-dialogs").then((m) => m.RecordAdjustmentDialog),
+);
+const RecordPaymentDialog = dynamic(() =>
+  import("../../fee-dialogs").then((m) => m.RecordPaymentDialog),
+);
+const RecordRefundDialog = dynamic(() =>
+  import("../../fee-dialogs").then((m) => m.RecordRefundDialog),
+);
+const ReverseEntryDialog = dynamic(() =>
+  import("../../fee-dialogs").then((m) => m.ReverseEntryDialog),
+);
 import { createPaymentLink, queueInvoiceEmail, type StudentAccount } from "../../actions";
 
 function formatDateTime(iso: string) {

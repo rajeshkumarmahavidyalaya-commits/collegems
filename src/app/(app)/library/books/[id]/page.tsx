@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { format } from "date-fns";
+import { formatDate } from "@/lib/i18n/format";
+import { getLocale } from "@/lib/i18n/server";
 import { Pencil } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { hasPermission } from "@/lib/auth/permissions";
@@ -22,7 +23,8 @@ export const metadata = { title: "Book" };
 export default async function BookDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const supabase = await createClient();
-  const canManage = await hasPermission("library.manage");
+  // Rule 15: resolved server-side, like the tenant and the session.
+  const [canManage, locale] = await Promise.all([hasPermission("library.manage"), getLocale()]);
 
   const { data: book } = await supabase
     .from("books")
@@ -155,10 +157,10 @@ export default async function BookDetailPage({ params }: { params: Promise<{ id:
                         </div>
                       </TableCell>
                       <TableCell className="tabular-nums">
-                        {format(new Date(issue.issued_at), "d MMM yyyy")}
+                        {formatDate(issue.issued_at, locale)}
                       </TableCell>
                       <TableCell className="tabular-nums">
-                        {format(new Date(issue.due_at), "d MMM yyyy")}
+                        {formatDate(issue.due_at, locale)}
                       </TableCell>
                       <TableCell>
                         {issue.status === "returned" ? (

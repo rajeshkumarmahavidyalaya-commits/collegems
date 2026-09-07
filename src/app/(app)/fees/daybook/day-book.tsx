@@ -13,7 +13,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import { exportRowsToCsv } from "@/components/data-table/data-table";
-import { formatMoney, methodLabel } from "@/lib/validations/fees";
+import { formatMoney, methodLabel } from "@/lib/validations/fees-display";
 import { getDayBook } from "../actions";
 
 function todayIso() {

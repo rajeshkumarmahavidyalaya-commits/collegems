@@ -11,7 +11,7 @@ import { Button } from "@/components/ui/button";
 import { StatCard } from "@/components/dashboard/stat-card";
 import { getUserContext } from "@/lib/auth/context";
 import { hasPermission } from "@/lib/auth/permissions";
-import { formatMoney } from "@/lib/validations/fees";
+import { formatMoney } from "@/lib/validations/fees-display";
 import { listSections } from "../students/actions";
 import { getCollectionSummary } from "./actions";
 import { FeesTable } from "./fees-table";

@@ -30,7 +30,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { formatMoney } from "@/lib/validations/fees";
+import { formatMoney } from "@/lib/validations/fees-display";
 import {
   DECISIONS,
   EVALUATION_ORDER,

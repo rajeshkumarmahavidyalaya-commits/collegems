@@ -19,9 +19,24 @@ import {
 import { DataTable, exportRowsToCsv } from "@/components/data-table/data-table";
 import { DataTableColumnHeader } from "@/components/data-table/data-table-column-header";
 import { DataTableToolbar } from "@/components/data-table/data-table-toolbar";
-import { formatMoney } from "@/lib/validations/fees";
+import { formatMoney } from "@/lib/validations/fees-display";
 import { listBalances, type BalanceRow } from "./actions";
-import { RecordPaymentDialog, type StudentTarget } from "./fee-dialogs";
+import dynamic from "next/dynamic";
+import type { StudentTarget } from "./fee-dialogs";
+
+/**
+ * The dialog was already rendered conditionally — but Next bundles what is
+ * *imported*, not what is rendered, so its 473 lines plus Zod and
+ * react-hook-form sat in this route's first load for a form most visitors never
+ * open. `next/dynamic` makes the conditional render an actual conditional load.
+ *
+ * No `loading:` state: it is fetched the moment `collecting` is set, which is
+ * the same click that opens it, and a spinner that flashes for one frame is
+ * worse than nothing.
+ */
+const RecordPaymentDialog = dynamic(() =>
+  import("./fee-dialogs").then((m) => m.RecordPaymentDialog),
+);
 
 /**
  * Balance state, in words as well as colour. "In credit" matters as its own

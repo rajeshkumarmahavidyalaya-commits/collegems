@@ -17,7 +17,7 @@ import {
 } from "@/components/ui/select";
 import { DataTable, exportRowsToCsv } from "@/components/data-table/data-table";
 import { DataTableToolbar } from "@/components/data-table/data-table-toolbar";
-import { formatMoney } from "@/lib/validations/fees";
+import { formatMoney } from "@/lib/validations/fees-display";
 import { listInvoices, type InvoiceListRow } from "../actions";
 
 function formatDate(iso: string) {

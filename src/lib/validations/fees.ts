@@ -1,5 +1,18 @@
 import { z } from "zod";
 
+// The vocabulary and the display helpers live in a Zod-free module so that a
+// component wanting only `formatMoney` does not pull 91 kB of schema library
+// into its route. Re-exported here so callers that want both import once.
+export {
+  ENTRY_TYPES,
+  ADJUSTMENT_TYPES,
+  PAYMENT_METHODS,
+  formatMoney,
+  entryTypeLabel,
+  methodLabel,
+} from "./fees-display";
+export type { EntryType } from "./fees-display";
+
 /**
  * The vocabulary of the ledger, kept in one place so the Zod schemas, the UI
  * and the Postgres check constraints cannot drift apart.
@@ -8,29 +21,6 @@ import { z } from "zod";
  * amount and the RPCs do the signing. Every form here takes a positive number,
  * the way a person types it at a cash desk.
  */
-export const ENTRY_TYPES = [
-  { value: "payment", label: "Payment", sign: "credit", description: "Money received" },
-  { value: "discount", label: "Discount", sign: "credit", description: "A concession granted" },
-  { value: "write_off", label: "Write-off", sign: "credit", description: "Debt the school will not pursue" },
-  { value: "fine", label: "Fine", sign: "charge", description: "An extra amount owed" },
-  { value: "refund", label: "Refund", sign: "charge", description: "Money paid back out" },
-] as const;
-
-export type EntryType = (typeof ENTRY_TYPES)[number]["value"];
-
-export const ADJUSTMENT_TYPES = ENTRY_TYPES.filter(
-  (t) => t.value === "discount" || t.value === "fine" || t.value === "write_off",
-);
-
-export const PAYMENT_METHODS = [
-  { value: "cash", label: "Cash" },
-  { value: "cheque", label: "Cheque" },
-  { value: "card", label: "Card" },
-  { value: "upi", label: "UPI" },
-  { value: "netbanking", label: "Net banking" },
-  { value: "bank_transfer", label: "Bank transfer" },
-  { value: "online", label: "Online gateway" },
-] as const;
 
 export const FEE_CATEGORIES = [
   { value: "tuition", label: "Tuition" },
@@ -216,23 +206,6 @@ export const cancelInvoiceSchema = z.object({
  * hands back as a JS number -- safe here because the cap above keeps every
  * amount far inside the range where a double represents cents exactly.
  */
-export function formatMoney(value: number | null | undefined): string {
-  if (value === null || value === undefined) return "—";
-  return new Intl.NumberFormat("en-IN", {
-    style: "currency",
-    currency: "INR",
-    maximumFractionDigits: 2,
-  }).format(value);
-}
-
-export function entryTypeLabel(value: string): string {
-  return ENTRY_TYPES.find((t) => t.value === value)?.label ?? value;
-}
-
-export function methodLabel(value: string | null): string {
-  if (!value) return "—";
-  return PAYMENT_METHODS.find((m) => m.value === value)?.label ?? value;
-}
 
 /** A charge typed at the counter, rather than derived from a fee structure. */
 export const chargeSchema = z.object({

@@ -5,7 +5,7 @@ import { ArrowLeft, Ban, Printer } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { formatMoney, methodLabel } from "@/lib/validations/fees";
+import { formatMoney, methodLabel } from "@/lib/validations/fees-display";
 import type { InvoiceDocument } from "../../actions";
 
 function formatDate(iso: string) {

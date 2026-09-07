@@ -34,7 +34,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { exportRowsToCsv } from "@/components/data-table/data-table";
-import { formatMoney } from "@/lib/validations/fees";
+import { formatMoney } from "@/lib/validations/fees-display";
 import {
   DECISIONS,
   decisionLabel,

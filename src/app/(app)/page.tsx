@@ -14,8 +14,9 @@ import { getUserContext } from "@/lib/auth/context";
 import { getLocale } from "@/lib/i18n/server";
 import { formatNumber } from "@/lib/i18n/format";
 import { StatCard } from "@/components/dashboard/stat-card";
-import { EnrollmentChart, type EnrollmentDatum } from "@/components/dashboard/enrollment-chart";
-import { DonutChart, type DonutDatum } from "@/components/dashboard/donut-chart";
+import { EnrollmentChartLazy, DonutChartLazy } from "@/components/dashboard/charts";
+import type { EnrollmentDatum } from "@/components/dashboard/enrollment-chart";
+import type { DonutDatum } from "@/components/dashboard/donut-chart";
 import {
   ExamCard,
   FeesCard,
@@ -213,9 +214,9 @@ export default async function DashboardPage() {
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
         <div className="lg:col-span-2">
-          <EnrollmentChart data={enrollmentData} />
+          <EnrollmentChartLazy data={enrollmentData} />
         </div>
-        <DonutChart title="Students by gender" description="Active enrolments" data={genderData} />
+        <DonutChartLazy title="Students by gender" description="Active enrolments" data={genderData} />
       </div>
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
