@@ -72,6 +72,39 @@ it *inside the function that produces the data*, not in the UI — which is the
 distinction that keeps this consistent with the sentence above rather than an
 exception to it.
 
+### An invoker function over row-ownership RLS lies quietly
+
+The counter-case, and it is the more dangerous one because it never raises.
+
+> A `SECURITY INVOKER` function that derives its answer from a table with
+> **row-ownership** RLS does not refuse a narrower caller. It answers them, with
+> a smaller number, and **the number is plausible.**
+
+`substitution_gaps` is built on `staff_is_away`, which reads `staff_attendance`
+— where a teacher may read their own register row and nobody else's. So to a
+teacher every colleague is "not away", every lesson is somebody's ordinary
+Tuesday, and the morning roster is empty. Probed both ways rather than assumed:
+as an administrator, 4 gaps over 51 register rows spanning the whole staff; as a
+teacher, **0 gaps over the same 51 rows spanning exactly one person**.
+
+A permission error is loud. *"No cover needed today"* is quiet, and it is what a
+teacher would have been shown every morning.
+
+Three responses, and the wrong one is tempting:
+
+- **Do not widen the policy.** Who is off sick is a fact about them, not about a
+  colleague's day.
+- **Name what was withheld** — the `dashboard_summary()` answer (rule 11), where
+  the caller is entitled to the question but not to every block of it.
+- **Or give the narrower caller their own question**, which is right whenever
+  theirs is genuinely different. A teacher does not ask *"which classes have
+  nobody in front of them"*; they ask *"where do I have to be"*, and
+  `substitution_my_covers` answers that from a table they may read in full.
+
+Either way the page must **gate on the permission**, so the empty list is never
+shown as if it meant a quiet morning. Showing the same empty screen to both
+parties is the worst of the three, and the one nobody reports as a bug.
+
 ### RLS cannot restrict columns
 
 A policy decides which **rows** an update may touch. Once a row qualifies,
@@ -263,6 +296,37 @@ The same function-check answer applies to any rule about **how many other rows
 exist** — a bus with 40 seats, a room with 4 beds, debits equalling credits. No
 constraint sees a second row, so those live in the write function under an
 advisory lock, with the numbers in the message.
+
+#### …and the second boundary: it carries a fact that is still true
+
+The first boundary is about distance. This one is about **time**, and it is the
+one that looks like the device working right up until a school has been running
+for a year.
+
+> The composite-key device ties a child to its parent's **current** state. A row
+> that records what was true on a day is not that child. **Freeze the values and
+> check them in the write function instead.**
+
+`substitutions` is the case. A cover arrangement wants to say *"Aditi was away,
+period 3"* — both facts live on `timetable_entries`, one join away, so the
+device seems to fit. It does not, and neither half of it works:
+
+- **with `on update cascade`** — reassigning Monday period 3 to a different
+  teacher next term rewrites last October's substitution, so the record now
+  names somebody who was not there;
+- **without the cascade** — the same reassignment is *refused*, because old rows
+  still point at the old teacher. The timetable becomes uneditable in order to
+  protect a record of a morning nobody is looking at.
+
+So `absent_staff_id` and `time_slot_id` are plain frozen copies, and
+`substitution_arrange` checks them. Note what that buys beyond correctness: the
+critic can find *"the timetable changed after this was arranged"*, which is only
+detectable **because** the frozen slot and the live lesson are free to disagree.
+
+The distinction is the same one rule 12 draws about report cards and rule 12's
+certificates section draws about wording: a constraint keeps two rows *in step*,
+which is right for a rule and wrong for a record. Ask whether the child is a
+statement about now or a statement about a day that has passed.
 
 ### Two rows that must not overlap need an EXCLUSION constraint
 

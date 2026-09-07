@@ -61,6 +61,7 @@ export const en = {
   "nav.schedules": "Automatic messages",
   "nav.notices": "Notice board",
   "nav.studentLeave": "Student leave",
+  "nav.cover": "Cover",
   "nav.classRoutine": "Class routine",
   "nav.myWeek": "My week",
   "nav.attendanceReport": "Attendance report",

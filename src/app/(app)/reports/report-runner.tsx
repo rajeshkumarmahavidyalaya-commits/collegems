@@ -523,9 +523,11 @@ function ParamControl({
       ? [{ value: "", label: "Every class" }, ...options.sections.map((s) => ({ value: s.id, label: s.label }))]
       : descriptor.type === "class_level"
         ? [{ value: "", label: "Every year group" }, ...options.classLevels.map((l) => ({ value: l.id, label: l.label }))]
-        : descriptor.type === "select"
-          ? [{ value: "", label: "Any" }, ...descriptor.options]
-          : null;
+        : descriptor.type === "staff"
+          ? [{ value: "", label: "Everybody" }, ...options.staff.map((s) => ({ value: s.id, label: s.label }))]
+          : descriptor.type === "select"
+            ? [{ value: "", label: "Any" }, ...descriptor.options]
+            : null;
 
   if (choices) {
     return (

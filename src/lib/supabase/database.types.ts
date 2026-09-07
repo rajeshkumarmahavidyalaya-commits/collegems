@@ -5342,6 +5342,87 @@ export type Database = {
           },
         ]
       }
+      substitutions: {
+        Row: {
+          absent_staff_id: string
+          arranged_by: string | null
+          created_at: string
+          id: string
+          note: string | null
+          on_date: string
+          session_id: string
+          substitute_staff_id: string | null
+          tenant_id: string
+          time_slot_id: string
+          timetable_entry_id: string
+          updated_at: string
+        }
+        Insert: {
+          absent_staff_id: string
+          arranged_by?: string | null
+          created_at?: string
+          id?: string
+          note?: string | null
+          on_date: string
+          session_id: string
+          substitute_staff_id?: string | null
+          tenant_id: string
+          time_slot_id: string
+          timetable_entry_id: string
+          updated_at?: string
+        }
+        Update: {
+          absent_staff_id?: string
+          arranged_by?: string | null
+          created_at?: string
+          id?: string
+          note?: string | null
+          on_date?: string
+          session_id?: string
+          substitute_staff_id?: string | null
+          tenant_id?: string
+          time_slot_id?: string
+          timetable_entry_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "substitutions_absent_fkey"
+            columns: ["tenant_id", "absent_staff_id"]
+            isOneToOne: false
+            referencedRelation: "staff"
+            referencedColumns: ["tenant_id", "id"]
+          },
+          {
+            foreignKeyName: "substitutions_entry_fkey"
+            columns: ["tenant_id", "timetable_entry_id"]
+            isOneToOne: false
+            referencedRelation: "timetable_entries"
+            referencedColumns: ["tenant_id", "id"]
+          },
+          {
+            foreignKeyName: "substitutions_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "academic_sessions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "substitutions_substitute_fkey"
+            columns: ["tenant_id", "substitute_staff_id"]
+            isOneToOne: false
+            referencedRelation: "staff"
+            referencedColumns: ["tenant_id", "id"]
+          },
+          {
+            foreignKeyName: "substitutions_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       tenants: {
         Row: {
           created_at: string
@@ -7754,7 +7835,12 @@ export type Database = {
         Returns: string
       }
       report_run: {
-        Args: { p_key: string; p_limit?: number; p_params?: Json }
+        Args: {
+          p_key: string
+          p_limit?: number
+          p_offset?: number
+          p_params?: Json
+        }
         Returns: {
           row_data: Json
           total_count: number
@@ -7785,6 +7871,12 @@ export type Database = {
         }[]
       }
       report_student_roster: {
+        Args: { p_params: Json }
+        Returns: {
+          row_data: Json
+        }[]
+      }
+      report_substitutions: {
         Args: { p_params: Json }
         Returns: {
           row_data: Json
@@ -7877,6 +7969,10 @@ export type Database = {
         }[]
       }
       set_my_locale: { Args: { p_locale: string }; Returns: string }
+      staff_is_away: {
+        Args: { p_date: string; p_staff_id: string }
+        Returns: boolean
+      }
       stock_issued_assets: {
         Args: never
         Returns: {
@@ -8040,6 +8136,88 @@ export type Database = {
           reason: string
           starts_on: string
           student_id: string
+        }[]
+      }
+      substitution_arrange: {
+        Args: {
+          p_date: string
+          p_note?: string
+          p_substitute_staff_id?: string
+          p_timetable_entry_id: string
+        }
+        Returns: {
+          absent_staff_id: string
+          arranged_by: string | null
+          created_at: string
+          id: string
+          note: string | null
+          on_date: string
+          session_id: string
+          substitute_staff_id: string | null
+          tenant_id: string
+          time_slot_id: string
+          timetable_entry_id: string
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "substitutions"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      substitution_candidates: {
+        Args: { p_date?: string; p_timetable_entry_id: string }
+        Returns: {
+          covers_today: number
+          designation: string
+          periods_today: number
+          staff_id: string
+          staff_name: string
+          teaches_subject: boolean
+        }[]
+      }
+      substitution_clear: {
+        Args: { p_date: string; p_timetable_entry_id: string }
+        Returns: boolean
+      }
+      substitution_gaps: {
+        Args: { p_date?: string }
+        Returns: {
+          absent_staff_id: string
+          absent_teacher: string
+          arranged: boolean
+          note: string
+          period_number: number
+          section_label: string
+          starts_at: string
+          subject_name: string
+          substitute_staff_id: string
+          substitute_teacher: string
+          time_slot_id: string
+          timetable_entry_id: string
+        }[]
+      }
+      substitution_my_covers: {
+        Args: { p_date?: string }
+        Returns: {
+          covering_for: string
+          ends_at: string
+          note: string
+          on_date: string
+          period_number: number
+          room: string
+          section_label: string
+          starts_at: string
+          subject_name: string
+        }[]
+      }
+      substitution_problems: {
+        Args: { p_date?: string }
+        Returns: {
+          message: string
+          severity: string
+          timetable_entry_id: string
         }[]
       }
       timetable_busy_in_slot: {

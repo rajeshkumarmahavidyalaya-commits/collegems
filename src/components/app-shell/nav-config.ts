@@ -41,6 +41,7 @@ import {
   Languages,
   ArrowUpNarrowWide,
   Users,
+  UserCheck,
 } from "lucide-react";
 
 export type NavItem = {
@@ -134,6 +135,19 @@ export const NAV_GROUPS: NavGroup[] = [
         messageKey: "nav.myWeek",
         href: "/timetable/me",
         icon: CalendarClock,
+        roles: ["admin", "teacher"],
+      },
+      // Staff only, and deliberately not admin-only: a teacher opening this
+      // sees what *they* are covering, which is the half of the question a
+      // paper roster on a noticeboard answers badly. The office's half — who
+      // is away, who is free — is gated inside the page on
+      // `substitutions.manage`, because it is built on a table a teacher
+      // cannot read across. See migration 0158.
+      {
+        title: "Cover",
+        messageKey: "nav.cover",
+        href: "/timetable/substitutions",
+        icon: UserCheck,
         roles: ["admin", "teacher"],
       },
       {

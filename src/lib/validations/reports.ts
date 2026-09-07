@@ -13,7 +13,7 @@ import { DEFAULT_LOCALE, type Locale } from "@/lib/i18n/config";
  */
 
 /** What a parameter control is. Mirrors `reference.reports.parameters[].type`. */
-export const PARAM_TYPES = ["section", "class_level", "date", "number", "select", "text"] as const;
+export const PARAM_TYPES = ["section", "class_level", "staff", "date", "number", "select", "text"] as const;
 export type ParamType = (typeof PARAM_TYPES)[number];
 
 /** How a column is rendered. Mirrors `reference.reports.columns[].type`. */

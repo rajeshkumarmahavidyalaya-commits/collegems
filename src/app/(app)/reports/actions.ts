@@ -1,6 +1,7 @@
 "use server";
 
 import { createClient } from "@/lib/supabase/server";
+import { getUserContext } from "@/lib/auth/context";
 import {
   cleanParams,
   missingRequired,
@@ -111,14 +112,33 @@ export async function validateParams(
 export type ParamOptions = {
   sections: { id: string; label: string }[];
   classLevels: { id: string; label: string }[];
+  staff: { id: string; label: string }[];
 };
 
 export async function getParamOptions(): Promise<ParamOptions> {
   const supabase = await createClient();
 
-  const [sectionsRes, levelsRes] = await Promise.all([
-    supabase.from("sections").select("id, name, class_levels ( name, sequence )").order("name"),
+  // A section belongs to a year. Without this filter the dropdown lists last
+  // year's sections beside this year's, with identical labels — two "Grade 4 A"
+  // and no way to tell which is which. Same correction as migration 0128, in
+  // the other half of the codebase.
+  const sessionId = (await getUserContext())?.currentSessionId ?? null;
+
+  const [sectionsRes, levelsRes, staffRes] = await Promise.all([
+    sessionId
+      ? supabase
+          .from("sections")
+          .select("id, name, class_levels ( name, sequence )")
+          .eq("session_id", sessionId)
+          .order("name")
+      : supabase.from("sections").select("id, name, class_levels ( name, sequence )").order("name"),
     supabase.from("class_levels").select("id, name, sequence").order("sequence"),
+    supabase
+      .from("staff")
+      .select("id, employee_code, people:person_id ( first_name, last_name )")
+      .eq("status", "active")
+      .order("employee_code")
+      .limit(500),
   ]);
 
   const sections = (sectionsRes.data ?? [])
@@ -132,5 +152,12 @@ export async function getParamOptions(): Promise<ParamOptions> {
 
   const classLevels = (levelsRes.data ?? []).map((l) => ({ id: l.id, label: l.name }));
 
-  return { sections, classLevels };
+  const staff = (staffRes.data ?? [])
+    .map((s) => ({
+      id: s.id,
+      label: `${s.people?.first_name ?? ""} ${s.people?.last_name ?? ""}`.trim() || s.employee_code,
+    }))
+    .sort((a, b) => a.label.localeCompare(b.label));
+
+  return { sections, classLevels, staff };
 }
