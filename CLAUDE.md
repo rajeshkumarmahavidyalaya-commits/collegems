@@ -30,6 +30,47 @@ the rule here first — deliberately — rather than working around it in code.
   tenant data, and writes are revoked from `anon`/`authenticated` via GRANTs.
   Do not "fix" this by enabling RLS without policies — that would break reads.
 
+### …but a policy only governs four statements
+
+The sentence above — *"isolation is enforced by Postgres"* — is true of every
+statement a policy can see, and that qualification is load-bearing:
+
+> **A policy gates SELECT, INSERT, UPDATE and DELETE. It gates nothing else.**
+> Row security does not apply to `TRUNCATE` at all; there, the privilege is the
+> only check there is.
+
+Supabase's default `grant all on tables to anon, authenticated` includes it, so
+all 184 tables in `public` were truncatable by any signed-in user — `audit_log`
+and `ledger_entries` among them — behind policies that were correct and
+irrelevant. Probed on a scratch table whose policy read `for select using
+(false)`: a caller acting as `parent`, unable to see a single row, emptied it.
+
+So `authenticated` and `anon` keep the four privileges RLS can see and lose the
+four it cannot — `TRUNCATE`, `TRIGGER`, `REFERENCES`, `MAINTAIN` (migration
+`0159`). Three things generalise:
+
+- **Revoking on today's tables fixes today only.** The grant is a *default
+  privilege*, and a Supabase project has two entries for `public` — one owned by
+  `postgres`, one by `supabase_admin`. Amend both, then create a table and check.
+- **A guard, or it comes back.** `privilege_guard_violations()` is rule 1's
+  second executable check, kept separate from `schema_guard_violations()`
+  because shape and grants are different questions that fail for different
+  reasons. It uses `has_table_privilege`, which follows role membership, rather
+  than the grant tables, which do not.
+- **A check that can never go green is a check people learn to ignore.** The
+  guard covers `public` and `reference` and deliberately not `storage`, whose
+  grants were made by a role this project is not a member of — a `REVOKE` there
+  succeeds and changes nothing, silently. That exclusion is written down in
+  migration `0160` and `docs/modules/privileges.md` rather than being a quiet
+  `where` clause.
+
+And the honest scope, because overclaiming a finding is its own inaccuracy:
+PostgREST emits only the SQL it builds, so no browser was one request away from
+this. What was missing was **the last line of defence** — the whole argument of
+rule 1 is that the policy is the boundary and application code cannot be, and a
+privilege no policy governs is a gap in that argument whatever today's routes
+happen to reach.
+
 ## 2. Sessions (academic years) scope every transactional table
 
 - Fees, marks, attendance, enrolments, payroll, timetable and library issues

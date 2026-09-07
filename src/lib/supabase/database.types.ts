@@ -7696,6 +7696,15 @@ export type Database = {
           issue_id: string
         }[]
       }
+      privilege_guard_violations: {
+        Args: never
+        Returns: {
+          grantee: string
+          privilege: string
+          schema_name: string
+          table_name: string
+        }[]
+      }
       promotion_apply: {
         Args: { p_run_id: string }
         Returns: {
