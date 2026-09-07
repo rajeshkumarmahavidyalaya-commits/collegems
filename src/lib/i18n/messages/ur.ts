@@ -45,6 +45,7 @@ export const ur: Messages = {
   "nav.certificates": "اسناد",
   "nav.schedules": "خودکار پیغامات",
   "nav.notices": "نوٹس بورڈ",
+  "nav.studentLeave": "طالب علم کی چھٹی",
   "nav.classRoutine": "کلاس کا نظام الاوقات",
   "nav.myWeek": "میرا ہفتہ",
   "nav.attendanceReport": "حاضری کی رپورٹ",

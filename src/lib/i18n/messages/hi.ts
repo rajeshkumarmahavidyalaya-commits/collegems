@@ -45,6 +45,7 @@ export const hi: Messages = {
   "nav.certificates": "प्रमाणपत्र",
   "nav.schedules": "स्वचालित संदेश",
   "nav.notices": "सूचना पट्ट",
+  "nav.studentLeave": "विद्यार्थी अवकाश",
   "nav.classRoutine": "कक्षा समय-सारणी",
   "nav.myWeek": "मेरा सप्ताह",
   "nav.attendanceReport": "उपस्थिति रिपोर्ट",

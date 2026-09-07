@@ -60,6 +60,7 @@ export const en = {
   "nav.certificates": "Certificates",
   "nav.schedules": "Automatic messages",
   "nav.notices": "Notice board",
+  "nav.studentLeave": "Student leave",
   "nav.classRoutine": "Class routine",
   "nav.myWeek": "My week",
   "nav.attendanceReport": "Attendance report",

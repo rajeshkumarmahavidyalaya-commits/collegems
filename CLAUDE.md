@@ -122,6 +122,14 @@ the missing policy" hands every child their own mark sheet, so the absence is
 commented at the point where it would be added. See
 `docs/modules/homework.md`.
 
+`student_leave_requests` is the definer-function shape's second instance and
+reads exactly like the first: a family sets the dates and the reason, a teacher
+sets the status and the note, so the narrower party gets `student_leave_cancel`
+— definer, one column, an explicit check of who is asking — and **no UPDATE
+policy at all**. The absence is commented on the table, because a migration that
+tidily "adds the missing update policy" hands every parent the power to approve
+their own child's leave.
+
 `certificates` is the column-grant shape's second instance, and two instances
 are what make it a pattern rather than a decision. Only an administrator has an
 UPDATE policy there, so `grant update (status, cancelled_at, cancelled_by,
@@ -546,6 +554,14 @@ And anything seeded or created **arrives switched off**. A school that installs
 this and finds four hundred parents were texted without anybody deciding to has
 been badly served, however useful the feature is.
 
+**And a module that sends must ask the module that knows.** The evening absence
+notice, on its own, was rude: a family that told the school on Monday their
+daughter has chickenpox got a text every evening for a week. `schedule_run` now
+consults `student_is_on_leave` before sending, and the run row names the two
+reasons a matched child was not written to separately — *on approved leave*
+(deliberate) and *no family login* (a gap) — because one number cannot
+distinguish them and they call for opposite responses.
+
 **Scheduled reports are the thing this deliberately stops short of**, because:
 
 > A scheduled job has no user, so anything it does must be expressible without
@@ -848,6 +864,24 @@ Derived values are computed while they are provisional and **frozen when they
 matter** — `exam_results` stores the numbers *and* a `rules_snapshot`, so
 editing a scheme two years later cannot change a report card that was already
 handed to somebody. See `docs/modules/exams.md`.
+
+### A record of an observation is not a place to write a decision
+
+Approving a child's leave must not stamp `excused` across the register, however
+convenient. Two reasons, and the second is the general one:
+
+- it **writes the future** — the register is taken daily, by a person, and a
+  child on approved leave who turns up is present;
+- it makes `attendance_records` **say something no teacher marked**.
+
+> A table that records what somebody observed may only be written by the act of
+> observing. Everything else that wants to know about it — a report card, an
+> absence notice, a screen — **reads** it, and reads the other fact alongside.
+
+So leave reaches the register as an overlay the teacher can see, and reaches the
+absence notice as a question it asks before sending. A leave approved after the
+register was taken does not retrospectively change it, and re-marking is the
+school's to do. See `docs/modules/student-leave.md`.
 
 ### A document a person keeps is frozen, and its wording is data too
 

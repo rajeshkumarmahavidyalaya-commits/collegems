@@ -401,7 +401,7 @@ export function AttendanceMarker({
                 onKeyDown={(e) => onRowKeyDown(e, index, student)}
                 aria-label={`${student.fullName}, roll ${student.rollNumber ?? "unassigned"}, ${
                   value ? statusLabel(value) : "not marked"
-                }`}
+                }${student.onLeave ? ", on approved leave" : ""}`}
                 className={cn(
                   "flex flex-col gap-2 border-b border-border px-3 py-3 last:border-b-0",
                   "focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-ring",
@@ -419,6 +419,14 @@ export function AttendanceMarker({
                   <span className="block truncate font-mono text-xs text-muted-foreground">
                     {student.admissionNumber}
                   </span>
+                  {/* Context, not a decision. The family told the school about
+                      this; the teacher still marks what they see, and a child
+                      on approved leave who turns up is present. */}
+                  {student.onLeave && (
+                    <span className="mt-0.5 block truncate text-xs text-warning">
+                      On approved leave · {student.onLeave.reason}
+                    </span>
+                  )}
                 </span>
 
                 <span role="gridcell" className="flex flex-wrap gap-1.5">

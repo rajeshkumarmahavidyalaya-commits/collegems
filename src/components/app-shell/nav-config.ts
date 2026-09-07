@@ -36,6 +36,7 @@ import {
   FileBadge,
   AlarmClock,
   ClipboardList,
+  CalendarOff,
   Settings2,
   Languages,
   ArrowUpNarrowWide,
@@ -141,6 +142,15 @@ export const NAV_GROUPS: NavGroup[] = [
         href: "/attendance",
         icon: ClipboardCheck,
         roles: ["admin", "teacher"],
+      },
+      // No `roles`: a family asks for leave and a teacher decides it, so every
+      // role has business here. RLS narrows what each of them sees to their own
+      // children, their own section, or the school.
+      {
+        title: "Student leave",
+        messageKey: "nav.studentLeave",
+        href: "/attendance/leave",
+        icon: CalendarOff,
       },
       {
         title: "Attendance report",

@@ -5075,6 +5075,82 @@ export type Database = {
           },
         ]
       }
+      student_leave_requests: {
+        Row: {
+          applied_by: string | null
+          created_at: string
+          decided_at: string | null
+          decided_by: string | null
+          decision_note: string | null
+          ends_on: string
+          id: string
+          kind: string
+          reason: string
+          session_id: string
+          starts_on: string
+          status: string
+          student_id: string
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          applied_by?: string | null
+          created_at?: string
+          decided_at?: string | null
+          decided_by?: string | null
+          decision_note?: string | null
+          ends_on: string
+          id?: string
+          kind?: string
+          reason: string
+          session_id: string
+          starts_on: string
+          status?: string
+          student_id: string
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          applied_by?: string | null
+          created_at?: string
+          decided_at?: string | null
+          decided_by?: string | null
+          decision_note?: string | null
+          ends_on?: string
+          id?: string
+          kind?: string
+          reason?: string
+          session_id?: string
+          starts_on?: string
+          status?: string
+          student_id?: string
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "student_leave_requests_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "academic_sessions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "student_leave_requests_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "student_leave_student_fkey"
+            columns: ["tenant_id", "student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["tenant_id", "id"]
+          },
+        ]
+      }
       students: {
         Row: {
           admission_date: string
@@ -7677,6 +7753,12 @@ export type Database = {
           row_data: Json
         }[]
       }
+      report_student_leave: {
+        Args: { p_params: Json }
+        Returns: {
+          row_data: Json
+        }[]
+      }
       report_student_roster: {
         Args: { p_params: Json }
         Returns: {
@@ -7835,6 +7917,105 @@ export type Database = {
       storage_object_tenant_matches: {
         Args: { p_name: string }
         Returns: boolean
+      }
+      student_is_on_leave: {
+        Args: { p_date: string; p_student_id: string; p_tenant_id: string }
+        Returns: boolean
+      }
+      student_leave_apply: {
+        Args: {
+          p_ends_on: string
+          p_kind?: string
+          p_reason?: string
+          p_starts_on: string
+          p_student_id: string
+        }
+        Returns: {
+          applied_by: string | null
+          created_at: string
+          decided_at: string | null
+          decided_by: string | null
+          decision_note: string | null
+          ends_on: string
+          id: string
+          kind: string
+          reason: string
+          session_id: string
+          starts_on: string
+          status: string
+          student_id: string
+          tenant_id: string
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "student_leave_requests"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      student_leave_cancel: {
+        Args: { p_leave_id: string }
+        Returns: {
+          applied_by: string | null
+          created_at: string
+          decided_at: string | null
+          decided_by: string | null
+          decision_note: string | null
+          ends_on: string
+          id: string
+          kind: string
+          reason: string
+          session_id: string
+          starts_on: string
+          status: string
+          student_id: string
+          tenant_id: string
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "student_leave_requests"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      student_leave_decide: {
+        Args: { p_approve: boolean; p_leave_id: string; p_note?: string }
+        Returns: {
+          applied_by: string | null
+          created_at: string
+          decided_at: string | null
+          decided_by: string | null
+          decision_note: string | null
+          ends_on: string
+          id: string
+          kind: string
+          reason: string
+          session_id: string
+          starts_on: string
+          status: string
+          student_id: string
+          tenant_id: string
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "student_leave_requests"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      student_leave_on: {
+        Args: { p_date?: string; p_section_id?: string }
+        Returns: {
+          ends_on: string
+          kind: string
+          leave_id: string
+          reason: string
+          starts_on: string
+          student_id: string
+        }[]
       }
       timetable_busy_in_slot: {
         Args: {

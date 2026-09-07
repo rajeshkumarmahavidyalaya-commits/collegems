@@ -21,6 +21,15 @@ export type RegisterStudent = {
   /** null = not yet marked for this date and period. */
   status: string | null;
   note: string | null;
+  /**
+   * Approved leave covering this date, if there is any.
+   *
+   * It does **not** decide the mark. The register is what a teacher observed,
+   * and a child on approved leave who turns up is present -- so this is shown
+   * beside the row and the teacher marks what they see. Approving leave never
+   * writes an attendance row; see `docs/modules/student-leave.md`.
+   */
+  onLeave: { kind: string; reason: string } | null;
 };
 
 export type Register = {
@@ -98,9 +107,14 @@ function compareRoll(a: string | null, b: string | null): number {
 
 /**
  * The roster for one class on one date, with whatever has already been marked
- * folded in. Two queries rather than one join: the roster is the source of
+ * folded in. Separate queries rather than one join: the roster is the source of
  * truth for *who should be there*, and attendance is an overlay on it, so an
  * unmarked student has to appear with `status: null` rather than not appear.
+ *
+ * Approved leave is a third overlay, and the same reasoning applies twice over:
+ * it must not remove anybody from the roster, and it must not decide their
+ * mark. It is context for the person taking the register, not a substitute for
+ * them.
  */
 export async function getRegister(
   sectionId: string,
@@ -147,6 +161,17 @@ export async function getRegister(
 
   const byEnrolment = new Map(marks.map((m) => [m.enrolment_id, m]));
 
+  // Who the school has already been told about. `student_leave_on` is
+  // SECURITY INVOKER, so a class teacher sees their own section and nobody
+  // else's -- exactly the boundary the register itself draws.
+  const { data: leave } = await supabase.rpc("student_leave_on", {
+    p_section_id: sectionId,
+    p_date: date,
+  });
+  const leaveByStudent = new Map(
+    (leave ?? []).map((l) => [l.student_id, { kind: l.kind, reason: l.reason }]),
+  );
+
   const students: RegisterStudent[] = (enrolments ?? [])
     .map((e) => {
       const student = e.students;
@@ -160,6 +185,7 @@ export async function getRegister(
         fullName: person ? `${person.first_name} ${person.last_name}` : "Unknown",
         status: mark?.status ?? null,
         note: mark?.note ?? null,
+        onLeave: leaveByStudent.get(student?.id ?? "") ?? null,
       };
     })
     .sort((a, b) => compareRoll(a.rollNumber, b.rollNumber) || a.fullName.localeCompare(b.fullName));

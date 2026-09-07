@@ -180,6 +180,25 @@ it that turning it on does not send what was missed.
 
 ---
 
+## A module that sends asks the module that knows
+
+The absence notice, on its own, was rude: a family that told the school on
+Monday their daughter has chickenpox got a text every evening for a week saying
+she was absent. `schedule_run` now consults `student_is_on_leave` before it
+sends, and the run row names the two reasons a matched child was not written to
+separately:
+
+| | |
+|---|---|
+| on approved leave | deliberate, and the school wanted it |
+| no family login | a gap the school might want to close |
+
+One number — *"12 matched, 7 told"* — cannot distinguish those, and they call for
+opposite responses. The register is untouched: a child on approved leave is
+still *absent*, because they were not there. See `docs/modules/student-leave.md`.
+
+---
+
 ## Bounded, and it says the bound
 
 Rule 7, three times over:
