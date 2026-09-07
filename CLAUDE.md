@@ -683,6 +683,37 @@ student inventing a message from the principal — which is why `notify_send` is
 `SECURITY DEFINER` with its own admin check. Do not "fix" this by granting
 admins INSERT. See `docs/modules/notifications.md`.
 
+### A notice is not a notification
+
+The board is the module built on top of this one, and the line between them is
+worth stating because collapsing it fails in both directions:
+
+> **A notice is a document with an audience. A notification is the fact that
+> something was announced, once.** Treat a notice as a notification and there is
+> no board — nothing to come back to in March to check what the circular said.
+> Treat a notification as a notice and every typo correction re-sends four
+> hundred SMS.
+
+So publishing a notice calls `notify_send` **exactly once**; editing never does;
+and announcing again is its own function with its own audit row, never a boolean
+on publish whose meaning depends on what happened before.
+
+Two rules come out of it that generalise:
+
+- **Who may see a document is a policy, not a query.** The audience test lives in
+  the RLS policy (`notice_matches_me(audience)`), so a parent cannot read another
+  class's circular by asking for it directly — and consequently there is no
+  filtering in the read model, none in the page, and no `roles` on the nav entry.
+  A menu that guessed at the audience would be a second answer to a question
+  Postgres already answers.
+- **A failed announcement is not a failed publish.** The board is the point and
+  the announcement is a courtesy, so a circular whose audience has no logins
+  still goes up — and the reason is *written to a column*, not thrown and not
+  swallowed. A caught exception with nowhere to put its message is how a school
+  comes to believe four hundred parents were told.
+
+See `docs/modules/notices.md`.
+
 
 ## 11. A report is a catalog row, not a page
 

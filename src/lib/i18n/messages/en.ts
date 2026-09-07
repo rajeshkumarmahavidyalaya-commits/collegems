@@ -59,6 +59,7 @@ export const en = {
   "nav.importStudents": "Import students",
   "nav.certificates": "Certificates",
   "nav.schedules": "Automatic messages",
+  "nav.notices": "Notice board",
   "nav.classRoutine": "Class routine",
   "nav.myWeek": "My week",
   "nav.attendanceReport": "Attendance report",

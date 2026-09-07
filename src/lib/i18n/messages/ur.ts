@@ -44,6 +44,7 @@ export const ur: Messages = {
   "nav.importStudents": "طلبہ درآمد کریں",
   "nav.certificates": "اسناد",
   "nav.schedules": "خودکار پیغامات",
+  "nav.notices": "نوٹس بورڈ",
   "nav.classRoutine": "کلاس کا نظام الاوقات",
   "nav.myWeek": "میرا ہفتہ",
   "nav.attendanceReport": "حاضری کی رپورٹ",

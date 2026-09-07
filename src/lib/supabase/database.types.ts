@@ -3207,6 +3207,189 @@ export type Database = {
           },
         ]
       }
+      notice_files: {
+        Row: {
+          bucket_id: string
+          content_type: string | null
+          created_at: string
+          file_name: string
+          id: string
+          notice_id: string
+          size_bytes: number | null
+          storage_path: string
+          tenant_id: string
+          uploaded_by: string | null
+        }
+        Insert: {
+          bucket_id?: string
+          content_type?: string | null
+          created_at?: string
+          file_name: string
+          id?: string
+          notice_id: string
+          size_bytes?: number | null
+          storage_path: string
+          tenant_id: string
+          uploaded_by?: string | null
+        }
+        Update: {
+          bucket_id?: string
+          content_type?: string | null
+          created_at?: string
+          file_name?: string
+          id?: string
+          notice_id?: string
+          size_bytes?: number | null
+          storage_path?: string
+          tenant_id?: string
+          uploaded_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notice_files_notice_fkey"
+            columns: ["tenant_id", "notice_id"]
+            isOneToOne: false
+            referencedRelation: "notices"
+            referencedColumns: ["tenant_id", "id"]
+          },
+          {
+            foreignKeyName: "notice_files_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      notice_reads: {
+        Row: {
+          id: string
+          notice_id: string
+          read_at: string
+          tenant_id: string
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          notice_id: string
+          read_at?: string
+          tenant_id: string
+          user_id: string
+        }
+        Update: {
+          id?: string
+          notice_id?: string
+          read_at?: string
+          tenant_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notice_reads_notice_fkey"
+            columns: ["tenant_id", "notice_id"]
+            isOneToOne: false
+            referencedRelation: "notices"
+            referencedColumns: ["tenant_id", "id"]
+          },
+          {
+            foreignKeyName: "notice_reads_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      notices: {
+        Row: {
+          announced_count: number
+          audience: Json
+          body: string
+          category: string
+          created_at: string
+          created_by: string | null
+          expires_on: string | null
+          id: string
+          is_pinned: boolean
+          last_announce_error: string | null
+          last_announced_at: string | null
+          published_at: string | null
+          published_by: string | null
+          session_id: string
+          starts_on: string | null
+          status: string
+          tenant_id: string
+          title: string
+          updated_at: string
+          withdraw_reason: string | null
+          withdrawn_at: string | null
+          withdrawn_by: string | null
+        }
+        Insert: {
+          announced_count?: number
+          audience?: Json
+          body: string
+          category?: string
+          created_at?: string
+          created_by?: string | null
+          expires_on?: string | null
+          id?: string
+          is_pinned?: boolean
+          last_announce_error?: string | null
+          last_announced_at?: string | null
+          published_at?: string | null
+          published_by?: string | null
+          session_id: string
+          starts_on?: string | null
+          status?: string
+          tenant_id: string
+          title: string
+          updated_at?: string
+          withdraw_reason?: string | null
+          withdrawn_at?: string | null
+          withdrawn_by?: string | null
+        }
+        Update: {
+          announced_count?: number
+          audience?: Json
+          body?: string
+          category?: string
+          created_at?: string
+          created_by?: string | null
+          expires_on?: string | null
+          id?: string
+          is_pinned?: boolean
+          last_announce_error?: string | null
+          last_announced_at?: string | null
+          published_at?: string | null
+          published_by?: string | null
+          session_id?: string
+          starts_on?: string | null
+          status?: string
+          tenant_id?: string
+          title?: string
+          updated_at?: string
+          withdraw_reason?: string | null
+          withdrawn_at?: string | null
+          withdrawn_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notices_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "academic_sessions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notices_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       notification_channel_settings: {
         Row: {
           channel: string
@@ -7021,6 +7204,60 @@ export type Database = {
         Returns: Json
       }
       mobile_today: { Args: never; Returns: string }
+      notice_announce: { Args: { p_notice_id: string }; Returns: Json }
+      notice_board: {
+        Args: { p_limit?: number }
+        Returns: {
+          attachments: number
+          body: string
+          category: string
+          expires_on: string
+          id: string
+          is_pinned: boolean
+          is_read: boolean
+          published_at: string
+          starts_on: string
+          status: string
+          title: string
+        }[]
+      }
+      notice_mark_read: { Args: { p_notice_id: string }; Returns: boolean }
+      notice_matches_me: { Args: { p_audience: Json }; Returns: boolean }
+      notice_publish: { Args: { p_notice_id: string }; Returns: Json }
+      notice_read_summary: { Args: { p_notice_id: string }; Returns: Json }
+      notice_withdraw: {
+        Args: { p_notice_id: string; p_reason: string }
+        Returns: {
+          announced_count: number
+          audience: Json
+          body: string
+          category: string
+          created_at: string
+          created_by: string | null
+          expires_on: string | null
+          id: string
+          is_pinned: boolean
+          last_announce_error: string | null
+          last_announced_at: string | null
+          published_at: string | null
+          published_by: string | null
+          session_id: string
+          starts_on: string | null
+          status: string
+          tenant_id: string
+          title: string
+          updated_at: string
+          withdraw_reason: string | null
+          withdrawn_at: string | null
+          withdrawn_by: string | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "notices"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       notify_channel_report: {
         Args: {
           p_channel: string
@@ -7385,6 +7622,12 @@ export type Database = {
           module: string
           name: string
           parameters: Json
+        }[]
+      }
+      report_notice_reach: {
+        Args: { p_params: Json }
+        Returns: {
+          row_data: Json
         }[]
       }
       report_notification_deliveries: {

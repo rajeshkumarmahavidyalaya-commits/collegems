@@ -35,6 +35,7 @@ import {
   ScrollText,
   FileBadge,
   AlarmClock,
+  ClipboardList,
   Settings2,
   Languages,
   ArrowUpNarrowWide,
@@ -375,6 +376,16 @@ export const NAV_GROUPS: NavGroup[] = [
         href: "/notifications/schedules",
         icon: AlarmClock,
         roles: ["admin", "accountant"],
+      },
+      // No `roles` at all: the notice board is for everybody, and *which*
+      // notices somebody sees is the RLS policy's business rather than the
+      // menu's. A nav entry that guessed at the audience would be a second
+      // answer to a question Postgres already answers.
+      {
+        title: "Notice board",
+        messageKey: "nav.notices",
+        href: "/notices",
+        icon: ClipboardList,
       },
     ],
   },

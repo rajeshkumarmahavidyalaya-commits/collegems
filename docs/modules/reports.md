@@ -15,13 +15,14 @@ September"*, *"which books are overdue"*, *"what is Mrs Sharma's week"* — and
 the naive answer is four pages, four exports, four filter bars, and four places
 for the tenant filter to be forgotten. eSkooly has around forty such pages.
 
-Thirteen reports ship today across nine modules, and the runner renders all of
+Fourteen reports ship today across ten modules, and the runner renders all of
 them without knowing anything about any of them. The three newest —
 `hr.staff_attendance`, `hr.teacher_summary` and `exams.results` — arrived in
 migration `0126`, `certificates.register` in `0135` and `schedules.runs` in
-`0143`. None of them needed a change to this page, which is the property the
-catalog exists for. See `docs/modules/dashboard.md`,
-`docs/modules/certificates.md` and `docs/modules/schedules.md`.
+`0143`, and `notices.reach` in `0146`. None of them needed a change to this
+page, which is the property the catalog exists for. See
+`docs/modules/dashboard.md`, `docs/modules/certificates.md`,
+`docs/modules/schedules.md` and `docs/modules/notices.md`.
 
 ---
 
@@ -30,7 +31,7 @@ catalog exists for. See `docs/modules/dashboard.md`,
 ### 1. Every read model is `SECURITY INVOKER`
 
 **No report function contains a `where tenant_id =`.** That is deliberate. If
-isolation depended on each of thirteen functions remembering, the fourteenth
+isolation depended on each of fourteen functions remembering, the fifteenth
 would forget. Every row a report returns has already passed the same policies a direct
 select would — so a report cannot see across tenants, and a teacher's attendance
 report cannot show a class they do not teach, without anybody writing the filter.
