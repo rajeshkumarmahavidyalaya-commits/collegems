@@ -5640,6 +5640,7 @@ export type Database = {
       current_role_code: { Args: never; Returns: string }
       current_session_id: { Args: { p_tenant_id: string }; Returns: string }
       current_tenant_id: { Args: never; Returns: string }
+      dashboard_summary: { Args: never; Returns: Json }
       enquiry_board: {
         Args: { p_session_id?: string }
         Returns: {
@@ -6967,6 +6968,12 @@ export type Database = {
           to_ts: string
         }[]
       }
+      report_exam_results: {
+        Args: { p_params: Json }
+        Returns: {
+          row_data: Json
+        }[]
+      }
       report_fee_collection: {
         Args: { p_params: Json }
         Returns: {
@@ -7031,6 +7038,12 @@ export type Database = {
           row_data: Json
         }[]
       }
+      report_staff_attendance: {
+        Args: { p_params: Json }
+        Returns: {
+          row_data: Json
+        }[]
+      }
       report_student_roster: {
         Args: { p_params: Json }
         Returns: {
@@ -7038,6 +7051,12 @@ export type Database = {
         }[]
       }
       report_teacher_load: {
+        Args: { p_params: Json }
+        Returns: {
+          row_data: Json
+        }[]
+      }
+      report_teacher_summary: {
         Args: { p_params: Json }
         Returns: {
           row_data: Json

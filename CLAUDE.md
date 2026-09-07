@@ -643,6 +643,59 @@ returned alongside, which is why they run inline without breaking rule 7. The
 unbounded cases — a full export, a PDF, a scheduled report — belong in `jobs`
 and are not built. See `docs/modules/reports.md`.
 
+### …and a dashboard is not a report
+
+The counter-shape, and worth naming because the temptation is to make the home
+page eleven catalog rows. A report has parameters, answers one question, and is
+looked *up*. A dashboard has none, answers nine at once, and is *glanced at* —
+so its whole job is to be **one round trip**, which is the same argument rule 14
+makes for `mobile_home()`.
+
+`dashboard_summary()` is that: one `SECURITY INVOKER` function returning one
+jsonb document. Rule 7 still decides whether it may run inline, and the answer is
+yes because every figure in it is an aggregate — one row crosses the wire however
+large the school gets. The old home page made seven queries and pulled *every*
+active enrolment across the wire to count them in JavaScript, which is unbounded
+work dressed as a bar chart.
+
+Three rules come out of building it, and the first two are rule 11's own:
+
+- **It must not answer a question the module it borrows from would answer
+  differently.** Every figure aggregates a module's own read path
+  (`fees_student_balances`, `fees_day_book`, `hr_attendance_sheet`) or counts
+  the frozen table a module writes (`exam_results`). A dashboard free to
+  disagree with the screen the money is taken on is worse than a dashboard
+  without the number, because somebody will act on the wrong one.
+- **Gate each block on the matrix, inside the function** — the `report_run`
+  refinement in rule 4. Invoker + RLS alone makes a dashboard *dishonest* rather
+  than unsafe: a teacher may read only their own row of `staff_attendance`, so
+  an ungated staff card tells them "1 present, 39 unmarked" about a school where
+  forty people were marked in.
+- **Name what you withheld.** A card that is simply absent reads as a bug, so
+  `withheld` lists the blocks the caller's role may not see and the page turns
+  that into a sentence. Absent-and-withheld ("your role does not see fee
+  figures") and absent-and-empty ("no exam has been published") are different
+  sentences and only the server knows which applies. Consequently there is no
+  `if (isAdmin)` on the page; adding one would be a second answer to a question
+  that already has one.
+
+**Three states, not a nullable number.** "0% present" and "nobody has taken the
+register" look identical on a card and mean opposite things, so a register
+resolves to `holiday | not-taken | taken` and the percentage is over what was
+*marked*, never over the roll. The same instinct governs money: a collection
+rate is **null, not 0**, before anything is billed — a school that has not raised
+an invoice has not failed to collect, and an empty progress bar says it has.
+
+**And a branch that describes a restricted caller has to be probed as one.**
+Every `withheld` line in the first cut raised `22P02` (`text[] || 'fees'` is
+ambiguous and resolves the literal to `text[]`). The function was probed as an
+administrator and came back perfect, because an administrator is withheld
+nothing — the branch is dead code for the only role anybody tests with.
+Migration `0129`. The correction to `0129`'s own comment, in `0131`, is the
+smaller companion rule: **write down what was actually checked and how, not what
+the ideal check would have been**, because the next person reads the comment and
+stops looking. See `docs/modules/dashboard.md`.
+
 
 ## 12. School policy is data, not branches
 

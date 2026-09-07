@@ -2,6 +2,13 @@ import type { LucideIcon } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 
+/**
+ * Tone colours the icon and nothing else. A card never carries its meaning in
+ * colour alone -- the number and the hint underneath say it in words, which is
+ * what the checklist means by "badge/status meaning never relies on colour".
+ */
+export type StatTone = "default" | "warning" | "success" | "danger";
+
 export function StatCard({
   label,
   value,
@@ -13,7 +20,7 @@ export function StatCard({
   value: string;
   icon: LucideIcon;
   hint?: string;
-  tone?: "default" | "warning" | "success";
+  tone?: StatTone;
 }) {
   return (
     <Card>
@@ -24,6 +31,7 @@ export function StatCard({
             "size-4",
             tone === "warning" && "text-warning",
             tone === "success" && "text-success",
+            tone === "danger" && "text-destructive",
             tone === "default" && "text-muted-foreground",
           )}
           aria-hidden="true"

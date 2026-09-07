@@ -112,8 +112,14 @@ export function formatCell(value: unknown, type: ColumnType): string {
       return formatMoney(Number(value));
 
     case "percent": {
+      // One decimal, and none at all when the number is whole. `exam_results`
+      // stores a percentage to three places, so the raw value renders as
+      // "63.286%" -- which is not what the exams screen shows for the same
+      // child, and a report that disagrees with the module it reads is the one
+      // thing rule 11 asks a report not to do.
       const n = Number(value);
-      return Number.isFinite(n) ? `${n}%` : "—";
+      if (!Number.isFinite(n)) return "—";
+      return `${Number.isInteger(n) ? n : Number(n.toFixed(1))}%`;
     }
 
     case "number": {

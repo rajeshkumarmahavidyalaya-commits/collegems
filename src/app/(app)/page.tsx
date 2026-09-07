@@ -1,137 +1,214 @@
 import {
+  Award,
   BookMarked,
   Building2,
   ClipboardCheck,
+  EyeOff,
   GraduationCap,
+  IndianRupee,
   TriangleAlert,
   Users,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { getUserContext } from "@/lib/auth/context";
+import { getLocale } from "@/lib/i18n/server";
+import { formatNumber } from "@/lib/i18n/format";
 import { StatCard } from "@/components/dashboard/stat-card";
 import { EnrollmentChart, type EnrollmentDatum } from "@/components/dashboard/enrollment-chart";
 import { DonutChart, type DonutDatum } from "@/components/dashboard/donut-chart";
+import {
+  ExamCard,
+  FeesCard,
+  LibraryCard,
+  StaffRegisterCard,
+  StudentRegisterCard,
+} from "@/components/dashboard/brief-cards";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import {
+  parseDashboardSummary,
+  studentRegisterReading,
+  withheldSentence,
+} from "@/lib/validations/dashboard";
 
 export const metadata = { title: "Dashboard" };
 
-const GENDER_LABEL: Record<string, string> = {
-  male: "Male",
-  female: "Female",
-  other: "Other",
-  undisclosed: "Undisclosed",
-};
-
+/**
+ * The home page: a brief of everything, in one round trip.
+ *
+ * It used to make seven separate queries and count three hundred enrolment rows
+ * in JavaScript to draw twelve bars. It now makes one call to
+ * `dashboard_summary()`, which aggregates in Postgres and hands back a single
+ * jsonb document. Rule 7's test is boundedness, and one row is bounded however
+ * large the school gets.
+ *
+ * Two consequences worth knowing before editing this file:
+ *
+ *   - **What each role sees is decided in Postgres, not here.** Every block is
+ *     gated on the permission matrix inside the function, and the blocks a role
+ *     may not see come back named in `withheld`. So there is no `if (isAdmin)`
+ *     in this file, and adding one would be a second answer to a question that
+ *     already has one.
+ *   - **A card that is absent is not the same as a card that is empty.** A
+ *     withheld block is explained at the foot of the page; an empty one — no
+ *     exam published, no register taken — says so in its own words.
+ */
 export default async function DashboardPage() {
   const ctx = await getUserContext();
+  const locale = await getLocale();
   const supabase = await createClient();
 
-  // Local date, not UTC -- a 9am IST dashboard must not report yesterday.
-  const today = new Date(Date.now() - new Date().getTimezoneOffset() * 60_000)
-    .toISOString()
-    .slice(0, 10);
+  const { data, error } = await supabase.rpc("dashboard_summary");
+  const brief = error ? null : parseDashboardSummary(data);
 
-  // Named session, per rule 2, even though today's marks could only belong to
-  // the current one.
-  const attendanceQuery = ctx?.currentSessionId
-    ? supabase
-        .from("attendance_records")
-        .select("status")
-        .eq("attendance_date", today)
-        .eq("session_id", ctx.currentSessionId)
-    : supabase.from("attendance_records").select("status").eq("attendance_date", today);
+  const heading = (
+    <div>
+      <h1 className="text-2xl font-semibold">Welcome back, {ctx?.displayName.split(" ")[0]}</h1>
+      <p className="text-sm text-muted-foreground">
+        {ctx?.tenantName} · {ctx?.currentSessionName ?? "No active session"}
+      </p>
+    </div>
+  );
 
-  const [studentsRes, staffRes, sectionsRes, booksRes, issuesRes, enrolmentsRes, attendanceRes] =
-    await Promise.all([
-    supabase.from("students").select("id, status", { count: "exact", head: true }).eq("status", "active"),
-    supabase.from("staff").select("id", { count: "exact", head: true }).eq("status", "active"),
-    supabase.from("sections").select("id", { count: "exact", head: true }),
-    supabase.from("books").select("total_copies"),
-    supabase.from("book_issues").select("status, due_at"),
-    supabase
-      .from("enrolments")
-      .select(
-        "sections ( name, class_levels ( name, sequence ) ), students!inner ( status, people:person_id ( gender ) )",
-      )
-      .eq("status", "active")
-      .eq("students.status", "active"),
-    attendanceQuery,
-  ]);
-
-  const todaysMarks = attendanceRes.data ?? [];
-  const presentToday = todaysMarks.filter((m) => m.status === "present" || m.status === "late").length;
-  const absentToday = todaysMarks.filter((m) => m.status === "absent").length;
-  // Percentage over what was actually marked, not over enrolment -- a register
-  // half-taken should read as half-taken, not as a school half empty.
-  const attendanceRate =
-    presentToday + absentToday === 0
-      ? null
-      : Math.round((presentToday / (presentToday + absentToday)) * 100);
-
-  const totalBookCopies = (booksRes.data ?? []).reduce((sum, b) => sum + b.total_copies, 0);
-  const issued = (issuesRes.data ?? []).filter((i) => i.status === "issued");
-  const overdue = issued.filter((i) => i.due_at < new Date().toISOString().slice(0, 10));
-  const returned = (issuesRes.data ?? []).filter((i) => i.status === "returned");
-
-  const byGrade = new Map<string, { sequence: number; count: number }>();
-  const byGender = new Map<string, number>();
-
-  for (const row of enrolmentsRes.data ?? []) {
-    const level = row.sections?.class_levels;
-    if (level) {
-      const entry = byGrade.get(level.name) ?? { sequence: level.sequence, count: 0 };
-      entry.count += 1;
-      byGrade.set(level.name, entry);
-    }
-    const gender = row.students?.people?.gender ?? "undisclosed";
-    byGender.set(gender, (byGender.get(gender) ?? 0) + 1);
+  // The designed error state, per the checklist. Never a spinner on a blank
+  // page, and never a wall of zeros that reads as a school with nobody in it.
+  if (!brief) {
+    return (
+      <div className="flex flex-col gap-6">
+        {heading}
+        <Alert variant="destructive">
+          <TriangleAlert className="size-4" aria-hidden="true" />
+          <AlertTitle>The dashboard could not be loaded</AlertTitle>
+          <AlertDescription>
+            {error?.message ??
+              "The summary came back in a shape this page did not recognise."}{" "}
+            Every module is still reachable from the menu — this page is a summary of them, not the
+            way in.
+          </AlertDescription>
+        </Alert>
+      </div>
+    );
   }
 
-  const enrollmentData: EnrollmentDatum[] = Array.from(byGrade.entries())
-    .sort((a, b) => a[1].sequence - b[1].sequence)
-    .map(([grade, v]) => ({ grade, students: v.count }));
-
-  const genderData: DonutDatum[] = Array.from(byGender.entries()).map(([gender, value]) => ({
-    name: GENDER_LABEL[gender] ?? gender,
-    value,
+  const enrolment = brief.enrolment ?? [];
+  const enrollmentData: EnrollmentDatum[] = enrolment.map((row) => ({
+    grade: row.grade,
+    students: row.students,
   }));
 
-  const libraryStatusData: DonutDatum[] = [
-    { name: "Issued (on time)", value: issued.length - overdue.length },
-    { name: "Overdue", value: overdue.length },
-    { name: "Returned", value: returned.length },
+  const genderTotals = enrolment.reduce(
+    (acc, row) => ({
+      male: acc.male + row.male,
+      female: acc.female + row.female,
+      other: acc.other + row.other,
+      unstated: acc.unstated + row.unstated,
+    }),
+    { male: 0, female: 0, other: 0, unstated: 0 },
+  );
+
+  // Slices that would be zero are dropped, but "unstated" is kept when it is
+  // not — a donut whose parts do not add up to the roll is a bug report waiting
+  // to be filed.
+  const genderData: DonutDatum[] = [
+    { name: "Male", value: genderTotals.male },
+    { name: "Female", value: genderTotals.female },
+    { name: "Other", value: genderTotals.other },
+    { name: "Unstated", value: genderTotals.unstated },
   ].filter((d) => d.value > 0);
+
+  const studentRegister = brief.student_attendance;
+  const attendanceReading = studentRegister ? studentRegisterReading(studentRegister) : null;
+  const attendanceValue =
+    attendanceReading === null
+      ? "—"
+      : attendanceReading.kind === "taken"
+        ? `${attendanceReading.percent}%`
+        : attendanceReading.kind === "holiday"
+          ? "Holiday"
+          : "Not taken";
+
+  const withheld = withheldSentence(brief.withheld);
 
   return (
     <div className="flex flex-col gap-6">
-      <div>
-        <h1 className="text-2xl font-semibold">Welcome back, {ctx?.displayName.split(" ")[0]}</h1>
-        <p className="text-sm text-muted-foreground">
-          {ctx?.tenantName} · {ctx?.currentSessionName ?? "No active session"}
-        </p>
-      </div>
+      {heading}
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
-        <StatCard label="Active students" value={String(studentsRes.count ?? 0)} icon={GraduationCap} />
-        <StatCard label="Active staff" value={String(staffRes.count ?? 0)} icon={Users} />
-        <StatCard label="Sections" value={String(sectionsRes.count ?? 0)} icon={Building2} />
+      {/* The headline row: the four numbers somebody wants before they have
+          finished sitting down. */}
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <StatCard
-          label="Attendance today"
-          value={attendanceRate === null ? "Not taken" : `${attendanceRate}%`}
-          icon={ClipboardCheck}
-          tone={attendanceRate === null ? "default" : attendanceRate >= 85 ? "success" : "warning"}
+          label="Students on roll"
+          value={brief.school ? String(brief.school.students) : "—"}
+          icon={GraduationCap}
+          hint={brief.school ? `Across ${brief.school.sections} sections` : "Not shown for your role"}
+        />
+        <StatCard
+          label="Staff on roll"
+          value={brief.school?.staff !== null && brief.school?.staff !== undefined ? String(brief.school.staff) : "—"}
+          icon={Users}
           hint={
-            todaysMarks.length === 0
-              ? "No register marked yet today"
-              : `${presentToday} present · ${absentToday} absent`
+            brief.school?.staff === null || brief.school?.staff === undefined
+              ? "Not shown for your role"
+              : "Active employees"
           }
         />
         <StatCard
-          label="Books overdue"
-          value={String(overdue.length)}
-          icon={TriangleAlert}
-          tone={overdue.length > 0 ? "warning" : "success"}
-          hint={`${totalBookCopies} total copies in catalog`}
+          label="Attendance today"
+          value={attendanceValue}
+          icon={ClipboardCheck}
+          tone={
+            attendanceReading?.kind !== "taken"
+              ? "default"
+              : attendanceReading.percent >= 85
+                ? "success"
+                : "warning"
+          }
+          hint={
+            studentRegister
+              ? `${studentRegister.present} present · ${studentRegister.absent} absent`
+              : "Not shown for your role"
+          }
         />
+        <StatCard
+          label="Fees outstanding"
+          // Compact, because a headline card is not where somebody reads a
+          // figure to the paisa -- the fees card below prints it in full.
+          // Through `formatNumber`, never a locale tag written here: rule 15.
+          value={
+            brief.fees
+              ? formatNumber(brief.fees.outstanding, locale, {
+                  style: "currency",
+                  currency: "INR",
+                  maximumFractionDigits: 0,
+                  notation: "compact",
+                })
+              : "—"
+          }
+          icon={IndianRupee}
+          tone={brief.fees && brief.fees.outstanding > 0 ? "warning" : "success"}
+          hint={
+            brief.fees
+              ? `${brief.fees.students_owing} still to pay`
+              : "Not shown for your role"
+          }
+        />
+      </div>
+
+      {/* Both registers, side by side. They were never on the same screen
+          before, and "who is in today" is one question about a school, not two
+          about two kinds of person. */}
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+        {studentRegister && (
+          <StudentRegisterCard register={studentRegister} icon={ClipboardCheck} />
+        )}
+        {brief.staff_attendance && (
+          <StaffRegisterCard register={brief.staff_attendance} icon={Users} />
+        )}
+      </div>
+
+      {/* Money and results. */}
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+        {brief.fees && <FeesCard fees={brief.fees} icon={IndianRupee} />}
+        {!brief.withheld.includes("exam") && <ExamCard exam={brief.exam} icon={Award} />}
       </div>
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
@@ -142,18 +219,29 @@ export default async function DashboardPage() {
       </div>
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-        <DonutChart
-          title="Library activity"
-          description="Current issue status across all books"
-          data={libraryStatusData}
+        {brief.library && <LibraryCard library={brief.library} icon={BookMarked} />}
+        <StatCard
+          label="Sections running"
+          value={brief.school ? String(brief.school.sections) : "—"}
+          icon={Building2}
+          hint={ctx?.currentSessionName ?? "No active session"}
         />
         <StatCard
-          label="Books issued right now"
-          value={String(issued.length)}
-          icon={BookMarked}
-          hint="Across all active members"
+          label="Books overdue"
+          value={brief.library ? String(brief.library.overdue) : "—"}
+          icon={TriangleAlert}
+          tone={brief.library && brief.library.overdue > 0 ? "warning" : "success"}
+          hint={brief.library ? `${brief.library.issued} out on loan` : "Not shown for your role"}
         />
       </div>
+
+      {withheld && (
+        <Alert>
+          <EyeOff className="size-4" aria-hidden="true" />
+          <AlertTitle>Some cards are hidden</AlertTitle>
+          <AlertDescription>{withheld}</AlertDescription>
+        </Alert>
+      )}
     </div>
   );
 }
