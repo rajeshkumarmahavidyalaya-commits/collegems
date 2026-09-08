@@ -38,6 +38,7 @@ import {
   ClipboardList,
   CalendarOff,
   Settings2,
+  ShieldAlert,
   Languages,
   ArrowUpNarrowWide,
   Users,
@@ -370,6 +371,16 @@ export const NAV_GROUPS: NavGroup[] = [
       // than a menu item that leads to an empty page.
       { title: "Reports",
  messageKey: "nav.reports", href: "/reports", icon: FileSpreadsheet },
+      // No `roles` filter, for the same reason: `checks_run()` gates every
+      // check on the matrix and reports the ones it withheld, so a role that
+      // may act on none of them sees a page that says so rather than a menu
+      // item that vanished. See migration 0188.
+      {
+        title: "Needs attention",
+        messageKey: "nav.checks",
+        href: "/checks",
+        icon: ShieldAlert,
+      },
     ],
   },
   {

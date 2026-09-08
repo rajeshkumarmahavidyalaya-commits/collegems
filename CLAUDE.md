@@ -179,6 +179,22 @@ teacher, **0 gaps over the same 51 rows spanning exactly one person**.
 A permission error is loud. *"No cover needed today"* is quiet, and it is what a
 teacher would have been shown every morning.
 
+**And the same function shape run the other way round over-reports, which is
+worse.** A critic built on `not exists` — *"active but on no register"* — asks
+which rows are **missing**, and under row-ownership RLS absence and invisibility
+are the same shape. `student_exit_problems` answered an administrator `ok` and a
+teacher **200 findings, every one of them false**, because a teacher may read
+only the enrolments of children they teach. An under-report is a missing
+sentence; this is an accusation. Neither is detectable from the administrator's
+seat, which is why both were found by probing as somebody else.
+
+The permission is **not** a proxy for "can see everything", and the numbers say
+so: `students.view` is held by teacher, accountant and librarian, and only the
+teacher's RLS is narrow. So a critic of this shape is gated on the permission a
+school gives to somebody who may *act* on it — `students.manage` — and the rule
+is written on `reference.checks.required_permission` where the next person will
+add one. See `docs/modules/checks.md`.
+
 Three responses, and the wrong one is tempting:
 
 - **Do not widen the policy.** Who is off sick is a fact about them, not about a
@@ -1072,6 +1088,29 @@ returned alongside, which is why they run inline without breaking rule 7. A
 who asked — see rule 7. A PDF and a scheduled report remain `jobs` work and are
 not built. See `docs/modules/reports.md`.
 
+### …and a critic is a third thing again
+
+Not a report — it takes no parameters and answers *"what is wrong here"* — and
+not a dashboard, because it is read when something is wrong rather than glanced
+at daily. `reference.checks` + `checks_run()` is the same catalogue-as-data
+shape a third time, and the reason it exists is worth stating on its own:
+
+> **A critic is only worth what it costs to reach it.** Eight `problems()`
+> functions existed, each surfaced on exactly one screen, so a school learned
+> that four hundred parents were getting nothing only by happening to open the
+> schedules page.
+
+Two rules for the runner, and both are about not looking clean when you are not:
+
+- **A check that raised has not passed.** Each critic runs in its own block and
+  an exception becomes a finding with the message on it. One broken critic
+  silently turning a page green is the failure the whole surface invites.
+- **A capped list says it is capped**, and never with a bare exact number —
+  *"showing the first 200; there are at least this many"*. Rule 13's import
+  lesson, arriving on a screen instead of in a spreadsheet.
+
+See `docs/modules/checks.md`.
+
 ### …and a dashboard is not a report
 
 The counter-shape, and worth naming because the temptation is to make the home
@@ -1621,6 +1660,14 @@ Load JS per route, `ls -S .next/static/chunks` says what is actually big, and
 `.next/app-build-manifest.json` says which routes carry it — which is the
 question that matters, because the worst chunk in this app was on exactly one
 route. See `docs/performance.md`.
+
+**And on the server, measure as the caller.** A `DO` block runs as `postgres`,
+which bypasses RLS, so a timing taken there is for a query nobody will execute.
+`checks_run()` measured **19 ms** that way and **849 ms first / ~660 ms after**
+as an administrator — 35×, all of it policy evaluation. `concession_problems`
+alone costs 845 ms on a school with **zero concessions**: the cost is being
+allowed to see rows, not seeing them. Use `set local role authenticated` with
+the JWT claims, every time.
 
 ### Amber is not a hover colour
 

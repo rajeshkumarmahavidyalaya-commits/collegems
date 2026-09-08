@@ -38,6 +38,7 @@ export const ur: Messages = {
   "nav.frontOffice": "دفتر",
   "nav.notifications": "اطلاعات",
   "nav.reports": "رپورٹیں",
+  "nav.checks": "توجہ درکار",
   "nav.settings": "ترتیبات",
   "nav.overview": "جائزہ",
   "nav.people": "لوگ",

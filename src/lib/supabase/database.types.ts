@@ -6739,6 +6739,19 @@ export type Database = {
           severity: string
         }[]
       }
+      checks_run: {
+        Args: never
+        Returns: {
+          description: string
+          href: string
+          key: string
+          label: string
+          message: string
+          module: string
+          severity: string
+          status: string
+        }[]
+      }
       concession_award: {
         Args: {
           p_concession_id: string

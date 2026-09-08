@@ -284,3 +284,43 @@ until one seeded dataset looks fast would be measuring the fixture.
   indexes costs write throughput on every insert to buy nothing measurable.
   Worth revisiting against `pg_stat_statements` on a tenant with real traffic.
 - **100 `multiple_permissive_policies` (WARN)** — see above.
+
+## Measuring as `postgres` is measuring a different query
+
+The most misleading number in this file, and it was mine.
+
+`checks_run()` (migration 0188) runs eight critics in one call. Timed from a
+`DO` block it came back at **19 ms**, twice, steadily. Timed as an
+administrator — `set local role authenticated` plus the JWT claims, which is
+what a school actually gets — it is **849 ms on the first call and ~660 ms
+after**.
+
+The difference is entirely RLS. A `DO` block runs as `postgres`, which bypasses
+row security, so the fast number was for a query nobody will ever execute.
+
+Per critic, under RLS:
+
+```
+fees.concessions           845 ms      staff.left       176 ms
+students.left              414 ms      templates        118 ms
+schedules.reach             52 ms      settings.filled   29 ms
+academics.session           26 ms      fees.billing       9 ms
+```
+
+`concession_problems` costs 845 ms on a school with **zero concessions**. Almost
+none of that is rows: each of these critics joins `students`, `people` and its
+own table, and every one of those carries permissive policies that are
+themselves function calls. The cost is being *allowed to see* the rows, not
+seeing them.
+
+Three things follow:
+
+- **Always time an RLS-protected read as the role that will run it.** The
+  advisory about multiple permissive policies elsewhere in this file stops being
+  an abstraction here: it is the whole of this number.
+- **A critic that finds nothing is not a critic that costs nothing**, so a
+  health surface has to be a page somebody opens rather than something on every
+  screen.
+- The honest ceiling for this page today is about **0.7 s server-side**, in one
+  round trip that answers eight questions. Splitting it into eight round trips
+  would cost more, not less.

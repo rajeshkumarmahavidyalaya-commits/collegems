@@ -53,6 +53,7 @@ export const en = {
   "nav.frontOffice": "Front office",
   "nav.notifications": "Notifications",
   "nav.reports": "Reports",
+  "nav.checks": "Needs attention",
   "nav.settings": "Settings",
   "nav.overview": "Overview",
   "nav.people": "People",

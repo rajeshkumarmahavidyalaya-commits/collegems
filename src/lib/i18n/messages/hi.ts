@@ -38,6 +38,7 @@ export const hi: Messages = {
   "nav.frontOffice": "कार्यालय",
   "nav.notifications": "सूचनाएँ",
   "nav.reports": "रिपोर्ट",
+  "nav.checks": "ध्यान देने योग्य",
   "nav.settings": "सेटिंग्स",
   "nav.overview": "अवलोकन",
   "nav.people": "लोग",
