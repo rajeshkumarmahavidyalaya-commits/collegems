@@ -324,3 +324,28 @@ Three things follow:
 - The honest ceiling for this page today is about **0.7 s server-side**, in one
   round trip that answers eight questions. Splitting it into eight round trips
   would cost more, not less.
+
+### The fix, and why it touched no policy
+
+**Migration 0190.** Both expensive critics were `union all`s over the same
+RLS-heavy join — `concession_problems` three times, `student_exit_problems`
+twice — so the cost was paid once per branch to answer questions about the same
+rows.
+
+Rewritten as `with live as materialized (…)`, computing each branch's condition
+as a flag inside the single scan. `materialized` is load-bearing: without it the
+planner inlines the CTE into every branch and the change does nothing.
+
+| | before | after |
+|---|---|---|
+| `concession_problems` | 845 ms | **130 ms** |
+| `student_exit_problems` | 414 ms | **247 ms** |
+| `checks_run()` first call | 849 ms | **454 ms** |
+| `checks_run()` steady | 659 ms | **378 ms** |
+
+**No policy was changed.** Rule 1 says the policy is the security boundary, and
+the `multiple_permissive_policies` advisory is still not acted on — rewriting
+the boundary to make a page faster is the wrong trade and the wrong risk, and
+the isolation suite that would prove such a change safe cannot run in this
+sandbox. Asking the expensive question once is the same win without touching
+anything that decides who sees what.

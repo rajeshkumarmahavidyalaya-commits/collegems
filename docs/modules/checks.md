@@ -144,7 +144,21 @@ staff.left         error    Rudra Rai is marked terminated but still teaches 19 
                             leads 2 sections, holds 6 subject assignments.
 ```
 
-As a teacher: seven withheld, one clean, and nothing false.
+As a teacher after 0189: seven withheld, one clean, nothing false. After 0190,
+**eight withheld and nothing at all** — because the one check a teacher still
+saw was the one that was lying.
+
+`student_concessions` has three policies — finance roles read the tenant,
+parents read their children, students read themselves — and a **teacher has no
+policy at all**. So `concession_problems` answered a teacher *"nothing to
+report"* about a table they cannot read a single row of. That is
+`substitution_gaps` a third time, and `concessions.manage` is held by exactly
+the two roles whose RLS on that table is tenant-wide.
+
+The consequence is worth stating rather than hiding: a teacher opening this page
+now sees *"Nothing here is yours to see"*. That is the honest screen. None of
+these eight is a teacher'''s to act on, and the previous version only looked
+useful to them by being wrong.
 
 ---
 
@@ -181,6 +195,44 @@ them.
 
 > **Measure as the caller.** A superuser timing of an RLS-protected read is not
 > a fast path — it is a different query.
+
+### …and then the number was fixed, not just reported
+
+**Migration 0190.** `concession_problems` is a `union all` of three branches
+that share one FROM — `student_concessions → fee_concessions → students →
+people` — so the expensive join ran three times to answer three questions about
+the same rows. `student_exit_problems` did it twice.
+
+The fix touches **no policy**. Rule 1 says the policy is the boundary, and
+rewriting the boundary to make a page faster is the wrong trade and the wrong
+risk. It asks the expensive question once:
+
+```sql
+with live as materialized ( … the join, plus the flags each branch needs … )
+select … from live where not concession_active
+union all
+select … from live where ends_on < current_date
+union all
+select … from live where not is_enrolled
+```
+
+`materialized` is the point, not an incidental keyword: without it Postgres
+inlines the CTE back into each branch and nothing changes. This is the one place
+where the optimisation fence complained about in `docs/performance.md` is the
+thing being asked for.
+
+Measured the same way, before and after:
+
+| | before | after |
+|---|---|---|
+| `concession_problems` | 845 ms | **130 ms** |
+| `student_exit_problems` | 414 ms | **247 ms** |
+| `checks_run()` first call | 849 ms | **454 ms** |
+| `checks_run()` steady | 659 ms | **378 ms** |
+
+Behaviour is unchanged, checked rather than assumed: a probe that marked a child
+transferred while still enrolled, and withdrew another child'''s enrolment,
+produced the same two sentences the old version did.
 
 ---
 

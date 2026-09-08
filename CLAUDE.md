@@ -1665,9 +1665,19 @@ route. See `docs/performance.md`.
 which bypasses RLS, so a timing taken there is for a query nobody will execute.
 `checks_run()` measured **19 ms** that way and **849 ms first / ~660 ms after**
 as an administrator — 35×, all of it policy evaluation. `concession_problems`
-alone costs 845 ms on a school with **zero concessions**: the cost is being
+alone cost 845 ms on a school with **zero concessions**: the cost is being
 allowed to see rows, not seeing them. Use `set local role authenticated` with
 the JWT claims, every time.
+
+**When the cost is policy evaluation, ask the expensive question once — do not
+touch the policy.** Both slow critics were `union all`s over the same RLS-heavy
+join, paying for it per branch. `with live as materialized (…)`, with each
+branch's condition computed as a flag inside the one scan, took
+`concession_problems` 845 → **130 ms** and the whole page 659 → **378 ms**
+steady. `materialized` is load-bearing: without it the planner inlines the CTE
+back into every branch. Rule 1 says the policy is the boundary, so it stays as
+it is — and the isolation suite that would prove a policy rewrite safe cannot
+run in this sandbox, which settles it.
 
 ### Amber is not a hover colour
 
