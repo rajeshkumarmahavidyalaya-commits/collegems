@@ -1215,7 +1215,28 @@ relationship question wants `>`):
 > **A critic that fires on a correctly finished action teaches people to ignore
 > it**, which costs more than the check was worth. The bar for a `problems()`
 > function is not "could this be wrong" but "is somebody going to have to do
-> something about it". See `docs/modules/student-exit.md`.
+> something about it".
+
+The same question asked about **staff** found a sharper case, true in the demo
+data: a terminated teacher still held 19 timetable lessons, and
+`substitution_gaps` flagged none of them, because `staff_is_away` reads leave
+and the daily register and a departed person is in neither. Three classes had
+nobody and the roster said the school was covered. Two rules came out of fixing
+it:
+
+- **Do not conflate "not here today" with "nobody teaches this any more."**
+  Marking a leaver *away* would have lit the roster up and had the office
+  arranging the same emergency every morning until July. An absence wants cover;
+  a departure wants a different teacher. They are different problems for
+  different people, and one list showing both must say which.
+- **Check what your fix makes invisible.** Unassigning those lessons was right —
+  a timetable entry's teacher is a statement about *now*, unlike a frozen
+  `substitutions.absent_staff_id` — but `substitution_gaps` required a non-null
+  teacher, so unassigning alone would have dropped them off the morning list
+  entirely: a quieter bug than the one being fixed. The roster learned to see a
+  vacant post **first**, and only then was it safe to unassign.
+
+See `docs/modules/student-exit.md`.
 
 ### A record of an observation is not a place to write a decision
 

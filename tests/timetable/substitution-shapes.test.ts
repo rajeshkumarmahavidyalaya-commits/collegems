@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import {
   arrangeCoverSchema,
+  reasonLabel,
+  reasonTone,
   candidateReason,
   clearCoverSchema,
   coverSummary,
@@ -82,6 +84,41 @@ describe("what the morning line says", () => {
   it("counts what is left, not what is done", () => {
     expect(coverSummary([{ arranged: true }, { arranged: false }, { arranged: false }])).toBe(
       "2 of 3 still to arrange.",
+    );
+  });
+});
+
+describe("why a lesson is on the morning list", () => {
+  it("distinguishes a stopgap from a hole in the timetable", () => {
+    // `away` is arranged today. `unassigned` will be there tomorrow too, and
+    // showing them identically would have the office arranging the same
+    // emergency every day until July. Migration 0176.
+    expect(reasonLabel("away")).toBe("Teacher away");
+    expect(reasonLabel("unassigned")).toBe("No teacher assigned");
+    expect(reasonTone("unassigned")).toBe("destructive");
+    expect(reasonTone("away")).toBe("warning");
+  });
+
+  it("counts the vacant ones in the summary, because they need a different fix", () => {
+    expect(
+      coverSummary([
+        { arranged: true, reason: "away" },
+        { arranged: true, reason: "unassigned" },
+      ]),
+    ).toBe("All 2 lessons needing cover are arranged. One of them has no teacher at all.");
+
+    expect(
+      coverSummary([
+        { arranged: false, reason: "unassigned" },
+        { arranged: false, reason: "unassigned" },
+        { arranged: true, reason: "away" },
+      ]),
+    ).toBe("2 of 3 still to arrange. 2 of them have no teacher at all.");
+  });
+
+  it("says nothing extra when every gap is an ordinary absence", () => {
+    expect(coverSummary([{ arranged: true, reason: "away" }])).toBe(
+      "The one lesson needing cover is arranged.",
     );
   });
 });

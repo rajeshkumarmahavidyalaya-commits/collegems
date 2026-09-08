@@ -134,3 +134,93 @@ no alumni register, no way to find a leaver's old report cards from a name.
 Rule 5's identity model already makes it representable (`people` outlives
 `students`), which is the hard part; the module is a screen and a report
 whenever a school asks for one.
+
+
+---
+
+# The same question, asked about staff
+
+**Migrations** `0176` (the roster learns to see a vacant post), `0177`
+(`staff_exit`, and `terminated` is not the only way to leave).
+**Critic** `staff_exit_problems()`.
+
+Asking the student question about the other half of the identity model found a
+sharper version of it — and this one was **true in the demo data**:
+
+```
+Rudra Rai            status: terminated
+staff_is_away(today) false
+lessons today        3
+substitution_gaps    0 of them flagged
+```
+
+Across the timetable that one departure left **19 lessons**, **2 sections**
+whose class teacher had gone, and **6 section-subject assignments**. Three
+classes had nobody in front of them that day and the morning roster said the
+school was fully covered.
+
+Payroll was already fine — `payroll_preview` and `hr_attendance_sheet` both read
+`date_of_leaving`, from the payroll-gaps work. The timetable side was never
+taught.
+
+## "Mark them away" is the wrong one-line fix
+
+It is tempting, and it would light the roster up. But *away* means temporarily
+absent, and the answer to a temporary absence is **cover**: a substitution row,
+arranged this morning, for today. A departed teacher's lessons do not need
+covering every day until July; they need **a different teacher**.
+
+> "Nobody is here today" and "nobody teaches this any more" are different
+> problems for different people. The morning roster wants the first; whoever
+> owns the timetable wants the second. A screen showing only one of them makes
+> the other invisible.
+
+So `substitution_gaps` gained a `reason` — `away` or `unassigned` — and the card
+says *"nobody teaches this — the timetable needs a teacher, not just cover"*.
+
+## Unassigning alone would have traded one silence for another
+
+`staff_exit` clears `teacher_staff_id`, because a timetable entry's teacher is a
+statement about **now** — migration `0155`'s distinction, where a statement
+about a day that has passed gets frozen instead, which is what
+`substitutions.absent_staff_id` does. Same schema, two kinds of column, treated
+oppositely on purpose.
+
+But `substitution_gaps` required `teacher_staff_id is not null`. Nulling those
+lessons would have dropped them off the morning list altogether — a quieter bug
+than the one being fixed. **So the roster learned about vacant posts first, and
+only then was it safe to unassign.** Verified in that order: after the exit,
+the three previously-invisible lessons appeared by name — *Grade 2 A p6, Grade
+3 A p8, Grade 4 A p1*.
+
+`substitutions.absent_staff_id` was widened to nullable so a vacant post can be
+covered at all, and **null means something specific**: the post was vacant, as
+against a named person being absent. `substitution_problems` had to move to a
+left join at the same time, or every vacant-post arrangement would have dropped
+out of the critic — the same failure mode, one layer down.
+
+## Terminated is not the only way to leave
+
+`staff_status_check` allowed `active`, `inactive`, `terminated`. A retirement
+and a dismissal are not the same fact — they read differently on a reference and
+are treated differently in law in several jurisdictions — so `resigned` and
+`retired` are now representable. The CHECK stays the enforcement; the guard
+inside `staff_exit` is there *for the message*, per the conventions.
+
+## What it cannot end
+
+- **Library books**, and the reminder that a staff fine is a payroll deduction
+  rather than a fee receivable — `ledger_entries.student_id` is `not null`, so
+  it cannot go to the fee ledger.
+- **Future cover they were down to provide.** Deliberately not cleared:
+  `substitutions` records what was arranged, and rewriting it would erase a
+  decision somebody made. Naming it lets the office re-arrange.
+
+## Not built
+
+**Reassignment.** `staff_exit` leaves 19 lessons unassigned and says so; it does
+not suggest who should take them. `substitution_candidates` already knows how to
+rank who is free for one period, and the same ranking over a whole timetable is
+the obvious next step — but choosing a permanent teacher for a class is a
+decision with a workload and a subject specialism in it, which is rule 13's
+editable-preview shape rather than an automatic one.

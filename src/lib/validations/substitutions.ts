@@ -94,16 +94,41 @@ export function candidateReason(candidate: {
  * arranged" and "7 lessons need cover" are different mornings, and a single
  * percentage hides which.
  */
-export function coverSummary(gaps: { arranged: boolean }[]): string {
+export function coverSummary(gaps: { arranged: boolean; reason?: string }[]): string {
   if (gaps.length === 0) return "Nobody is away. Nothing to arrange.";
   const arranged = gaps.filter((g) => g.arranged).length;
   const outstanding = gaps.length - arranged;
+  const vacant = gaps.filter((g) => g.reason === "unassigned").length;
+  const tail =
+    vacant === 0
+      ? ""
+      : vacant === 1
+        ? " One of them has no teacher at all."
+        : ` ${vacant} of them have no teacher at all.`;
   if (outstanding === 0) {
-    return gaps.length === 1
-      ? "The one lesson needing cover is arranged."
-      : `All ${gaps.length} lessons needing cover are arranged.`;
+    return (
+      (gaps.length === 1
+        ? "The one lesson needing cover is arranged."
+        : `All ${gaps.length} lessons needing cover are arranged.`) + tail
+    );
   }
-  return `${outstanding} of ${gaps.length} still to arrange.`;
+  return `${outstanding} of ${gaps.length} still to arrange.` + tail;
+}
+
+/**
+ * Why a lesson is on the morning list.
+ *
+ * `away` is a stopgap somebody arranges today. `unassigned` is a hole in the
+ * timetable that will be there tomorrow too — covering it is fine, but the fix
+ * is a teacher, and a screen that showed them identically would have the office
+ * arranging the same emergency every day until July. See migration 0176.
+ */
+export function reasonLabel(reason: string): string {
+  return reason === "unassigned" ? "No teacher assigned" : "Teacher away";
+}
+
+export function reasonTone(reason: string): "destructive" | "warning" {
+  return reason === "unassigned" ? "destructive" : "warning";
 }
 
 /** "Period 3 · 10:15" — the two things a person actually looks for. */

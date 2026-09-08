@@ -23,6 +23,8 @@ import {
   candidateReason,
   coverSummary,
   periodLabel,
+  reasonLabel,
+  reasonTone,
   severityLabel,
   severityRank,
   severityTone,
@@ -153,6 +155,7 @@ function GapCard({
             <CardTitle className="flex flex-wrap items-center gap-2 text-base">
               {gap.sectionLabel}
               <span className="text-sm font-normal text-muted-foreground">{gap.subjectName}</span>
+              <Badge variant={reasonTone(gap.reason)}>{reasonLabel(gap.reason)}</Badge>
               {gap.arranged ? (
                 <Badge variant={gap.substituteStaffId ? "success" : "warning"}>
                   {gap.substituteStaffId ? "Covered" : "Merged / supervised"}
@@ -162,7 +165,10 @@ function GapCard({
               )}
             </CardTitle>
             <CardDescription className="mt-1">
-              {periodLabel(gap.periodNumber, gap.startsAt)} &middot; {gap.absentTeacher} is away
+              {periodLabel(gap.periodNumber, gap.startsAt)} &middot;{" "}
+              {gap.reason === "unassigned"
+                ? "nobody teaches this — the timetable needs a teacher, not just cover"
+                : `${gap.absentTeacher} is away`}
               {gap.substituteTeacher ? ` · covered by ${gap.substituteTeacher}` : ""}
             </CardDescription>
           </div>

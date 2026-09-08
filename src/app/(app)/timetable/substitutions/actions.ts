@@ -21,6 +21,8 @@ export type GapRow = {
   substituteTeacher: string | null;
   note: string | null;
   arranged: boolean;
+  /** `away` — cover it today. `unassigned` — the timetable needs a teacher. */
+  reason: string;
 };
 
 export type CandidateRow = {
@@ -73,6 +75,7 @@ export async function listGaps(onDate?: string): Promise<GapRow[]> {
     substituteTeacher: g.substitute_teacher,
     note: g.note,
     arranged: Boolean(g.arranged),
+    reason: g.reason ?? "away",
   }));
 }
 

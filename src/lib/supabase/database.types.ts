@@ -5493,7 +5493,7 @@ export type Database = {
       }
       substitutions: {
         Row: {
-          absent_staff_id: string
+          absent_staff_id: string | null
           arranged_by: string | null
           created_at: string
           id: string
@@ -5507,7 +5507,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
-          absent_staff_id: string
+          absent_staff_id?: string | null
           arranged_by?: string | null
           created_at?: string
           id?: string
@@ -5521,7 +5521,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
-          absent_staff_id?: string
+          absent_staff_id?: string | null
           arranged_by?: string | null
           created_at?: string
           id?: string
@@ -8297,6 +8297,23 @@ export type Database = {
           severity: string
         }[]
       }
+      staff_exit: {
+        Args: {
+          p_left_on?: string
+          p_reason: string
+          p_staff_id: string
+          p_status?: string
+        }
+        Returns: Json
+      }
+      staff_exit_problems: {
+        Args: never
+        Returns: {
+          message: string
+          severity: string
+          staff_id: string
+        }[]
+      }
       staff_is_away: {
         Args: { p_date: string; p_staff_id: string }
         Returns: boolean
@@ -8491,7 +8508,7 @@ export type Database = {
           p_timetable_entry_id: string
         }
         Returns: {
-          absent_staff_id: string
+          absent_staff_id: string | null
           arranged_by: string | null
           created_at: string
           id: string
@@ -8534,6 +8551,7 @@ export type Database = {
           arranged: boolean
           note: string
           period_number: number
+          reason: string
           section_label: string
           starts_at: string
           subject_name: string
