@@ -4414,6 +4414,166 @@ export type Database = {
           },
         ]
       }
+      renewal_decisions: {
+        Row: {
+          applied_id: string | null
+          created_at: string
+          decision: string
+          direction: string | null
+          error: string | null
+          from_fare: number
+          from_label: string
+          id: string
+          is_override: boolean
+          kind: string
+          reason: string
+          run_id: string
+          student_id: string
+          tenant_id: string
+          to_room_id: string | null
+          to_stop_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          applied_id?: string | null
+          created_at?: string
+          decision: string
+          direction?: string | null
+          error?: string | null
+          from_fare?: number
+          from_label: string
+          id?: string
+          is_override?: boolean
+          kind: string
+          reason: string
+          run_id: string
+          student_id: string
+          tenant_id: string
+          to_room_id?: string | null
+          to_stop_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          applied_id?: string | null
+          created_at?: string
+          decision?: string
+          direction?: string | null
+          error?: string | null
+          from_fare?: number
+          from_label?: string
+          id?: string
+          is_override?: boolean
+          kind?: string
+          reason?: string
+          run_id?: string
+          student_id?: string
+          tenant_id?: string
+          to_room_id?: string | null
+          to_stop_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "renewal_decisions_run_fkey"
+            columns: ["tenant_id", "run_id", "kind"]
+            isOneToOne: false
+            referencedRelation: "renewal_runs"
+            referencedColumns: ["tenant_id", "id", "kind"]
+          },
+          {
+            foreignKeyName: "renewal_decisions_student_fkey"
+            columns: ["tenant_id", "student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["tenant_id", "id"]
+          },
+          {
+            foreignKeyName: "renewal_decisions_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "renewal_decisions_to_room_id_fkey"
+            columns: ["to_room_id"]
+            isOneToOne: false
+            referencedRelation: "hostel_rooms"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "renewal_decisions_to_stop_id_fkey"
+            columns: ["to_stop_id"]
+            isOneToOne: false
+            referencedRelation: "route_stops"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      renewal_runs: {
+        Row: {
+          applied_at: string | null
+          applied_by: string | null
+          created_at: string
+          created_by: string | null
+          from_session_id: string
+          id: string
+          kind: string
+          status: string
+          tenant_id: string
+          to_session_id: string
+          updated_at: string
+        }
+        Insert: {
+          applied_at?: string | null
+          applied_by?: string | null
+          created_at?: string
+          created_by?: string | null
+          from_session_id: string
+          id?: string
+          kind: string
+          status?: string
+          tenant_id: string
+          to_session_id: string
+          updated_at?: string
+        }
+        Update: {
+          applied_at?: string | null
+          applied_by?: string | null
+          created_at?: string
+          created_by?: string | null
+          from_session_id?: string
+          id?: string
+          kind?: string
+          status?: string
+          tenant_id?: string
+          to_session_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "renewal_runs_from_session_id_fkey"
+            columns: ["from_session_id"]
+            isOneToOne: false
+            referencedRelation: "academic_sessions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "renewal_runs_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "renewal_runs_to_session_id_fkey"
+            columns: ["to_session_id"]
+            isOneToOne: false
+            referencedRelation: "academic_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       role_permissions: {
         Row: {
           allowed: boolean
@@ -7453,6 +7613,16 @@ export type Database = {
         }
         Returns: string
       }
+      hostel_allocate_for: {
+        Args: {
+          p_ends_on?: string
+          p_room_id: string
+          p_session_id: string
+          p_starts_on?: string
+          p_student_id: string
+        }
+        Returns: string
+      }
       hostel_cancel_allocation: {
         Args: { p_allocation_id: string; p_reason?: string }
         Returns: boolean
@@ -8082,6 +8252,54 @@ export type Database = {
         Args: {
           p_from_session_id: string
           p_rules?: Json
+          p_to_session_id: string
+        }
+        Returns: string
+      }
+      renewal_apply: {
+        Args: { p_run_id: string }
+        Returns: {
+          failed: number
+          renewed: number
+          skipped: number
+        }[]
+      }
+      renewal_discard_run: { Args: { p_run_id: string }; Returns: undefined }
+      renewal_override: {
+        Args: {
+          p_decision: string
+          p_decision_id: string
+          p_direction?: string
+          p_to_room_id?: string
+          p_to_stop_id?: string
+        }
+        Returns: undefined
+      }
+      renewal_preview: {
+        Args: {
+          p_from_session_id: string
+          p_kind: string
+          p_to_session_id: string
+        }
+        Returns: {
+          admission_number: string
+          decision: string
+          direction: string
+          from_fare: number
+          from_label: string
+          reason: string
+          student_id: string
+          student_name: string
+          to_fare: number
+          to_label: string
+          to_room_id: string
+          to_stop_id: string
+        }[]
+      }
+      renewal_start_run: {
+        Args: {
+          p_from_session_id: string
+          p_kind: string
           p_to_session_id: string
         }
         Returns: string
@@ -8786,6 +9004,17 @@ export type Database = {
         }
         Returns: string
       }
+      transport_assign_student_for: {
+        Args: {
+          p_direction?: string
+          p_ends_on?: string
+          p_session_id: string
+          p_starts_on?: string
+          p_stop_id: string
+          p_student_id: string
+        }
+        Returns: string
+      }
       transport_cancel_assignment: {
         Args: { p_assignment_id: string; p_reason?: string }
         Returns: boolean
@@ -8837,6 +9066,14 @@ export type Database = {
           stop_name: string
           student_id: string
           student_name: string
+        }[]
+      }
+      transport_roll_forward_routes: {
+        Args: { p_from_session_id: string; p_to_session_id: string }
+        Returns: {
+          routes: number
+          skipped: number
+          stops: number
         }[]
       }
       transport_route_load: {

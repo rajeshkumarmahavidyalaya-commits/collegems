@@ -5,6 +5,8 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { severityTone } from "@/lib/validations/promotion";
 import { listRuns, listSessionProblems, listSessions } from "./actions";
+import { listRenewalRuns } from "./renewals/actions";
+import { RenewalLauncher } from "./renewals/renewal-launcher";
 import { PromotionPlanner } from "./promotion-planner";
 
 export const metadata = { title: "Promotion" };
@@ -13,10 +15,11 @@ export default async function PromotionPage() {
   const canManage = await hasPermission("settings.manage");
   if (!canManage) redirect("/");
 
-  const [sessions, runs, problems] = await Promise.all([
+  const [sessions, runs, problems, renewalRuns] = await Promise.all([
     listSessions(),
     listRuns(),
     listSessionProblems(),
+    listRenewalRuns(),
   ]);
 
   return (
@@ -55,6 +58,8 @@ export default async function PromotionPage() {
       )}
 
       <PromotionPlanner sessions={sessions} runs={runs} />
+
+      <RenewalLauncher sessions={sessions} runs={renewalRuns} />
     </div>
   );
 }

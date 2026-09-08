@@ -149,18 +149,23 @@ critic — "is somebody going to have to do something about it":
 
 ---
 
-## What is deliberately still not built
+## What happens at the boundary instead
 
-**Nothing carries an arrangement forward.** `promotion_apply` moves the child
-and the unpaid balance; it does not create next year's bus seat or hostel bed,
-and it must not create next year's concession — an award is granted by a person
-for a stated reason, and inferring one is the thing `docs/modules/concessions.md`
-already refused.
+**Promotion does not carry an arrangement, and should not.** `promotion_apply`
+moves the child and the unpaid balance; it does not create next year's bus seat
+or hostel bed, and it must not create next year's concession — an award is
+granted by a person for a stated reason, and inferring one is the thing
+`docs/modules/concessions.md` already refused.
 
 Renewing the other two is a bulk operation and therefore rule 13's shape: a
-preview of editable rows, not a button. Until it exists, the critic naming the
-number is the honest state — a school that is told *"46 bus seats end with this
-year"* can act; one told nothing cannot.
+preview of editable rows, not a button. **That is now built** — migrations
+`0182`–`0185`, `docs/modules/renewals.md` — and the critic is what points at it:
+a school told *"46 bus seats end with this year"* can press the thing that
+carries them.
+
+A concession still is not carried, and never will be by a run: an award is
+granted by a person for a stated reason, and inferring one is what
+`docs/modules/concessions.md` refused.
 
 `promotion_apply`'s graduate branch **was** the rule-12 status-column gap in the
 one place that creates alumni in bulk — 6 riders and 2 hostel residents in the

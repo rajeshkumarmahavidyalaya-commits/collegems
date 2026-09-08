@@ -655,6 +655,10 @@ stops being applied. But:
 > **That split is only safe where the invoker version's protection is a tenant
 > or role check, not a row-ownership one.** `notify_send` guards with an
 > explicit admin test, so parameterising the tenant is exactly equivalent.
+> `transport_assign_student_for` and `hostel_allocate_for` are the second
+> instance, parameterising the *session* rather than the tenant so a rollover
+> can be prepared in March — safe for the same reason, and needed because a
+> function that only ever writes "this year" cannot prepare next one.
 > `fees_student_balances` is protected *row by row* through RLS — a parent
 > calling it sees their own children — so a definer twin would hand a parent the
 > whole school, and an invoker wrapper cannot delegate row ownership to a
@@ -1417,6 +1421,28 @@ Bulk import is the second instance, and adds three things worth copying:
   the first 500 of 900 children is the worst available outcome, because nobody
   notices until April. Bound it, and say the bound out loud. See
   `docs/modules/import.md`.
+
+Renewals (`renewal_runs` → `renewal_decisions`) are the third instance, and the
+one that says what an apply step should *write with*:
+
+> **Apply through the module's own write function, not an INSERT.** A renewal
+> that inserted rows would be a second implementation of "the route is running,
+> the child is enrolled in that year, the bus has a seat, the house takes this
+> child, the dates fall inside the year" — five checks free to disagree with the
+> five a person gets when arranging one by hand.
+
+Two consequences worth copying:
+
+- **The preview does not check capacity, deliberately.** A seat and a bed are
+  rules about *how many other rows exist*, which no query over one row can see
+  (rule 4's second boundary). They belong at apply, under the advisory lock the
+  write function already takes, with the numbers in the message.
+- **Ordering does not need a manual.** A child with no enrolment in the
+  receiving year is previewed as `skip`, with *"Not enrolled in 2026-2027, so
+  there is nobody to carry"* — so "promote first, then renew" is something the
+  rows say rather than something a person has to have been told.
+
+See `docs/modules/renewals.md`.
 
 ## 14. A client you cannot redeploy needs a versioned contract
 
