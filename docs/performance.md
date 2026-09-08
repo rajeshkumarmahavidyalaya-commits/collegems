@@ -139,3 +139,148 @@ readers see (grouping and digits follow the locale), which is a behaviour change
 that deserves its own commit rather than riding along inside a bundle-size fix.
 It is noted in `fees-display.ts` at the point where somebody would otherwise
 copy the mistake again.
+
+
+---
+
+# Server-side: the report that timed out
+
+The front-end work above cut what the browser downloads. `pg_stat_statements`
+was the other half of "too heavy to load", and it named something specific:
+
+```sql
+select round(mean_exec_time::numeric,1) mean_ms, calls, query
+from extensions.pg_stat_statements order by total_exec_time desc;
+```
+
+`report_run` — **mean 6,214 ms**. The audit trail report had grown past that
+and timed out at sixty seconds.
+
+## The index was there. That was the surprise.
+
+`audit_log` carries `(tenant_id, created_at desc)` — exactly the right index —
+so the obvious diagnosis was wrong. `EXPLAIN ANALYZE` said why:
+
+```
+Nested Loop
+  Join Filter: ((a.created_at >= b.from_ts) AND (a.created_at < b.to_ts))
+  Rows Removed by Join Filter: 24350
+  ->  Function Scan on report_day_bounds b
+  ->  Index Scan using audit_log_tenant_idx  (rows=24412)
+        Index Cond: (tenant_id = ...)
+```
+
+The date range is a **Join Filter**, not an Index Cond. Sixty-two rows wanted;
+24,412 read and 24,350 thrown away.
+
+> A `cross join lateral` makes its result a **relation**, and a relation is not
+> a constant. The planner cannot push a column of a joined relation into a btree
+> bound, so the range scan degrades to a full scan plus a filter — correct, and
+> unboundedly slow.
+
+Written as scalar subqueries, both bounds become InitPlans and land in the
+Index Cond:
+
+| same 62 rows | time | buffers |
+|---|---:|---:|
+| `cross join lateral report_day_bounds(…)` | 42.3 ms | 3,209 |
+| scalar subqueries | **5.9 ms** | **277** |
+
+**This is migration `0089`'s rule with a different symptom.** CLAUDE.md already
+says *"when a value must be singular, write a scalar subquery, not a one-row
+CTE"* — `0089` learned it for **correctness** (`fees_billable_lines` returned
+every row three times). This is the same construct costing **performance**, and
+it is the more dangerous half: a wrong number gets reported, a slow query gets
+blamed on "the platform".
+
+Two reports had the pattern — the audit trail and the notification log. Both
+fixed (`0168`), the second before anybody hit it.
+
+## Then: 8.4 ms to look up a name
+
+Measuring again rather than declaring victory found the rest of it. Same index
+scan, same 62 rows, one column different:
+
+```
+select a.id                                        ->   0.65 ms
+select a.id, public.audit_actor_label(a.actor_id)  -> 525 ms
+```
+
+> A scalar function that queries another table is a correlated subquery wearing
+> a nicer name. In a projection it runs **per row**, and every RLS policy on the
+> table it reads runs with it. Resolve a set as a set: join once.
+
+`audit_actor_label` reads `user_profiles`, which carries two permissive SELECT
+policies, each calling `current_tenant_id()` and `current_role_code()` — all of
+it 62 times, to name two distinct people. Replaced with a `left join` in the two
+places that iterate over many rows (`0169`); the function stays for
+`settings_effective()`, which calls it seven times over seven rows.
+
+Note what this did **not** need: rewriting the 78 tables Supabase's advisor
+flags for `multiple_permissive_policies`. Those cost something only while being
+evaluated per row. Policies are the actual security boundary (rule 1), and
+rewriting all of them to satisfy a linter is a large risk for a cost that
+measurement says is now gone.
+
+## What is left, and why it is a contract problem
+
+| | |
+|---|---:|
+| filtered (a day), before | **> 60,000 ms** (timeout) |
+| after `0168` | 2,260 ms → 647 ms |
+| after `0169` | **190 ms** |
+| unfiltered (all 24,412 rows) | 6,200 ms |
+
+The unfiltered case has a different cause, and it is worth stating precisely
+because it applies to every report:
+
+```
+select t.row_data, count(*) over () from report_audit_trail($1) limit 50
+  -> Function Scan ... rows=24412    6,767 ms
+select t.row_data                    from report_audit_trail($1) limit 50
+  -> Function Scan ... rows=24412    6,168 ms
+```
+
+Removing the window function changed nothing, which rules out the obvious
+suspect.
+
+> **A set-returning function is an optimisation fence.** `select … from
+> report_x($1) limit 50` runs `report_x` to completion and buffers every row
+> before the Limit sees one. The kernel's `limit`/`offset` bound the
+> **response**, never the **work**.
+
+Rule 7 permits reports inline *because* they are capped at 1,000 rows. That cap
+is applied after the report function has produced everything matching. The scan
+is not the problem — counting the same 24,412 rows with the projection dropped
+takes **100 ms**; producing them fully takes 6.2 seconds. The cost is entirely
+per-row projection, so the only real fix is to produce fewer rows.
+
+`0170` gives the audit trail a **declared seven-day default** — a visible,
+overridable parameter stated in the report's own description, not a silent
+truncation (rule 13 is explicit that returning the first N of M is the worst
+available outcome). "What changed recently" is the question somebody brings to
+an audit trail; "everything since the school opened" is one they should have to
+ask for.
+
+It deliberately does **not** rewrite the kernel to push `limit` inside every
+report function. That would change the contract every catalog function is
+written against, for one report that needed it, and the ceiling is unchanged
+either way: a true `total_count` requires a full pass whatever the page size.
+
+**One caveat, because it is the sort of thing that misleads later:** in the demo
+tenant the whole log was seeded in a single burst, so seven days covers 21,576
+of the 24,412 rows and the default buys little *there*. In a school where the
+log accumulates a few hundred rows a day it buys everything. Tuning a default
+until one seeded dataset looks fast would be measuring the fixture.
+
+## Advisories deliberately not acted on
+
+`get_advisors(type: "performance")` returned 337 items:
+
+- **148 `unused_index` (INFO)** — on a demo database with almost no query
+  traffic, "never used" means "nobody has run that query here yet". Dropping
+  indexes on that evidence would be optimising the fixture.
+- **89 `unindexed_foreign_keys` (INFO)** — real, but adding 89 speculative
+  indexes costs write throughput on every insert to buy nothing measurable.
+  Worth revisiting against `pg_stat_statements` on a tenant with real traffic.
+- **100 `multiple_permissive_policies` (WARN)** — see above.

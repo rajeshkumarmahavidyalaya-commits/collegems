@@ -628,6 +628,34 @@ So: bound it and say what the bound is, or queue it. What is still genuinely
 *notifications* are built — see below — and **full exports turned out not to be
 queued work at all**.
 
+#### …and the cap is on the response, not on the work
+
+Measured, because it qualifies the paragraph above rather than illustrating it:
+
+> **A set-returning function is an optimisation fence.** `select … from
+> report_x($1) limit 50` runs `report_x` to **completion** and buffers every row
+> before the Limit sees one. `report_run`'s `limit`/`offset` bound what crosses
+> the wire, never what Postgres does.
+
+So "capped at 1,000 rows" is not by itself a boundedness argument. It was true
+of every report while every report read a table bounded by the size of a school;
+it stopped being true the moment one read `audit_log`, which only grows. That
+report took **6.2 seconds** to return 50 rows of 24,412 — and removing
+`count(*) over ()` changed nothing, which is how the fence was found.
+
+The scan is not the cost: counting those rows with the projection dropped is
+**100 ms**, producing them fully is 6.2 s. So the rule for a report over a table
+that grows without bound:
+
+- **Keep the projection cheap**, because it runs for every matching row, not
+  every returned row.
+- **Give it a declared default window** — a visible, overridable parameter
+  stated in the report's description, never a silent truncation (rule 13).
+- A true `total_count` costs a full pass whatever the page size. That is the
+  honest ceiling; say it rather than designing around it twice.
+
+See `docs/performance.md`.
+
 ### A long export is the browser's job, not the server's
 
 "Full exports" sat on the unbuilt list since the reporting kernel shipped, and
@@ -1428,6 +1456,23 @@ the calm, institutional feel this product is aiming for.
   different class levels, under `cross join lateral`. A scalar subquery returns
   one value or null, so there is no join for the planner to widen. Migration
   `0089`.
+
+  **The same construct has a second symptom, and it is quieter.** A `cross join
+  lateral` makes its result a **relation**, and a relation is not a constant —
+  so the planner cannot push a column of it into a btree bound. A date range
+  supplied that way becomes a Join Filter instead of an Index Cond, and a seek
+  degrades into a full scan that is still correct. Two reports filtered
+  `report_day_bounds()` that way; on the same 62 rows, **42.3 ms / 3,209 buffers
+  as a lateral, 5.9 ms / 277 buffers as scalar subqueries** (migration `0168`).
+  A wrong number gets reported; a slow query gets blamed on the platform.
+
+- **A scalar function that queries another table is a correlated subquery
+  wearing a nicer name.** In a projection it runs per row, and every RLS policy
+  on the table it reads runs with it. `audit_actor_label` reads `user_profiles`
+  — two permissive policies, each calling `current_tenant_id()` — and cost
+  **8.4 ms per row**, 525 ms to name 62 rows containing two distinct people.
+  Resolve a set as a set: join once and let the planner hash it. Keep the
+  function for the single-actor callers. Migration `0169`.
 - Generated DB types live in `src/lib/supabase/database.types.ts`. Regenerate
   after every migration.
 - Migrations are numbered and immutable once applied. Add a new one; never edit
