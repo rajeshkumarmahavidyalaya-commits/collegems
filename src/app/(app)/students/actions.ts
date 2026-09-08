@@ -218,12 +218,61 @@ export async function updateStudent(id: string, input: unknown): Promise<ActionR
  * on the record surviving. Status change is the destructive action, and it is
  * reversible, which is why the UI can offer an undo.
  */
-export async function setStudentStatus(id: string, status: string): Promise<ActionResult> {
+/** The statuses that mean a child has left, rather than merely changed state. */
+const LEAVING_STATUSES = ["transferred", "alumni", "expelled", "inactive"] as const;
+
+export type ExitOutcome = {
+  closed: { enrolments: number; transport: number; hostel: number; concessions: number };
+  outstanding: { kind: string; message: string }[];
+};
+
+/**
+ * Setting a leaving status **performs the exit**; it does not just write the
+ * word.
+ *
+ * This function used to be one `update ... set status`, which is precisely the
+ * gap migration `0174` closed in the certificate path: four of the five read
+ * paths that decide what a child is charged and told never consult
+ * `students.status`, so the flag alone left them enrolled, on a bus, in a
+ * hostel bed and receiving absence texts. Two ways to set the same flag, one of
+ * which quietly did nothing, is worse than one — so this one routes through the
+ * same act.
+ *
+ * A reason is required for a leaving status because `student_exit` requires
+ * one: it is the only thing a record five years from now will have.
+ */
+export async function setStudentStatus(
+  id: string,
+  status: string,
+  reason?: string,
+): Promise<ActionResult<ExitOutcome | null>> {
   const supabase = await createClient();
+
+  if ((LEAVING_STATUSES as readonly string[]).includes(status)) {
+    if (!reason || reason.trim().length < 3) {
+      return { ok: false, error: "Say why this child is leaving." };
+    }
+
+    const { data, error } = await supabase.rpc("student_exit", {
+      p_student_id: id,
+      p_reason: reason.trim(),
+      p_status: status,
+    });
+    if (error) return { ok: false, error: error.message };
+
+    revalidatePath("/students");
+    revalidatePath(`/students/${id}`);
+    return { ok: true, data: (data as unknown as ExitOutcome) ?? null };
+  }
+
+  // Coming back on the roll. Deliberately *not* the inverse act: re-enrolling
+  // a child into a class is a decision with a section and a roll number in it,
+  // and `student_exit_problems()` names anybody left active without one rather
+  // than this guessing.
   const { error } = await supabase.from("students").update({ status }).eq("id", id);
   if (error) return { ok: false, error: error.message };
 
   revalidatePath("/students");
   revalidatePath(`/students/${id}`);
-  return { ok: true, data: undefined };
+  return { ok: true, data: null };
 }

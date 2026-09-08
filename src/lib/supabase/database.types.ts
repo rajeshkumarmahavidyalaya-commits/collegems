@@ -8367,6 +8367,23 @@ export type Database = {
         Args: { p_name: string }
         Returns: boolean
       }
+      student_exit: {
+        Args: {
+          p_left_on?: string
+          p_reason: string
+          p_status?: string
+          p_student_id: string
+        }
+        Returns: Json
+      }
+      student_exit_problems: {
+        Args: never
+        Returns: {
+          message: string
+          severity: string
+          student_id: string
+        }[]
+      }
       student_is_on_leave: {
         Args: { p_date: string; p_student_id: string; p_tenant_id: string }
         Returns: boolean

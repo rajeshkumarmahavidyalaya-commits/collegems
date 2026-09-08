@@ -1181,6 +1181,42 @@ belongs to. Migration `0153` makes one of them the definition and the other two
 wrappers, verified numerically before and after because payroll prorates on it.
 See `docs/modules/attendance.md`.
 
+### A status column is a summary, not a switch
+
+`certificate_issue` set `students.status = 'transferred'` under a comment saying
+that issuing a leaving certificate *is* the act of the child leaving. Checked
+against the live function bodies, four of the five read paths that decide what a
+child is charged and told never consult that column —
+`fees_billable_lines`, `transport_fee_lines`, `hostel_fee_lines` and
+`schedule_student_audience` — and the section invoice run loops
+`enrolments.status` instead. So the flag alone left a child being invoiced, on a
+bus, in a hostel bed, and receiving an absence text every evening.
+
+> A status column is a **summary**. The relationships belong to the modules that
+> made them, so an ending is **one act that ends them** — not a flag every
+> reader has to remember to check. Nine readers would each have to; the tenth is
+> the one somebody writes next year.
+
+Three things `student_exit` fixes that generalise:
+
+- **End, do not cancel.** `ends_on = the day they left` keeps the fact that the
+  child rode the bus until then; `cancelled` erases it. Same instinct as a
+  revoked concession keeping its credits.
+- **Set the summary last**, so a failure part-way leaves the child visibly still
+  here rather than half-gone.
+- **What the act cannot end is a sentence, not a refusal** — an unreturned book,
+  an unpaid balance. The certificates rule again: a function that refused would
+  be one schools route around.
+
+And a rule about critics, learned by the critic accusing a correct exit on its
+own last day (`ends_on >= today` where the charge rule wants `>=` and the
+relationship question wants `>`):
+
+> **A critic that fires on a correctly finished action teaches people to ignore
+> it**, which costs more than the check was worth. The bar for a `problems()`
+> function is not "could this be wrong" but "is somebody going to have to do
+> something about it". See `docs/modules/student-exit.md`.
+
 ### A record of an observation is not a place to write a decision
 
 Approving a child's leave must not stamp `excused` across the register, however

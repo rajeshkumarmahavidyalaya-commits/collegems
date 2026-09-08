@@ -7,6 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Separator } from "@/components/ui/separator";
 import { hasPermission } from "@/lib/auth/permissions";
 import { getStudent } from "../actions";
+import { ExitControl } from "./exit-control";
 
 export const metadata = { title: "Student" };
 
@@ -54,12 +55,17 @@ export default async function StudentDetailPage({
           <p className="mt-1 font-mono text-sm text-muted-foreground">{student.admission_number}</p>
         </div>
         {canManage && (
-          <Button asChild variant="outline">
-            <Link href={`/students/${student.id}/edit`}>
-              <Pencil className="size-4" aria-hidden="true" />
-              Edit
-            </Link>
-          </Button>
+          <div className="flex flex-wrap items-center gap-2">
+            <Button asChild variant="outline">
+              <Link href={`/students/${student.id}/edit`}>
+                <Pencil className="size-4" aria-hidden="true" />
+                Edit
+              </Link>
+            </Button>
+            {student.status === "active" && (
+              <ExitControl studentId={student.id} studentName={fullName} />
+            )}
+          </div>
         )}
       </div>
 
