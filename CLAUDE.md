@@ -545,6 +545,23 @@ bill something:
   a school's fee structure, because which of the two charges is real is a
   bursar's decision, not a migration's.
 
+A **fourth** source arrived with concessions, and it is the first negative one
+— which turned out not to be a source at all:
+
+- **A discount is not a negative invoice line.** `invoice_lines` carries
+  `check (amount > 0)` and keeps it: an invoice says what was *charged*, and a
+  negative charge is not a thing. What is *owed* is the ledger, which already
+  has a `discount` type, already constrains it negative, and is already
+  reversible. So `fees_generate_invoice` raises the full charge and then credits
+  the concession to `ledger_entries` against that invoice — **no money table
+  changed shape**, `fees_student_balances` picked it up with no changes at all,
+  and the family sees both halves, which is how a school prints a bill.
+- **A concession is an award, not an inferred rule.** Evaluating eligibility at
+  billing time — counting siblings, checking whether a parent is on staff —
+  changes a family's bill when an elder sibling leaves, and nobody decided that.
+  It is granted by a person, on a date, for a **required** reason, and the audit
+  log says so. See `docs/modules/concessions.md`.
+
 A third rule arrived with the billing calendar:
 
 - **A recurring charge needs to know which period it is for, or the guard
@@ -1055,6 +1072,17 @@ next module that needs one:
   as a person checking it would expect. Only the arithmetic found it. Pin the
   numbers: `tests/hr/payroll-engine.test.ts` asserts 42,909 *and* asserts not
   41,620.
+
+  **Concessions are the second instance and add one thing.** The order there is:
+  percentages against the *original* charge (10% + 50% is 60%, not 55%), each
+  capped by its own ceiling, then fixed amounts against what is left, and the
+  total never above the charge. `tests/fees/concession-engine.test.ts` asserts
+  6,000 *and* asserts not 5,500. What is new is that **the cap has to fall
+  somewhere, and where it falls is itself policy**: it takes the
+  lowest-`priority` awards to zero rather than shaving all of them
+  proportionally, so a statutory RTE seat is honoured before a discretionary
+  sibling discount. A rule that only says "cap the total" leaves that unstated
+  and every implementation picks differently.
 - **A missing key means the conservative reading.** `replaces_absent` defaults
   to false because a school that wants leniency will say so, whereas a school
   that gets it by accident finds out from a parent. An empty `{}` must be a

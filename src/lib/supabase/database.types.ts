@@ -1364,6 +1364,62 @@ export type Database = {
           },
         ]
       }
+      fee_concessions: {
+        Row: {
+          code: string
+          created_at: string
+          description: string | null
+          fee_head_ids: string[] | null
+          id: string
+          is_active: boolean
+          kind: string
+          max_amount: number | null
+          name: string
+          priority: number
+          tenant_id: string
+          updated_at: string
+          value: number
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          description?: string | null
+          fee_head_ids?: string[] | null
+          id?: string
+          is_active?: boolean
+          kind: string
+          max_amount?: number | null
+          name: string
+          priority?: number
+          tenant_id: string
+          updated_at?: string
+          value: number
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          description?: string | null
+          fee_head_ids?: string[] | null
+          id?: string
+          is_active?: boolean
+          kind?: string
+          max_amount?: number | null
+          name?: string
+          priority?: number
+          tenant_id?: string
+          updated_at?: string
+          value?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fee_concessions_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       fee_heads: {
         Row: {
           category: string
@@ -2947,6 +3003,7 @@ export type Database = {
         Row: {
           amount: number
           book_issue_id: string | null
+          concession_award_id: string | null
           created_at: string
           entry_type: string
           id: string
@@ -2967,6 +3024,7 @@ export type Database = {
         Insert: {
           amount: number
           book_issue_id?: string | null
+          concession_award_id?: string | null
           created_at?: string
           entry_type: string
           id?: string
@@ -2987,6 +3045,7 @@ export type Database = {
         Update: {
           amount?: number
           book_issue_id?: string | null
+          concession_award_id?: string | null
           created_at?: string
           entry_type?: string
           id?: string
@@ -3010,6 +3069,13 @@ export type Database = {
             columns: ["tenant_id", "book_issue_id"]
             isOneToOne: false
             referencedRelation: "book_issues"
+            referencedColumns: ["tenant_id", "id"]
+          },
+          {
+            foreignKeyName: "ledger_entries_concession_award_fkey"
+            columns: ["tenant_id", "concession_award_id"]
+            isOneToOne: false
+            referencedRelation: "student_concessions"
             referencedColumns: ["tenant_id", "id"]
           },
           {
@@ -5075,6 +5141,89 @@ export type Database = {
           },
         ]
       }
+      student_concessions: {
+        Row: {
+          concession_id: string
+          created_at: string
+          ends_on: string | null
+          granted_by: string | null
+          granted_on: string
+          id: string
+          reason: string
+          revoke_reason: string | null
+          revoked_at: string | null
+          revoked_by: string | null
+          session_id: string
+          status: string
+          student_id: string
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          concession_id: string
+          created_at?: string
+          ends_on?: string | null
+          granted_by?: string | null
+          granted_on?: string
+          id?: string
+          reason: string
+          revoke_reason?: string | null
+          revoked_at?: string | null
+          revoked_by?: string | null
+          session_id: string
+          status?: string
+          student_id: string
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          concession_id?: string
+          created_at?: string
+          ends_on?: string | null
+          granted_by?: string | null
+          granted_on?: string
+          id?: string
+          reason?: string
+          revoke_reason?: string | null
+          revoked_at?: string | null
+          revoked_by?: string | null
+          session_id?: string
+          status?: string
+          student_id?: string
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "student_concessions_concession_fkey"
+            columns: ["tenant_id", "concession_id"]
+            isOneToOne: false
+            referencedRelation: "fee_concessions"
+            referencedColumns: ["tenant_id", "id"]
+          },
+          {
+            foreignKeyName: "student_concessions_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "academic_sessions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "student_concessions_student_fkey"
+            columns: ["tenant_id", "student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["tenant_id", "id"]
+          },
+          {
+            foreignKeyName: "student_concessions_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       student_leave_requests: {
         Row: {
           applied_by: string | null
@@ -6362,6 +6511,71 @@ export type Database = {
           severity: string
         }[]
       }
+      concession_award: {
+        Args: {
+          p_concession_id: string
+          p_ends_on?: string
+          p_reason: string
+          p_student_id: string
+        }
+        Returns: {
+          concession_id: string
+          created_at: string
+          ends_on: string | null
+          granted_by: string | null
+          granted_on: string
+          id: string
+          reason: string
+          revoke_reason: string | null
+          revoked_at: string | null
+          revoked_by: string | null
+          session_id: string
+          status: string
+          student_id: string
+          tenant_id: string
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "student_concessions"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      concession_problems: {
+        Args: never
+        Returns: {
+          message: string
+          severity: string
+          student_id: string
+        }[]
+      }
+      concession_revoke: {
+        Args: { p_award_id: string; p_reason: string }
+        Returns: {
+          concession_id: string
+          created_at: string
+          ends_on: string | null
+          granted_by: string | null
+          granted_on: string
+          id: string
+          reason: string
+          revoke_reason: string | null
+          revoked_at: string | null
+          revoked_by: string | null
+          session_id: string
+          status: string
+          student_id: string
+          tenant_id: string
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "student_concessions"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       current_role_allows: {
         Args: { p_permission_code: string }
         Returns: boolean
@@ -6664,6 +6878,16 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      fees_concession_lines: {
+        Args: { p_as_of?: string; p_charges: Json; p_student_id: string }
+        Returns: {
+          amount: number
+          award_id: string
+          code: string
+          concession_id: string
+          name: string
+        }[]
+      }
       fees_create_payment_intent: {
         Args: { p_amount: number; p_invoice_id?: string; p_student_id: string }
         Returns: {
@@ -6833,6 +7057,7 @@ export type Database = {
         Returns: {
           amount: number
           book_issue_id: string | null
+          concession_award_id: string | null
           created_at: string
           entry_type: string
           id: string
@@ -6872,6 +7097,7 @@ export type Database = {
         Returns: {
           amount: number
           book_issue_id: string | null
+          concession_award_id: string | null
           created_at: string
           entry_type: string
           id: string
@@ -6908,6 +7134,7 @@ export type Database = {
         Returns: {
           amount: number
           book_issue_id: string | null
+          concession_award_id: string | null
           created_at: string
           entry_type: string
           id: string
@@ -6937,6 +7164,7 @@ export type Database = {
         Returns: {
           amount: number
           book_issue_id: string | null
+          concession_award_id: string | null
           created_at: string
           entry_type: string
           id: string
@@ -6973,6 +7201,7 @@ export type Database = {
         Returns: {
           amount: number
           book_issue_id: string | null
+          concession_award_id: string | null
           created_at: string
           entry_type: string
           id: string
@@ -7803,6 +8032,12 @@ export type Database = {
           row_data: Json
         }[]
       }
+      report_concessions: {
+        Args: { p_params: Json }
+        Returns: {
+          row_data: Json
+        }[]
+      }
       report_day_bounds: {
         Args: { p_from: string; p_to: string }
         Returns: {
@@ -7852,6 +8087,12 @@ export type Database = {
         }[]
       }
       report_notification_deliveries: {
+        Args: { p_params: Json }
+        Returns: {
+          row_data: Json
+        }[]
+      }
+      report_notification_log: {
         Args: { p_params: Json }
         Returns: {
           row_data: Json

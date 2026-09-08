@@ -48,6 +48,7 @@ export const ur: Messages = {
   "nav.studentLeave": "طالب علم کی چھٹی",
   "nav.cover": "متبادل انتظام",
   "nav.schoolSettings": "اسکول کی ترتیبات",
+  "nav.concessions": "فیس میں رعایت",
   "nav.classRoutine": "کلاس کا نظام الاوقات",
   "nav.myWeek": "میرا ہفتہ",
   "nav.attendanceReport": "حاضری کی رپورٹ",

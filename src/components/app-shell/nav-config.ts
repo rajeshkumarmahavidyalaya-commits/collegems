@@ -42,6 +42,7 @@ import {
   ArrowUpNarrowWide,
   Users,
   UserCheck,
+  BadgePercent,
 } from "lucide-react";
 
 export type NavItem = {
@@ -311,6 +312,16 @@ export const NAV_GROUPS: NavGroup[] = [
         messageKey: "nav.billingPeriods",
         href: "/fees/instalments",
         icon: CalendarRange,
+        roles: ["admin", "accountant"],
+      },
+      // A teacher gets `concessions.view` but not the menu entry: they meet a
+      // concession while looking at one child's account, not by browsing the
+      // school's whole discount policy.
+      {
+        title: "Concessions",
+        messageKey: "nav.concessions",
+        href: "/fees/concessions",
+        icon: BadgePercent,
         roles: ["admin", "accountant"],
       },
       {
