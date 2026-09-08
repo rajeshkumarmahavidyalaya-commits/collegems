@@ -51,7 +51,7 @@ describe("transport", () => {
   it("refuses a stop that belongs to another route, even on a direct insert", async () => {
     const { data: session } = await a
       .from("academic_sessions")
-      .select("id, tenant_id")
+      .select("id, tenant_id, start_date, end_date")
       .eq("is_current", true)
       .single();
 
@@ -66,8 +66,11 @@ describe("transport", () => {
       stop_id: stopOnBoth,
       route_direction: "pickup",
       direction: "pickup",
-      starts_on: "2035-01-01",
+      // Inside the session (0178). This test is about the stop/route key.
+      starts_on: session!.start_date,
       monthly_fare: 100,
+      session_starts_on: session!.start_date,
+      session_ends_on: session!.end_date,
     });
 
     expect(error).not.toBeNull();

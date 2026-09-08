@@ -80,6 +80,54 @@ happen to reach.
   `public.current_session_id(tenant_id)` in SQL or `getUserContext()` in the
   app. Never accept `session_id` from client input.
 
+### …and a row that carries a session must end with it
+
+`session_id` says which year a row belongs to. That is a label, and a label
+enforces nothing — so three tables carried one, let `ends_on` be null, and
+documented null as *"runs to the end of the year"* in a comment nobody could
+execute.
+
+> **A null end date means the end of the row's own session, never "for ever".**
+> Say that with a column, not with a predicate in every reader.
+
+Eleven readers were asking `ends_on is null or ends_on >= <date>`, and to all
+eleven an open-ended bus seat made in 2025-26 was still running in June 2027.
+Measured on the demo school, one root cause with five faces:
+
+- **the bill never stops** — 46 seats and 14 beds still billable fifteen months
+  after their year ended;
+- **the bed is never free** — `hostel_occupancy` read 14 of 14 rooms full, so
+  next April the warden could place nobody. It reads 1 now;
+- **the roster and the bill disagree** — the route list is session-scoped and
+  `transport_fee_lines` is not, so from 1 April the transport screen is empty
+  while 40 families are charged;
+- **next year cannot be booked** — `daterange(starts_on, ends_on, '[]')` with a
+  null end overlaps every future range, so the exclusion constraint refused a
+  2026-27 seat with `23P01` and the module said *"End the current one first"*
+  about a seat that ended in March;
+- **a row outside its own year** — found by the constraint refusing to be
+  created: a live bed starting 4 September 2026 on a session that ended on 31
+  March, because `hostel_allocate` checked the *room's* session and defaulted
+  `starts_on` to `current_date` without comparing the two.
+
+The fix is rule 4's composite-key device carrying a **boundary** — the year's
+own dates held on the child, `effective_ends_on` generated from them — and then
+the eleven predicates are mechanical, *because* the row now knows the answer.
+Migrations `0178` and `0179`; see `docs/modules/session-boundary.md`.
+
+Two things worth copying from it:
+
+- **A window is not a filter on the current session.** `fees_concession_lines`
+  had both — an `as_of` parameter *and* a `current_session_id()` filter — and
+  they disagreed: a back-dated invoice raised after a rollover credited
+  nothing. One mechanism; the filter went.
+- **Bounding a row makes a question askable that was not.**
+  `academics_session_problems()` can now say *"46 bus seats end with 2025-2026
+  and have not been renewed for 2026-2027"*, which nothing could say while the
+  seats did not end. It is silent until six weeks before the year turns and
+  silent again once the arrangements exist in the receiving session — rule 12's
+  bar for a critic, applied to a date.
+
 ## 3. Auth
 
 - Supabase Auth. A trigger on `auth.users` (`handle_new_auth_user`) resolves a
@@ -291,6 +339,7 @@ went home" an audited unpublish/republish pair rather than a quiet edit.
 | a status | `payslips.run_status`, `exam_remarks.exam_status` | the row is immutable once the parent is final |
 | an identity | `transport_assignments.route_id` | a child's stop is on the child's own route |
 | a term in a comparison | `transport_assignments.route_direction` | a pickup-only route cannot drop anybody |
+| a boundary | `transport_assignments.session_ends_on`, `hostel_allocations.session_ends_on` | an arrangement cannot outlive the year it was made for |
 
 **One key can carry two of those at once.** `marks.component_max_marks` is the
 newest use and it is not a sixth kind — it is the identity use and the value use
@@ -303,7 +352,10 @@ references public.exam_components (tenant_id, exam_subject_id, id, max_marks)
 
 `exam_subject_id` in the key says *this part belongs to this paper*;
 `max_marks` says *this local ceiling is the part's own*. One constraint, two
-rules, one cascade. It also shows how to make the device **optional**: both
+rules, one cascade. `transport_assignments (tenant_id, session_id,
+session_starts_on, session_ends_on)` is the same shape with the year's two
+dates in it, which is why "a boundary" above is one row of the table and not
+two. It also shows how to make the device **optional**: both
 columns are nullable together, a MATCH SIMPLE foreign key is skipped entirely
 when any of its columns is null, and a `check ((a is null) = (b is null))`
 beside it stops one arriving without the other — which is how "this paper is not

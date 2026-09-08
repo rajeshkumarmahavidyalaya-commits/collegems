@@ -30,7 +30,7 @@ describe("hostel", () => {
   it("refuses a room that belongs to another house, even on a direct insert", async () => {
     const { data: session } = await a
       .from("academic_sessions")
-      .select("id, tenant_id")
+      .select("id, tenant_id, start_date, end_date")
       .eq("is_current", true)
       .single();
 
@@ -47,8 +47,12 @@ describe("hostel", () => {
       student_id: housed!.student_id,
       hostel_id: girlsHostel,
       room_id: boysRoom,
-      starts_on: "2035-01-01",
+      // Inside the session, because migration 0178 bounds an arrangement to
+      // its own year. This test is about the house/room key, not the dates.
+      starts_on: session!.start_date,
       monthly_fare: 100,
+      session_starts_on: session!.start_date,
+      session_ends_on: session!.end_date,
     });
 
     expect(error).not.toBeNull();

@@ -159,3 +159,17 @@ export function switchableDecisions(hasNextClass: boolean): Decision[] {
 export function needsTargetSection(decision: string) {
   return decision === "promote" || decision === "repeat";
 }
+
+/**
+ * What a rollover is about to leave behind, as the server said it.
+ *
+ * `academics_session_problems()` speaks only in the last six weeks of a year
+ * and afterwards, and goes quiet once the arrangements exist in the receiving
+ * session — so a screen showing nothing here is a school that is either not
+ * near a rollover or has already done one, and neither needs a sentence.
+ */
+export type SessionProblem = { severity: string; message: string };
+
+export function severityTone(severity: string): "warning" | "secondary" {
+  return severity === "warning" ? "warning" : "secondary";
+}

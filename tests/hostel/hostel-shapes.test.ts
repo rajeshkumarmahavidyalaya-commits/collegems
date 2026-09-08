@@ -78,15 +78,33 @@ describe("bedsSentence", () => {
 
 describe("isCurrent", () => {
   const today = "2026-09-04";
+  const yearEnd = "2027-03-31";
 
-  it("counts an open-ended stay as running", () => {
-    expect(isCurrent({ status: "active", startsOn: "2026-04-01", endsOn: null }, today)).toBe(true);
+  it("counts a stay running to the end of its year as running", () => {
+    expect(
+      isCurrent({ status: "active", startsOn: "2026-04-01", effectiveEndsOn: yearEnd }, today),
+    ).toBe(true);
   });
 
   it("excludes ended, future and cancelled stays", () => {
-    expect(isCurrent({ status: "active", startsOn: "2026-04-01", endsOn: "2026-08-31" }, today)).toBe(false);
-    expect(isCurrent({ status: "active", startsOn: "2026-10-01", endsOn: null }, today)).toBe(false);
-    expect(isCurrent({ status: "cancelled", startsOn: "2026-04-01", endsOn: null }, today)).toBe(false);
+    expect(
+      isCurrent({ status: "active", startsOn: "2026-04-01", effectiveEndsOn: "2026-08-31" }, today),
+    ).toBe(false);
+    expect(
+      isCurrent({ status: "active", startsOn: "2026-10-01", effectiveEndsOn: yearEnd }, today),
+    ).toBe(false);
+    expect(
+      isCurrent({ status: "cancelled", startsOn: "2026-04-01", effectiveEndsOn: yearEnd }, today),
+    ).toBe(false);
+  });
+
+  // A bed held open-ended last year kept its occupant for ever, so every room
+  // read as full in April and the warden could place nobody. Measured on the
+  // demo school: 14 beds occupied before 0178, 1 after.
+  it("frees a bed whose academic year has finished", () => {
+    expect(
+      isCurrent({ status: "active", startsOn: "2025-04-01", effectiveEndsOn: "2026-03-31" }, today),
+    ).toBe(false);
   });
 });
 

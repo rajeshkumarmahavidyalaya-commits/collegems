@@ -108,23 +108,41 @@ describe("formatting", () => {
 
 describe("isCurrent", () => {
   const today = "2026-09-03";
+  // What the database sends: the typed end date if there is one, otherwise the
+  // last day of the arrangement's own academic year (migration 0178).
+  const yearEnd = "2027-03-31";
 
-  it("counts an open-ended arrangement as running", () => {
-    expect(isCurrent({ status: "active", startsOn: "2026-07-01", endsOn: null }, today)).toBe(true);
+  it("counts an arrangement running to the end of its year as running", () => {
+    expect(
+      isCurrent({ status: "active", startsOn: "2026-07-01", effectiveEndsOn: yearEnd }, today),
+    ).toBe(true);
   });
 
   it("counts the last day itself as running", () => {
-    expect(isCurrent({ status: "active", startsOn: "2026-07-01", endsOn: today }, today)).toBe(true);
+    expect(
+      isCurrent({ status: "active", startsOn: "2026-07-01", effectiveEndsOn: today }, today),
+    ).toBe(true);
   });
 
   it("excludes one that has ended, one not started, and one cancelled", () => {
-    expect(isCurrent({ status: "active", startsOn: "2026-07-01", endsOn: "2026-08-31" }, today)).toBe(
-      false,
-    );
-    expect(isCurrent({ status: "active", startsOn: "2026-10-01", endsOn: null }, today)).toBe(false);
-    expect(isCurrent({ status: "cancelled", startsOn: "2026-07-01", endsOn: null }, today)).toBe(
-      false,
-    );
+    expect(
+      isCurrent({ status: "active", startsOn: "2026-07-01", effectiveEndsOn: "2026-08-31" }, today),
+    ).toBe(false);
+    expect(
+      isCurrent({ status: "active", startsOn: "2026-10-01", effectiveEndsOn: yearEnd }, today),
+    ).toBe(false);
+    expect(
+      isCurrent({ status: "cancelled", startsOn: "2026-07-01", effectiveEndsOn: yearEnd }, today),
+    ).toBe(false);
+  });
+
+  // The regression this whole change exists for. Before 0178 a seat with no
+  // typed end date read as running for ever, so last April's rider was still
+  // on this September's bus -- and still on the bill.
+  it("excludes a seat whose academic year has finished", () => {
+    expect(
+      isCurrent({ status: "active", startsOn: "2025-04-01", effectiveEndsOn: "2026-03-31" }, today),
+    ).toBe(false);
   });
 });
 

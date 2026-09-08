@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { getUserContext } from "@/lib/auth/context";
-import { promotionFormSchema, toRules } from "@/lib/validations/promotion";
+import { promotionFormSchema, toRules, type SessionProblem } from "@/lib/validations/promotion";
 import type { ActionResult } from "../library/actions";
 
 function fail(message: string): ActionResult<never> {
@@ -433,4 +433,21 @@ export async function rollForwardSections(
 
   revalidatePath("/promotion");
   return { ok: true, data: { created: data ?? 0 } };
+}
+
+/**
+ * What ends with this year and has not been carried into the next.
+ *
+ * Deliberately read here rather than on a transport or hostel screen: the
+ * person who can do something about it is the one standing in front of the
+ * rollover, and a bus seat that ends in March is not a transport problem in
+ * July. See migration 0179 and docs/modules/promotion.md.
+ */
+export async function listSessionProblems(): Promise<SessionProblem[]> {
+  const supabase = await createClient();
+  const { data } = await supabase.rpc("academics_session_problems");
+  return (data ?? []).map((p) => ({
+    severity: p.severity ?? "info",
+    message: p.message ?? "",
+  }));
 }

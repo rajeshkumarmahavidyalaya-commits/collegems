@@ -147,15 +147,20 @@ export function occupancyTone(capacity: number | null, assigned: number): "muted
 }
 
 /**
- * Whether an arrangement is running today. `ends_on` null means open-ended,
- * which is what most of them are — nobody types a leaving date in July for a
- * child who will ride the bus all year.
+ * Whether an arrangement is running today.
+ *
+ * `ends_on` null means open-ended, which is what most of them are — nobody
+ * types a leaving date in July for a child who will ride the bus all year. It
+ * does **not** mean for ever: an arrangement stops with the academic year it
+ * was made for, and the row carries that resolved date as `effective_ends_on`
+ * (migration 0178). This function takes the resolved one so that the browser
+ * and the bill cannot disagree about who is on the bus.
  */
 export function isCurrent(
-  assignment: { status: string; startsOn: string; endsOn: string | null },
+  assignment: { status: string; startsOn: string; effectiveEndsOn: string },
   today = new Date().toISOString().slice(0, 10),
 ): boolean {
   if (assignment.status !== "active") return false;
   if (assignment.startsOn > today) return false;
-  return assignment.endsOn === null || assignment.endsOn >= today;
+  return assignment.effectiveEndsOn >= today;
 }

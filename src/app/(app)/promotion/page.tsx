@@ -1,6 +1,10 @@
 import { redirect } from "next/navigation";
+import { AlertTriangle } from "lucide-react";
 import { hasPermission } from "@/lib/auth/permissions";
-import { listRuns, listSessions } from "./actions";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Badge } from "@/components/ui/badge";
+import { severityTone } from "@/lib/validations/promotion";
+import { listRuns, listSessionProblems, listSessions } from "./actions";
 import { PromotionPlanner } from "./promotion-planner";
 
 export const metadata = { title: "Promotion" };
@@ -9,7 +13,11 @@ export default async function PromotionPage() {
   const canManage = await hasPermission("settings.manage");
   if (!canManage) redirect("/");
 
-  const [sessions, runs] = await Promise.all([listSessions(), listRuns()]);
+  const [sessions, runs, problems] = await Promise.all([
+    listSessions(),
+    listRuns(),
+    listSessionProblems(),
+  ]);
 
   return (
     <div className="flex flex-col gap-6">
@@ -22,6 +30,29 @@ export default async function PromotionPage() {
           this screen.
         </p>
       </div>
+
+      {problems.length > 0 && (
+        <section aria-labelledby="rollover-problems-heading" className="flex flex-col gap-2">
+          <h2 id="rollover-problems-heading" className="text-lg font-semibold">
+            What the new year does not inherit
+          </h2>
+          <ul className="flex flex-col gap-2">
+            {problems.map((problem, index) => (
+              <li key={index}>
+                <Alert>
+                  <AlertTriangle className="size-4" aria-hidden="true" />
+                  <AlertTitle className="flex items-center gap-2">
+                    <Badge variant={severityTone(problem.severity)}>
+                      {problem.severity === "warning" ? "Check this" : "Note"}
+                    </Badge>
+                  </AlertTitle>
+                  <AlertDescription>{problem.message}</AlertDescription>
+                </Alert>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
 
       <PromotionPlanner sessions={sessions} runs={runs} />
     </div>

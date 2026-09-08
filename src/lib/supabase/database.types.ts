@@ -2019,13 +2019,16 @@ export type Database = {
       hostel_allocations: {
         Row: {
           created_at: string
+          effective_ends_on: string | null
           ends_on: string | null
           hostel_id: string
           id: string
           monthly_fare: number
           note: string | null
           room_id: string
+          session_ends_on: string
           session_id: string
+          session_starts_on: string
           starts_on: string
           status: string
           student_id: string
@@ -2034,13 +2037,16 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          effective_ends_on?: string | null
           ends_on?: string | null
           hostel_id: string
           id?: string
           monthly_fare: number
           note?: string | null
           room_id: string
+          session_ends_on: string
           session_id: string
+          session_starts_on: string
           starts_on: string
           status?: string
           student_id: string
@@ -2049,13 +2055,16 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          effective_ends_on?: string | null
           ends_on?: string | null
           hostel_id?: string
           id?: string
           monthly_fare?: number
           note?: string | null
           room_id?: string
+          session_ends_on?: string
           session_id?: string
+          session_starts_on?: string
           starts_on?: string
           status?: string
           student_id?: string
@@ -2076,6 +2085,18 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "hostel_rooms"
             referencedColumns: ["tenant_id", "id", "hostel_id"]
+          },
+          {
+            foreignKeyName: "hostel_allocations_session_dates_fkey"
+            columns: [
+              "tenant_id",
+              "session_id",
+              "session_starts_on",
+              "session_ends_on",
+            ]
+            isOneToOne: false
+            referencedRelation: "academic_sessions"
+            referencedColumns: ["tenant_id", "id", "start_date", "end_date"]
           },
           {
             foreignKeyName: "hostel_allocations_session_id_fkey"
@@ -5145,6 +5166,7 @@ export type Database = {
         Row: {
           concession_id: string
           created_at: string
+          effective_ends_on: string | null
           ends_on: string | null
           granted_by: string | null
           granted_on: string
@@ -5153,6 +5175,7 @@ export type Database = {
           revoke_reason: string | null
           revoked_at: string | null
           revoked_by: string | null
+          session_ends_on: string
           session_id: string
           status: string
           student_id: string
@@ -5162,6 +5185,7 @@ export type Database = {
         Insert: {
           concession_id: string
           created_at?: string
+          effective_ends_on?: string | null
           ends_on?: string | null
           granted_by?: string | null
           granted_on?: string
@@ -5170,6 +5194,7 @@ export type Database = {
           revoke_reason?: string | null
           revoked_at?: string | null
           revoked_by?: string | null
+          session_ends_on: string
           session_id: string
           status?: string
           student_id: string
@@ -5179,6 +5204,7 @@ export type Database = {
         Update: {
           concession_id?: string
           created_at?: string
+          effective_ends_on?: string | null
           ends_on?: string | null
           granted_by?: string | null
           granted_on?: string
@@ -5187,6 +5213,7 @@ export type Database = {
           revoke_reason?: string | null
           revoked_at?: string | null
           revoked_by?: string | null
+          session_ends_on?: string
           session_id?: string
           status?: string
           student_id?: string
@@ -5200,6 +5227,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "fee_concessions"
             referencedColumns: ["tenant_id", "id"]
+          },
+          {
+            foreignKeyName: "student_concessions_session_end_fkey"
+            columns: ["tenant_id", "session_id", "session_ends_on"]
+            isOneToOne: false
+            referencedRelation: "academic_sessions"
+            referencedColumns: ["tenant_id", "id", "end_date"]
           },
           {
             foreignKeyName: "student_concessions_session_id_fkey"
@@ -5752,13 +5786,16 @@ export type Database = {
         Row: {
           created_at: string
           direction: string
+          effective_ends_on: string | null
           ends_on: string | null
           id: string
           monthly_fare: number
           note: string | null
           route_direction: string
           route_id: string
+          session_ends_on: string
           session_id: string
+          session_starts_on: string
           starts_on: string
           status: string
           stop_id: string
@@ -5769,13 +5806,16 @@ export type Database = {
         Insert: {
           created_at?: string
           direction?: string
+          effective_ends_on?: string | null
           ends_on?: string | null
           id?: string
           monthly_fare: number
           note?: string | null
           route_direction?: string
           route_id: string
+          session_ends_on: string
           session_id: string
+          session_starts_on: string
           starts_on: string
           status?: string
           stop_id: string
@@ -5786,13 +5826,16 @@ export type Database = {
         Update: {
           created_at?: string
           direction?: string
+          effective_ends_on?: string | null
           ends_on?: string | null
           id?: string
           monthly_fare?: number
           note?: string | null
           route_direction?: string
           route_id?: string
+          session_ends_on?: string
           session_id?: string
+          session_starts_on?: string
           starts_on?: string
           status?: string
           stop_id?: string
@@ -5814,6 +5857,18 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "transport_routes"
             referencedColumns: ["tenant_id", "id", "session_id"]
+          },
+          {
+            foreignKeyName: "transport_assignments_session_dates_fkey"
+            columns: [
+              "tenant_id",
+              "session_id",
+              "session_starts_on",
+              "session_ends_on",
+            ]
+            isOneToOne: false
+            referencedRelation: "academic_sessions"
+            referencedColumns: ["tenant_id", "id", "start_date", "end_date"]
           },
           {
             foreignKeyName: "transport_assignments_session_id_fkey"
@@ -6285,6 +6340,13 @@ export type Database = {
         Args: { p_from_session_id: string; p_to_session_id: string }
         Returns: number
       }
+      academics_session_problems: {
+        Args: never
+        Returns: {
+          message: string
+          severity: string
+        }[]
+      }
       accounts_chart_balances: {
         Args: { p_as_of?: string }
         Returns: {
@@ -6521,6 +6583,7 @@ export type Database = {
         Returns: {
           concession_id: string
           created_at: string
+          effective_ends_on: string | null
           ends_on: string | null
           granted_by: string | null
           granted_on: string
@@ -6529,6 +6592,7 @@ export type Database = {
           revoke_reason: string | null
           revoked_at: string | null
           revoked_by: string | null
+          session_ends_on: string
           session_id: string
           status: string
           student_id: string
@@ -6555,6 +6619,7 @@ export type Database = {
         Returns: {
           concession_id: string
           created_at: string
+          effective_ends_on: string | null
           ends_on: string | null
           granted_by: string | null
           granted_on: string
@@ -6563,6 +6628,7 @@ export type Database = {
           revoke_reason: string | null
           revoked_at: string | null
           revoked_by: string | null
+          session_ends_on: string
           session_id: string
           status: string
           student_id: string
@@ -7397,6 +7463,7 @@ export type Database = {
         Args: { p_student_id: string }
         Returns: {
           allocation_id: string
+          effective_ends_on: string
           ends_on: string
           floor: string
           hostel_kind: string
@@ -8721,6 +8788,7 @@ export type Database = {
           assignment_id: string
           direction: string
           drop_time: string
+          effective_ends_on: string
           ends_on: string
           landmark: string
           monthly_fare: number

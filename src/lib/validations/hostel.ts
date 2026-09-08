@@ -115,12 +115,21 @@ export function occupancyTone(beds: number, occupied: number): "ok" | "warn" | "
   return "ok";
 }
 
-/** Whether a stay is running today. Open-ended is the normal case. */
+/**
+ * Whether a stay is running today.
+ *
+ * Takes the **resolved** end date, never the typed one. A null `ends_on` means
+ * "to the end of this academic year", not "for ever" -- and the place that
+ * knows which year is the row itself, which carries `effective_ends_on` as a
+ * generated column (migration 0178). Reading `ends_on` here would be a second
+ * answer to a question Postgres already answers, and it is the answer that had
+ * a bed in a boys' house occupied by a boy who left in March.
+ */
 export function isCurrent(
-  allocation: { status: string; startsOn: string; endsOn: string | null },
+  allocation: { status: string; startsOn: string; effectiveEndsOn: string },
   today = new Date().toISOString().slice(0, 10),
 ): boolean {
   if (allocation.status !== "active") return false;
   if (allocation.startsOn > today) return false;
-  return allocation.endsOn === null || allocation.endsOn >= today;
+  return allocation.effectiveEndsOn >= today;
 }
