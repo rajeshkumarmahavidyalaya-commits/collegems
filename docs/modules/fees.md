@@ -515,6 +515,154 @@ periods collect against what the fee structures actually use and says so on the
 setup screen — the same instinct as `grading_scheme_problems()`, in the browser
 because both halves of the comparison are already on the page.
 
+## A receipt belongs to the year it settles
+
+**Migration 0186.** `fees_record_payment` took an optional invoice, checked it
+belonged to the student and was issued, and then stamped the entry with
+`current_session_id()`. It never compared the two.
+
+Probed on the demo school with the year turned over:
+
+```
+invoice IN-2025-00001 is in session 2025-2026;
+the receipt landed in session 2026-2027 (RC-2026-00001).
+```
+
+One row, two wrong numbers, and both of them money:
+
+- `fees_student_balances` is bound to the current session, so the payment
+  counted against **2026-2027** — this year's dues fell by money that paid last
+  year's bill, and the family looked squarer with the school than it was;
+- and it was *not* counted against 2025-2026, so **the invoice it named stayed
+  outstanding for ever**. There was no way to clear it: every further attempt
+  landed in the current year too.
+
+The online path already had this right — `fees_settle_gateway_payment` takes
+the session from the payment intent and numbers the receipt with
+`fees_next_document_number_for(tenant, intent.session, 'receipt')`. The counter,
+the screen a bursar actually stands at, did not.
+
+### What `session_id` on a ledger entry means
+
+The decision the bug came from, written down rather than left to be inferred:
+
+> **`session_id` is which year's account this entry moves. `occurred_at` is
+> when the money crossed the counter.** They are different questions and a row
+> answers both.
+
+Arrears collected in July 2026 against a 2025-26 bill are a 2025-26 collection
+that happened on a July day. The subledger must see it in 2025-26 or the debt
+never closes; the cash book must see it on that July day or the till does not
+balance. Both are satisfiable at once, and were not.
+
+### The constraint, then the four writers
+
+The composite-key device (CLAUDE.md rule 4) carrying an **identity** — the
+invoice's own year, held on the entry:
+
+```sql
+alter table public.invoices
+  add constraint invoices_session_key unique (tenant_id, id, session_id);
+
+alter table public.ledger_entries
+  add constraint ledger_entries_invoice_id_fkey
+  foreign key (tenant_id, invoice_id, session_id)
+  references public.invoices (tenant_id, id, session_id)
+  on delete restrict;
+```
+
+Three things about it:
+
+- **It replaces the old two-column key rather than sitting beside it.** The new
+  one implies the old, and two constraints saying overlapping things is where
+  one of them stops being read.
+- **Deliberately no `on update cascade`.** Everywhere else in this schema the
+  cascade keeps a copy in step; here it would silently move money between
+  years. Changing an invoice's session after money has been received against it
+  is not a correction — it is a different invoice — and the refusal is right.
+- **MATCH SIMPLE skips it when `invoice_id` is null**, so money on account is
+  untouched and stays in the year it was taken in, which is the only year it
+  can be attributed to.
+
+`payment_intents` gets the same key, because the online path's session comes
+from the intent, so an intent in the wrong year writes a receipt in the wrong
+year one step later.
+
+Then `fees_record_payment`, `fees_record_adjustment` and
+`fees_create_payment_intent` derive the session from the invoice when there is
+one, and the receipt number comes from **that year's book**. RC-2025-00273 taken
+on a July 2026 morning says exactly what it is, and appending to that year's
+gapless sequence is not a gap in it.
+
+### The day book asks a date question
+
+It filtered on `session_id = current_session_id()` **and** a date range. The
+date range is the question — *what crossed the counter between these two days*
+— and the session filter was a second, weaker answer that agreed only because
+every entry happened to be stamped with the year it was taken in. Keeping it
+would have hidden the arrears receipt from the till it was actually taken at,
+so it is gone. `occurred_at` and `tenant_id` still bound it, and RLS is
+unchanged.
+
+### What did not have to change, and why
+
+`accounts_sync` carries `le.session_id` onto the journal voucher and dates the
+voucher from `occurred_at` — and **not one function in the accounts module
+filters by session**; every one of them is date-ranged. So an arrears voucher
+lands in the right place by date whatever year it is stamped with. The general
+ledger was already built to ask the question the day book had been getting
+wrong.
+
+Verified after the fix, on the same probe:
+
+```
+receipt RC-2025-00273 in session 2025-2026 — same year as the invoice
+2025-26 balance 1100.00 -> 1000.00      — the debt actually closes
+in today's day book: yes                 — the till still balances
+```
+
+### …and then the screen had to be able to reach it
+
+A correct write path nobody can call is not a fix. `getStudentAccount` filtered
+invoices *and* ledger entries to the current session, under a comment that read:
+
+> Last year's settled account is history, not part of what this family owes now.
+
+The word doing the work there is **settled**. A year that was not settled is a
+debt the account page could not show and nobody could clear — so the fix was
+half-built until the page could see one.
+
+`fees_earlier_years(student)` is that half (**migration 0187**): the same
+arithmetic as the current year and as `fees_student_balances` — issued invoice
+lines plus the signed ledger — asked of every other year, keeping the ones that
+come back owing. A year that balances to zero is **not** returned, because it
+really is history and listing it would bury the one year that is not.
+
+It is a function rather than four queries assembled in the action for the
+reason the rest of this module is: the counter reads it on every student a
+cashier looks up, so it is one round trip; and *"what does this family owe"* has
+exactly one implementation, next to the other one, where the two cannot drift.
+
+Probed on the demo school: while 2025-2026 is current it returns **none** — the
+current year is the account, not an earlier one — and with 2026-2027 current it
+returns `2025-2026: charged 26900.00, movements 8.00, balance 26908.00, 2
+invoices` for the same child.
+
+Two places show it, and the second is the one that collects money:
+
+- the account page, as an **Earlier years** block above the ledger tabs;
+- the fee counter, as one line beside the balance — because the cashier taking
+  today's payment is the one person who could also take last year's, and
+  arrears should not be something a family has to know to mention.
+
+Run against the demo school with 2026-2027 as the current year, `earlier`
+returns **96 students owing ₹10,60,904** — the same total `fees_student_balances`
+reports for 2025-26 today. Before this, all of it disappeared from every screen
+the moment the year turned, and the receipt that could have cleared it landed in
+the wrong year anyway.
+
+---
+
 ## Known, deliberate gaps
 
 - **The gateway path has never run end to end.** Every guarantee around it is

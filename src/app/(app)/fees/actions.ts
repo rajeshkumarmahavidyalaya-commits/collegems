@@ -161,6 +161,23 @@ export type InvoiceRow = {
   lines: { id: string; description: string; amount: number }[];
 };
 
+/**
+ * A year this family has left unsettled.
+ *
+ * Only years with a non-zero balance appear: a settled year genuinely is
+ * history, which is what the session filter below was assuming about all of
+ * them. Migration 0186 made an arrears receipt land in the year it settles;
+ * this is what makes one reachable in the first place.
+ */
+export type EarlierYear = {
+  sessionId: string;
+  sessionName: string;
+  charged: number;
+  movements: number;
+  balance: number;
+  invoiceCount: number;
+};
+
 export type StudentAccount = {
   student: {
     id: string;
@@ -175,6 +192,7 @@ export type StudentAccount = {
   entries: LedgerEntryRow[];
   charged: number;
   balance: number;
+  earlier: EarlierYear[];
 };
 
 /**
@@ -191,8 +209,13 @@ export async function getStudentAccount(studentId: string): Promise<StudentAccou
 
   // Session-scoped, per rule 2, and so that `balance` here agrees with the
   // balance `fees_student_balances()` reports on the collection screen --
-  // which is also this session only. Last year's settled account is history,
-  // not part of what this family owes now.
+  // which is also this session only.
+  //
+  // The comment that used to stand here said "last year's settled account is
+  // history, not part of what this family owes now", and the word doing the
+  // work was *settled*. A year that was not settled is a debt this screen could
+  // not show and nobody could clear -- so `earlier` below asks the same two
+  // questions of every other year and keeps the ones that come back owing.
   //
   // Lines, invoice numbers and book titles are fetched separately rather than
   // as PostgREST embeds. Migration 0024 made `ledger_entries -> invoices` and
@@ -321,6 +344,8 @@ export async function getStudentAccount(studentId: string): Promise<StudentAccou
     .reduce((sum, i) => sum + i.total, 0);
   const balance = charged + entries.reduce((sum, e) => sum + e.amount, 0);
 
+  const earlier = await earlierYears(supabase, studentId);
+
   return {
     student: s
       ? {
@@ -342,7 +367,36 @@ export async function getStudentAccount(studentId: string): Promise<StudentAccou
     entries,
     charged,
     balance,
+    earlier,
   };
+}
+
+/**
+ * Every other academic year this student still owes something for.
+ *
+ * One RPC, not four queries assembled here: the fee counter reads this on every
+ * student it looks up, and the arithmetic — billed, plus the signed ledger,
+ * where positive means "owes more" — belongs beside `fees_student_balances`
+ * rather than in a second implementation nobody checks. Migration 0187.
+ */
+async function earlierYears(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  studentId: string,
+): Promise<EarlierYear[]> {
+  const { data, error } = await supabase.rpc("fees_earlier_years", {
+    p_student_id: studentId,
+  });
+
+  if (error) throw new Error(error.message);
+
+  return (data ?? []).map((y) => ({
+    sessionId: y.session_id,
+    sessionName: y.session_name,
+    charged: Number(y.charged),
+    movements: Number(y.movements),
+    balance: Number(y.balance),
+    invoiceCount: y.invoice_count,
+  }));
 }
 
 export async function listFeeHeads() {

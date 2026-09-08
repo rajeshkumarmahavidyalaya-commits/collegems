@@ -373,6 +373,73 @@ describe("fees ledger", () => {
     expect(error!.message).toMatch(/already has an invoice/i);
   });
 
+  // Migration 0186. Before it, a payment against another year's invoice landed
+  // in the current year's ledger: this year's dues fell by money that paid last
+  // year's bill, and the invoice it named could never be cleared.
+  it("puts a receipt in the year of the invoice it settles", async () => {
+    const { data: invoice } = await a
+      .from("invoices")
+      .select("id, student_id, session_id, academic_sessions!inner ( start_date )")
+      .eq("id", invoiceId!)
+      .single();
+
+    const { data: entry, error } = await a.rpc("fees_record_payment", {
+      p_student_id: invoice!.student_id,
+      p_amount: 1,
+      p_method: "cash",
+      p_invoice_id: invoice!.id,
+      p_note: "session pairing",
+    });
+
+    expect(error, error?.message).toBeNull();
+    expect(entry!.session_id).toBe(invoice!.session_id);
+
+    // And the receipt number comes from that year's book, so the number says
+    // which year it settles rather than contradicting the row it sits on.
+    const invoiceYear = invoice!.academic_sessions!.start_date.slice(0, 4);
+    expect(entry!.receipt_number).toContain(invoiceYear);
+
+    await a.rpc("fees_reverse_entry", {
+      p_entry_id: entry!.id,
+      p_reason: "test cleanup",
+    });
+  });
+
+  // The rule is a foreign key, not a habit in four writers: a row that pairs an
+  // invoice with the wrong year cannot be inserted at all.
+  it("refuses a ledger row that names an invoice from another year", async () => {
+    const { data: sessions } = await a
+      .from("academic_sessions")
+      .select("id, is_current")
+      .order("start_date");
+
+    const other = (sessions ?? []).find((s) => !s.is_current);
+    if (!other) return;
+
+    const { data: invoice } = await a
+      .from("invoices")
+      .select("id, student_id, tenant_id, session_id")
+      .eq("id", invoiceId!)
+      .single();
+
+    const { error } = await a.from("ledger_entries").insert({
+      tenant_id: invoice!.tenant_id,
+      session_id: other.id,
+      student_id: invoice!.student_id,
+      invoice_id: invoice!.id,
+      entry_type: "payment",
+      amount: -1,
+      // `method` is not incidental: `ledger_entries_method_chk` requires one on
+      // a payment and fires first, so leaving it out tests that check rather
+      // than this one. Probed — without it the error is 23514, not 23503.
+      method: "cash",
+    });
+
+    expect(error).not.toBeNull();
+    expect(error!.code).toBe("23503");
+    expect(error!.message).toContain("ledger_entries_invoice_id_fkey");
+  });
+
   it("refuses to update an invoice line", async () => {
     const { data: line } = await a
       .from("invoice_lines")

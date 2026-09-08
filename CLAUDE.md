@@ -493,6 +493,29 @@ Two consequences worth knowing before you touch this module:
   rest simply have no way in. Test each for what it actually does.
 - **Amounts are signed, positive means "owes more", and the RPCs take positive
   numbers** and do the signing. Never ask a caller for a negative amount.
+- **`session_id` on a ledger entry is which year's account it moves;
+  `occurred_at` is when the money crossed the counter.** Two questions, one
+  row, and conflating them is expensive: `fees_record_payment` stamped every
+  receipt with `current_session_id()` and never compared it to the invoice it
+  named, so a payment against last year's bill *lowered this year's dues* and
+  *could never clear last year's invoice*. Probed: invoice IN-2025-00001,
+  receipt RC-2026-00001. The rule is now a foreign key —
+  `(tenant_id, invoice_id, session_id)` onto `invoices` — because four writers
+  had to remember it and three of them did not.
+
+  Two corollaries. **A receipt is numbered in the year it settles**, so
+  RC-2025-00273 taken on a July 2026 morning says what it is. And **a date
+  question is answered with dates**: `fees_day_book` also filtered on the
+  current session, which would have hidden that receipt from the till it was
+  taken at. Every function in the accounts module was already date-ranged and
+  needed no change — which is the shape to copy.
+
+  And the third: **a correct write path nobody can call is not a fix.** The
+  account page filtered invoices to the current session under a comment reading
+  *"last year's settled account is history"* — where the load-bearing word was
+  *settled*. It now also asks every other year the same question and shows the
+  ones that come back owing, on the account page and on the counter where the
+  money is actually taken.
 
 **Library fines are in the ledger** (migration `0026`). Returning a late book
 books a `fine` entry against the student's fee account, so an overdue book is

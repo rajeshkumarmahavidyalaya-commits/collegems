@@ -416,6 +416,22 @@ export function FeeCounter({
                   {selected.fullName}
                   {selected.sectionLabel && ` · ${selected.sectionLabel}`}
                 </p>
+                {/*
+                  This figure is this session only, and the cashier taking the
+                  money is the one person who could also take last year's. The
+                  full breakdown is on the account page; here it is one line, so
+                  arrears are not something a family has to know to mention.
+                */}
+                {(account.data?.earlier.length ?? 0) > 0 && (
+                  <p className="text-muted-foreground">
+                    <Badge variant="destructive">Earlier years</Badge>{" "}
+                    {formatMoney(
+                      (account.data?.earlier ?? []).reduce((sum, y) => sum + y.balance, 0),
+                    )}{" "}
+                    outstanding from{" "}
+                    {(account.data?.earlier ?? []).map((y) => y.sessionName).join(", ")}.
+                  </p>
+                )}
                 {account.data?.student?.guardianPhone && (
                   <p className="font-mono text-xs text-muted-foreground">
                     {account.data.student.guardianName} · {account.data.student.guardianPhone}

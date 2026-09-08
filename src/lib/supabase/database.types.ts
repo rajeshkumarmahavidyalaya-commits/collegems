@@ -3101,10 +3101,10 @@ export type Database = {
           },
           {
             foreignKeyName: "ledger_entries_invoice_id_fkey"
-            columns: ["tenant_id", "invoice_id"]
+            columns: ["tenant_id", "invoice_id", "session_id"]
             isOneToOne: false
             referencedRelation: "invoices"
-            referencedColumns: ["tenant_id", "id"]
+            referencedColumns: ["tenant_id", "id", "session_id"]
           },
           {
             foreignKeyName: "ledger_entries_reverses_entry_id_fkey"
@@ -3817,10 +3817,10 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "payment_intents_invoice_id_fkey"
-            columns: ["tenant_id", "invoice_id"]
+            columns: ["tenant_id", "invoice_id", "session_id"]
             isOneToOne: false
             referencedRelation: "invoices"
-            referencedColumns: ["tenant_id", "id"]
+            referencedColumns: ["tenant_id", "id", "session_id"]
           },
           {
             foreignKeyName: "payment_intents_ledger_entry_id_fkey"
@@ -7163,6 +7163,17 @@ export type Database = {
           reference: string
           student_id: string
           student_name: string
+        }[]
+      }
+      fees_earlier_years: {
+        Args: { p_student_id: string }
+        Returns: {
+          balance: number
+          charged: number
+          invoice_count: number
+          movements: number
+          session_id: string
+          session_name: string
         }[]
       }
       fees_generate_invoice: {

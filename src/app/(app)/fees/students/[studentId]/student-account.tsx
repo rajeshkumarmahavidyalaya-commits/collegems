@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
+  AlertTriangle,
   Ban,
   BookOpen,
   CircleMinus,
@@ -262,6 +263,62 @@ export function StudentAccountView({
           </CardContent>
         </Card>
       </div>
+
+      {account.earlier.length > 0 && (
+        <section aria-labelledby="earlier-years-heading" className="flex flex-col gap-2">
+          <h2 id="earlier-years-heading" className="text-lg font-semibold">
+            Earlier years
+          </h2>
+          <Alert>
+            <AlertTriangle className="size-4" aria-hidden="true" />
+            <AlertTitle>
+              {account.earlier.length === 1
+                ? "One earlier year is unsettled"
+                : `${account.earlier.length} earlier years are unsettled`}
+            </AlertTitle>
+            <AlertDescription className="flex flex-col gap-3">
+              <span>
+                The cards above are this session only, which is what the collection screen counts.
+                A year that balances to zero is not listed; these do not.
+              </span>
+              <ul className="flex w-full flex-col gap-2">
+                {account.earlier.map((year) => (
+                  <li
+                    key={year.sessionId}
+                    className="flex flex-wrap items-center justify-between gap-2 rounded-md border border-border p-2"
+                  >
+                    <span className="flex flex-col">
+                      <span className="font-medium text-foreground">{year.sessionName}</span>
+                      <span className="text-xs text-muted-foreground">
+                        {year.invoiceCount === 1 ? "1 invoice" : `${year.invoiceCount} invoices`} ·
+                        billed {formatMoney(year.charged)}
+                      </span>
+                    </span>
+                    <span className="flex items-center gap-2">
+                      <span
+                        className={cn(
+                          "font-mono tabular-nums",
+                          year.balance > 0 && "text-destructive",
+                          year.balance < 0 && "text-success",
+                        )}
+                      >
+                        {formatMoney(Math.abs(year.balance))}
+                      </span>
+                      <Badge variant={year.balance > 0 ? "destructive" : "secondary"}>
+                        {year.balance > 0 ? "Owing" : "In credit"}
+                      </Badge>
+                    </span>
+                  </li>
+                ))}
+              </ul>
+              <span className="text-xs">
+                A receipt taken against one of these settles that year and is numbered in it, so the
+                debt closes where it was raised — and it still appears in today&rsquo;s day book.
+              </span>
+            </AlertDescription>
+          </Alert>
+        </section>
+      )}
 
       <Tabs defaultValue="ledger">
         <TabsList>
