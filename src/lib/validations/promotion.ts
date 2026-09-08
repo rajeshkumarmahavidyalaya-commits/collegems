@@ -173,3 +173,18 @@ export type SessionProblem = { severity: string; message: string };
 export function severityTone(severity: string): "warning" | "secondary" {
   return severity === "warning" ? "warning" : "secondary";
 }
+
+/**
+ * One thing a rollover cannot close, as `promotion_left_behind` said it.
+ *
+ * Deliberately not a `SessionProblem`: these carry a **kind** (what sort of
+ * loose end this is), not a severity. Every one of them is worth a person's
+ * attention or the function would not have returned it.
+ */
+export type LeftBehindNote = { kind: string; message: string };
+
+export function leftBehindLabel(kind: string): string {
+  if (kind === "library") return "Library";
+  if (kind === "balance") return "Money";
+  return "Note";
+}

@@ -4,7 +4,9 @@ import { ArrowLeft } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { hasPermission } from "@/lib/auth/permissions";
-import { getRunDecisions, listRuns, listTargetSections } from "../actions";
+import { getLocale } from "@/lib/i18n/server";
+import { formatDate, formatTime } from "@/lib/i18n/format";
+import { getRunDecisions, listRuns, listTargetSections, previewLeftBehind } from "../actions";
 import { RunReview } from "./run-review";
 
 export const metadata = { title: "Promotion run" };
@@ -18,14 +20,19 @@ export default async function PromotionRunPage({
   if (!canManage) redirect("/");
 
   const { runId } = await params;
-  const [runs, decisions, sections] = await Promise.all([
+  const [runs, decisions, sections, locale] = await Promise.all([
     listRuns(),
     getRunDecisions(runId),
     listTargetSections(runId),
+    getLocale(),
   ]);
 
   const run = runs.find((r) => r.id === runId);
   if (!run) notFound();
+
+  // An applied run shows the record it froze; a draft is asked afresh, because
+  // the point of knowing what cannot be closed is knowing it *before* applying.
+  const leftBehind = run.status === "applied" ? run.leftBehind : await previewLeftBehind(runId);
 
   return (
     <div className="flex flex-col gap-6">
@@ -41,7 +48,7 @@ export default async function PromotionRunPage({
           </div>
           <p className="text-sm text-muted-foreground">
             {run.status === "applied"
-              ? `Applied on ${new Date(run.appliedAt!).toLocaleString("en-IN")}. This is the record of what happened.`
+              ? `Applied on ${formatDate(run.appliedAt, locale)} at ${formatTime(run.appliedAt, locale)}. This is the record of what happened.`
               : "Nothing has been written yet. Change any row you disagree with, then apply."}
           </p>
         </div>
@@ -53,7 +60,7 @@ export default async function PromotionRunPage({
         </Button>
       </div>
 
-      <RunReview run={run} decisions={decisions} sections={sections} />
+      <RunReview run={run} decisions={decisions} sections={sections} leftBehind={leftBehind} />
     </div>
   );
 }

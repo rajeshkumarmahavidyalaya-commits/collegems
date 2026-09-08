@@ -4262,6 +4262,7 @@ export type Database = {
           from_enrolment_id: string
           id: string
           is_override: boolean
+          outstanding: number
           reason: string
           run_id: string
           student_id: string
@@ -4277,6 +4278,7 @@ export type Database = {
           from_enrolment_id: string
           id?: string
           is_override?: boolean
+          outstanding?: number
           reason: string
           run_id: string
           student_id: string
@@ -4292,6 +4294,7 @@ export type Database = {
           from_enrolment_id?: string
           id?: string
           is_override?: boolean
+          outstanding?: number
           reason?: string
           run_id?: string
           student_id?: string
@@ -4352,6 +4355,7 @@ export type Database = {
           created_by: string | null
           from_session_id: string
           id: string
+          left_behind: Json
           rules: Json
           status: string
           tenant_id: string
@@ -4365,6 +4369,7 @@ export type Database = {
           created_by?: string | null
           from_session_id: string
           id?: string
+          left_behind?: Json
           rules?: Json
           status?: string
           tenant_id: string
@@ -4378,6 +4383,7 @@ export type Database = {
           created_by?: string | null
           from_session_id?: string
           id?: string
+          left_behind?: Json
           rules?: Json
           status?: string
           tenant_id?: string
@@ -8029,13 +8035,18 @@ export type Database = {
         Args: { p_run_id: string }
         Returns: {
           carried: number
+          ended_concessions: number
+          ended_hostel: number
+          ended_transport: number
           graduated: number
           held: number
+          left_behind: Json
           promoted: number
           repeated: number
         }[]
       }
       promotion_discard_run: { Args: { p_run_id: string }; Returns: undefined }
+      promotion_left_behind: { Args: { p_run_id: string }; Returns: Json }
       promotion_preview: {
         Args: {
           p_from_session_id: string
@@ -8450,6 +8461,15 @@ export type Database = {
       storage_object_tenant_matches: {
         Args: { p_name: string }
         Returns: boolean
+      }
+      student_end_relationships: {
+        Args: {
+          p_on: string
+          p_reason: string
+          p_status: string
+          p_student_id: string
+        }
+        Returns: Json
       }
       student_exit: {
         Args: {

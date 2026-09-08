@@ -85,10 +85,20 @@ What it writes:
 - **Promote / repeat** — a new enrolment in the receiving session, and the
   outgoing one closed as `promoted` or `repeated`. That is what makes
   `enrolments` a history rather than a snapshot.
-- **Graduate** — no new enrolment (they have left), the outgoing one closed, and
-  `students.status = 'alumni'`. Not `graduated`: `alumni` is the word the column
-  uses, and keeping alumni representable is one of the four things the layered
-  identity model exists for.
+- **Graduate** — no new enrolment (they have left), the outgoing one closed as
+  `promoted`, and then **the whole act of leaving**: `student_end_relationships`
+  ends the bus seat, the hostel bed and every live concession and sets
+  `students.status = 'alumni'` last. Not `graduated`: `alumni` is the word the
+  column uses, and keeping alumni representable is one of the four things the
+  layered identity model exists for.
+
+  The order is not a style choice. The outgoing enrolment is closed **first**,
+  with `promoted`, because a graduate finished the year — they did not withdraw
+  from it, and the word is what somebody reads on a class list in five years.
+  The act then finds no active enrolment and closes none.
+
+  See "Graduating is leaving" below for why this is a shared function rather
+  than a call to `student_exit`.
 - **Hold** — nothing at all, deliberately. The outgoing enrolment stays `active`,
   so the student is still visibly somebody's problem rather than quietly gone.
 
@@ -99,6 +109,104 @@ converges instead of double-enrolling.
 invoices, invoice lines — already has an admin policy, so RLS decides every row
 and the function only supplies atomicity. A definer function here would take
 authority it does not need.
+
+---
+
+## Graduating is leaving
+
+Until migration `0180` the graduate branch was two statements:
+
+```sql
+update public.enrolments set status = 'promoted' ...;
+update public.students set status = 'alumni' ...;
+```
+
+Two statements, five relationships. `student_exit` had existed since `0174`
+precisely because a status column is a summary rather than a switch — and the
+one place that turns children into alumni **fifty at a time** had never been
+taught it. In the demo cohort that is 6 bus riders, 2 hostel residents and every
+fee concession they hold.
+
+The fix is not a third copy of the five updates. That is the mistake rule 12
+names: nine readers would each have to remember. So the *act* was extracted —
+`student_end_relationships(student, on, status, reason)`, `SECURITY INVOKER`,
+no validation and no reporting — and both callers use it. `student_exit` is that
+call plus its validation and its per-child note; `promotion_apply` is that call
+per graduate.
+
+### Why not simply call `student_exit`
+
+Two reasons, and the second was measured rather than assumed.
+
+1. **The outgoing enrolment must read `promoted`, not `withdrawn`** — see above.
+2. **`student_exit`'s outstanding note costs 97 ms per child.** It reads
+   `fees_student_balances()`, and a `where student_id =` outside a
+   set-returning function is an optimisation fence (rule 7): the function runs
+   to completion for every student in the school and the filter is applied
+   afterwards. Measured: 97 ms and 5,113 buffers to return one row. Fifty
+   graduates is 4.9 seconds — and it grows with the school, not with the
+   cohort.
+
+So the cohort's version of that note is one grouped query after the loop, in
+`promotion_left_behind`.
+
+### The date is the end of the outgoing year, not today
+
+A run applied in February must not end a bus seat in February. The arrangement
+is closed on the outgoing session's `end_date`, because that is when the child
+left. (Since migration `0178` an open-ended arrangement already ends there of
+its own accord, so this usually closes nothing and correctly reports zero. What
+it does close is an arrangement made for a year the graduate will never attend,
+and every live concession — neither of which lapses on its own.)
+
+---
+
+## What a run could not close
+
+`promotion_left_behind(run_id)` returns sentences, and
+`promotion_runs.left_behind` freezes them when the run is applied.
+
+```
+329860.00 is still owed by 23 graduates who are leaving. There is no enrolment
+in 2026-2027 to carry it onto, so chasing it or writing it off is the school's
+to decide.
+```
+
+Three things about it:
+
+- **It is answerable of a draft.** The screen asks it *before* applying, which
+  is the only time anybody can act on it, and asks the same function afterwards
+  — so the sentence a person reads and the sentence the run freezes cannot
+  disagree.
+- **It is written to a column, not toasted.** Applying cannot be undone, and a
+  message that scrolls away is a message nobody acted on. Same instinct as
+  `notices.announce_error` (rule 10).
+- **The money figure comes from `outstanding`, not `carry_forward`** — see
+  below.
+
+### `outstanding` and `carry_forward` are two facts
+
+Migration `0181`. The probe that found it: a run created with an empty rules
+document reported `carried = 0` on a school where **96 families owe
+₹10,60,904**. Nothing was wrong — `carry_forward_fees` defaults to false, which
+is the conservative reading rule 12 asks for — but the run had no record of the
+debt at all, because the only column that could hold it was the one the policy
+had zeroed.
+
+| column | what it is |
+|---|---|
+| `outstanding` | what the child owed at the end of the outgoing year, as the preview measured it |
+| `carry_forward` | what the run decided to bill in the receiving year — `outstanding`, or zero |
+
+A measurement and a decision. A graduate's debt is not carried whatever the
+policy says, so the sentence about it must not depend on the policy being
+switched on: the school least likely to carry fees forward is the school most
+likely to forget the money.
+
+Older rows are backfilled from `carry_forward`, and where the policy was off
+the debt was never recorded and cannot be recovered. Said out loud rather than
+backfilled by recomputing, because today's balance next to a run applied last
+March is a number in the wrong place.
 
 ---
 

@@ -162,7 +162,15 @@ preview of editable rows, not a button. Until it exists, the critic naming the
 number is the honest state — a school that is told *"46 bus seats end with this
 year"* can act; one told nothing cannot.
 
-**And `promotion_apply` still stamps `students.status = 'alumni'` on a graduate
-without calling `student_exit`.** That is the rule-12 status-column gap in the
+`promotion_apply`'s graduate branch **was** the rule-12 status-column gap in the
 one place that creates alumni in bulk — 6 riders and 2 hostel residents in the
-demo cohort — and it is the next thing to fix here.
+demo cohort. Migration `0180` closed it: graduating now goes through
+`student_end_relationships`, the same act `student_exit` performs. See
+`docs/modules/promotion.md`.
+
+Worth noting how the two fixes interact, because it changes what each is *for*:
+after this boundary, a graduate's open-ended bus seat already lapses on 31 March
+of its own accord, so `promotion_apply` reports `ended_transport = 0` and that
+zero is correct. What `0180` closes on top is the part no date bounds — every
+live fee concession, and any arrangement already made for a year the graduate
+will never attend.

@@ -45,6 +45,19 @@ somebody writes next year.
 the hostel bed and any live concessions, then sets the status **last** — so a
 failure part-way leaves the child visibly still here rather than half-gone.
 
+Since migration `0180` the five updates live in
+`student_end_relationships(student, on, status, reason)` and `student_exit` is
+that call plus its validation and its "what could not be ended" note. The reason
+is the second caller: `promotion_apply` turns fifty children into alumni at
+once, and it had been doing it with a status flag. A third copy of the five
+updates would have been the exact mistake this page argues against — see
+`docs/modules/promotion.md`.
+
+The split is where the validation went, too. `student_end_relationships`
+validates **nothing**: its two callers have different things to check (an empty
+reason at a desk; a run that is still a draft), and a third caller must do its
+own. That is the point of the function being this narrow.
+
 Verified on a real record: one call returned
 `closed: {enrolments: 1, transport: 1, hostel: 1}` — including a hostel bed
 nobody had thought to check — and `fees_billable_lines` for the following day

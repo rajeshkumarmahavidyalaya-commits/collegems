@@ -1260,6 +1260,32 @@ Three things `student_exit` fixes that generalise:
   an unpaid balance. The certificates rule again: a function that refused would
   be one schools route around.
 
+**A fix that lands in one caller has not landed.** `student_exit` was written
+because `certificate_issue` set a flag and stopped — and `promotion_apply`, the
+*other* place that turns children into alumni, went on setting the same flag for
+another six migrations, fifty children at a time. So the act is now a function
+of its own (`student_end_relationships`), both callers use it, and the thing
+that makes that safe is that it validates nothing: each caller checks what only
+it can know. Ask, when closing a gap: **who else does this?**
+
+…and the second caller is where a per-row helper becomes a per-cohort one.
+`student_exit`'s "what could not be ended" note costs **97 ms per child**,
+because `where student_id =` outside a set-returning function is an
+optimisation fence (rule 7) — fifty graduates is 4.9 seconds, and it scales with
+the school rather than the cohort. So `promotion_apply` calls the *act* fifty
+times and asks the *question* once, and the sentences live in
+`promotion_left_behind`, which the preview screen can also ask of a draft.
+
+**A measurement and a decision are two columns.**
+`promotion_decisions.carry_forward` held both, and a run created with the
+default rules reported `carried = 0` on a school where 96 families owed
+₹10,60,904 — correct, and useless. `outstanding` is what the child owed;
+`carry_forward` is what the policy chose to bill. The distinction matters
+precisely where the policy is off, because the school least likely to carry fees
+forward is the school most likely to forget the money. Same shape as
+`attendance_coverage` beside a rate, and as `settings` distinguishing a value
+from whether anybody chose it.
+
 And a rule about critics, learned by the critic accusing a correct exit on its
 own last day (`ends_on >= today` where the charge rule wants `>=` and the
 relationship question wants `>`):

@@ -44,6 +44,7 @@ After any migration, regenerate types into
 | [CLAUDE.md](./CLAUDE.md) | Architecture rules, conventions, UI workflow |
 | [docs/domain/erd.md](./docs/domain/erd.md) | Full schema + the roadmap it's shaped for |
 | [docs/modules/library.md](./docs/modules/library.md) | The pattern every module copies |
+| [docs/modules/academics.md](./docs/modules/academics.md) | Academic structure: classes, sections, subjects and the teaching calendar |
 | [docs/modules/attendance.md](./docs/modules/attendance.md) | Attendance: the keyboard-first register and why it deviates |
 | [docs/modules/fees.md](./docs/modules/fees.md) | Fees: the append-only ledger, gapless receipts, and one real bug |
 | [docs/modules/promotion.md](./docs/modules/promotion.md) | Promotion: a dry run you can argue with before it writes anything |
@@ -62,6 +63,19 @@ After any migration, regenerate types into
 | [docs/modules/front-office.md](./docs/modules/front-office.md) | Front office: the funnel before a student exists, and how it is kept honest |
 | [docs/modules/inventory.md](./docs/modules/inventory.md) | Store: the ledger pattern applied to goods, and a message that was a bug |
 | [docs/modules/import.md](./docs/modules/import.md) | Bulk import: an editable preview, and why it refuses rather than truncates |
+| [docs/modules/dashboard.md](./docs/modules/dashboard.md) | The home page: one round trip, and naming what a role may not see |
+| [docs/modules/certificates.md](./docs/modules/certificates.md) | Certificates: preview computes, issue freezes, and the wording is data |
+| [docs/modules/schedules.md](./docs/modules/schedules.md) | Work on a timer: a wall clock per tenant, and a run that is not a send |
+| [docs/modules/notices.md](./docs/modules/notices.md) | The notice board: a notice is a document, a notification is an event |
+| [docs/modules/student-leave.md](./docs/modules/student-leave.md) | Student leave: why approving it must not write the register |
+| [docs/modules/substitutions.md](./docs/modules/substitutions.md) | Cover: the roster a teacher sees, and the invoker function that lied quietly |
+| [docs/modules/privileges.md](./docs/modules/privileges.md) | The four privileges RLS cannot see, and the guard that keeps them revoked |
+| [docs/modules/audit.md](./docs/modules/audit.md) | Reading the audit log: a diff, two kinds of missing actor, and the strictest policy in the schema |
+| [docs/modules/settings.md](./docs/modules/settings.md) | Configuration as a catalogue, and why there is no secret value type |
+| [docs/modules/concessions.md](./docs/modules/concessions.md) | Concessions: an award, not an inferred rule, and where the cap falls |
+| [docs/modules/student-exit.md](./docs/modules/student-exit.md) | Leaving: one act that ends six relationships, not one flag |
+| [docs/modules/session-boundary.md](./docs/modules/session-boundary.md) | The session boundary: why a null end date is the end of the year, not for ever |
+| [docs/performance.md](./docs/performance.md) | What was actually slow, measured before and after |
 | [docs/design/decisions.md](./docs/design/decisions.md) | Palette, type, spacing — and why |
 | `design-system/schoolos/MASTER.md` | Source of truth for all UI values |
 

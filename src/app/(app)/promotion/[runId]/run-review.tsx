@@ -38,19 +38,26 @@ import { formatMoney } from "@/lib/validations/fees-display";
 import {
   DECISIONS,
   decisionLabel,
+  leftBehindLabel,
   needsTargetSection,
   switchableDecisions,
 } from "@/lib/validations/promotion";
 import { DecisionBadge } from "../promotion-planner";
 import { applyRun, discardRun, overrideDecision, type DecisionRow, type RunRow } from "../actions";
+import type { LeftBehindNote } from "@/lib/validations/promotion";
 
 type Props = {
   run: RunRow;
   decisions: DecisionRow[];
   sections: { id: string; label: string; sequence: number }[];
+  /**
+   * What this run cannot close — computed for a draft, frozen for an applied
+   * one. Passed in rather than fetched here so the two cases read the same.
+   */
+  leftBehind: LeftBehindNote[];
 };
 
-export function RunReview({ run, decisions, sections }: Props) {
+export function RunReview({ run, decisions, sections, leftBehind }: Props) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [search, setSearch] = useState("");
@@ -102,10 +109,33 @@ export function RunReview({ run, decisions, sections }: Props) {
         toast.error(result.error);
         return;
       }
-      const { promoted, repeated, graduated, held, carried: carriedCount } = result.data;
+      const {
+        promoted,
+        repeated,
+        graduated,
+        held,
+        carried: carriedCount,
+        endedTransport,
+        endedHostel,
+        endedConcessions,
+      } = result.data;
+
+      // Graduating is leaving, so say what leaving closed. A run that ended
+      // nothing says nothing rather than "0 bus seats", which reads as a fault.
+      const closed = [
+        endedTransport > 0 && `${endedTransport} bus ${endedTransport === 1 ? "seat" : "seats"}`,
+        endedHostel > 0 && `${endedHostel} hostel ${endedHostel === 1 ? "bed" : "beds"}`,
+        endedConcessions > 0 &&
+          `${endedConcessions} ${endedConcessions === 1 ? "concession" : "concessions"}`,
+      ].filter(Boolean) as string[];
+
       toast.success(
-        `${promoted} promoted, ${repeated} repeated, ${graduated} graduated, ${held} held. ${carriedCount} balances carried forward.`,
+        `${promoted} promoted, ${repeated} repeated, ${graduated} graduated, ${held} held. ${carriedCount} balances carried forward.` +
+          (closed.length > 0 ? ` Leaving closed ${closed.join(", ")}.` : ""),
       );
+      // The sentences themselves are on the page, not in this toast: applying
+      // cannot be undone, and a message that scrolls away is one nobody acted
+      // on. `router.refresh()` re-reads the run's frozen `left_behind`.
       router.refresh();
     });
   }
@@ -159,6 +189,27 @@ export function RunReview({ run, decisions, sections }: Props) {
           </div>
         ))}
       </div>
+
+      {leftBehind.length > 0 && (
+        <section aria-labelledby="left-behind-heading" className="flex flex-col gap-2">
+          <h2 id="left-behind-heading" className="text-lg font-semibold">
+            {applied ? "What this run could not close" : "What applying will not close"}
+          </h2>
+          <ul className="flex flex-col gap-2">
+            {leftBehind.map((problem, index) => (
+              <li key={index}>
+                <Alert>
+                  <AlertTriangle className="size-4" aria-hidden="true" />
+                  <AlertTitle className="flex items-center gap-2">
+                    <Badge variant="warning">{leftBehindLabel(problem.kind)}</Badge>
+                  </AlertTitle>
+                  <AlertDescription>{problem.message}</AlertDescription>
+                </Alert>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
 
       {applied ? (
         <Alert>

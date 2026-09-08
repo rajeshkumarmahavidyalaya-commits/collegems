@@ -3,7 +3,12 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { getUserContext } from "@/lib/auth/context";
-import { promotionFormSchema, toRules, type SessionProblem } from "@/lib/validations/promotion";
+import {
+  promotionFormSchema,
+  toRules,
+  type LeftBehindNote,
+  type SessionProblem,
+} from "@/lib/validations/promotion";
 import type { ActionResult } from "../library/actions";
 
 function fail(message: string): ActionResult<never> {
@@ -11,6 +16,24 @@ function fail(message: string): ActionResult<never> {
 }
 
 export type SessionOption = { id: string; name: string; isCurrent: boolean; sectionCount: number };
+
+/**
+ * `promotion_runs.left_behind` and `promotion_apply`'s last column are the same
+ * jsonb array of `{kind, message}`. Parsed in one place so a run listing and an
+ * apply result cannot render it two ways.
+ */
+function toLeftBehind(value: unknown): LeftBehindNote[] {
+  if (!Array.isArray(value)) return [];
+  return value
+    .filter((row): row is { kind?: unknown; message?: unknown } =>
+      typeof row === "object" && row !== null,
+    )
+    .map((row) => ({
+      kind: typeof row.kind === "string" ? row.kind : "note",
+      message: typeof row.message === "string" ? row.message : "",
+    }))
+    .filter((row) => row.message.length > 0);
+}
 
 export async function listSessions(): Promise<SessionOption[]> {
   const supabase = await createClient();
@@ -146,6 +169,14 @@ export type RunRow = {
   counts: Record<string, number>;
   overrides: number;
   carriedTotal: number;
+  /**
+   * What this run owed and what it could not close. `owedTotal` is the
+   * measurement (`promotion_decisions.outstanding`); `carriedTotal` is what the
+   * policy decided to bill. They differ whenever `carry_forward_fees` is off,
+   * which is the default — see migration 0181.
+   */
+  owedTotal: number;
+  leftBehind: LeftBehindNote[];
 };
 
 export async function listRuns(): Promise<RunRow[]> {
@@ -153,7 +184,7 @@ export async function listRuns(): Promise<RunRow[]> {
 
   const { data: runs, error } = await supabase
     .from("promotion_runs")
-    .select("id, from_session_id, to_session_id, status, rules, applied_at, created_at")
+    .select("id, from_session_id, to_session_id, status, rules, applied_at, created_at, left_behind")
     .neq("status", "discarded")
     .order("created_at", { ascending: false });
 
@@ -164,7 +195,7 @@ export async function listRuns(): Promise<RunRow[]> {
     supabase.from("academic_sessions").select("id, name"),
     supabase
       .from("promotion_decisions")
-      .select("run_id, decision, is_override, carry_forward")
+      .select("run_id, decision, is_override, carry_forward, outstanding")
       .in("run_id", runs.map((r) => r.id)),
   ]);
 
@@ -186,6 +217,8 @@ export async function listRuns(): Promise<RunRow[]> {
       counts,
       overrides: decisions.filter((d) => d.is_override).length,
       carriedTotal: decisions.reduce((sum, d) => sum + Number(d.carry_forward), 0),
+      owedTotal: decisions.reduce((sum, d) => sum + Number(d.outstanding), 0),
+      leftBehind: toLeftBehind(run.left_behind),
     };
   });
 }
@@ -381,9 +414,19 @@ export async function overrideDecision(
   return { ok: true, data: undefined };
 }
 
-export async function applyRun(
-  runId: string,
-): Promise<ActionResult<{ promoted: number; repeated: number; graduated: number; held: number; carried: number }>> {
+export async function applyRun(runId: string): Promise<
+  ActionResult<{
+    promoted: number;
+    repeated: number;
+    graduated: number;
+    held: number;
+    carried: number;
+    endedTransport: number;
+    endedHostel: number;
+    endedConcessions: number;
+    leftBehind: LeftBehindNote[];
+  }>
+> {
   const supabase = await createClient();
   const { data, error } = await supabase.rpc("promotion_apply", { p_run_id: runId });
 
@@ -400,6 +443,10 @@ export async function applyRun(
       graduated: result?.graduated ?? 0,
       held: result?.held ?? 0,
       carried: result?.carried ?? 0,
+      endedTransport: result?.ended_transport ?? 0,
+      endedHostel: result?.ended_hostel ?? 0,
+      endedConcessions: result?.ended_concessions ?? 0,
+      leftBehind: toLeftBehind(result?.left_behind),
     },
   };
 }
@@ -450,4 +497,17 @@ export async function listSessionProblems(): Promise<SessionProblem[]> {
     severity: p.severity ?? "info",
     message: p.message ?? "",
   }));
+}
+
+/**
+ * What this run cannot close, asked of a draft.
+ *
+ * The same function `promotion_apply` calls, so the sentence a person reads
+ * before applying is the sentence the run will freeze — a second
+ * implementation for the preview would be a second answer (rule 11).
+ */
+export async function previewLeftBehind(runId: string): Promise<LeftBehindNote[]> {
+  const supabase = await createClient();
+  const { data } = await supabase.rpc("promotion_left_behind", { p_run_id: runId });
+  return toLeftBehind(data);
 }

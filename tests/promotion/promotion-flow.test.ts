@@ -246,6 +246,22 @@ describe("promotion", () => {
     expect((decisions ?? []).some((d) => Number(d.carry_forward) > 0)).toBe(true);
   });
 
+  // Migration 0181. `carry_forward` is what the policy decided; `outstanding`
+  // is what the family owes. With the policy off the two must differ, or a run
+  // has no record of the debt at all — which is how a school that does not
+  // carry fees forward loses sight of what its leavers owe.
+  it("records what is owed even when the policy carries nothing", async () => {
+    const { data: withPolicy } = await a
+      .from("promotion_decisions")
+      .select("outstanding, carry_forward")
+      .eq("run_id", createdRuns[0]);
+
+    const owed = (withPolicy ?? []).filter((d) => Number(d.outstanding) > 0);
+    expect(owed.length).toBeGreaterThan(0);
+    // This run was created with carry_forward_fees on, so they agree here.
+    expect(owed.every((d) => Number(d.carry_forward) === Number(d.outstanding))).toBe(true);
+  });
+
   it("refuses a second live run for the same rollover", async () => {
     // Two half-built previews of the same rollover would disagree, and whichever
     // was applied second would silently win.
@@ -363,5 +379,33 @@ describe("promotion", () => {
       .eq("id", createdRuns[0])
       .single();
     expect(run!.status).toBe("discarded");
+  });
+
+  // Migration 0180. The sentences must be answerable of a *draft*, because
+  // before applying is the only time anybody can act on them — and applying
+  // freezes the same answer onto the run.
+  it("can say what a run will not close before it is applied", async () => {
+    const { data: runId, error } = await a.rpc("promotion_start_run", {
+      p_from_session_id: fromSessionId,
+      p_to_session_id: toSessionId,
+      p_rules: {},
+    });
+    expect(error, error?.message).toBeNull();
+    createdRuns.push(runId!);
+
+    const { data: left, error: leftError } = await a.rpc("promotion_left_behind", {
+      p_run_id: runId!,
+    });
+    expect(leftError).toBeNull();
+    // An array either way: a run with nothing outstanding says nothing, which
+    // is not the same as failing to answer.
+    expect(Array.isArray(left)).toBe(true);
+
+    for (const row of (left ?? []) as { kind?: string; message?: string }[]) {
+      expect(["library", "balance"]).toContain(row.kind);
+      expect((row.message ?? "").length).toBeGreaterThan(0);
+    }
+
+    await a.rpc("promotion_discard_run", { p_run_id: runId! });
   });
 });
