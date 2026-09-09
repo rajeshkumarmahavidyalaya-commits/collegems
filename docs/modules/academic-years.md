@@ -329,24 +329,75 @@ passes the sentence in rather than the component guessing.
 - **the data**, asserting no two classes in one year share a label — because the
   source check would still pass if somebody filtered on the wrong session.
 
-### What was deliberately not swept
+### The rest of them, one at a time
 
-Sweeping the app for `.from("<session-scoped table>").select(...)` finds **90
-statements with no session filter, 42 of them whole-table list reads.** That
-number is a starting point, not a bug count, and publishing it as one would be
-its own inaccuracy. Three groups:
+The first sweep of this reported **90 unfiltered statements, 42 of them
+whole-table reads**, and both numbers were wrong. The script split a query at
+the next `;`, and this codebase builds a query across several statements:
 
-- **Correct as they are, and a later "fix" would break them.** The accounts
-  module is date-ranged on purpose (rule 6: *"a date question is answered with
-  dates"*), so `journal_vouchers` and `ledger_entries` there must not be
-  session-filtered. The fee account deliberately asks **every** year and keeps
-  the ones that come back owing — rule 6 again, and the word that mattered was
-  *settled*. The certificate register and the payroll run list are histories.
-- **Fixed here**: the three section readers.
-- **Latent, and named rather than changed**: the exam list, the route list,
-  homework, study material, notices, holidays, the curriculum and fee
-  structures. Each is a list of "what is happening now" with no year on it, and
-  each is correct today only because nothing has been rolled forward into it. A
-  blanket `.eq("session_id", …)` across all of them is a change nobody could
-  review; they want the same treatment one at a time, with the screen's own
-  question asked first — *is this list "now", or is it "ever"?*
+```ts
+let query = supabase.from("fee_structures").select(…);
+if (ctx?.currentSessionId) query = query.eq("session_id", ctx.currentSessionId);
+```
+
+`listFeeStructures` was already correct and was counted as a defect. Reading the
+whole enclosing function instead gives **54 reads with no year anywhere in the
+function, 19 of them whole-table lists** — and that is the number the triage was
+actually done against.
+
+> A sweep's number is a claim, and a claim measured with a broken instrument is
+> worse than no number: it is a number people quote.
+
+Of the 19, **eight were "now" and are filtered**, and **eleven are "ever" and
+are left alone with the reason written down.**
+
+Filtered (migration-free; these are all read paths in `src/app`):
+
+| reader | why it means "now" |
+|---|---|
+| `listExams` | the exam list on `/exams` |
+| `listHomework` | what has been set this year |
+| `listStudyMaterial` (and its section labels) | this year's material, for this year's classes |
+| `listCurriculum` (and its section labels) | who teaches what, now |
+| `listConcessionAwards` | capped at 500 rows, so last year's revoked awards would push this year's off the end |
+| `listLeave` | capped at 200, same argument |
+
+Left cross-year, and a later "fix" would break each one:
+
+| reader | why it means "ever" |
+|---|---|
+| `accounts` (`journal_vouchers` ×2) | rule 6: the module is date-ranged; a voucher book that hid last March would not reconcile |
+| `certificates` | a register is a history — a certificate issued in 2024 must be findable in 2034 |
+| `library` (`book_issues`) | a book issued last year and still out is exactly the row being looked for |
+| `hr` (`leave_requests`) | a balance is derived from everything taken |
+| `payroll_runs` | last year's finalised runs are the payslips people ask about |
+| `notices` | rule 10: the board's whole point is coming back in March to check what the circular said |
+| `exams` (scheme usage), `section_subjects` (subject usage), `transport_routes` (vehicle usage) | three counts that answer *"is this safe to delete"*, where crossing years is the conservative direction |
+| `promotion` (`sections`) | the one module whose job spans two years; filtering it would filter out the destination |
+
+### A list read is not a lookup
+
+Filtering `listExams()` alone would have been a **worse** bug than the one being
+fixed, and finding out why was the useful part.
+
+Four pages — the exam, its mark sheet, its remarks and its report cards — found
+their exam with `listExams().find((e) => e.id === examId)` and called
+`notFound()` if it was absent. So the moment the list learned about the year,
+every past exam's page would have 404'd.
+
+> **A lookup by id needs no year**: the id names the row and RLS decides whether
+> the caller may have it. A list needs one, because a list is a claim about what
+> is happening.
+
+`getExam(examId)` is that lookup — one row, `maybeSingle()`, deliberately not
+session-scoped — and it also takes four pages off reading every exam in the
+school to find one.
+
+### The guard
+
+`tests/academics/session-scope.test.ts` runs the corrected sweep in CI and
+requires every whole-table read of a session-scoped table to be **named in
+`CROSS_YEAR_ON_PURPOSE` with its reason**. It is the `nav-audience` guard's
+shape applied to rule 2: the failure is the omission, so the test fails on a
+list nobody has decided about rather than on a pattern. Verified by removing
+`listHomework`'s filter and watching it name the line.

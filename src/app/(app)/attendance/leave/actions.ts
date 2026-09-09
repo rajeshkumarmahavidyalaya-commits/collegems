@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { getUserContext } from "@/lib/auth/context";
 import { applyLeaveSchema, decideLeaveSchema } from "@/lib/validations/student-leave";
 
 export type ActionResult<T = void> =
@@ -29,6 +30,7 @@ export type LeaveRow = {
  * answer to a question Postgres already answers.
  */
 export async function listLeave(status?: string): Promise<LeaveRow[]> {
+  const ctx = await getUserContext();
   const supabase = await createClient();
   let query = supabase
     .from("student_leave_requests")
@@ -38,6 +40,10 @@ export async function listLeave(status?: string): Promise<LeaveRow[]> {
     .order("status")
     .order("starts_on", { ascending: false })
     .limit(200);
+
+  // The year, which RLS does not supply — and with a cap of 200 rows, last
+  // year's decided requests would crowd out the ones still waiting.
+  if (ctx?.currentSessionId) query = query.eq("session_id", ctx.currentSessionId);
 
   if (status) query = query.eq("status", status);
 

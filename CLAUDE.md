@@ -252,18 +252,37 @@ Three things generalise:
   Grade 1 A's 35 lessons and had to find their own among twenty-four entries.
   The fix is the *list*, not the component: narrowing what a picker is given
   narrows its default with it.
-- **A sweep is a starting point, not a bug count.** 90 unfiltered selects, 42 of
-  them whole-table reads — and the accounts module, the fee account and the
-  certificate register are *deliberately* cross-year (rule 6: a date question is
-  answered with dates). Publishing 42 as a defect count would be its own
-  inaccuracy. Fix what is measured, and name the rest with the question that
-  decides each one: **is this list "now", or is it "ever"?**
+- **A sweep is a starting point, not a bug count — and measure the instrument
+  first.** The first pass here reported 90 unfiltered selects and 42 whole-table
+  reads. Both were wrong: the script split a query at the next `;`, and this
+  codebase builds one across several statements (`let q = …; if (x) q =
+  q.eq(…)`), so functions that were already correct were counted as defects.
+  Reading the whole enclosing function gives **54 and 19**. *A number measured
+  with a broken instrument is worse than no number, because it is a number
+  people quote.* Of the 19, eight meant "now" and are filtered; eleven mean
+  "ever" and are named — the accounts module and the fee account are
+  deliberately date-ranged (rule 6), a register is a history, and three of them
+  are *"is this safe to delete"* counts where crossing years is the conservative
+  direction. The question that decides each one: **is this list "now", or is it
+  "ever"?**
+- **A list read is not a lookup, and conflating them makes the fix worse than
+  the bug.** Four pages found their exam with `listExams().find(e => e.id ===
+  examId)`, so session-scoping the list alone would have 404'd every past exam's
+  page. A lookup by id needs no year — the id names the row and RLS decides
+  whether the caller may have it — so `getExam()` is a `maybeSingle()` by
+  primary key and is deliberately *not* scoped.
 - **Guard a Server Action's query by reading it, not by calling it.** These call
   `cookies()` from `next/headers`, so a test that imports one throws outside a
   request and never runs its assertion — a check that can never go green is a
   check people learn to ignore. `tests/academics/section-picker.test.ts` reads
   the function body for the filter and separately asserts, against the database,
   that no two classes in one year share a label.
+- **And guard the omission, not the pattern.** `tests/academics/session-scope.test.ts`
+  runs the corrected sweep in CI and requires every whole-table read of a
+  session-scoped table to be named in `CROSS_YEAR_ON_PURPOSE` **with its
+  reason** — the `nav-audience` guard's shape applied to rule 2. A new list
+  nobody has decided about fails the test; a deliberate one is a line somebody
+  wrote on purpose.
 
 ## 3. Auth
 

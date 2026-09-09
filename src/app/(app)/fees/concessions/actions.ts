@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { getUserContext } from "@/lib/auth/context";
 import {
   awardConcessionSchema,
   createConcessionSchema,
@@ -82,6 +83,7 @@ export async function listConcessions(): Promise<ConcessionRow[]> {
  * disagree with the family's statement is worse than no number.
  */
 export async function listAwards(): Promise<AwardRow[]> {
+  const ctx = await getUserContext();
   const supabase = await createClient();
 
   // Three flat queries rather than one embedded select. `student_concessions`
@@ -89,12 +91,18 @@ export async function listAwards(): Promise<AwardRow[]> {
   // (`(tenant_id, concession_id)`), which PostgREST does not infer, so the
   // embed silently resolves to an error shape instead of a row. Joining here
   // is the honest version and it is still three round trips, not N+1.
-  const { data: awards } = await supabase
+  // This year's awards. The cap of 500 is what makes the year load-bearing
+  // rather than cosmetic: last year's revoked awards would otherwise fill the
+  // board and push this year's off the end of it.
+  let awardQuery = supabase
     .from("student_concessions")
     .select("id, student_id, concession_id, reason, granted_on, ends_on, status, revoke_reason")
     .order("status")
     .order("granted_on", { ascending: false })
     .limit(500);
+  if (ctx?.currentSessionId) awardQuery = awardQuery.eq("session_id", ctx.currentSessionId);
+
+  const { data: awards } = await awardQuery;
 
   const rows = awards ?? [];
   if (rows.length === 0) return [];

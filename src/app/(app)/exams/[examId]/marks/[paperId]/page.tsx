@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { hasPermission } from "@/lib/auth/permissions";
-import { getMarkSheet, listExams, listPapers } from "../../../actions";
+import { getExam, getMarkSheet, listPapers } from "../../../actions";
 import { MarksGrid } from "../../../marks-grid";
 
 export const metadata = { title: "Enter marks" };
@@ -15,14 +15,13 @@ export default async function MarksPage({
 }) {
   const { examId, paperId } = await params;
 
-  const [exams, papers, rows, canGrade] = await Promise.all([
-    listExams(),
+  const [exam, papers, rows, canGrade] = await Promise.all([
+    getExam(examId),
     listPapers(examId),
     getMarkSheet(paperId),
     hasPermission("exams.grade"),
   ]);
 
-  const exam = exams.find((e) => e.id === examId);
   const paper = papers.find((p) => p.id === paperId);
   if (!exam || !paper) notFound();
 

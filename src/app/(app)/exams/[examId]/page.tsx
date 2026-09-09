@@ -7,7 +7,7 @@ import { hasPermission } from "@/lib/auth/permissions";
 import { listSections } from "../../students/actions";
 import { listSubjects } from "../../academics/actions";
 import { examKindLabel } from "@/lib/validations/exams";
-import { getResultSheet, listExamProblems, listExams, listPapers } from "../actions";
+import { getExam, getResultSheet, listExamProblems, listPapers } from "../actions";
 import { ExamDetail } from "../exam-detail";
 import { getLocale } from "@/lib/i18n/server";
 import { formatDate } from "@/lib/i18n/format";
@@ -18,9 +18,9 @@ export default async function ExamPage({ params }: { params: Promise<{ examId: s
   const { examId } = await params;
   const locale = await getLocale();
 
-  const [exams, papers, problems, results, sections, subjects, canManage, canGrade] =
+  const [exam, papers, problems, results, sections, subjects, canManage, canGrade] =
     await Promise.all([
-      listExams(),
+      getExam(examId),
       listPapers(examId),
       listExamProblems(examId),
       getResultSheet(examId),
@@ -30,7 +30,6 @@ export default async function ExamPage({ params }: { params: Promise<{ examId: s
       hasPermission("exams.grade"),
     ]);
 
-  const exam = exams.find((e) => e.id === examId);
   if (!exam) notFound();
 
   return (

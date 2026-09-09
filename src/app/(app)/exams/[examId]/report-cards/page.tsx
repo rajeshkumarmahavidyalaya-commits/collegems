@@ -4,7 +4,7 @@ import { ArrowLeft, FileText, MessageSquare } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { hasPermission } from "@/lib/auth/permissions";
 import { listSections } from "../../../students/actions";
-import { listExams } from "../../actions";
+import { getExam } from "../../actions";
 import { getSectionCards } from "../../report-card-actions";
 import { ReportCardSheet } from "@/components/report-card/report-card-sheet";
 import { SectionPicker } from "./section-picker";
@@ -23,14 +23,13 @@ export default async function ReportCardsPage({
   const { examId } = await params;
   const { section } = await searchParams;
 
-  const [exams, sections, canView, locale] = await Promise.all([
-    listExams(),
+  const [exam, sections, canView, locale] = await Promise.all([
+    getExam(examId),
     listSections(),
     hasPermission("exams.view"),
     getLocale(),
   ]);
 
-  const exam = exams.find((e) => e.id === examId);
   if (!exam) notFound();
 
   if (!canView) {

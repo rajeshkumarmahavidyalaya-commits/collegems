@@ -42,17 +42,34 @@ export type ExamRow = {
   paperCount: number;
 };
 
+/**
+ * The exam list for **this year**.
+ *
+ * `exams` carries `session_id` and this did not filter on it, so the list would
+ * mix a rolled-over school's years the first April after a rollover. RLS cannot
+ * catch that: a policy answers which tenant and whose rows, never which year.
+ *
+ * Note what had to change with it. Four detail pages found their exam with
+ * `listExams().find(e => e.id === examId)` and `notFound()` if it was absent —
+ * a list read used as a lookup — so filtering this alone would have 404'd every
+ * past exam's page, which is a worse bug than the one being fixed. `getExam()`
+ * below is the lookup, by id, and is deliberately **not** year-scoped.
+ */
 export async function listExams(): Promise<ExamRow[]> {
+  const ctx = await getUserContext();
   const supabase = await createClient();
 
   // Three explicit queries rather than embeds: `exam_subjects` reaches `exams`
   // through a composite (tenant_id, exam_id) key, and embedding across a
   // composite key is not something this project has been able to verify.
+  let examsQuery = supabase
+    .from("exams")
+    .select("id, name, kind, starts_on, ends_on, status, published_at, grading_scheme_id")
+    .order("starts_on", { ascending: false, nullsFirst: false });
+  if (ctx?.currentSessionId) examsQuery = examsQuery.eq("session_id", ctx.currentSessionId);
+
   const [examsRes, schemesRes, papersRes] = await Promise.all([
-    supabase
-      .from("exams")
-      .select("id, name, kind, starts_on, ends_on, status, published_at, grading_scheme_id")
-      .order("starts_on", { ascending: false, nullsFirst: false }),
+    examsQuery,
     supabase.from("grading_schemes").select("id, name"),
     supabase.from("exam_subjects").select("exam_id"),
   ]);
@@ -77,6 +94,49 @@ export async function listExams(): Promise<ExamRow[]> {
     gradingSchemeName: e.grading_scheme_id ? (schemeName.get(e.grading_scheme_id) ?? null) : null,
     paperCount: papers.get(e.id) ?? 0,
   }));
+}
+
+
+/**
+ * One exam, by id, **whatever year it belongs to**.
+ *
+ * Four pages used to do this with `listExams().find(...)` — a list read
+ * standing in for a lookup, which cost every exam in the school on each of
+ * them and, once `listExams` learned about the year, would have turned a past
+ * exam's page into a 404. A lookup by primary key needs no year: the id names
+ * the row, and RLS decides whether the caller may have it.
+ */
+export async function getExam(examId: string): Promise<ExamRow | null> {
+  const supabase = await createClient();
+
+  const [examRes, schemesRes, papersRes] = await Promise.all([
+    supabase
+      .from("exams")
+      .select("id, name, kind, starts_on, ends_on, status, published_at, grading_scheme_id")
+      .eq("id", examId)
+      .maybeSingle(),
+    supabase.from("grading_schemes").select("id, name"),
+    supabase.from("exam_subjects").select("exam_id").eq("exam_id", examId),
+  ]);
+
+  if (examRes.error) throw new Error(examRes.error.message);
+  const e = examRes.data;
+  if (!e) return null;
+
+  const schemeName = new Map((schemesRes.data ?? []).map((x) => [x.id, x.name]));
+
+  return {
+    id: e.id,
+    name: e.name,
+    kind: e.kind,
+    startsOn: e.starts_on,
+    endsOn: e.ends_on,
+    status: e.status,
+    publishedAt: e.published_at,
+    gradingSchemeId: e.grading_scheme_id,
+    gradingSchemeName: e.grading_scheme_id ? (schemeName.get(e.grading_scheme_id) ?? null) : null,
+    paperCount: (papersRes.data ?? []).length,
+  };
 }
 
 export async function saveExam(input: unknown, id?: string): Promise<ActionResult<{ id: string }>> {

@@ -57,6 +57,7 @@ export type HomeworkRow = {
 };
 
 export async function listHomework(sectionId?: string): Promise<HomeworkRow[]> {
+  const ctx = await getUserContext();
   const supabase = await createClient();
 
   let query = supabase
@@ -65,6 +66,10 @@ export async function listHomework(sectionId?: string): Promise<HomeworkRow[]> {
       "id, title, instructions, section_id, subject_id, assigned_on, due_on, max_marks, collects_submissions, status, published_at",
     )
     .order("due_on", { ascending: false });
+
+  // This year's, which no policy supplies. See `listSections` in
+  // students/actions for why RLS is not the mechanism here.
+  if (ctx?.currentSessionId) query = query.eq("session_id", ctx.currentSessionId);
 
   if (sectionId) query = query.eq("section_id", sectionId);
 
@@ -598,16 +603,24 @@ export type StudyMaterialRow = {
 };
 
 export async function listStudyMaterial(): Promise<StudyMaterialRow[]> {
+  const ctx = await getUserContext();
   const supabase = await createClient();
 
+  let materialQuery = supabase
+    .from("study_material")
+    .select(
+      "id, title, description, kind, section_id, subject_id, file_name, size_bytes, external_url, is_published, created_at",
+    )
+    .order("created_at", { ascending: false });
+  let sectionQuery = supabase.from("sections").select("id, name, class_levels ( name )");
+  if (ctx?.currentSessionId) {
+    materialQuery = materialQuery.eq("session_id", ctx.currentSessionId);
+    sectionQuery = sectionQuery.eq("session_id", ctx.currentSessionId);
+  }
+
   const [materialRes, sectionsRes, subjectsRes] = await Promise.all([
-    supabase
-      .from("study_material")
-      .select(
-        "id, title, description, kind, section_id, subject_id, file_name, size_bytes, external_url, is_published, created_at",
-      )
-      .order("created_at", { ascending: false }),
-    supabase.from("sections").select("id, name, class_levels ( name )"),
+    materialQuery,
+    sectionQuery,
     supabase.from("subjects").select("id, name"),
   ]);
 
@@ -801,17 +814,23 @@ export type CurriculumOption = {
  * so offering one would be offering a choice that cannot be saved.
  */
 export async function listCurriculum(): Promise<CurriculumOption[]> {
+  const ctx = await getUserContext();
   const supabase = await createClient();
 
-  const { data: assignments, error } = await supabase
-    .from("section_subjects")
-    .select("section_id, subject_id");
+  let assignmentQuery = supabase.from("section_subjects").select("section_id, subject_id");
+  let sectionQuery = supabase.from("sections").select("id, name, class_levels ( name, sequence )");
+  if (ctx?.currentSessionId) {
+    assignmentQuery = assignmentQuery.eq("session_id", ctx.currentSessionId);
+    sectionQuery = sectionQuery.eq("session_id", ctx.currentSessionId);
+  }
+
+  const { data: assignments, error } = await assignmentQuery;
 
   if (error) throw new Error(error.message);
   if (!assignments?.length) return [];
 
   const [sectionsRes, subjectsRes] = await Promise.all([
-    supabase.from("sections").select("id, name, class_levels ( name, sequence )"),
+    sectionQuery,
     supabase.from("subjects").select("id, name").eq("is_active", true),
   ]);
 

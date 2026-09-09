@@ -4,7 +4,7 @@ import { ArrowLeft, MessageSquare } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { hasPermission } from "@/lib/auth/permissions";
 import { listSections } from "../../../students/actions";
-import { listExams } from "../../actions";
+import { getExam } from "../../actions";
 import { getRemarkSheet } from "../../report-card-actions";
 import { RemarkSheet } from "./remark-sheet";
 
@@ -20,13 +20,12 @@ export default async function RemarksPage({
   const { examId } = await params;
   const { section } = await searchParams;
 
-  const [exams, sections, canRemark] = await Promise.all([
-    listExams(),
+  const [exam, sections, canRemark] = await Promise.all([
+    getExam(examId),
     listSections(),
     hasPermission("exams.remark"),
   ]);
 
-  const exam = exams.find((e) => e.id === examId);
   if (!exam) notFound();
 
   const chosen = section && sections.some((s) => s.id === section) ? section : null;
