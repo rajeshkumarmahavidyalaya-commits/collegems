@@ -38,7 +38,7 @@ The same guardian, same session:
 fees_student_balances()      1 row   Vihaan Singh owes 26,908.00
 invoices readable            2       IN-2025-00003, IN-2025-00301
 ledger entries readable      1
-reports her matrix can run   8 of 19
+reports her matrix can run   8 of 19   (6 after 0201-0202)
 ```
 
 `dashboard_summary()` puts that 26,908.00 on her home page — migration `0129`'s
@@ -123,13 +123,19 @@ is fixed.
   attendance summary, exam results — are row-scoped by RLS to their own
   children. That is a useful screen, not a dead end.
 
-  Two of the eight are not: `attendance.gaps` ("Registers never taken") and
-  `notices.reach` are administrative questions gated on `attendance.view` and
-  `notices.view`, which a family holds for their own child's sake. That is the
-  same coarse-permission problem migration `0200` fixed for one check, and it is
-  **not fixed here** — it needs a decision about the permission catalogue rather
-  than a `where` clause, and one report at a time is how a catalogue stops
-  meaning anything.
+  Two of the eight were not, and running all eight as a guardian rather than
+  reasoning about them turned that note into migrations `0201` and `0202`.
+  `attendance.gaps` ("Registers never taken") did not merely show a family an
+  administrative question — it **over-reported by 220 rows**, because a
+  `not exists` under row-ownership RLS cannot tell absence from invisibility,
+  and it did the same to the class teacher it exists for. `notices.reach` was
+  the quieter half: a school-wide circular that reached two people reported as
+  reaching one. Both are fixed; the audit table is in
+  `docs/modules/attendance.md`.
+
+  So a family now runs **six** of nineteen reports, and all six are their own
+  children's: fee defaulters, fee collection, attendance summary, student leave,
+  exam results and overdue books.
 
 - **`transport.view` and `hostel.view` still lead nowhere for a family.** They
   hold both; `/transport` and `/hostel` are the office's route and room

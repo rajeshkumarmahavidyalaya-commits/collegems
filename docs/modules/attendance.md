@@ -251,6 +251,112 @@ as a working day when the school looks for registers that were never taken.
 
 ---
 
+## …and eleven of those classes were at 0.0%, none of them true
+
+The coverage function shipped correct for the seat it was written from, and
+wrong for the seat it was written for.
+
+Both halves of the coverage question compare two sets:
+
+```
+sections   public.sections                        tenant-wide
+marked     attendance_records + enrolments        row-ownership
+```
+
+One wide side, one narrow side. Probed as each caller rather than as `postgres`,
+over 1 Aug – 9 Sep 2026:
+
+| | `attendance_coverage` rows | at 0.0% | worst | `attendance.gaps` |
+|---|---|---|---|---|
+| administrator | 12 | 0 | Grade 1 A at 58.8% | 168 |
+| class teacher | 12 | **11** | **Grade 1 A at 0.0%** | **388** |
+| guardian | 12 | 11 | — | **388** |
+
+The function's own comment reads *"worst covered first: the list is read to find
+the class nobody has been taking a register for."* To the class teacher — the
+person who holds `attendance.mark`, opens `/attendance/report`, and can actually
+go and take the missing register — it put eleven fabricated zeros at the top of
+that list and buried Grade 1 A, which genuinely is the worst at 58.8%,
+underneath them. 220 of the report's 388 rows were accusations about colleagues.
+
+This is migration `0189`'s finding a second time, and `0189` had already written
+the sentence: *under row-ownership RLS, absence and invisibility are the same
+shape; an under-report is a missing sentence, this is an accusation.* What is
+new is the general rule it makes explicit:
+
+> **A `not exists` is only honest when both sides are narrowed by the same
+> policy.** Narrow the wide side to the rows the caller could have seen the
+> evidence for — never to the rows that happen to *have* evidence, which is the
+> thing being measured.
+
+Here that is one predicate on the `sections` CTE:
+
+```sql
+and exists (
+  select 1 from public.enrolments e
+  where e.section_id = s.id and e.status = 'active'
+)
+```
+
+`enrolments` carries the same row-ownership policies `attendance_records` does,
+and seeing the children is exactly the precondition for *"was a register taken
+for these children"* to be a question this caller can answer. Measured, it lands
+where it should — administrator 12 sections, teacher 1, guardian 1 — and it also
+drops a section with no active enrolment at all, which is right: an empty class
+has no register to take.
+
+Note what the fix is **not**. It is not `where tenant_id =` (rule 11 forbids
+that in a read model, and both callers are in the same tenant anyway), and it is
+not a `SECURITY DEFINER` rewrite. The policies were correct throughout; one half
+of the query was not consulting them.
+
+### The gate is the second half, and alone it fixes nothing
+
+`attendance.gaps` was catalogued on `attendance.view`, which a guardian and a
+student hold. Rule 4's answer is `0189`'s: gate on the permission a school gives
+to somebody who may **act** — `attendance.mark`.
+
+But a teacher *holds* `attendance.mark`. Moving the permission on its own would
+have left them looking at the same 388. That is `substitution_gaps`' lesson from
+the other side: **a permission check cannot make a read model stop lying.** Both
+halves, and the read model first.
+
+After migration `0201`, probed as four callers:
+
+| | coverage rows | at 0.0% | worst | `attendance.gaps` |
+|---|---|---|---|---|
+| administrator | 12 | 0 | Grade 1 A at 58.8% | 168 |
+| class teacher | **1** | 0 | Grade 5 B at 58.8% | **14** |
+| guardian | **1** | 0 | Grade 6 A at 58.8% | refused |
+| accountant | 12 | 0 | Grade 1 A at 58.8% | refused |
+
+The administrator's figures are unchanged to the row, which is the check that
+matters: the fix removed fabrications and nothing else. 168 ÷ 12 sections = 14,
+and the teacher's own class is missing exactly those 14 days.
+
+`tests/attendance/coverage-scope.test.ts` pins the property rather than the
+numbers — the card's `sum(days_missing)` must equal the report's `total_count`,
+and every reported section must be one whose enrolments the caller can read.
+Narrow one side and not the other and the first fails; widen the section list
+back and the second does. The suite signs in as an administrator, which is the
+seat the bug was invisible from, so the four-role table above is a probe and is
+recorded as one.
+
+### What this left alone, on purpose
+
+**An accountant sees the coverage card's twelve rows and holds no attendance
+permission at all.** Their numbers are true — `enrolments` is tenant-wide for
+them, so nothing is fabricated — and the card is now gated on
+`attendance.mark`, so they no longer see it. What is *not* fixed is the larger
+question their presence raises: `/attendance/report` is in an accountant's menu
+and its per-student read model is not gated on any attendance permission. That
+is rule 4's *"the matrix does real work wherever RLS is deliberately
+tenant-wide"* pointing at a whole module rather than at one card, and it wants a
+decision about whether a bursar needs attendance figures — not a `where` clause
+added while passing.
+
+---
+
 ## Known, deliberate gaps
 
 - **`attendance_records_session_id_fkey` has no covering index.** Supabase's

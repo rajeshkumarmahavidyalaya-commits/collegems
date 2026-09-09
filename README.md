@@ -45,7 +45,7 @@ After any migration, regenerate types into
 | [docs/domain/erd.md](./docs/domain/erd.md) | Full schema + the roadmap it's shaped for |
 | [docs/modules/library.md](./docs/modules/library.md) | The pattern every module copies |
 | [docs/modules/academics.md](./docs/modules/academics.md) | Academic structure: classes, sections, subjects and the teaching calendar |
-| [docs/modules/attendance.md](./docs/modules/attendance.md) | Attendance: the keyboard-first register and why it deviates |
+| [docs/modules/attendance.md](./docs/modules/attendance.md) | Attendance: the keyboard-first register, and the eleven classes reported at 0.0% that were not |
 | [docs/modules/fees.md](./docs/modules/fees.md) | Fees: the append-only ledger, gapless receipts, and one real bug |
 | [docs/modules/promotion.md](./docs/modules/promotion.md) | Promotion: a dry run you can argue with before it writes anything |
 | [docs/modules/exams.md](./docs/modules/exams.md) | Exams: grading rules as data, split papers, and two bugs the demo cohort surfaced |

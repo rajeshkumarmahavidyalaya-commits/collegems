@@ -1,0 +1,51 @@
+-- 0202  A circular that reached two, reported as reaching one
+-- ============================================================================
+--
+-- The quieter half of `0201`, found by the same sweep — every report a family's
+-- matrix can run, executed as a guardian and as an administrator, and the two
+-- answers compared.
+--
+-- `report_notice_reach` counts two things per notice:
+--
+--   read_by   count(*) from notice_reads
+--   audience  count(*) from notify_resolve_audience(tenant, audience)
+--
+-- Both read tenant tables under the caller's own policies, and both are
+-- row-ownership for a family. Measured on the demo school, for one published
+-- notice addressed to everybody:
+--
+--   administrator   audience 2
+--   guardian        audience 1
+--
+-- So a parent opening *"Notice reach"* is told the school-wide circular reached
+-- one person. On a school of four hundred families the number would still be
+-- one — their own — and the read percentage computed from it is whatever their
+-- own behaviour happens to make it. `0189`'s taxonomy again: this is the
+-- **under**-report, a missing sentence rather than an accusation, which is why
+-- it survived a release that the coverage bug would not have.
+--
+-- ---------------------------------------------------------------------------
+-- ...and here the gate really is the whole fix
+-- ---------------------------------------------------------------------------
+--
+-- `0201` insisted that moving a permission is the *second* half, because a
+-- teacher holds `attendance.mark` and would have gone on seeing the same 388.
+-- That argument does not carry over, and the difference is worth stating rather
+-- than applying the same two-part fix out of habit:
+--
+--   > A permission move is sufficient exactly when **no role that holds the
+--   > acting permission has narrow RLS on the tables the read model reads.**
+--
+-- `notices.manage` is held by the administrator alone, and an administrator's
+-- policies on `notices`, `notice_reads` and `user_profiles` are tenant-wide.
+-- There is no caller left for whom the two counts are narrowed, so the read
+-- model is correct for everybody who can now reach it and is left exactly as it
+-- is. Narrowing it further would be changing a function nobody was misled by.
+--
+-- The report keeps its name and its columns; only who it is addressed to
+-- changes. `report_list` filters on this, so it simply stops appearing for the
+-- roles it was lying to.
+
+update reference.reports
+   set required_permission = 'notices.manage'
+ where key = 'notices.reach';

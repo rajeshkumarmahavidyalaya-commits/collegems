@@ -2,6 +2,7 @@ import Link from "next/link";
 import { ClipboardCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { getUserContext } from "@/lib/auth/context";
+import { hasPermission } from "@/lib/auth/permissions";
 import { listAllSections } from "../actions";
 import { AttendanceReport } from "./attendance-report";
 import { CoverageCard } from "./coverage-card";
@@ -9,7 +10,16 @@ import { CoverageCard } from "./coverage-card";
 export const metadata = { title: "Attendance report" };
 
 export default async function AttendanceReportPage() {
-  const [ctx, sections] = await Promise.all([getUserContext(), listAllSections()]);
+  const [ctx, sections, canSeeCoverage] = await Promise.all([
+    getUserContext(),
+    listAllSections(),
+    // The same question is `attendance.gaps` in the report catalogue, and
+    // migration 0201 moved that to `attendance.mark` -- the permission held by
+    // somebody who can go and take the missing register. A card showing the
+    // same facts the report refuses would be the menu and the boundary
+    // disagreeing again, one screen down.
+    hasPermission("attendance.mark"),
+  ]);
 
   // The last month, which is the window somebody notices a gap in. Longer than
   // that and the answer is the catalog report, which takes a range.
@@ -40,7 +50,7 @@ export default async function AttendanceReportPage() {
 
       <AttendanceReport sections={sections} />
 
-      <CoverageCard from={coverageFrom} to={coverageTo} />
+      {canSeeCoverage ? <CoverageCard from={coverageFrom} to={coverageTo} /> : null}
     </div>
   );
 }

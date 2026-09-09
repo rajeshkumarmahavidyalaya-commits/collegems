@@ -351,6 +351,36 @@ school gives to somebody who may *act* on it — `students.manage` — and the r
 is written on `reference.checks.required_permission` where the next person will
 add one. See `docs/modules/checks.md`.
 
+**It happened again, in the module the rule was written next to, and the second
+time says what the fix is.** `attendance_coverage` and the `attendance.gaps`
+report both compare `sections` — tenant-wide — against `attendance_records`
+joined to `enrolments` — row-ownership. Probed as each caller: an administrator
+saw 12 sections, **none** at zero percent, and 168 missing registers; a class
+teacher saw the same 12 sections with **eleven at 0.0%** and **388** missing
+registers, 220 of them fabricated. The coverage function is documented *"worst
+covered first: the list is read to find the class nobody has been taking a
+register for"*, so it put eleven inventions at the top of the list and buried
+the class that genuinely was worst.
+
+> **A `not exists` is only honest when both sides are narrowed by the same
+> policy.** Narrow the wide side to the rows the caller could have seen the
+> evidence for — never to the rows that happen to *have* evidence, which is the
+> thing being measured.
+
+One predicate does it: a section is in scope when the caller can read an active
+`enrolment` in it. `enrolments` carries the same policies `attendance_records`
+does, and seeing the children is the precondition for "was a register taken for
+these children" to be answerable at all. Administrator 12, teacher 1, guardian
+1 — and the administrator's 168 is unchanged to the row, which is the check
+that the fix removed fabrications and nothing else.
+
+**And the gate is the second half, not the fix.** The report was catalogued on
+`attendance.view`, which a guardian holds, so it moved to `attendance.mark` by
+the rule above — but a teacher *holds* `attendance.mark`, so moving it alone
+would have left them looking at the same 388. A permission check cannot make a
+read model stop lying; fix the read model, then address it to the right person.
+Migration `0201`, and `docs/modules/attendance.md`.
+
 Three responses, and the wrong one is tempting:
 
 - **Do not widen the policy.** Who is off sick is a fact about them, not about a
