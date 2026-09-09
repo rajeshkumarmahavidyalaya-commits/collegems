@@ -371,4 +371,6 @@ export const hi: Messages = {
   "stock.movement.return": "वापस",
   "stock.movement.adjustment": "समायोजन",
   "stock.movement.write_off": "बट्टे खाते",
+  "nav.team": "लोग और आमंत्रण",
+  "nav.plan": "योजना",
 };

@@ -5691,6 +5691,56 @@ export type Database = {
           },
         ]
       }
+      subscriptions: {
+        Row: {
+          created_at: string
+          current_period_end: string | null
+          id: string
+          plan_code: string
+          provider: string | null
+          provider_customer_id: string | null
+          provider_subscription_id: string | null
+          status: string
+          tenant_id: string
+          trial_ends_on: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          current_period_end?: string | null
+          id?: string
+          plan_code: string
+          provider?: string | null
+          provider_customer_id?: string | null
+          provider_subscription_id?: string | null
+          status?: string
+          tenant_id: string
+          trial_ends_on?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          current_period_end?: string | null
+          id?: string
+          plan_code?: string
+          provider?: string | null
+          provider_customer_id?: string | null
+          provider_subscription_id?: string | null
+          status?: string
+          tenant_id?: string
+          trial_ends_on?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "subscriptions_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: true
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       substitutions: {
         Row: {
           absent_staff_id: string | null
@@ -8331,6 +8381,18 @@ export type Database = {
           issue_id: string
         }[]
       }
+      platform_slug_available: { Args: { p_slug: string }; Returns: boolean }
+      platform_start_school: {
+        Args: {
+          p_school_name: string
+          p_session_end?: string
+          p_session_name?: string
+          p_session_start?: string
+          p_slug: string
+          p_timezone?: string
+        }
+        Returns: Json
+      }
       privilege_guard_violations: {
         Args: never
         Returns: {
@@ -9034,6 +9096,16 @@ export type Database = {
           reason: string
           starts_on: string
           student_id: string
+        }[]
+      }
+      subscription_overview: { Args: never; Returns: Json }
+      subscription_usage: {
+        Args: never
+        Returns: {
+          allowed: number
+          over: boolean
+          resource: string
+          used: number
         }[]
       }
       substitution_arrange: {

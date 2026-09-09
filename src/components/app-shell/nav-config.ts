@@ -3,6 +3,8 @@ import type { MessageKey } from "@/lib/i18n/messages/en";
 import {
   BarChart3,
   BedDouble,
+  CreditCard,
+  UserPlus,
   Bell,
   BookOpen,
   Bus,
@@ -544,6 +546,26 @@ export const NAV_GROUPS: NavGroup[] = [
         href: "/settings/school",
         icon: Settings2,
         roles: ["admin", "accountant", "librarian"],
+      },
+      // Who may sign in to this school. Admin only, and that is not a menu
+      // decision -- `invitations` has carried an admin-only policy since
+      // migration 0005, so the two agree rather than the menu guessing.
+      {
+        title: "People and invitations",
+        messageKey: "nav.team",
+        href: "/settings/team",
+        icon: UserPlus,
+        roles: ["admin"],
+      },
+      // The plan is readable by every member of the school by policy, but the
+      // people who act on a ceiling are the ones who admit children and hire
+      // staff. A teacher is a candidate for neither.
+      {
+        title: "Plan",
+        messageKey: "nav.plan",
+        href: "/settings/plan",
+        icon: CreditCard,
+        roles: ["admin", "accountant"],
       },
       { title: "Language", messageKey: "app.language", href: "/settings/language", icon: Languages },
     ],

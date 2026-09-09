@@ -375,6 +375,56 @@ Three things generalise:
 - `user_profiles` links a login to the person/student/staff/guardian record it
   acts as. A young student may have no login at all — that is expected.
 
+### …and until 0205, nobody could become a tenant
+
+Rule 3's last sentence — *"A signup with no matching invitation gets no tenant —
+RLS then denies everything, which is the correct failure mode"* — is true about
+the data and was, for two hundred migrations, the entire onboarding story. The
+only `insert into public.tenants` in the repo was the demo seed, and
+`invitations`, which this rule builds signup on, appeared nowhere in `src/`
+except the generated types. **An administrator could not invite their own office
+staff**, and a school could not exist without somebody running SQL by hand.
+
+> **The tenantless state is not an error to handle. It is the authorisation.**
+> Somebody who signed up and matched no invitation is, precisely, somebody about
+> to start a school — so `platform_start_school` serves exactly that caller and
+> refuses everybody else. One predicate, `current_tenant_id() is not null`, and
+> one school per login comes free.
+
+Three things generalise from building it:
+
+- **A JWT minted before a tenant existed does not have one.** The function
+  stamps `raw_app_meta_data`, but every RLS policy reads the *token*, so without
+  `refreshSession()` the person who just created a school is shown an empty one
+  — every query correct, every answer nothing. The function returns
+  `refresh_session_required` rather than leaving the caller to know that.
+- **A seat limit cannot live in a write function when the write is a plain
+  insert.** Rule 4's usual answer — a check under an advisory lock inside
+  `transport_assign_student` — works because that function is the only way a bus
+  seat is ever made. Students are created by a server action doing a plain
+  insert, and **a plain insert through PostgREST routes around any function**, so
+  the ceiling is a `BEFORE INSERT` trigger. It is `SECURITY DEFINER` for the
+  reason this file already documents: an invoker function counting rows counts
+  *the rows the caller can see*, so a teacher admitting a child would be measured
+  against their own visible subset of the roll.
+- **A plan is data (rule 12) and a subscription is a tenant row (rule 1).**
+  `reference.plans` is the fourth catalogue beside permissions, reports and
+  checks, outside `public` because a plan belongs to no tenant.
+  `public.subscriptions` is readable by every member of the school — a bursar who
+  cannot see the ceiling cannot plan for it — and has **no write policy at all**.
+  Probed: a member's `update` touches **0 rows**, which is the count rule 6 says
+  to assert rather than the error it does not raise.
+
+And the thing it refuses, which matters more than what it builds:
+
+> **A platform-operator console reads across tenants, and that is the one thing
+> rule 1 exists to make impossible.** Nothing in `0205` or `0206` creates a role,
+> a policy exception or a definer read model that can see two tenants at once.
+> When that console is built it gets its own decision, its own schema and its own
+> guard — the cheap version is the one that puts a hole in every other rule here.
+
+See `docs/modules/saas.md`.
+
 ## 4. Authorization is two layers
 
 1. **RLS** — tenant isolation *and* row ownership. Teachers see only students

@@ -402,6 +402,8 @@ export const en = {
   "stock.movement.return": "Returned",
   "stock.movement.adjustment": "Adjustment",
   "stock.movement.write_off": "Written off",
+  "nav.team": "People and invitations",
+  "nav.plan": "Plan",
 } as const;
 
 export type MessageKey = keyof typeof en;

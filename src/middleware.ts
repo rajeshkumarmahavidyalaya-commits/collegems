@@ -4,7 +4,20 @@ import { supabasePublishableKey, supabaseUrl } from "@/lib/supabase/env";
 
 // /api/health must stay reachable without a session -- it exists to diagnose
 // deployments that cannot authenticate in the first place.
-const PUBLIC_PATHS = ["/login", "/auth", "/api/health"];
+const PUBLIC_PATHS = ["/login", "/signup", "/auth", "/api/health"];
+
+/**
+ * Signed in, but belonging to no school yet.
+ *
+ * Rule 3 leaves a signup with no matching invitation without a tenant, and
+ * calls that "the correct failure mode" — which it is, for the data: RLS then
+ * denies everything. It is not a mode a *person* can be left in, because every
+ * screen in the product reads a tenant from the JWT and comes back empty.
+ *
+ * `/start` is where that person goes, and it is deliberately not in
+ * PUBLIC_PATHS: it needs a session, it just does not need a school.
+ */
+const TENANTLESS_PATH = "/start";
 
 /** Not an error: "this request has no session and never claimed to". */
 class SignedOut extends Error {}
@@ -42,7 +55,10 @@ export async function middleware(request: NextRequest) {
   let response = NextResponse.next({ request });
   const { pathname } = request.nextUrl;
 
-  let user: { id: string } | null = null;
+  // app_metadata carries the tenant claim that every RLS policy reads, so
+  // "does this person belong to a school yet" is answerable here without a
+  // database round trip.
+  let user: { id: string; app_metadata?: Record<string, unknown> } | null = null;
 
   // Middleware runs in front of EVERY route, so anything that throws here
   // takes the whole site down with MIDDLEWARE_INVOCATION_FAILED -- including
@@ -102,7 +118,23 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(loginUrl);
   }
 
-  if (user && pathname === "/login") {
+  if (user && (pathname === "/login" || pathname === "/signup")) {
+    return NextResponse.redirect(new URL("/", request.url));
+  }
+
+  // Signed in with no school. Without this the person is bounced around the app
+  // seeing empty screens, because RLS correctly refuses every row and nothing
+  // says why.
+  //
+  // The claim is read rather than the database, so this costs nothing — and it
+  // is why `platform_start_school` returns `refresh_session_required`: the JWT
+  // is minted before the tenant exists, so a caller who does not refresh keeps
+  // arriving back here with a school that is already built.
+  if (user && !user.app_metadata?.tenant_id) {
+    if (pathname !== TENANTLESS_PATH && !isPublicPath(pathname)) {
+      return NextResponse.redirect(new URL(TENANTLESS_PATH, request.url));
+    }
+  } else if (user && pathname === TENANTLESS_PATH) {
     return NextResponse.redirect(new URL("/", request.url));
   }
 
