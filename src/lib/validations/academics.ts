@@ -118,3 +118,20 @@ export function toClockTime(value: string) {
 export function formatSlotRange(startsAt: string, endsAt: string) {
   return `${toClockTime(startsAt)} – ${toClockTime(endsAt)}`;
 }
+
+/**
+ * An academic year.
+ *
+ * Shared by the year form and the server action. Dates are compared in the
+ * database, not here: `academic_sessions_no_overlap` is the enforcement (rule
+ * 4), and a check in the browser would be a second answer to a question
+ * Postgres already answers -- and the only one of the two that sees the other
+ * years.
+ */
+export const academicSessionSchema = z.object({
+  name: z.string().min(1, "A name is required").max(50),
+  startDate: z.string().min(1, "A start date is required"),
+  endDate: z.string().min(1, "An end date is required"),
+});
+
+export type AcademicSessionInput = z.infer<typeof academicSessionSchema>;

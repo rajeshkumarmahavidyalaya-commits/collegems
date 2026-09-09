@@ -6501,16 +6501,105 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      academics_filing_problems: {
+        Args: never
+        Returns: {
+          message: string
+          severity: string
+        }[]
+      }
       academics_is_teaching_day: { Args: { p_date: string }; Returns: boolean }
       academics_roll_forward_sections: {
         Args: { p_from_session_id: string; p_to_session_id: string }
         Returns: number
       }
+      academics_session_activate: {
+        Args: { p_session_id: string }
+        Returns: {
+          created_at: string
+          end_date: string
+          id: string
+          is_current: boolean
+          name: string
+          start_date: string
+          tenant_id: string
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "academic_sessions"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      academics_session_create: {
+        Args: {
+          p_end_date: string
+          p_make_current?: boolean
+          p_name: string
+          p_start_date: string
+        }
+        Returns: {
+          created_at: string
+          end_date: string
+          id: string
+          is_current: boolean
+          name: string
+          start_date: string
+          tenant_id: string
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "academic_sessions"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      academics_session_for_date: { Args: { p_on: string }; Returns: string }
       academics_session_problems: {
         Args: never
         Returns: {
           message: string
           severity: string
+        }[]
+      }
+      academics_session_update: {
+        Args: {
+          p_end_date: string
+          p_name: string
+          p_session_id: string
+          p_start_date: string
+        }
+        Returns: {
+          created_at: string
+          end_date: string
+          id: string
+          is_current: boolean
+          name: string
+          start_date: string
+          tenant_id: string
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "academic_sessions"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      academics_sessions: {
+        Args: never
+        Returns: {
+          end_date: string
+          enrolments: number
+          has_ended: boolean
+          has_started: boolean
+          id: string
+          is_current: boolean
+          name: string
+          sections: number
+          start_date: string
         }[]
       }
       accounts_chart_balances: {

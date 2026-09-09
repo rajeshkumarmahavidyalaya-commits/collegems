@@ -126,6 +126,18 @@ export const NAV_GROUPS: NavGroup[] = [
         icon: Library,
         roles: ["admin", "teacher", "accountant"],
       },
+      // The year everything is filed under, and the only place the flag that
+      // decides it can be moved. Its own entry rather than a card on
+      // /academics: `reference.checks` links straight here, and a critic whose
+      // link lands on a page where you then have to hunt is one people stop
+      // following.
+      {
+        title: "Academic years",
+        messageKey: "nav.academicYears",
+        href: "/academics/sessions",
+        icon: CalendarRange,
+        roles: ["admin"],
+      },
       {
         title: "Class routine",
         messageKey: "nav.classRoutine",

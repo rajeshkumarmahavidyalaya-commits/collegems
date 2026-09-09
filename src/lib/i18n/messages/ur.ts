@@ -58,6 +58,7 @@ export const ur: Messages = {
   "nav.reportCards": "رپورٹ کارڈ",
   "nav.busAssignments": "بس تفویض",
   "nav.staff": "عملہ",
+  "nav.academicYears": "تعلیمی سال",
   "nav.staffList": "عملے کی فہرست",
   "nav.staffAttendance": "عملے کی حاضری",
   "nav.leave": "چھٹی",

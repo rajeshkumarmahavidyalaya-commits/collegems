@@ -128,6 +128,65 @@ Two things worth copying from it:
   silent again once the arrangements exist in the receiving session — rule 12's
   bar for a critic, applied to a date.
 
+### …and the year a row is filed under is not the year it happened in
+
+The rule above bounds a row by its session. This is the question one level up,
+and it went unasked for 194 migrations: **which session does a row get in the
+first place?**
+
+`current_session_id()` is `select id from academic_sessions where is_current` —
+a flag. Fifty-four functions read it, every dated write stamps its row with it,
+and **nothing in the application could set it**: `promotion` read the list of
+years, `getUserContext` read the current one, and that was every reference to
+`academic_sessions` in `src/app`. There was no way to create next year and no
+way to switch to it.
+
+Measured on the demo school on 9 September 2026, with a year that ended on 31
+March still flagged current: **6,000 of 6,000 register rows**, 323 of 323 ledger
+entries, 317 of 317 invoices and 274 of 274 journal vouchers were dated outside
+the year they were stamped with. The control is what makes it a finding rather
+than an accident — `staff_attendance` (765 rows) and `leave_requests` (4) are
+clean, and they are precisely the tables the seed dated with a fixed date inside
+the year rather than with `current_date - n`.
+
+> **`session_id` says which year a row is filed under; the row's own date says
+> which year it happened in; and `current_session_id()` says which year the
+> school has decided it is working in.** Three questions. A stale flag answers
+> the first with the third and files a year of registers into a year that ended.
+
+Three things follow, and the third is the one that is easy to get wrong:
+
+- **Give the second question a name.** `academics_session_for_date(date)` is
+  arithmetic, and it is only well defined because `academic_sessions_no_overlap`
+  (rule 4's exclusion constraint) makes a date belong to at most one year. That
+  constraint is load-bearing, not tidiness: without it `current_session_id`'s
+  own `limit 1` is arbitrary too.
+- **The flag stays a decision.** A school sets next year up in February and
+  switches in April; a product that flipped automatically on 1 April would
+  misfile the last week of enrolment work in the opposite direction. What was
+  missing was not automation but a screen — `/academics/sessions`, and rule 6's
+  sentence again: a correct write path nobody can call is not a fix.
+- **A critic that cannot repair says so.** `academics_filing_problems()` names
+  the misfiled rows and stops there, because re-stamping a register row's
+  `session_id` would file it under a year while its `enrolment_id` still points
+  at an enrolment in the previous one — consistent with the calendar and
+  inconsistent with the child's place in the school. The repair is a promotion
+  run, which is a decision with named children in it.
+
+And one about writing for people, which cost two migrations to learn properly.
+`0195`'s critic said *"1 certificates is dated between 7 Sep 2026 and 7 Sep
+2026"*; `0196` fixed the noun, the verb, the number formatting and the
+degenerate range, and left *"They belong to"* in front of one certificate.
+
+> **Number agreement is a property of the whole sentence.** Fixing the subject
+> and the verb and leaving the pronoun is not a partial fix; it is the same
+> error one clause later, and on a screen whose only purpose is to be acted on
+> it reads exactly as careless. Put every count-dependent word in one place —
+> and carry both forms rather than a stem and a rule, because English plurals
+> are not derivable.
+
+Migrations `0195`–`0197`; see `docs/modules/academic-years.md`.
+
 ## 3. Auth
 
 - Supabase Auth. A trigger on `auth.users` (`handle_new_auth_user`) resolves a

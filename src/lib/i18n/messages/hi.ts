@@ -58,6 +58,7 @@ export const hi: Messages = {
   "nav.reportCards": "रिपोर्ट कार्ड",
   "nav.busAssignments": "बस आवंटन",
   "nav.staff": "कर्मचारी",
+  "nav.academicYears": "शैक्षणिक वर्ष",
   "nav.staffList": "कर्मचारी सूची",
   "nav.staffAttendance": "कर्मचारी उपस्थिति",
   "nav.leave": "अवकाश",
