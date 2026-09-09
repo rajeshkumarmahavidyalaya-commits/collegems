@@ -179,3 +179,113 @@ of its own accord, so `promotion_apply` reports `ended_transport = 0` and that
 zero is correct. What `0180` closes on top is the part no date bounds — every
 live fee concession, and any arrangement already made for a year the graduate
 will never attend.
+
+---
+
+## The twelfth reader was a published contract
+
+The eleven readers this module rewrote were all SQL, all in `public`, all found
+by grepping for `ends_on is null or`. The twelfth was not any of those: it was
+the mobile card, which does not ask the question at all — it re-exports the raw
+columns and leaves the question to the phone.
+
+Probed as the mother of a child in Grade 6 A, on 9 September 2026:
+
+```json
+"transport": {
+  "status":            "active",
+  "ends_on":           null,
+  "effective_ends_on": "2026-03-31",
+  "route_name":        "Ring Road (morning only)",
+  "pickup_time":       "06:55:00",
+  "monthly_fare":      800.00
+}
+```
+
+Three fields in one document that contradict each other. The seat ended with the
+2025-2026 session on 31 March — **162 days earlier** — and the app renders
+*"Active · Ring Road · pickup 06:55"*. The one key that tells the truth is a
+third field no client is going to subtract from the other two.
+
+> Rule 2 says *"say that with a column, not with a predicate in every reader"*.
+> **Publishing the column is not saying it.** A contract that ships all three
+> facts and expects the reader to resolve them has moved the predicate, not
+> removed it.
+
+### The money stopped and the screen did not
+
+This is the number that makes it a finding rather than a curiosity. Measured
+today, on the demo school:
+
+```
+lapsed seats still flagged active           46
+lapsed beds                                 13
+children on a lapsed seat                   46
+families the phone showed one to            88
+```
+
+Forty-six is the same 46 this document opens with — *"46 seats and 14 beds still
+billable fifteen months after their year ended"*. Migration `0179` fixed the
+bill: **0 of 46** are charged today, and all 46 are still charged on their own
+last day, so the boundary is inclusive and correct. What `0179` did not reach was
+the screen, so eighty-eight families have been opening an app that says their
+child has a bus.
+
+### Two mistakes, and the second is why the first survived
+
+1. **`limit 1` over a history is "the latest", not "the current one".**
+   `transport_for_student` and `hostel_for_student` return every arrangement a
+   child has ever had, `order by starts_on desc` — correct, because the
+   transport screen is a history. The card took its first row.
+2. **The card has a date and those two blocks never used it.**
+   `mobile_student_card` computes `day` and every other date-sensitive block
+   consults it: `timetable_today` filters on its weekday, `attendance` passes it
+   through. Transport and hostel ignored it.
+
+The second is why nobody noticed the first. On the day an arrangement is made the
+latest one *is* the current one; the two answers only diverge after it ends. **A
+bug that needs a year to pass is a bug that ships.**
+
+### The fix is the eleven readers' own predicate, copied
+
+```sql
+where tr.status = 'active'
+  and tr.starts_on <= day.on_date
+  and tr.effective_ends_on >= day.on_date
+order by tr.starts_on desc
+limit 1
+```
+
+`order by starts_on desc` stays — a child with two arrangements in one year gets
+the later one — but it is now a tiebreak among *current* rows rather than the
+whole selection.
+
+**Rule 14 is satisfied without a new version.** No key is added, renamed or
+removed: `transport` and `hostel` already publish `null` for a child with no
+arrangement, which is what a day scholar gets, so a lapsed one becoming `null` is
+a value every client already renders. Verified to the day:
+
+| card asked for | transport |
+|---|---|
+| today, 9 Sep 2026 | **(no bus)** — was *"Ring Road, active"* |
+| 31 Mar 2026, its last day | Ring Road (morning only), active |
+| 1 Apr 2026, the morning after | **(no bus)** |
+| 1 Oct 2025, mid-year | Ring Road (morning only), active |
+
+Migration `0203`.
+
+### What is pinned, and what is only probed
+
+`tests/transport/session-boundary.test.ts` is the first test this boundary has
+had, and it asserts the property the card and the other eleven all rest on:
+`effective_ends_on` equals `coalesce(ends_on, session_ends_on)` for every row;
+**no lapsed arrangement is billed today** (0 of 46); and **every one is still
+billed on its own last day** (46 of 46), which is the half a naive `>` instead of
+`>=` would break.
+
+The card itself is not asserted there and the reason is worth stating rather than
+hiding: the suite signs in as an administrator, `mobile_my_students()` correctly
+returns nothing for them (rule 14 — a home screen is not a roster), so the
+document is empty for the only caller the tests have. The four-date table above
+is a probe, run as a guardian inside a rolled-back transaction, and it is
+recorded as one.

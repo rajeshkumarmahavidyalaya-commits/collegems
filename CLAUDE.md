@@ -115,6 +115,35 @@ own dates held on the child, `effective_ends_on` generated from them — and the
 the eleven predicates are mechanical, *because* the row now knows the answer.
 Migrations `0178` and `0179`; see `docs/modules/session-boundary.md`.
 
+**The twelfth reader was a published contract, and it was found by probing a
+phone.** The eleven were all SQL in `public`, all found by grepping for
+`ends_on is null or`. `mobile_student_card` does not ask the question at all —
+it re-exported the raw columns, so today's document for a guardian carried
+`"status": "active"`, `"ends_on": null` **and** `"effective_ends_on":
+"2026-03-31"` in one object, 162 days after the seat ended.
+
+> *"Say that with a column, not with a predicate in every reader"* — and
+> **publishing the column is not saying it.** A contract that ships all three
+> facts and expects the reader to resolve them has moved the predicate, not
+> removed it.
+
+Measured: `0179` fixed the bill (**0 of 46** lapsed seats charged today, and all
+46 still charged on their own last day, so the boundary is inclusive), and left
+the screen. **88 families** were opening an app that said their child had a bus.
+The money stopped; the screen did not.
+
+Two mistakes, and the second is why the first survived a year:
+
+- **`limit 1` over a history is "the latest", not "the current one".** The two
+  read paths return every arrangement a child has ever had, which is right for
+  the history screen; the card took its first row.
+- **The card has a date and those two blocks never used it**, while every other
+  date-sensitive block did. On the day an arrangement is made the latest one *is*
+  the current one — **a bug that needs a year to pass is a bug that ships.**
+
+Rule 14 is satisfied without a new version: no key is added, renamed or removed,
+and `null` is what a day scholar's block already contains. Migration `0203`.
+
 Two things worth copying from it:
 
 - **A window is not a filter on the current session.** `fees_concession_lines`
