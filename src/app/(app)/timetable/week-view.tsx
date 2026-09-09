@@ -3,6 +3,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { GRID_WEEKDAYS, periodLabel, toClockTime } from "@/lib/validations/timetable";
 import type { TeacherRoutineEntry } from "./actions";
+import { useI18n } from "@/components/providers/i18n-provider";
 
 /**
  * One person's week, grouped by day. A read-only view, so it is a Server
@@ -11,6 +12,7 @@ import type { TeacherRoutineEntry } from "./actions";
  * shipping the editing code to every student who looks at their routine.
  */
 export function WeekView({ entries }: { entries: TeacherRoutineEntry[] }) {
+  const { formatWeekday } = useI18n();
   if (entries.length === 0) {
     return (
       <Card>
@@ -41,7 +43,7 @@ export function WeekView({ entries }: { entries: TeacherRoutineEntry[] }) {
           <Card key={day.value}>
             <CardContent className="flex flex-col gap-2 p-4">
               <div className="flex items-baseline justify-between">
-                <h2 className="font-medium">{day.label}</h2>
+                <h2 className="font-medium">{formatWeekday(day.value)}</h2>
                 <span className="text-xs text-muted-foreground">
                   {dayEntries.length} {dayEntries.length === 1 ? "period" : "periods"}
                 </span>

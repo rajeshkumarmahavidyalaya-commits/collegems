@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { formatCurrency } from "@/lib/i18n/format";
+import { formatCurrency, formatWeekday } from "@/lib/i18n/format";
 import { LOCALE_CODES } from "@/lib/i18n/config";
 
 /**
@@ -54,5 +54,35 @@ describe("money", () => {
     expect(formatCurrency("abc", "en")).toBe("—");
     // Zero itself is a real amount and still prints.
     expect(formatCurrency(0, "en")).toBe("₹0.00");
+  });
+});
+
+describe("a weekday's name comes from ICU, not from a list", () => {
+  // `WEEKDAYS` in validations/academics.ts carried "Monday".."Sunday" and was
+  // rendered on the class routine, the teaching load and the academics page.
+  // Translating that would have meant 21 catalogue keys in three languages —
+  // storing what every JavaScript runtime already ships.
+  it("names every day in each locale", () => {
+    for (const locale of LOCALE_CODES) {
+      const names = [1, 2, 3, 4, 5, 6, 7].map((d) => formatWeekday(d, locale));
+      expect(new Set(names).size, `${locale} repeated a weekday name`).toBe(7);
+      for (const n of names) expect(n.length).toBeGreaterThan(0);
+    }
+    expect(formatWeekday(1, "en")).toBe("Monday");
+    expect(formatWeekday(7, "en")).toBe("Sunday");
+    expect(formatWeekday(1, "en", "short")).toBe("Mon");
+  });
+
+  it("is anchored to a real Monday, so 1 is Monday everywhere", () => {
+    // The anchor is arithmetic, not data: an off-by-one here shifts the whole
+    // timetable by a day in every language at once.
+    for (const locale of LOCALE_CODES) {
+      expect(formatWeekday(1, locale)).not.toBe(formatWeekday(7, locale));
+    }
+  });
+
+  it("returns the number for a value that is not a weekday", () => {
+    expect(formatWeekday(0, "en")).toBe("0");
+    expect(formatWeekday(8, "en")).toBe("8");
   });
 });

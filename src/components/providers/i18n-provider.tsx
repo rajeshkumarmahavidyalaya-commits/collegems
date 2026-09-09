@@ -11,6 +11,7 @@ import {
   formatNumber,
   formatQuantity,
   formatTime,
+  formatWeekday,
 } from "@/lib/i18n/format";
 
 type I18nValue = {
@@ -24,6 +25,7 @@ type I18nValue = {
   formatNumber: (value: number | string | null | undefined, options?: Intl.NumberFormatOptions) => string;
   formatCurrency: (value: number | string | null | undefined, currency?: string) => string;
   formatQuantity: (value: number | string | null | undefined, decimals?: number) => string;
+  formatWeekday: (isoWeekday: number, style?: "long" | "short") => string;
 };
 
 const I18nContext = createContext<I18nValue | null>(null);
@@ -58,6 +60,7 @@ export function I18nProvider({
       formatNumber: (v, options) => formatNumber(v, locale, options),
       formatCurrency: (v, currency) => formatCurrency(v, locale, currency),
       formatQuantity: (v, decimals) => formatQuantity(v, locale, decimals),
+      formatWeekday: (d, style) => formatWeekday(d, locale, style),
     };
   }, [locale]);
 

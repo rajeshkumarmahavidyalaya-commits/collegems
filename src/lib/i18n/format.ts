@@ -129,3 +129,42 @@ export function formatQuantity(
     maximumFractionDigits: decimals,
   });
 }
+
+/**
+ * A weekday's name, from ICU rather than from a list somebody typed.
+ *
+ * `WEEKDAYS` in `validations/academics.ts` carried `{ label: "Monday", short:
+ * "Mon" }` and seven more, rendered on the class routine a family reads, on the
+ * teaching load and on the academics settings page. Translating that by adding
+ * twenty-one catalogue keys in three languages would have been **storing what
+ * `Intl` already knows** — and it is the same mistake this file exists to
+ * undo, one level along: hardcoding a locale tag works for the first customer,
+ * and so does hardcoding the tag's *output*.
+ *
+ * The date is an anchor, not data. 5 January 2026 was a Monday, so
+ * `ANCHOR + (isoWeekday - 1)` lands on the right day of an ordinary week with
+ * no daylight-saving edge in it; `timeZone: "UTC"` keeps a reader east of the
+ * line from seeing yesterday's name.
+ */
+const WEEKDAY_ANCHOR = Date.UTC(2026, 0, 5); // a Monday
+
+export function formatWeekday(
+  isoWeekday: number,
+  locale: Locale,
+  style: "long" | "short" = "long",
+): string {
+  if (!Number.isInteger(isoWeekday) || isoWeekday < 1 || isoWeekday > 7) {
+    return String(isoWeekday);
+  }
+  const date = new Date(WEEKDAY_ANCHOR + (isoWeekday - 1) * 86_400_000);
+  const fmt = formatter(
+    () => new Intl.DateTimeFormat(intlTag(locale), { weekday: style, timeZone: "UTC" }),
+  );
+  // No ICU data is the one case where a hardcoded English name is still the
+  // best answer available, so it lives here rather than in seven components.
+  return fmt
+    ? fmt.format(date)
+    : ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"][
+        isoWeekday - 1
+      ];
+}

@@ -1057,6 +1057,7 @@ function WeekTab({
   weekdays: { weekday: number; isTeaching: boolean }[];
   canManage: boolean;
 }) {
+  const { formatWeekday, t } = useI18n();
   const router = useRouter();
   const [pending, setPending] = useState<number | null>(null);
 
@@ -1083,7 +1084,7 @@ function WeekTab({
             return (
               <div key={day.value} className="flex items-center justify-between gap-3">
                 <Label htmlFor={`weekday-${day.value}`} className="font-normal">
-                  {day.label}
+                  {formatWeekday(day.value)}
                 </Label>
                 <div className="flex items-center gap-2">
                   {/* Never colour alone: the state is named next to the switch. */}
@@ -1102,7 +1103,11 @@ function WeekTab({
                         toast.error(result.error);
                         return;
                       }
-                      toast.success(`${day.label} is now ${next ? "a teaching day" : "closed"}`);
+                      toast.success(
+                        next
+                          ? t("academics.weekday.open", { day: formatWeekday(day.value) })
+                          : t("academics.weekday.closed", { day: formatWeekday(day.value) }),
+                      );
                       router.refresh();
                     }}
                   />

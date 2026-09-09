@@ -57,6 +57,7 @@ import {
   templateVariables,
   type TemplateInput,
 } from "@/lib/validations/notifications";
+import type { Translator } from "@/lib/i18n/translate";
 import {
   deleteTemplate,
   listDeliveries,
@@ -98,7 +99,7 @@ export function DeliveryLog({ outbox, templates, eventTypes, canManage }: Props)
 // ---------------------------------------------------------------------------
 
 function SentTab({ outbox, eventTypes }: { outbox: OutboxRow[]; eventTypes: EventType[] }) {
-  const { formatDateTime } = useI18n();
+  const { t, formatDateTime } = useI18n();
   const [eventFilter, setEventFilter] = useState("all");
   const [expanded, setExpanded] = useState<string | null>(null);
 
@@ -127,7 +128,7 @@ function SentTab({ outbox, eventTypes }: { outbox: OutboxRow[]; eventTypes: Even
         sent_at: formatDateTime(r.createdAt),
         event: r.eventName,
         subject: r.subject ?? "",
-        audience: describeAudience(r.audience),
+        audience: describeAudience(r.audience, t),
         sent_by: r.createdByName ?? "",
         recipients: r.recipients,
         deliveries: r.deliveries,
@@ -241,8 +242,7 @@ function OutboxCard({
   isOpen: boolean;
   onToggle: () => void;
 }) {
-  const { locale } = useI18n();
-  const { formatDateTime } = useI18n();
+  const { t, locale, formatDateTime } = useI18n();
   const [deliveries, setDeliveries] = useState<DeliveryRow[] | null>(null);
   const [loading, setLoading] = useState(false);
   const [loadError, setLoadError] = useState(false);
@@ -281,7 +281,7 @@ function OutboxCard({
                 {row.eventName}
               </Badge>
               <span className="text-xs text-muted-foreground">
-                {describeAudience(row.audience)}
+                {describeAudience(row.audience, t)}
               </span>
               <span className="ms-auto flex items-center gap-2 text-xs text-muted-foreground">
                 <time dateTime={row.createdAt} title={formatDateTime(row.createdAt)}>
@@ -349,7 +349,7 @@ function OutboxCard({
                           <TableCell className="font-medium">{d.recipient}</TableCell>
                           <TableCell>
                             <span className="flex items-center gap-1.5">
-                              {channelLabel(d.channel)}
+                              {channelLabel(d.channel, t)}
                               {/* A build fact, always true wherever this runs.
                                   Whether a *configured* channel is sending is
                                   the delivery's own status, in the next
@@ -420,6 +420,7 @@ function CountChip({
 }
 
 function StatusBadge({ status }: { status: string }) {
+  const { t } = useI18n();
   const variant =
     status === "sent"
       ? "default"
@@ -429,32 +430,47 @@ function StatusBadge({ status }: { status: string }) {
 
   return (
     <Badge variant={variant} className="font-normal">
-      {statusLabel(status)}
+      {statusLabel(status, t)}
     </Badge>
   );
 }
 
-/** "Everyone", "All teachers", "Class 6B — students and parents", "3 people". */
-function describeAudience(audience: Record<string, unknown>): string {
+/**
+ * "Everyone with a login", "Role: teacher", "One class — students and parents",
+ * "3 named people".
+ *
+ * A plain helper, not a component, so it **takes** the translator rather than
+ * calling a hook — rule 15's third shape, the one the formatter pass named:
+ * anything built before render takes the formatter as a parameter. eslint's
+ * rules-of-hooks caught the first attempt, which is the guard working.
+ */
+function describeAudience(audience: Record<string, unknown>, t: Translator): string {
   const kind = typeof audience.kind === "string" ? audience.kind : "";
 
   switch (kind) {
     case "all":
-      return "Everyone with a login";
+      return t("audience.kind.all");
     case "role":
-      return `Role: ${String(audience.role ?? "unknown")}`;
+      return t("audience.role", { role: String(audience.role ?? "unknown") });
     case "section": {
       const who = String(audience.who ?? "both");
-      const label =
-        who === "students" ? "students" : who === "parents" ? "parents" : "students and parents";
-      return `One class — ${label}`;
+      return t("audience.section", {
+        who:
+          who === "students"
+            ? t("audience.who.students")
+            : who === "parents"
+              ? t("audience.who.parents")
+              : t("audience.who.both"),
+      });
     }
     case "users": {
       const ids = Array.isArray(audience.user_ids) ? audience.user_ids.length : 0;
-      return `${ids} named ${ids === 1 ? "person" : "people"}`;
+      // The count and the noun are one sentence, so `t.plural` picks both --
+      // English plurals are not derivable and neither are anybody else's.
+      return t.plural("audience.namedPeople", ids);
     }
     default:
-      return audienceKindLabel(kind || "unknown");
+      return audienceKindLabel(kind || "unknown", t);
   }
 }
 
@@ -471,6 +487,7 @@ function TemplatesTab({
   eventTypes: EventType[];
   canManage: boolean;
 }) {
+  const { t } = useI18n();
   const router = useRouter();
   const [editing, setEditing] = useState<TemplateRow | null>(null);
   const [open, setOpen] = useState(false);
@@ -491,7 +508,7 @@ function TemplatesTab({
   function remove(template: TemplateRow) {
     if (
       !window.confirm(
-        `Delete the ${channelLabel(template.channel)} template for "${eventName(template.eventKey)}"? Messages of that kind will fall back to whatever text the sending module supplies.`,
+        `Delete the ${channelLabel(template.channel, t)} template for "${eventName(template.eventKey)}"? Messages of that kind will fall back to whatever text the sending module supplies.`,
       )
     ) {
       return;
@@ -555,15 +572,15 @@ function TemplatesTab({
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {templates.map((t) => {
-                    const variables = templateVariables(`${t.subject ?? ""} ${t.body}`);
+                  {templates.map((template) => {
+                    const variables = templateVariables(`${template.subject ?? ""} ${template.body}`);
                     return (
-                      <TableRow key={t.id}>
-                        <TableCell className="font-medium">{eventName(t.eventKey)}</TableCell>
-                        <TableCell>{channelLabel(t.channel)}</TableCell>
+                      <TableRow key={template.id}>
+                        <TableCell className="font-medium">{eventName(template.eventKey)}</TableCell>
+                        <TableCell>{channelLabel(template.channel, t)}</TableCell>
                         <TableCell className="max-w-md">
-                          {t.subject && <p className="text-sm font-medium">{t.subject}</p>}
-                          <p className="line-clamp-2 text-sm text-muted-foreground">{t.body}</p>
+                          {template.subject && <p className="text-sm font-medium">{template.subject}</p>}
+                          <p className="line-clamp-2 text-sm text-muted-foreground">{template.body}</p>
                           {variables.length > 0 && (
                             <p className="mt-1 flex flex-wrap gap-1">
                               {variables.map((v) => (
@@ -578,8 +595,8 @@ function TemplatesTab({
                           )}
                         </TableCell>
                         <TableCell>
-                          <Badge variant={t.isActive ? "default" : "outline"} className="font-normal">
-                            {t.isActive ? "In use" : "Inactive"}
+                          <Badge variant={template.isActive ? "default" : "outline"} className="font-normal">
+                            {template.isActive ? "In use" : "Inactive"}
                           </Badge>
                         </TableCell>
                         {canManage && (
@@ -588,17 +605,17 @@ function TemplatesTab({
                               <Button
                                 variant="ghost"
                                 size="icon"
-                                onClick={() => edit(t)}
-                                aria-label={`Edit the ${channelLabel(t.channel)} template for ${eventName(t.eventKey)}`}
+                                onClick={() => edit(template)}
+                                aria-label={`Edit the ${channelLabel(template.channel, t)} template for ${eventName(template.eventKey)}`}
                               >
                                 <Pencil className="size-4" aria-hidden="true" />
                               </Button>
                               <Button
                                 variant="ghost"
                                 size="icon"
-                                onClick={() => remove(t)}
+                                onClick={() => remove(template)}
                                 disabled={pending}
-                                aria-label={`Delete the ${channelLabel(t.channel)} template for ${eventName(t.eventKey)}`}
+                                aria-label={`Delete the ${channelLabel(template.channel, t)} template for ${eventName(template.eventKey)}`}
                               >
                                 <Trash2 className="size-4" aria-hidden="true" />
                               </Button>

@@ -14,6 +14,7 @@ import {
   type ChannelStatus,
 } from "@/lib/validations/notifications";
 import { setPreference, type EventType, type PreferenceRow } from "../actions";
+import { useT } from "@/components/providers/i18n-provider";
 
 type Props = {
   eventTypes: EventType[];
@@ -32,6 +33,7 @@ type Props = {
  * turn it off would mean a fee reminder with nowhere to land.
  */
 export function PreferenceGrid({ eventTypes, preferences, channelStatus }: Props) {
+  const t = useT();
   const [pending, startTransition] = useTransition();
   const [optimistic, setOptimistic] = useOptimistic(
     preferences,
@@ -96,7 +98,7 @@ export function PreferenceGrid({ eventTypes, preferences, channelStatus }: Props
                 <div key={channel.value} className="flex items-center justify-between gap-4">
                   <div className="min-w-0">
                     <label htmlFor={id} className="text-sm font-medium">
-                      {channelLabel(channel.value)}
+                      {channelLabel(channel.value, t)}
                     </label>
                     <p className="text-xs text-muted-foreground">
                       {inDefault
@@ -124,7 +126,7 @@ export function PreferenceGrid({ eventTypes, preferences, channelStatus }: Props
                       checked={enabled}
                       disabled={pending}
                       onCheckedChange={(checked) => toggle(event.key, channel.value, checked)}
-                      aria-label={`${channelLabel(channel.value)} for ${event.name}`}
+                      aria-label={`${channelLabel(channel.value, t)} for ${event.name}`}
                     />
                   </div>
                 </div>

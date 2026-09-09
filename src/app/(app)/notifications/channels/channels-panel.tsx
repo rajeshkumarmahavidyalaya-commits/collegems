@@ -192,6 +192,7 @@ function DevicesCard({ devices }: { devices: DeviceSummaryRow[] }) {
 }
 
 function ChannelCard({ status }: { status: ChannelStatus }) {
+  const { t } = useI18n();
   const { locale } = useI18n();
   const router = useRouter();
   const [pending, startTransition] = useTransition();
@@ -227,7 +228,7 @@ function ChannelCard({ status }: { status: ChannelStatus }) {
         toast.error(result.error);
         return;
       }
-      toast.success(`${channelLabel(status.channel)} updated.`);
+      toast.success(`${channelLabel(status.channel, t)} updated.`);
       router.refresh();
     });
   }
@@ -252,7 +253,7 @@ function ChannelCard({ status }: { status: ChannelStatus }) {
     <Card>
       <CardHeader className="gap-1">
         <CardTitle className="flex flex-wrap items-center gap-2">
-          {channelLabel(status.channel)}
+          {channelLabel(status.channel, t)}
           {/* The word beside the icon, never colour alone. */}
           <Badge variant="outline" className="font-normal">
             <tone.Icon className={`size-3.5 ${tone.className}`} aria-hidden="true" />

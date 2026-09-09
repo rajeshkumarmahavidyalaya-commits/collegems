@@ -36,10 +36,14 @@ const LOCALE_AWARE = new Set([
   "homework.materialKindLabel",
   "fees-display.entryTypeLabel",
   "fees-display.methodLabel",
+  // The rest of the family's menu: the inbox, and the days of the week.
+  "notifications.channelLabel",
+  "notifications.statusLabel",
+  "notifications.audienceKindLabel",
 ]);
 
 /** How many still render English to every reader. Only ever goes down. */
-const STILL_ENGLISH = 35;
+const STILL_ENGLISH = 31;
 
 type Helper = { module: string; name: string; takesTranslator: boolean };
 

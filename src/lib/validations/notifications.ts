@@ -1,6 +1,8 @@
 import { z } from "zod";
 import { formatDate } from "@/lib/i18n/format";
 import type { Locale } from "@/lib/i18n/config";
+import { labelFor, optionsFor } from "./labels";
+import type { Translator } from "@/lib/i18n/translate";
 
 /**
  * Phase 4.1 — the one way anything in this system tells somebody something.
@@ -342,8 +344,13 @@ export type PreferenceInput = z.infer<typeof preferenceSchema>;
 // Display helpers
 // ---------------------------------------------------------------------------
 
-export function channelLabel(value: string) {
-  return CHANNELS.find((c) => c.value === value)?.label ?? value;
+export function channelLabel(value: string, t: Translator) {
+  const found = CHANNELS.find((c) => c.value === value);
+  return found ? labelFor(`channel.${value}`, found.label, t) : value;
+}
+
+export function channelOptions(t: Translator) {
+  return optionsFor(CHANNELS, "channel", t);
 }
 
 /**
@@ -355,12 +362,18 @@ export function channelHasDriver(value: string) {
   return CHANNELS.find((c) => c.value === value)?.driver === "built";
 }
 
-export function statusLabel(value: string) {
-  return DELIVERY_STATUSES.find((s) => s.value === value)?.label ?? value;
+export function statusLabel(value: string, t: Translator) {
+  const found = DELIVERY_STATUSES.find((s) => s.value === value);
+  return found ? labelFor(`delivery.status.${value}`, found.label, t) : value;
 }
 
-export function audienceKindLabel(value: string) {
-  return AUDIENCE_KINDS.find((a) => a.value === value)?.label ?? value;
+export function audienceKindLabel(value: string, t: Translator) {
+  const found = AUDIENCE_KINDS.find((a) => a.value === value);
+  return found ? labelFor(`audience.kind.${value}`, found.label, t) : value;
+}
+
+export function audienceKindOptions(t: Translator) {
+  return optionsFor(AUDIENCE_KINDS, "audience.kind", t);
 }
 
 /**

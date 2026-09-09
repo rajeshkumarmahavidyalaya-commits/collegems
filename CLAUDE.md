@@ -2085,6 +2085,24 @@ That is the bargain `i18n-provider` already states. An earlier draft of the
 `fees-display.ts` comment claimed one route was "unchanged"; the build
 disproved it, and the comment now carries the real numbers.
 
+**And the third batch found a label that should never have been one.** `WEEKDAYS`
+carried `{ label: "Monday", short: "Mon" }` and six more, rendered on the class
+routine a family reads. Translating it meant 21 keys in three languages —
+*storing what every JavaScript runtime already ships*.
+
+> Never hardcode a locale tag in a formatter, because it works for the first
+> customer. **Hardcoding the formatter's output is the same mistake one step
+> further along.** `formatWeekday` asks `Intl`; the English array stays as the
+> no-ICU fallback and says so.
+
+Two more instances of the same third shape, both caught by a tool rather than by
+reading: `describeAudience()` is a plain helper, so `react-hooks/rules-of-hooks`
+refused the hook and it takes `t` as a parameter; and a template table mapping
+`templates.map((t) => …)` would have compiled `channelLabel(t.channel, t)` — a
+row where a translator was wanted. **`t` as a loop variable is a landmine in a
+codebase that has just made `t` mean one thing**; rename the row, never the
+translator.
+
 ---
 
 ---

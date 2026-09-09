@@ -52,6 +52,7 @@ import {
   weekdayShort,
   type TimetableEntryInput,
 } from "@/lib/validations/timetable";
+import { useI18n } from "@/components/providers/i18n-provider";
 import {
   clearEntry,
   copyDay,
@@ -89,6 +90,7 @@ export function RoutineGrid({
   canManage,
   emptySections,
 }: Props) {
+  const { formatWeekday } = useI18n();
   const [sectionId, setSectionId] = useState(sections[0]?.id ?? "");
   const [entries, setEntries] = useState<RoutineEntry[] | null>(null);
   const [curriculum, setCurriculum] = useState<CurriculumRow[]>([]);
@@ -250,7 +252,7 @@ export function RoutineGrid({
                       : "hover:bg-accent",
                   )}
                 >
-                  {d.short}
+                  {formatWeekday(d.value, "short")}
                 </button>
               ))}
             </div>
@@ -307,7 +309,7 @@ export function RoutineGrid({
                         scope="col"
                         className="min-w-40 px-2 py-2 text-start font-medium"
                       >
-                        {d.label}
+                        {formatWeekday(d.value)}
                       </th>
                     ))}
                   </tr>
@@ -339,7 +341,7 @@ export function RoutineGrid({
                               entry={byCell.get(cellKey(d.value, slot.id))}
                               canManage={canManage}
                               onEdit={() => setEditing({ weekday: d.value, slot })}
-                              label={`${d.label}, ${periodLabel(slot.periodNumber, slot.label)}`}
+                              label={`${formatWeekday(d.value)}, ${periodLabel(slot.periodNumber, slot.label)}`}
                             />
                           </td>
                         ))}
@@ -751,6 +753,7 @@ function CopyDayDialog({
   days: { value: number; label: string }[];
   onCopied: () => void;
 }) {
+  const { formatWeekday } = useI18n();
   const [from, setFrom] = useState(days[0]?.value ?? 1);
   const [to, setTo] = useState(days[1]?.value ?? 2);
   const [pending, startTransition] = useTransition();
@@ -795,7 +798,7 @@ function CopyDayDialog({
               <SelectContent>
                 {days.map((d) => (
                   <SelectItem key={d.value} value={String(d.value)}>
-                    {d.label}
+                    {formatWeekday(d.value)}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -811,7 +814,7 @@ function CopyDayDialog({
               <SelectContent>
                 {days.map((d) => (
                   <SelectItem key={d.value} value={String(d.value)}>
-                    {d.label}
+                    {formatWeekday(d.value)}
                   </SelectItem>
                 ))}
               </SelectContent>

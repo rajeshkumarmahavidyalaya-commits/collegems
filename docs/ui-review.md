@@ -384,3 +384,68 @@ assumption — the earlier draft of the `fees-display.ts` comment claimed
 `/fees/daybook` was "unchanged at its previous size", which the build disproved.
 
 **43 → 35** helpers still hardcoding English, and the floor moved with it.
+
+### Finishing the family's menu — and one label that should never have been a label
+
+The second batch closes the twelve screens: `notifications.channelLabel`,
+`statusLabel` and `audienceKindLabel` (the inbox and the delivery log), and the
+days of the week on the class routine. Transport stayed out of this pass too.
+
+**The weekday names were the interesting one, because the answer was not a
+catalogue key.** `WEEKDAYS` in `validations/academics.ts` carried
+`{ label: "Monday", short: "Mon" }` and six more, rendered on the routine grid,
+the week view, the teaching load and the academics settings page. Translating it
+would have meant **21 keys in three languages — storing what every JavaScript
+runtime already ships.**
+
+> Rule 15 says never hardcode a locale tag in a formatter, because it works for
+> the first customer. Hardcoding the formatter's **output** is the same mistake
+> one step further along.
+
+`formatWeekday(isoWeekday, locale, style)` asks `Intl` instead. Verified in all
+three:
+
+```
+en  Monday | Tuesday | Wednesday | Thursday | Friday | Saturday | Sunday
+hi  सोमवार | मंगलवार | बुधवार | गुरुवार | शुक्रवार | शनिवार | रविवार
+ur  پیر | منگل | بدھ | جمعرات | جمعہ | ہفتہ | اتوار
+```
+
+The date inside it is an anchor, not data — 5 January 2026 was a Monday, and
+`timeZone: "UTC"` stops a reader east of the line seeing yesterday's name. The
+English array stays as the no-ICU fallback and is documented as that rather than
+as the thing to render.
+
+**`weekdayLabel` had no caller at all** — the second dead label this pass, after
+`CATEGORY_LABEL`. Both are rule 15's own sentence: a correct string nobody
+renders is not a feature.
+
+### Two things eslint and the compiler caught, which is the guard working
+
+- **A hook in a plain helper.** `describeAudience()` builds a sentence out of an
+  audience document and is not a component, so `useI18n()` there is illegal —
+  `react-hooks/rules-of-hooks` said so immediately. It takes the translator as a
+  parameter now: rule 15's third shape again, for the third time in two batches.
+- **A variable named `t` that was not the translator.** The template table
+  mapped `templates.map((t) => …)`, so the mechanical edit would have produced
+  `channelLabel(t.channel, t)` — a template row passed where a translator was
+  wanted. The row was renamed, not the translator. Worth knowing before the next
+  batch: `t` as a loop variable is a landmine in a codebase that has just made
+  `t` mean one thing.
+
+`describeAudience` also gained `t.plural` for *"{count} named people"* — the
+count and the noun are one sentence, and English plurals are not derivable.
+
+### What the second batch cost
+
+| route | before | after |
+|---|---|---|
+| `/timetable` | 13.6 kB / 222 kB | 13.6 kB / **224 kB** |
+| `/notifications` | 5.48 kB / 178 kB | 5.48 kB / **180 kB** |
+| `/academics` | 9.75 kB / 227 kB | 9.75 kB / **228 kB** |
+
+Route sizes are unchanged to the tenth of a kilobyte; the 1–2 kB is the shared
+catalogue again, 32 more keys in three languages. The weekday work added **none**
+of it — that is the point of asking ICU.
+
+**35 → 31** helpers still hardcoding English.

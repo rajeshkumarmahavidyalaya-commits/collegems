@@ -20,6 +20,12 @@ export const SLOT_KINDS = [
  * `extract(isodow …)` so the app, the RPCs and every calendar query agree
  * without a translation table in someone's head.
  */
+/**
+ * The seven days, as **values**. `label` and `short` are the English fallback
+ * for a runtime with no ICU data, not the thing to render — `formatWeekday`
+ * asks `Intl` instead, because twenty-one weekday names in three catalogues
+ * would be storing what every JavaScript runtime already ships.
+ */
 export const WEEKDAYS = [
   { value: 1, label: "Monday", short: "Mon" },
   { value: 2, label: "Tuesday", short: "Tue" },
@@ -106,9 +112,10 @@ export function subjectKindLabel(value: string) {
   return SUBJECT_KINDS.find((k) => k.value === value)?.label ?? value;
 }
 
-export function weekdayLabel(value: number) {
-  return WEEKDAYS.find((d) => d.value === value)?.label ?? String(value);
-}
+// `weekdayLabel` stood here and had **no caller** — the second dead label found
+// in this pass, after `CATEGORY_LABEL`. Rule 15's own sentence: a correct string
+// nobody renders is not a feature. The live answer is `formatWeekday` in
+// `src/lib/i18n/format.ts`, which asks ICU rather than this list.
 
 /** `08:45:00` from Postgres, `08:45` in a form — normalise on the way in. */
 export function toClockTime(value: string) {

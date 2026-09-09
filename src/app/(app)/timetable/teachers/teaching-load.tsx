@@ -24,6 +24,7 @@ import {
 } from "@/components/ui/table";
 import { GRID_WEEKDAYS, periodLabel, toClockTime } from "@/lib/validations/timetable";
 import { getTeacherRoutine, type TeacherLoadRow, type TeacherRoutineEntry } from "../actions";
+import { useI18n } from "@/components/providers/i18n-provider";
 
 /**
  * The number a head teacher actually looks at when deciding whether a routine
@@ -32,6 +33,7 @@ import { getTeacherRoutine, type TeacherLoadRow, type TeacherRoutineEntry } from
  * ninety degrees.
  */
 export function TeachingLoad({ rows }: { rows: TeacherLoadRow[] }) {
+  const { formatWeekday } = useI18n();
   const [open, setOpen] = useState<TeacherLoadRow | null>(null);
   const [week, setWeek] = useState<TeacherRoutineEntry[] | null>(null);
   const [pending, startTransition] = useTransition();
@@ -179,7 +181,7 @@ export function TeachingLoad({ rows }: { rows: TeacherLoadRow[] }) {
             ) : (
               GRID_WEEKDAYS.filter((d) => week.some((e) => e.weekday === d.value)).map((day) => (
                 <div key={day.value} className="flex flex-col gap-1.5">
-                  <h3 className="text-sm font-medium">{day.label}</h3>
+                  <h3 className="text-sm font-medium">{formatWeekday(day.value)}</h3>
                   <ul className="flex flex-col gap-1">
                     {week
                       .filter((e) => e.weekday === day.value)

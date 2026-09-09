@@ -26,6 +26,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { saveSchedule } from "./actions";
+import { useI18n } from "@/components/providers/i18n-provider";
 import {
   KIND_DESCRIPTION,
   KIND_LABEL,
@@ -55,6 +56,7 @@ const DAYS = [
  * what they see later cannot say different things.
  */
 export function NewSchedule() {
+  const { formatWeekday } = useI18n();
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [pending, startTransition] = useTransition();
@@ -199,7 +201,7 @@ export function NewSchedule() {
                       onCheckedChange={() => toggleDay(day.value)}
                     />
                     <Label htmlFor={`day-${day.value}`} className="font-normal">
-                      {day.label}
+                      {formatWeekday(day.value)}
                     </Label>
                   </div>
                 ))}
