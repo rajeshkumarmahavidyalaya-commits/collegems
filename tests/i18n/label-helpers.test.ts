@@ -24,10 +24,22 @@ import { describe, expect, it } from "vitest";
  * is converted; never the other way**, for the same reason a coverage floor is
  * never lowered — the only way it can fail is that somebody's work was undone.
  */
-const LOCALE_AWARE = new Set(["notices.categoryLabel"]);
+const LOCALE_AWARE = new Set([
+  "notices.categoryLabel",
+  // The family-facing batch: the badges a parent or a student actually reads.
+  "attendance.statusLabel",
+  "student-leave.kindLabel",
+  "student-leave.statusLabel",
+  "exams.examKindLabel",
+  "exams.resultLabel",
+  "homework.submissionStatusLabel",
+  "homework.materialKindLabel",
+  "fees-display.entryTypeLabel",
+  "fees-display.methodLabel",
+]);
 
 /** How many still render English to every reader. Only ever goes down. */
-const STILL_ENGLISH = 43;
+const STILL_ENGLISH = 35;
 
 type Helper = { module: string; name: string; takesTranslator: boolean };
 

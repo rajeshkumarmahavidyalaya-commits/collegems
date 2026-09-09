@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { useT } from "@/components/providers/i18n-provider";
 import { useRouter } from "next/navigation";
 import {
   AlertTriangle,
@@ -335,6 +336,7 @@ function HomeworkCard({
  * survives a monochrome screen and a colour-blind reader alike.
  */
 function StatusBadge({ status, isOverdue }: { status: string; isOverdue: boolean }) {
+  const t = useT();
   if (isOverdue) {
     return (
       <Badge variant="destructive" className="gap-1">
@@ -346,7 +348,7 @@ function StatusBadge({ status, isOverdue }: { status: string; isOverdue: boolean
   const tone: SubmissionStatusTone = status === "pending" ? "muted" : "success";
   return (
     <Badge variant={tone === "muted" ? "outline" : "default"}>
-      {submissionStatusLabel(status)}
+      {submissionStatusLabel(status, t)}
     </Badge>
   );
 }

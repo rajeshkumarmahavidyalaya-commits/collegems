@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState, useTransition } from "react";
+import { useT } from "@/components/providers/i18n-provider";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
@@ -568,6 +569,7 @@ function ResultsTab({
   unmarked: number;
   canManage: boolean;
 }) {
+  const t = useT();
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [section, setSection] = useState("all");
@@ -643,7 +645,7 @@ function ResultsTab({
         max: r.maxMarks,
         percent: r.percentage ?? "",
         grade: r.grade ?? "",
-        result: resultLabel(r.result),
+        result: resultLabel(r.result, t),
       })),
       [
         { key: "admission", label: "Admission no." },
@@ -810,7 +812,7 @@ function ResultsTab({
                           "border-amber-600/40 text-amber-700 dark:text-amber-400",
                       )}
                     >
-                      {resultLabel(row.result)}
+                      {resultLabel(row.result, t)}
                     </Badge>
                     {row.subjectsUnmarked > 0 && (
                       <span className="ms-2 text-xs text-muted-foreground">

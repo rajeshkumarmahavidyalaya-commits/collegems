@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { useT } from "@/components/providers/i18n-provider";
 import { useRouter } from "next/navigation";
 import { Check, Loader2, Plus, X } from "lucide-react";
 import { toast } from "sonner";
@@ -62,6 +63,7 @@ export function LeaveList({
 }
 
 function LeaveCard({ row, canDecide }: { row: LeaveRow; canDecide: boolean }) {
+  const t = useT();
   const router = useRouter();
   const [note, setNote] = useState("");
   const [pending, startTransition] = useTransition();
@@ -98,8 +100,8 @@ function LeaveCard({ row, canDecide }: { row: LeaveRow; canDecide: boolean }) {
             <CardTitle className="flex flex-wrap items-center gap-2 text-base">
               {row.student}
               <span className="font-mono text-xs text-muted-foreground">{row.admissionNumber}</span>
-              <Badge variant="outline">{kindLabel(row.kind)}</Badge>
-              <Badge variant={statusTone(row.status)}>{statusLabel(row.status)}</Badge>
+              <Badge variant="outline">{kindLabel(row.kind, t)}</Badge>
+              <Badge variant={statusTone(row.status)}>{statusLabel(row.status, t)}</Badge>
             </CardTitle>
             <CardDescription className="mt-1">
               {leaveSentence({ starts_on: row.startsOn, ends_on: row.endsOn })}
@@ -160,6 +162,7 @@ function LeaveCard({ row, canDecide }: { row: LeaveRow; canDecide: boolean }) {
 }
 
 function ApplyForLeave({ students }: { students: Student[] }) {
+  const t = useT();
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [pending, startTransition] = useTransition();
@@ -249,7 +252,7 @@ function ApplyForLeave({ students }: { students: Student[] }) {
               <SelectContent>
                 {LEAVE_KINDS.map((k) => (
                   <SelectItem key={k} value={k}>
-                    {kindLabel(k)}
+                    {kindLabel(k, t)}
                   </SelectItem>
                 ))}
               </SelectContent>

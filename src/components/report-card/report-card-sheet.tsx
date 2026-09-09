@@ -3,6 +3,7 @@ import { Badge } from "@/components/ui/badge";
 import { formatPercent, resultLabel } from "@/lib/validations/exams";
 import { formatDate } from "@/lib/i18n/format";
 import { DEFAULT_LOCALE, type Locale } from "@/lib/i18n/config";
+import { createTranslator } from "@/lib/i18n/translate";
 import {
   attendancePercent,
   attendanceSentence,
@@ -34,6 +35,10 @@ export function ReportCardSheet({
   card: ReportCard;
   locale?: Locale;
 }) {
+  // The locale arrives as a prop because this renders inside a Server
+  // Component, where `useI18n()` would throw (rule 15). The translator is
+  // built from it rather than fetched, so the component stays pure.
+  const t = createTranslator(locale);
   const papers = card.papers ?? [];
   const rank = rankSentence(card.rank);
   const attendance = attendancePercent(card.attendance);
@@ -201,7 +206,7 @@ export function ReportCardSheet({
                 variant={failed ? "destructive" : incomplete ? "secondary" : "default"}
                 className="font-medium"
               >
-                {resultLabel(card.totals.result)}
+                {resultLabel(card.totals.result, t)}
               </Badge>
             </dd>
           </div>

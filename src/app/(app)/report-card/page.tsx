@@ -6,7 +6,7 @@ import { formatPercent, resultLabel } from "@/lib/validations/exams";
 import { ordinal } from "@/lib/validations/report-cards";
 import { listPublishedResults } from "../exams/report-card-actions";
 import { listMyChildren } from "@/lib/auth/family";
-import { getLocale } from "@/lib/i18n/server";
+import { getLocale, getT } from "@/lib/i18n/server";
 import { formatDate } from "@/lib/i18n/format";
 
 export const metadata = { title: "Report cards" };
@@ -18,6 +18,7 @@ export const metadata = { title: "Report cards" };
  * to filter and nothing to leak.
  */
 export default async function FamilyReportCardsPage() {
+  const t = await getT();
   const ctx = await getUserContext();
   const locale = await getLocale();
   const children = await listMyChildren();
@@ -102,7 +103,7 @@ export default async function FamilyReportCardsPage() {
                                 : "default"
                           }
                         >
-                          {resultLabel(result.result)}
+                          {resultLabel(result.result, t)}
                         </Badge>
                       </div>
                     </Link>

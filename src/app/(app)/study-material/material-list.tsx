@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useState, useTransition } from "react";
+import { useT } from "@/components/providers/i18n-provider";
 import { useRouter } from "next/navigation";
 import {
   Download,
@@ -46,7 +47,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { BUCKET_LIMITS, BUCKETS } from "@/lib/storage/constants";
-import { MATERIAL_KINDS, materialKindLabel } from "@/lib/validations/homework";
+import { MATERIAL_KINDS, materialKindLabel, materialKindOptions } from "@/lib/validations/homework";
 import {
   deleteStudyMaterial,
   materialDownloadUrl,
@@ -67,6 +68,7 @@ type Props = {
 const KIND_ICON = { document: FileText, video: Film, link: Link2 } as const;
 
 export function MaterialList({ material, sections, subjects, canManage }: Props) {
+  const t = useT();
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [open, setOpen] = useState(false);
@@ -197,7 +199,7 @@ export function MaterialList({ material, sections, subjects, canManage }: Props)
                       <TableCell className="text-muted-foreground">{row.sectionLabel}</TableCell>
                       <TableCell className="text-muted-foreground">{row.subjectName}</TableCell>
                       <TableCell className="text-muted-foreground">
-                        {materialKindLabel(row.kind)}
+                        {materialKindLabel(row.kind, t)}
                       </TableCell>
                       {canManage && (
                         <TableCell>
@@ -297,6 +299,7 @@ function MaterialDialog({
   sections: Option[];
   subjects: Option[];
 }) {
+  const t = useT();
   const router = useRouter();
   const formRef = useRef<HTMLFormElement>(null);
   const [pending, startTransition] = useTransition();
@@ -367,7 +370,7 @@ function MaterialDialog({
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {MATERIAL_KINDS.map((k) => (
+                  {materialKindOptions(t).map((k) => (
                     <SelectItem key={k.value} value={k.value}>
                       {k.label}
                     </SelectItem>

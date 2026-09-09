@@ -80,6 +80,7 @@ export function StudentAccountView({
   onlinePaymentsEnabled: boolean;
   invoiceEmailEnabled: boolean;
 }) {
+  const { t } = useI18n();
   const { formatCurrency } = useI18n();
   const { formatDate, formatDateTime } = useI18n();
   const router = useRouter();
@@ -357,7 +358,7 @@ export function StudentAccountView({
                       </td>
                       <td className="px-3 py-2">
                         <div className="flex flex-wrap items-center gap-1.5">
-                          <span className="font-medium">{entryTypeLabel(entry.entryType)}</span>
+                          <span className="font-medium">{entryTypeLabel(entry.entryType, t)}</span>
                           {entry.reversesEntryId && (
                             <Badge variant="outline" className="gap-1">
                               <Undo2 className="size-3" aria-hidden="true" />
@@ -385,7 +386,7 @@ export function StudentAccountView({
                         {entry.receiptNumber ?? "—"}
                       </td>
                       <td className="px-3 py-2 whitespace-nowrap">
-                        {methodLabel(entry.method)}
+                        {methodLabel(entry.method, t)}
                         {entry.reference && (
                           <span className="block font-mono text-xs text-muted-foreground">
                             {entry.reference}
@@ -403,7 +404,7 @@ export function StudentAccountView({
                             onClick={() =>
                               setReversing({
                                 id: entry.id,
-                                label: `${entryTypeLabel(entry.entryType)} of ${formatCurrency(
+                                label: `${entryTypeLabel(entry.entryType, t)} of ${formatCurrency(
                                   Math.abs(entry.amount),
                                 )} on ${formatDate(entry.occurredAt)}${
                                   entry.receiptNumber ? ` · ${entry.receiptNumber}` : ""

@@ -1,4 +1,6 @@
 import { z } from "zod";
+import { labelFor, optionsFor } from "./labels";
+import type { Translator } from "@/lib/i18n/translate";
 
 /**
  * Attendance is a small vocabulary, and it is the same one in the database
@@ -54,6 +56,12 @@ export const STATUS_KEYS: Record<string, AttendanceStatus> = {
   e: "excused",
 };
 
-export function statusLabel(status: string): string {
-  return ATTENDANCE_STATUSES.find((s) => s.value === status)?.label ?? status;
+export function statusLabel(status: string, t: Translator): string {
+  const found = ATTENDANCE_STATUSES.find((s) => s.value === status);
+  return found ? labelFor(`attendance.status.${status}`, found.label, t) : status;
+}
+
+/** The same four, for a picker. See `optionsFor` for why both exist. */
+export function attendanceStatusOptions(t: Translator) {
+  return optionsFor(ATTENDANCE_STATUSES, "attendance.status", t);
 }

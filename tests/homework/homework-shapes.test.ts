@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { createTranslator } from "@/lib/i18n/translate";
 import {
   dueLabel,
   formatMark,
@@ -120,9 +121,10 @@ describe("marking", () => {
   });
 
   it("names every status in words, so colour is never the only signal", () => {
+    const t = createTranslator("en");
     for (const status of ["pending", "submitted", "graded", "returned"]) {
-      expect(submissionStatusLabel(status)).not.toBe(status);
-      expect(submissionStatusLabel(status).length).toBeGreaterThan(0);
+      expect(submissionStatusLabel(status, t)).not.toBe(status);
+      expect(submissionStatusLabel(status, t).length).toBeGreaterThan(0);
     }
   });
 });

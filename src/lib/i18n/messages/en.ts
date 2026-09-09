@@ -261,6 +261,57 @@ export const en = {
   "notices.category.examination": "Examination",
   "notices.category.holiday": "Holiday",
   "notices.category.urgent": "Urgent",
+
+  // --- values a family reads on a badge ------------------------------------
+  // These mirror the `value` lists in src/lib/validations/*. The constant says
+  // which values exist; this says what each is called. A value with no key here
+  // falls back to the constant's English label rather than to the key itself —
+  // see `labelFor`.
+  "attendance.status.present": "Present",
+  "attendance.status.absent": "Absent",
+  "attendance.status.late": "Late",
+  "attendance.status.excused": "Excused",
+
+  "leave.kind.sick": "Illness",
+  "leave.kind.family": "Family reason",
+  "leave.kind.travel": "Travel",
+  "leave.kind.other": "Other",
+  "leave.status.pending": "Waiting",
+  "leave.status.approved": "Approved",
+  "leave.status.refused": "Refused",
+  "leave.status.cancelled": "Cancelled",
+
+  "exams.kind.unit": "Unit test",
+  "exams.kind.term": "Term exam",
+  "exams.kind.half_yearly": "Half-yearly",
+  "exams.kind.annual": "Annual",
+  "exams.kind.practical": "Practical",
+  "exams.kind.other": "Other",
+  "exams.result.pass": "Pass",
+  "exams.result.fail": "Fail",
+  "exams.result.incomplete": "Incomplete",
+
+  "homework.submission.pending": "Not handed in",
+  "homework.submission.submitted": "Handed in",
+  "homework.submission.graded": "Marked",
+  "homework.submission.returned": "Returned",
+  "material.kind.document": "File",
+  "material.kind.video": "Video",
+  "material.kind.link": "Link",
+
+  "fees.entryType.payment": "Payment",
+  "fees.entryType.discount": "Discount",
+  "fees.entryType.write_off": "Write-off",
+  "fees.entryType.fine": "Fine",
+  "fees.entryType.refund": "Refund",
+  "fees.method.cash": "Cash",
+  "fees.method.cheque": "Cheque",
+  "fees.method.card": "Card",
+  "fees.method.upi": "UPI",
+  "fees.method.netbanking": "Net banking",
+  "fees.method.bank_transfer": "Bank transfer",
+  "fees.method.online": "Online gateway",
+  "attendance.marked": "{name} marked {status}",
 } as const;
 
 export type MessageKey = keyof typeof en;

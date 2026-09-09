@@ -32,7 +32,8 @@ import { Form } from "@/components/ui/form";
 import { SelectField, TextField, TextareaField } from "@/components/forms/form-fields";
 import { ErrorSummary } from "@/components/forms/error-summary";
 import { useI18n } from "@/components/providers/i18n-provider";
-import { ADJUSTMENT_TYPES, PAYMENT_METHODS, adjustmentSchema, chargeSchema, paymentSchema, refundSchema, type AdjustmentInput, type ChargeInput, type PaymentInput, type RefundInput } from "@/lib/validations/fees";
+import { ADJUSTMENT_TYPES, adjustmentSchema, chargeSchema, paymentSchema, refundSchema, type AdjustmentInput, type ChargeInput, type PaymentInput, type RefundInput } from "@/lib/validations/fees";
+import { paymentMethodOptions, adjustmentTypeOptions } from "@/lib/validations/fees-display";
 import {
   getStudentAccount,
   raiseCharge,
@@ -54,7 +55,10 @@ function inDays(days: number) {
   return new Date(d.getTime() - d.getTimezoneOffset() * 60_000).toISOString().slice(0, 10);
 }
 
-const methodOptions = PAYMENT_METHODS.map((m) => ({ value: m.value, label: m.label }));
+// `methodOptions` used to be a module-scope constant here. A list built
+// before render has no component for a hook to belong to, so it takes the
+// translator as a parameter instead — rule 15's third shape, the one the
+// formatter pass already named.
 
 type Done = { kind: "receipt" | "charge"; number: string | null; amount: number; student: string };
 
@@ -528,6 +532,7 @@ function ReceiveForm({
   invoices: { id: string; label: string }[];
   onDone: (amount: number, receipt: string | null) => void;
 }) {
+  const { t } = useI18n();
   const { formatCurrency } = useI18n();
   const [serverError, setServerError] = useState<string | null>(null);
   const amountRef = useRef<HTMLDivElement>(null);
@@ -592,7 +597,7 @@ function ReceiveForm({
               description={balance > 0 ? `Full balance is ${formatCurrency(balance)}` : undefined}
             />
           </div>
-          <SelectField control={form.control} name="method" label="Mode" required options={methodOptions} />
+          <SelectField control={form.control} name="method" label="Mode" required options={paymentMethodOptions(t)} />
           <TextField control={form.control} name="occurredAt" label="Received on" type="date" required />
           <TextField
             control={form.control}
@@ -724,6 +729,7 @@ function AdjustForm({
   student: CounterHit;
   onDone: (amount: number) => void;
 }) {
+  const { t } = useI18n();
   const [serverError, setServerError] = useState<string | null>(null);
 
   const form = useForm<AdjustmentInput>({
@@ -765,7 +771,7 @@ function AdjustForm({
             name="entryType"
             label="Kind"
             required
-            options={ADJUSTMENT_TYPES.map((t) => ({ value: t.value, label: t.label }))}
+            options={adjustmentTypeOptions(t)}
           />
           <TextField control={form.control} name="amount" label="Amount" type="number" required />
         </div>
@@ -811,6 +817,7 @@ function RefundForm({
   balance: number;
   onDone: (amount: number, receipt: string | null) => void;
 }) {
+  const { t } = useI18n();
   const { formatCurrency } = useI18n();
   const [serverError, setServerError] = useState<string | null>(null);
 
@@ -853,7 +860,7 @@ function RefundForm({
 
         <div className="grid gap-4 sm:grid-cols-2">
           <TextField control={form.control} name="amount" label="Amount" type="number" required />
-          <SelectField control={form.control} name="method" label="Mode" required options={methodOptions} />
+          <SelectField control={form.control} name="method" label="Mode" required options={paymentMethodOptions(t)} />
           <TextField control={form.control} name="occurredAt" label="Paid out on" type="date" required />
           <TextField control={form.control} name="reference" label="Reference" />
         </div>

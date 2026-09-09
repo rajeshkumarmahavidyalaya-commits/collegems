@@ -2063,6 +2063,28 @@ validations module still drags nothing new into the bundle. Three things:
 `/notices` is the first module through it, chosen because rule 10 makes it the
 screen a family comes back to in March.
 
+The family batch followed: nine helpers over attendance, student leave, exams,
+homework and fees — **34 call sites, 47 keys in three languages** — and it is
+the batch that shows why the *second consumer* decides the unit of work. A label
+lives on the constant, so a badge helper and the `<Select>` that lists every
+value both read it; translating one without the other puts the same value on one
+screen in two languages. `optionsFor(values, prefix, t)` is that other half, and
+two of its six call sites were **module-scope constants**, which is rule 15's
+third shape arriving again: a list built before render has no component for a
+hook to belong to.
+
+**And an English frame with a translated word in it is still English.** The
+register announced each mark to a screen reader as `` `${name} marked
+${statusLabel(status, t)}` ``. The sentence is the unit, not the word.
+
+Measured, because a claim about weight has to be: +0.13 kB on a touched route
+(call sites gaining an argument) and **+2 kB on every client route** (the
+catalogue itself, ~50 keys × 3 locales) — `/academics` moved the same 2 kB
+untouched, and the Server-Component-only routes at 107 kB did not move at all.
+That is the bargain `i18n-provider` already states. An earlier draft of the
+`fees-display.ts` comment claimed one route was "unchanged"; the build
+disproved it, and the comment now carries the real numbers.
+
 ---
 
 ---

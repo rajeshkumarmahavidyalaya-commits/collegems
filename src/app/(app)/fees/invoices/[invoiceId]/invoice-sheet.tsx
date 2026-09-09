@@ -21,6 +21,7 @@ import { useI18n } from "@/components/providers/i18n-provider";
  * school's toner.
  */
 export function InvoiceSheet({ doc }: { doc: InvoiceDocument }) {
+  const { t } = useI18n();
   const { formatCurrency } = useI18n();
   const { formatDate } = useI18n();
   const { invoice, school, student, lines, payments } = doc;
@@ -220,7 +221,7 @@ export function InvoiceSheet({ doc }: { doc: InvoiceDocument }) {
                       <td className="py-2 tabular-nums">{formatDate(p.occurredAt)}</td>
                       <td className="py-2 font-mono text-xs">{p.receiptNumber ?? "—"}</td>
                       <td className="py-2">
-                        {methodLabel(p.method)}
+                        {methodLabel(p.method, t)}
                         {p.isReversal && (
                           <Badge variant="outline" className="ms-1.5">
                             Reversal

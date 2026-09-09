@@ -23,6 +23,7 @@ function todayIso() {
 }
 
 export function DayBookView() {
+  const { t } = useI18n();
   const { formatCurrency } = useI18n();
   const { formatTime } = useI18n();
   const [from, setFrom] = useState(todayIso());
@@ -200,7 +201,7 @@ export function DayBookView() {
                   <tbody>
                     {book.byMethod.map((m) => (
                       <tr key={m.method} className="border-t border-border">
-                        <td className="px-3 py-2">{methodLabel(m.method)}</td>
+                        <td className="px-3 py-2">{methodLabel(m.method, t)}</td>
                         <td className="px-3 py-2 text-end font-mono tabular-nums">
                           {formatCurrency(m.received)}
                         </td>
@@ -277,7 +278,7 @@ export function DayBookView() {
                           </td>
                           <td className="px-3 py-2 whitespace-nowrap">
                             <div className="flex flex-wrap items-center gap-1.5">
-                              <span>{methodLabel(e.method)}</span>
+                              <span>{methodLabel(e.method, t)}</span>
                               {e.isReversal && <Badge variant="outline">Reversal</Badge>}
                               {e.isReversed && <Badge variant="outline">Reversed</Badge>}
                               {e.entryType === "refund" && !e.isReversal && (

@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { createTranslator } from "@/lib/i18n/translate";
 import {
   applyLeaveSchema,
   blocksTheDates,
@@ -101,10 +102,17 @@ describe("applying", () => {
 
 describe("labels", () => {
   it("names every kind and status, and falls back to the raw value", () => {
-    expect(kindLabel("sick")).toBe("Illness");
-    expect(kindLabel("sabbatical")).toBe("sabbatical");
-    expect(statusLabel("pending")).toBe("Waiting");
-    expect(statusLabel("unknown")).toBe("unknown");
+    // The label is looked up in the reader's catalogue now (see
+    // `src/lib/validations/labels.ts`), so the test supplies one. English is
+    // asserted here; the three-locale coverage is `tests/i18n`'s floor.
+    const t = createTranslator("en");
+    expect(kindLabel("sick", t)).toBe("Illness");
+    expect(statusLabel("pending", t)).toBe("Waiting");
+
+    // A value the catalogue has never heard of falls back to itself, never to
+    // the key: `leave.kind.sabbatical` on a badge is worse than the raw word.
+    expect(kindLabel("sabbatical", t)).toBe("sabbatical");
+    expect(statusLabel("unknown", t)).toBe("unknown");
   });
 
   it("tones a status without the tone carrying the meaning", () => {

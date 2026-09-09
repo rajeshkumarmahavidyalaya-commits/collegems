@@ -18,16 +18,20 @@ import { Form } from "@/components/ui/form";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { SelectField, TextField, TextareaField } from "@/components/forms/form-fields";
 import { ErrorSummary } from "@/components/forms/error-summary";
-import { ADJUSTMENT_TYPES, PAYMENT_METHODS, adjustmentSchema, paymentSchema, refundSchema, reversalSchema, type AdjustmentInput, type PaymentInput, type RefundInput } from "@/lib/validations/fees";
+import { ADJUSTMENT_TYPES, adjustmentSchema, paymentSchema, refundSchema, reversalSchema, type AdjustmentInput, type PaymentInput, type RefundInput } from "@/lib/validations/fees";
 import { recordAdjustment, recordPayment, recordRefund, reverseEntry } from "./actions";
 import { useI18n } from "@/components/providers/i18n-provider";
+import { paymentMethodOptions, adjustmentTypeOptions } from "@/lib/validations/fees-display";
 
 function todayIso() {
   const now = new Date();
   return new Date(now.getTime() - now.getTimezoneOffset() * 60_000).toISOString().slice(0, 10);
 }
 
-const methodOptions = PAYMENT_METHODS.map((m) => ({ value: m.value, label: m.label }));
+// `methodOptions` used to be a module-scope constant here. A list built
+// before render has no component for a hook to belong to, so it takes the
+// translator as a parameter instead — rule 15's third shape, the one the
+// formatter pass already named.
 
 export type StudentTarget = {
   id: string;
@@ -55,6 +59,7 @@ export function RecordPaymentDialog({
   onOpenChange: (open: boolean) => void;
   onDone?: () => void;
 }) {
+  const { t } = useI18n();
   const { formatCurrency } = useI18n();
   const [serverError, setServerError] = useState<string | null>(null);
 
@@ -126,7 +131,7 @@ export function RecordPaymentDialog({
                 name="method"
                 label="Method"
                 required
-                options={methodOptions}
+                options={paymentMethodOptions(t)}
               />
               <TextField control={form.control} name="occurredAt" label="Received on" type="date" required />
               <TextField
@@ -179,6 +184,7 @@ export function RecordAdjustmentDialog({
   onOpenChange: (open: boolean) => void;
   onDone?: () => void;
 }) {
+  const { t } = useI18n();
   const [serverError, setServerError] = useState<string | null>(null);
 
   const form = useForm<AdjustmentInput>({
@@ -236,7 +242,7 @@ export function RecordAdjustmentDialog({
                 name="entryType"
                 label="Kind"
                 required
-                options={ADJUSTMENT_TYPES.map((t) => ({ value: t.value, label: t.label }))}
+                options={adjustmentTypeOptions(t)}
               />
               <TextField control={form.control} name="amount" label="Amount" type="number" required />
             </div>
@@ -287,6 +293,7 @@ export function RecordRefundDialog({
   onOpenChange: (open: boolean) => void;
   onDone?: () => void;
 }) {
+  const { t } = useI18n();
   const { formatCurrency } = useI18n();
   const [serverError, setServerError] = useState<string | null>(null);
 
@@ -348,7 +355,7 @@ export function RecordRefundDialog({
                 name="method"
                 label="Method"
                 required
-                options={methodOptions}
+                options={paymentMethodOptions(t)}
               />
               <TextField control={form.control} name="occurredAt" label="Paid out on" type="date" required />
               <TextField control={form.control} name="reference" label="Reference" />

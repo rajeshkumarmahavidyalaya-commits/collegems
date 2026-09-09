@@ -1,4 +1,6 @@
 import { z } from "zod";
+import { labelFor } from "./labels";
+import type { Translator } from "@/lib/i18n/translate";
 
 /**
  * Student leave — the client half.
@@ -19,8 +21,9 @@ export const KIND_LABEL: Record<LeaveKind, string> = {
   other: "Other",
 };
 
-export function kindLabel(kind: string): string {
-  return KIND_LABEL[kind as LeaveKind] ?? kind;
+export function kindLabel(kind: string, t: Translator): string {
+  const fallback = KIND_LABEL[kind as LeaveKind];
+  return fallback ? labelFor(`leave.kind.${kind}`, fallback, t) : kind;
 }
 
 export const LEAVE_STATUSES = ["pending", "approved", "refused", "cancelled"] as const;
@@ -33,8 +36,9 @@ export const STATUS_LABEL: Record<LeaveStatus, string> = {
   cancelled: "Cancelled",
 };
 
-export function statusLabel(status: string): string {
-  return STATUS_LABEL[status as LeaveStatus] ?? status;
+export function statusLabel(status: string, t: Translator): string {
+  const fallback = STATUS_LABEL[status as LeaveStatus];
+  return fallback ? labelFor(`leave.status.${status}`, fallback, t) : status;
 }
 
 /** Never colour alone — the label is always beside it. */

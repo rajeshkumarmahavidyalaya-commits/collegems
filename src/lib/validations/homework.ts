@@ -1,4 +1,6 @@
 import { z } from "zod";
+import { labelFor, optionsFor } from "./labels";
+import type { Translator } from "@/lib/i18n/translate";
 
 /**
  * Phase 4.3 — homework, submissions, and study material.
@@ -120,16 +122,22 @@ export type StudyMaterialInput = z.infer<typeof studyMaterialSchema>;
 
 export type SubmissionStatusTone = (typeof SUBMISSION_STATUSES)[number]["tone"];
 
-export function submissionStatusLabel(value: string) {
-  return SUBMISSION_STATUSES.find((s) => s.value === value)?.label ?? value;
+export function submissionStatusLabel(value: string, t: Translator) {
+  const found = SUBMISSION_STATUSES.find((s) => s.value === value);
+  return found ? labelFor(`homework.submission.${value}`, found.label, t) : value;
 }
 
 export function submissionStatusTone(value: string) {
   return SUBMISSION_STATUSES.find((s) => s.value === value)?.tone ?? "muted";
 }
 
-export function materialKindLabel(value: string) {
-  return MATERIAL_KINDS.find((k) => k.value === value)?.label ?? value;
+export function materialKindLabel(value: string, t: Translator) {
+  const found = MATERIAL_KINDS.find((k) => k.value === value);
+  return found ? labelFor(`material.kind.${value}`, found.label, t) : value;
+}
+
+export function materialKindOptions(t: Translator) {
+  return optionsFor(MATERIAL_KINDS, "material.kind", t);
 }
 
 /**

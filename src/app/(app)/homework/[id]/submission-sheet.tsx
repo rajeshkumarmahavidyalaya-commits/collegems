@@ -152,6 +152,7 @@ function StudentRow({
   isOpen: boolean;
   onToggle: () => void;
 }) {
+  const { t } = useI18n();
   const { formatDateTime } = useI18n();
   const router = useRouter();
   const [pending, startTransition] = useTransition();
@@ -191,7 +192,7 @@ function StudentRow({
         <TableCell>
           <span className="flex flex-wrap items-center gap-1.5">
             <Badge variant={row.status === "pending" ? "outline" : "default"}>
-              {submissionStatusLabel(row.status)}
+              {submissionStatusLabel(row.status, t)}
             </Badge>
             {row.isLate && (
               <Badge variant="destructive" className="gap-1">

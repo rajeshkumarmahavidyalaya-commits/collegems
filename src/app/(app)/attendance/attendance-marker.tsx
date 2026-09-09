@@ -33,8 +33,7 @@ import {
   ATTENDANCE_STATUSES,
   STATUS_KEYS,
   statusLabel,
-  type AttendanceStatus,
-} from "@/lib/validations/attendance";
+  type AttendanceStatus, attendanceStatusOptions } from "@/lib/validations/attendance";
 import { useUnsavedChangesGuard } from "@/components/forms/use-unsaved-changes-guard";
 import { useI18n } from "@/components/providers/i18n-provider";
 import {
@@ -87,6 +86,7 @@ export function AttendanceMarker({
   sections: SectionOption[];
   canMark: boolean;
 }) {
+  const { t } = useI18n();
   const [sectionId, setSectionId] = useState(sections[0]?.id ?? "");
   const [date, setDate] = useState(todayIso());
   const [draft, setDraft] = useState<Draft>({});
@@ -188,9 +188,12 @@ export function AttendanceMarker({
         scheduleSave(next);
         return next;
       });
-      setAnnouncement(`${name} marked ${statusLabel(status)}`);
+      // The sentence is the unit, not the word. An English frame with a
+      // translated word dropped into it is what rule 15 calls broken
+      // typography in an RTL locale — and this one is read aloud.
+      setAnnouncement(t("attendance.marked", { name, status: statusLabel(status, t) }));
     },
-    [canMark, scheduleSave],
+    [canMark, scheduleSave, t],
   );
 
   const markAllPresent = useCallback(() => {
@@ -415,7 +418,7 @@ export function AttendanceMarker({
                 onFocus={() => setFocusIndex(index)}
                 onKeyDown={(e) => onRowKeyDown(e, index, student)}
                 aria-label={`${student.fullName}, roll ${student.rollNumber ?? "unassigned"}, ${
-                  value ? statusLabel(value) : "not marked"
+                  value ? statusLabel(value, t) : "not marked"
                 }${student.onLeave ? ", on approved leave" : ""}`}
                 className={cn(
                   "flex flex-col gap-2 border-b border-border px-3 py-3 last:border-b-0",
@@ -445,7 +448,7 @@ export function AttendanceMarker({
                 </span>
 
                 <span role="gridcell" className="flex flex-wrap gap-1.5">
-                  {ATTENDANCE_STATUSES.map((option) => {
+                  {attendanceStatusOptions(t).map((option) => {
                     const Icon = STATUS_ICON[option.value];
                     const selected = value === option.value;
                     return (

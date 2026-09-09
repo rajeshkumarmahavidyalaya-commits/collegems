@@ -321,3 +321,66 @@ says how much of the **interface** reaches it.
 
 Same bargain as the coverage floor, and the same reason: the only way either can
 fail is that somebody's work was undone.
+
+### The family batch: nine helpers, 34 call sites, and the second consumer
+
+`/notices` established the shape. This is the batch a **family** actually reads,
+converted together because a badge and its picker on one screen must not be in
+two languages:
+
+| module | helpers |
+|---|---|
+| attendance | `statusLabel` |
+| student-leave | `kindLabel`, `statusLabel` |
+| exams | `examKindLabel`, `resultLabel` |
+| homework | `submissionStatusLabel`, `materialKindLabel` |
+| fees-display | `entryTypeLabel`, `methodLabel` |
+
+Nine helpers, **34 call sites**, 47 catalogue keys in three languages. Transport
+was deliberately left out of this pass.
+
+**The second consumer is what made it worth doing as a batch.** A label lives on
+the constant, so it has two readers — the badge helper and the `<Select>` that
+lists every value — and measured before starting, `.label` was rendered directly
+in 3 files for `PAYMENT_METHODS`, 5 for `CHANNELS`, 2 each for
+`ATTENDANCE_STATUSES` and `EXAM_KINDS`. Converting the helper alone would have
+put the same value on one screen in two languages. `optionsFor(values, prefix,
+t)` is the other half, and the six direct renders now go through it.
+
+Two of those six were **module-scope constants** —
+`const methodOptions = PAYMENT_METHODS.map(…)` in the fee counter and the fee
+dialogs. That is rule 15's third shape, already named in the formatter pass:
+*"anything built before render takes the formatter as a parameter"*. A list
+built before render has no component for a hook to belong to.
+
+### An English frame with a translated word in it is still English
+
+`attendance-marker.tsx` announced each mark to a screen reader as
+`` `${name} marked ${statusLabel(status, t)}` `` — an English sentence with one
+translated word dropped into the middle. Rendered in Urdu that is the login
+page's full-stop problem again, and this one is *read aloud*. The sentence is
+the unit: `attendance.marked` is `"{name} marked {status}"`, and the frame is
+translated with the word.
+
+### What it costs, measured
+
+| route | before | after |
+|---|---|---|
+| `/fees/daybook` | 4.30 kB / 190 kB | 4.43 kB / **192 kB** |
+| `/attendance` | 7.79 kB / 211 kB | 7.91 kB / **213 kB** |
+| `/academics` (untouched) | 225 kB | **227 kB** |
+| `/checks`, `/certificates` (Server Components only) | 107 kB | **107 kB** |
+
+Neither number is the `labelFor` import. The ~0.13 kB per touched route is call
+sites gaining an argument; the **2 kB is the catalogue itself**, ~50 keys in
+three languages, paid equally by every client route — `/academics` moved the
+same 2 kB without being edited, and the Server-Component-only routes did not
+move at all.
+
+That is the bargain `i18n-provider` already states: the catalogues travel in the
+bundle because the alternative is *"a screen that renders in English and then
+flickers into Hindi"*. Worth writing down as a number rather than leaving as an
+assumption — the earlier draft of the `fees-display.ts` comment claimed
+`/fees/daybook` was "unchanged at its previous size", which the build disproved.
+
+**43 → 35** helpers still hardcoding English, and the floor moved with it.

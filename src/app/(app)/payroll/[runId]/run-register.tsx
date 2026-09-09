@@ -36,7 +36,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { PAYMENT_METHODS, formatDays, paymentMethodLabel } from "@/lib/validations/hr";
+import { formatDays, paymentMethodLabel } from "@/lib/validations/hr";
 import {
   editPayslip,
   finalisePayroll,
@@ -48,6 +48,7 @@ import {
   type RegisterRow,
   type RunRow,
 } from "../actions";
+import { paymentMethodOptions } from "@/lib/validations/fees-display";
 import {
   Select,
   SelectContent,
@@ -657,6 +658,7 @@ function EditDialog({ row, onClose }: { row: RegisterRow | null; onClose: () => 
 }
 
 function PaymentDialog({ row, onClose }: { row: RegisterRow | null; onClose: () => void }) {
+  const { t } = useI18n();
   const { formatCurrency } = useI18n();
   const router = useRouter();
   const [pending, startTransition] = useTransition();
@@ -722,7 +724,7 @@ function PaymentDialog({ row, onClose }: { row: RegisterRow | null; onClose: () 
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                {PAYMENT_METHODS.map((m) => (
+                {paymentMethodOptions(t).map((m) => (
                   <SelectItem key={m.value} value={m.value}>
                     {m.label}
                   </SelectItem>

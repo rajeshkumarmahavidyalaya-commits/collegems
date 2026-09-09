@@ -1,4 +1,6 @@
 import { z } from "zod";
+import { labelFor, optionsFor } from "./labels";
+import type { Translator } from "@/lib/i18n/translate";
 
 /**
  * Phase 3.1 — exams, marks, and grading rules as data.
@@ -299,12 +301,18 @@ export function parseRules(text: string): { ok: true; rules: unknown } | { ok: f
 // Display helpers
 // ---------------------------------------------------------------------------
 
-export function examKindLabel(value: string) {
-  return EXAM_KINDS.find((k) => k.value === value)?.label ?? value;
+export function examKindLabel(value: string, t: Translator) {
+  const found = EXAM_KINDS.find((k) => k.value === value);
+  return found ? labelFor(`exams.kind.${value}`, found.label, t) : value;
 }
 
-export function resultLabel(value: string) {
-  return RESULT_STATES.find((r) => r.value === value)?.label ?? value;
+export function examKindOptions(t: Translator) {
+  return optionsFor(EXAM_KINDS, "exams.kind", t);
+}
+
+export function resultLabel(value: string, t: Translator) {
+  const found = RESULT_STATES.find((r) => r.value === value);
+  return found ? labelFor(`exams.result.${value}`, found.label, t) : value;
 }
 
 export function resultTone(value: string) {

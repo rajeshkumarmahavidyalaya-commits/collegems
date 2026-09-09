@@ -46,15 +46,13 @@ import { ErrorSummary } from "@/components/forms/error-summary";
 import { SelectField, TextField, TextareaField } from "@/components/forms/form-fields";
 import { useI18n } from "@/components/providers/i18n-provider";
 import {
-  EXAM_KINDS,
   examKindLabel,
   examSchema,
   gradingSchemeSchema,
   RANK_METHODS,
   RANK_SCOPES,
   type ExamInput,
-  type GradingSchemeInput,
-} from "@/lib/validations/exams";
+  type GradingSchemeInput, examKindOptions } from "@/lib/validations/exams";
 import {
   deleteExam,
   deleteScheme,
@@ -135,6 +133,7 @@ function ExamsTab({
   onAdd: () => void;
   onEdit: (exam: ExamRow) => void;
 }) {
+  const { t } = useI18n();
   const { formatDate } = useI18n();
   const router = useRouter();
   const [pending, startTransition] = useTransition();
@@ -224,7 +223,7 @@ function ExamsTab({
                       )}
                     </TableCell>
                     <TableCell className="text-muted-foreground">
-                      {examKindLabel(exam.kind)}
+                      {examKindLabel(exam.kind, t)}
                     </TableCell>
                     <TableCell className="text-muted-foreground">
                       {exam.gradingSchemeName ?? "School default"}
@@ -282,6 +281,7 @@ function ExamDialog({
   exam: ExamRow | null;
   schemes: SchemeRow[];
 }) {
+  const { t } = useI18n();
   const router = useRouter();
   const [pending, startTransition] = useTransition();
 
@@ -337,7 +337,7 @@ function ExamDialog({
                 name="kind"
                 label="Kind"
                 required
-                options={EXAM_KINDS.map((k) => ({ value: k.value, label: k.label }))}
+                options={examKindOptions(t).map((k) => ({ value: k.value, label: k.label }))}
               />
               <SelectField
                 control={form.control}
