@@ -77,6 +77,7 @@ After any migration, regenerate types into
 | [docs/modules/session-boundary.md](./docs/modules/session-boundary.md) | The session boundary: why a null end date is the end of the year, not for ever |
 | [docs/modules/renewals.md](./docs/modules/renewals.md) | Carrying a bus seat and a bed into the new year, through the modules' own doors |
 | [docs/modules/checks.md](./docs/modules/checks.md) | Needs attention: every critic on one screen, and what probing as a teacher found |
+| [docs/modules/staff-directory.md](./docs/modules/staff-directory.md) | The staff directory: why a row policy could not express "name and designation only" |
 | [docs/performance.md](./docs/performance.md) | What was actually slow, measured before and after |
 | [docs/design/decisions.md](./docs/design/decisions.md) | Palette, type, spacing — and why |
 | `design-system/schoolos/MASTER.md` | Source of truth for all UI values |

@@ -177,4 +177,36 @@ describe("cross-tenant isolation", () => {
     const { data: survivor } = await b.from("books").select("id").eq("id", foreignBookId);
     expect(survivor).toHaveLength(1);
   });
+
+  /**
+   * `staff_directory()` is the schema's one `SECURITY DEFINER` **read model**
+   * (migration `0193`), so no policy runs inside it and its own
+   * `where tenant_id =` is the isolation rather than an optimisation on top of
+   * one. That makes it the single place where rule 11's "never filter by
+   * tenant in a read model" is inverted, and the single place where forgetting
+   * to would be a hole rather than a slow query — so it is pinned here, beside
+   * the policies, rather than in the staff module's own tests.
+   */
+  it("the staff directory does not cross tenants", async () => {
+    const [{ data: dirA }, { data: dirB }] = await Promise.all([
+      a.rpc("staff_directory"),
+      b.rpc("staff_directory"),
+    ]);
+
+    const [{ data: staffA }, { data: staffB }] = await Promise.all([
+      a.from("staff").select("id"),
+      b.from("staff").select("id"),
+    ]);
+
+    const idsA = new Set((staffA ?? []).map((r) => r.id));
+    const idsB = new Set((staffB ?? []).map((r) => r.id));
+
+    // Whatever each side can name, none of it belongs to the other.
+    for (const row of dirA ?? []) expect(idsB.has(row.staff_id)).toBe(false);
+    for (const row of dirB ?? []) expect(idsA.has(row.staff_id)).toBe(false);
+
+    // And an administrator's directory is exactly their own staff list — a
+    // definer function that returned nothing would pass the loops above.
+    expect(new Set((dirA ?? []).map((r) => r.staff_id))).toEqual(idsA);
+  });
 });

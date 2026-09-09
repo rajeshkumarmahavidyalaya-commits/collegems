@@ -276,6 +276,47 @@ included, can rewrite what a certificate says.** DELETE is revoked outright,
 because a cancelled certificate has to keep its serial — a gapless sequence with
 a hole in it is a sequence nobody can audit.
 
+#### …and the same sentence is true of SELECT, where it is easier to miss
+
+Everything above is about writes, and the reason the read case hid for 184
+migrations is that a policy which over-grants on SELECT still *looks* correct:
+nothing fails, and the extra columns simply travel.
+
+> **A policy grants whole rows on the way out too.** A comment naming three
+> columns is a claim about a projection, and a projection is not something a
+> policy can express.
+
+`public.staff` carried one since migration `0009`: *"Staff directory
+(name/designation/department) is not sensitive HR data and is needed by every
+role to render things like 'Class teacher: …'."* Probed as a caller whose JWT
+says `parent`, both halves of that were false, in opposite directions —
+**15 staff rows readable**, `employee_code`, `date_of_joining`, `status` and
+`date_of_leaving` among them, joinable to the 276 timetable rows the same
+caller can read; and **0 rows of `people`**, so the name it exists to provide
+has been a blank on every family's timetable since the module shipped.
+
+The fix is the definer-function shape's third instance, and it is forced rather
+than chosen: a column `GRANT` is **role-wide**, and every user of this
+application is `authenticated`, so `grant select (id, designation)` would take
+the leaving date away from payroll in the act of hiding it from a parent.
+`staff_directory()` returns the three columns, the tenant-wide row policy is
+dropped, and both halves close in one edit — a parent now sees the teacher's
+name and none of the employment record.
+
+Two things to carry:
+
+- **A definer read model must filter by tenant itself, and it is the only kind
+  that may.** Rule 11 forbids `where tenant_id =` because invoker + RLS is what
+  makes a report unable to cross tenants; inside a definer, no policy runs, so
+  that predicate *is* the isolation. Pin it in the isolation suite, in both
+  directions **and** against the caller's own row count — a definer that
+  returned nothing would pass a one-sided check.
+- **Skipping the policy is also 11× faster**, measured: `timetable_for_section`
+  went 42.2 ms → 3.7 ms as an administrator and 56.9 → 3.9 ms as a teacher, on
+  35 lessons. The cost was `people`'s six permissive policies, not the rows.
+  That is a reason to notice this shape, never a reason to reach for a definer
+  where an invoker is correct.
+
 ### A CHECK cannot reach another table
 
 The same genre of mistake. When a rule depends on a column of a *different*

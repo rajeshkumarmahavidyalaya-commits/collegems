@@ -8617,6 +8617,15 @@ export type Database = {
           severity: string
         }[]
       }
+      staff_directory: {
+        Args: never
+        Returns: {
+          department: string
+          designation: string
+          full_name: string
+          staff_id: string
+        }[]
+      }
       staff_exit: {
         Args: {
           p_left_on?: string
