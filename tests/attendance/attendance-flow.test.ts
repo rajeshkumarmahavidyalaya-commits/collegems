@@ -20,9 +20,19 @@ describe("attendance marking", () => {
   let enrolmentIds: string[] = [];
   let otherEnrolmentIds: string[] = [];
 
-  // A date well in the past, so the suite can never collide with a register a
-  // human is taking today.
-  const testDate = "2020-02-03";
+  /**
+   * A date **inside the year those enrolments belong to**, resolved in
+   * `beforeAll`.
+   *
+   * This used to be the constant `2020-02-03` — "well in the past, so the suite
+   * can never collide with a register a human is taking today". Migration
+   * `0198` made that impossible on purpose: a register's year is the year
+   * containing its date, and no academic year covers 2020, so the write is
+   * refused with a sentence. The premise was always wrong — a register in a
+   * year the school did not have was never a legal row — and the constant was
+   * hiding it.
+   */
+  let testDate = "";
 
   beforeAll(async () => {
     [a, b] = await Promise.all([tenantAClient(), tenantBClient()]);
@@ -38,6 +48,21 @@ describe("attendance marking", () => {
     sectionId = withStudents[0].id;
     enrolmentIds = withStudents[0].enrolments.map((e) => e.id);
     otherEnrolmentIds = withStudents[1].enrolments.map((e) => e.id);
+
+    // Forty days into the year those children are enrolled in: comfortably
+    // inside it, comfortably in the past, and nowhere near a register somebody
+    // is taking today.
+    const { data: enrolment } = await a
+      .from("enrolments")
+      .select("academic_sessions ( start_date )")
+      .eq("id", enrolmentIds[0])
+      .maybeSingle();
+
+    const start = enrolment?.academic_sessions?.start_date;
+    expect(start).toBeTruthy();
+    const d = new Date(`${start}T00:00:00Z`);
+    d.setUTCDate(d.getUTCDate() + 40);
+    testDate = d.toISOString().slice(0, 10);
   });
 
   afterAll(async () => {

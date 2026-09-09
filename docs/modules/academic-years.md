@@ -162,14 +162,90 @@ adding a clause has somewhere obvious to put its two forms. English plurals are
 not derivable (`entry`/`entries`, and `homework` has none), so each table
 carries both.
 
+## Stamping from the date, not from the flag
+
+`0195` named the three questions and stopped. `0198` answers the first with the
+second wherever the second is the whole answer:
+
+| function | what decides |
+|---|---|
+| `mark_attendance` | the register's date |
+| `hr_mark_attendance` | the same, for staff |
+| `library_issue_book` | the day the book left the shelf |
+| `stock_record_movement` | `happened_on`, defaulting to today |
+| `visitor_check_in` | now |
+
+Probed on the demo school, where the flag still says 2025-2026 and today is 9
+September 2026:
+
+```
+staff register today: wrote 1, filed under 2026-2027
+book issued today            filed under 2026-2027
+visitor pass                 filed under 2026-2027
+stock back-dated to 15 Jan 2026 filed under 2025-2026
+```
+
+Four rows, three years' worth of dates, each filed where it happened.
+
+### Two refusals, both in sentences
+
+```
+9 Sep 2026 falls in 2026-2027, and these children are enrolled in 2025-2026.
+Promote them into 2026-2027 first, or check the date.
+
+No academic year covers 6 May 2019. Add one under Academics → Years.
+```
+
+The first is the one worth explaining. The old body filtered entries to
+`enr.session_id = current_session_id()` and returned the count, so a register
+taken on a day in a year the children are not enrolled in **wrote nothing and
+said nothing** — the server action was left guessing between "no permission"
+and "no longer enrolled", and could not name the real reason. It can now, and
+the guess survives only for the cases RLS genuinely hides.
+
+Re-stamping those rows is still refused, for the reason above: a register row
+in 2026-2027 pointing at a 2025-2026 enrolment is consistent with the calendar
+and inconsistent with the child. The function refuses to *create* that; the
+critic reports the ones that already exist.
+
+### What is deliberately not date-driven
+
+- **Invoices, and the ledger and vouchers that follow them.** An invoice's
+  `session_id` is *which year's fees it bills*, and `fees_billable_lines` reads
+  the current session to decide that: a bill raised on 3 September for 2026-27
+  is a 2026-27 invoice whatever the calendar says about the day it printed.
+  Rule 6 ties every ledger entry to its invoice by foreign key and
+  `accounts_sync` follows the source document, so converting these would misfile
+  April's arrears notice in the opposite direction.
+- **Leave requests, homework and exams**, because each carries a *range* rather
+  than a day, and "which year does a range belong to" is a different question
+  with a real answer needed at the boundary — a leave from 28 March to 3 April
+  belongs to one of two years, and which one is a school's decision rather than
+  arithmetic. They were both clean in the audit; they are named here so the next
+  person knows the omission was noticed.
+
+The distinction is the point: **"stamp from the date" is the rule for a row that
+records a day**, not a blanket sweep.
+
+### What this broke, which is the useful part
+
+Two test suites encoded dates no academic year covers — `2020-02-03` for the
+student register, "well in the past, so the suite can never collide with a
+register a human is taking today", and `2030-12-02` for the staff one. Both are
+now refused, and the premise was always wrong: a register in a year the school
+did not have was never a legal row, and the constant was hiding that. Both now
+derive a date from the session their subjects belong to, which is what the test
+meant in the first place.
+
 ## Not built
 
-**A constraint refusing the write.** The honest enforcement of all this is
-rule 4's boundary device on the dated tables — `session_starts_on`/
-`session_ends_on` on the child inside a composite key, with a CHECK that the
-row's own date falls between them — exactly as `transport_assignments` carries
-it. It is not here because 6,000 rows already violate it and, as above, they
-cannot be mechanically repaired: adding the constraint means deciding what a
-school does with a year of registers taken against the wrong enrolments, and
-that decision belongs to the school. The critic is what makes that decision
-visible; the constraint is what stops it recurring, and is the next piece.
+**A constraint refusing the write.** The declarative half of all this is rule
+4's boundary device on the dated tables — `session_starts_on`/`session_ends_on`
+on the child inside a composite key, with a CHECK that the row's own date falls
+between them, exactly as `transport_assignments` carries it. The write
+functions now make the violation unreachable through the app; the constraint is
+what would make it unreachable full stop. It is still not here because 6,000
+rows already violate it and cannot be mechanically repaired (see above), so
+adding it means deciding what a school does with a year of registers taken
+against the wrong enrolments — which is the school's decision, not a
+migration's.

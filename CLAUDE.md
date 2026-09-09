@@ -185,7 +185,42 @@ degenerate range, and left *"They belong to"* in front of one certificate.
 > and carry both forms rather than a stem and a rule, because English plurals
 > are not derivable.
 
-Migrations `0195`–`0197`; see `docs/modules/academic-years.md`.
+And the write half, which `0195` named and did not do. `0198` stamps the year
+from the row's own date wherever the date is the whole answer —
+`mark_attendance`, `hr_mark_attendance`, `library_issue_book`,
+`stock_record_movement`, `visitor_check_in` — and refuses, in a sentence, where
+the row would then disagree with its parent:
+
+> *9 Sep 2026 falls in 2026-2027, and these children are enrolled in 2025-2026.
+> Promote them into 2026-2027 first, or check the date.*
+
+That refusal replaces a **silent zero**. The old body filtered entries to
+`enr.session_id = current_session_id()` and returned the count, so a register
+taken in a year the children are not enrolled in wrote nothing and said
+nothing, and the server action was left guessing between "no permission" and
+"no longer enrolled".
+
+Two boundaries keep this from becoming a blanket sweep, and both are the rule
+rather than exceptions to it:
+
+- **A row that bills a year is not a row that records a day.** An invoice's
+  `session_id` is which year's fees it charges — `fees_billable_lines` decides
+  that from the current session — so a bill raised on 3 September for 2026-27
+  is a 2026-27 invoice whatever the calendar says. Rule 6's foreign key then
+  ties the ledger to the invoice. Date arithmetic there would misfile April's
+  arrears notice in the opposite direction.
+- **A range is a different question from a day.** Leave, homework and exams
+  carry two dates, and a leave from 28 March to 3 April belongs to one of two
+  years by somebody's decision rather than by arithmetic. Named, not converted.
+
+And the part worth copying: **the change broke two test suites, and that was
+the useful half.** Both marked registers on dates no academic year covers —
+`2020-02-03`, chosen so the suite "can never collide with a register a human is
+taking today" — which was never a legal row. A constant that cannot exist in
+production is a test asserting the wrong thing quietly; both now derive their
+date from the session their subjects belong to.
+
+Migrations `0195`–`0198`; see `docs/modules/academic-years.md`.
 
 ## 3. Auth
 

@@ -6557,6 +6557,10 @@ export type Database = {
         }
       }
       academics_session_for_date: { Args: { p_on: string }; Returns: string }
+      academics_session_for_date_or_raise: {
+        Args: { p_on: string }
+        Returns: string
+      }
       academics_session_problems: {
         Args: never
         Returns: {

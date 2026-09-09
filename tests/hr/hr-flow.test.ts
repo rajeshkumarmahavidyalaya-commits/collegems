@@ -275,19 +275,33 @@ describe("HR and payroll", () => {
   it("marks a register idempotently", async () => {
     const entries = [{ staff_id: staffId, status: "present" }];
 
-    await a.rpc("hr_mark_attendance", { p_date: "2030-12-02", p_entries: entries as never });
-    await a.rpc("hr_mark_attendance", { p_date: "2030-12-02", p_entries: entries as never });
+    // A date inside a year the school has, resolved rather than invented.
+    // `2030-12-02` was a date no academic year covers, and migration `0198`
+    // refuses those: a staff register's year is the year containing the day it
+    // records.
+    const { data: session } = await a
+      .from("academic_sessions")
+      .select("start_date")
+      .order("start_date", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    const day = new Date(`${session!.start_date}T00:00:00Z`);
+    day.setUTCDate(day.getUTCDate() + 60);
+    const markDate = day.toISOString().slice(0, 10);
+
+    await a.rpc("hr_mark_attendance", { p_date: markDate, p_entries: entries as never });
+    await a.rpc("hr_mark_attendance", { p_date: markDate, p_entries: entries as never });
 
     const { count } = await a
       .from("staff_attendance")
       .select("id", { count: "exact", head: true })
       .eq("staff_id", staffId)
-      .eq("attendance_date", "2030-12-02");
+      .eq("attendance_date", markDate);
 
     expect(count).toBe(1);
 
     await a.rpc("hr_mark_attendance", {
-      p_date: "2030-12-02",
+      p_date: markDate,
       p_entries: [{ staff_id: staffId }] as never,
     });
 
@@ -295,7 +309,7 @@ describe("HR and payroll", () => {
       .from("staff_attendance")
       .select("id", { count: "exact", head: true })
       .eq("staff_id", staffId)
-      .eq("attendance_date", "2030-12-02");
+      .eq("attendance_date", markDate);
 
     // An entry with no status clears the row: "not marked" has to be reachable
     // again after a mistake.

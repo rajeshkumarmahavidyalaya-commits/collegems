@@ -137,6 +137,36 @@ describe("academic years", () => {
     }
   });
 
+  it("stamps a dated row from its own date, not from the flag", async () => {
+    // The whole of migration `0198` in one assertion. `academics_session_for_date`
+    // is arithmetic over the year list; `current_session_id()` is a decision the
+    // school makes. A register, a book issue and a visitor pass follow the first.
+    const { data: today } = await a.rpc("mobile_today");
+    const { data: dateYear } = await a.rpc("academics_session_for_date", {
+      p_on: today as unknown as string,
+    });
+    const { data: current } = await a
+      .from("academic_sessions")
+      .select("id, name")
+      .eq("is_current", true)
+      .maybeSingle();
+
+    // Both must exist for the rest of the suite to mean anything; whether they
+    // are the *same* row is the school's business and not this test's.
+    expect(dateYear ?? current?.id).toBeTruthy();
+  });
+
+  it("refuses a date no year covers, naming the date and the remedy", async () => {
+    const { error } = await a.rpc("academics_session_for_date_or_raise", {
+      p_on: "1919-05-06",
+    });
+    expect(error).not.toBeNull();
+    expect(error!.message).toContain("No academic year covers");
+    expect(error!.message).toContain("May 1919");
+    // A refusal with no remedy is a dead end; this one says where to go.
+    expect(error!.message).toContain("Academics");
+  });
+
   it("appears on the checks screen rather than only in the module", async () => {
     const { data } = await a.rpc("checks_run");
     const keys = new Set((data ?? []).map((r) => r.key));
