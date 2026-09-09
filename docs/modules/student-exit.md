@@ -229,6 +229,65 @@ inside `staff_exit` is there *for the message*, per the conventions.
   `substitutions` records what was arranged, and rewriting it would erase a
   decision somebody made. Naming it lets the office re-arrange.
 
+## An ending is not a door that stays shut
+
+Ending the relationships somebody had and refusing to make a new one are two
+different jobs, and until migration `0191` this module did only the first. Five
+doors stood open the morning after a formal exit. Four were probed live on the
+demo school, inside rolled-back transactions; the fifth was found by reading.
+
+| Door | What happened |
+|---|---|
+| a library book | `members.status` stayed `active`, so `library_issue_book` issued one to a child who had left |
+| the same, for staff | `staff_exit` reads `members` for its own report and left it open the same way |
+| a fee concession | `concession_award` accepted one for the child the exit had just revoked all of them from |
+| a lesson | `timetable_set_entry` accepted a teacher terminated thirty days ago |
+| a class to cover | `substitution_arrange` never checked its substitute at all |
+
+The library one is the sharpest, because the function was *already looking*:
+`student_exit` counts a leaver's unreturned books in order to report them, and
+then left the card that lends more of them open.
+
+### Two shapes of fix, and the difference is the point
+
+**The library membership is part of the ending**, so it went into
+`student_end_relationships` and `staff_exit` beside the bus seat and the hostel
+bed. `expired`, not `suspended`: a suspension is something a librarian does
+about behaviour, and this is a card that ran out because the person is no longer
+here. The borrowing history stays exactly where it is, and a book still out is
+still reported rather than forgiven.
+
+**The other three are guards on the write**, because there is nothing to end —
+the relationship does not exist yet, and only a refusal can stop one being made.
+
+### Why the timetable guard is not a constraint
+
+Rule 4 prefers a composite key to a check in a function, and this is a case
+where it is the wrong tool. The device would carry `teacher_status` on the
+timetable entry, held equal to `staff.status` — and `on update cascade` would
+then **refuse the status change itself** while a departed teacher still held
+lessons. `staff_exit` unassigns first, so the function would work; an
+administrator editing a status directly would meet a constraint error instead of
+being told to unassign. The check goes in the write function, and the migration
+header says why, at the point where somebody would otherwise add the key.
+
+### `substitution_candidates` is a list, not a gate
+
+The roster screen has always offered only active staff. That is a convenience:
+a caller passing an id straight to `substitution_arrange` bypassed it entirely,
+and nothing in the database noticed. The same sentence covers
+`timetable_set_entry`, whose teacher dropdown is filtered the same way.
+
+### The count that was computed and discarded
+
+`staff_exit` took the membership count into a variable and then built its result
+object without it (`0192` returns it as `closed.library`). There is no staff-exit
+screen yet, which is exactly how a number goes missing quietly: nobody reads it,
+so nobody notices it is not there. The one person who wants it is the librarian
+wondering why a leaver's card stopped working.
+
+---
+
 ## Not built
 
 **Reassignment.** `staff_exit` leaves 19 lessons unassigned and says so; it does

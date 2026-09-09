@@ -222,7 +222,18 @@ export async function updateStudent(id: string, input: unknown): Promise<ActionR
 const LEAVING_STATUSES = ["transferred", "alumni", "expelled", "inactive"] as const;
 
 export type ExitOutcome = {
-  closed: { enrolments: number; transport: number; hostel: number; concessions: number };
+  closed: {
+    enrolments: number;
+    transport: number;
+    hostel: number;
+    concessions: number;
+    /**
+     * The library membership, closed as `expired` by migration `0191`. Not
+     * `suspended`: a suspension is something a librarian does about behaviour,
+     * and this is a card that ran out because the child is no longer here.
+     */
+    library: number;
+  };
   outstanding: { kind: string; message: string }[];
 };
 

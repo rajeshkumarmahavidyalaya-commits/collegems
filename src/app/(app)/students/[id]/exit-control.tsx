@@ -38,7 +38,12 @@ const REASONS = [
  * Not a status dropdown. Setting the word alone is the bug migration `0174`
  * closed — four of the five read paths that decide what a child is charged and
  * told never consult `students.status` — so this goes through `student_exit`,
- * which ends the enrolment, the bus seat, the hostel bed and any concessions.
+ * which ends the enrolment, the bus seat, the hostel bed, any concessions and
+ * the library card.
+ *
+ * Ending a relationship and refusing a new one are two different jobs, and
+ * migration `0191` is where the second half arrived: nothing had stopped a
+ * book being issued, or a concession awarded, to a child who left yesterday.
  *
  * What it **cannot** end (an unreturned library book, an unpaid balance) comes
  * back as sentences and is shown afterwards rather than blocking the exit.
@@ -91,9 +96,10 @@ export function ExitControl({ studentId, studentName }: { studentId: string; stu
           <DialogHeader>
             <DialogTitle>Record that {studentName} has left</DialogTitle>
             <DialogDescription>
-              This ends their enrolment, their bus seat, their hostel bed and any concessions, so
-              they stop being billed and stop appearing on registers. It does not return library
-              books or settle a balance &mdash; you will be told about those.
+              This ends their enrolment, their bus seat, their hostel bed, any concessions and
+              their library card, so they stop being billed and stop appearing on registers. It
+              does not return library books or settle a balance &mdash; you will be told about
+              those.
             </DialogDescription>
           </DialogHeader>
 

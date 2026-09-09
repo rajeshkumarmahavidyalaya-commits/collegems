@@ -1380,6 +1380,46 @@ it:
   entirely: a quieter bug than the one being fixed. The roster learned to see a
   vacant post **first**, and only then was it safe to unassign.
 
+#### …and an ending is not a door that stays shut
+
+The act ends the relationships somebody had. That is the first half, and this
+codebase shipped it alone twice.
+
+> **Ending a relationship and refusing to make a new one are two different
+> jobs.** A module that does only the first is correct on the day of the exit
+> and wrong the morning after.
+
+Five doors were open after a formal exit — four probed live, one found by
+reading. A library book issued to a child who had left; the same for staff; a
+fee concession awarded to the child whose concessions had just been revoked; a
+lesson given to a teacher terminated thirty days ago; and a class to cover
+handed to the same person, because `substitution_arrange` never looked at its
+substitute. The library one is the sharpest: `student_exit` **counts** a
+leaver's unreturned books in order to report them, and left the card that lends
+more of them open.
+
+The fixes come in two shapes and the difference is the whole rule:
+
+- **If the relationship exists, ending it belongs in the act** — the library
+  membership went into `student_end_relationships` beside the bus seat, as
+  `expired` rather than `suspended`, because a suspension is a librarian's
+  judgement about behaviour and this is a card that ran out.
+- **If it does not exist yet, only a guard on the write can help.** There is
+  nothing to end; a refusal is the only mechanism there is.
+
+Two corollaries worth carrying:
+
+- **A filtered dropdown is a convenience; the function is the gate.**
+  `substitution_candidates` and the timetable's teacher list had offered only
+  active staff since they were written, and both write functions accepted any id
+  handed to them directly.
+- **Here rule 4's composite key is the wrong tool, deliberately.** Carrying
+  `teacher_status` on a timetable entry would make `on update cascade` refuse
+  *the status change itself* while a departed teacher still held lessons — so an
+  administrator editing a status would meet a constraint error instead of being
+  told to unassign. The check is in the write function, and the migration says
+  so at the point where somebody would otherwise add the key.
+
 See `docs/modules/student-exit.md`.
 
 ### A record of an observation is not a place to write a decision
