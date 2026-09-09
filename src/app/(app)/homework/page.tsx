@@ -1,8 +1,8 @@
 import { getUserContext } from "@/lib/auth/context";
+import { listMyChildren } from "@/lib/auth/family";
 import { hasPermission } from "@/lib/auth/permissions";
 import { schoolToday } from "@/lib/validations/homework";
 import {
-  listChildren,
   listCurriculum,
   listFilesByOwner,
   listHomework,
@@ -69,14 +69,14 @@ async function FamilyView({
   ctx: Awaited<ReturnType<typeof getUserContext>>;
 }) {
   const params = await searchParams;
-  const children = await listChildren();
+  const children = await listMyChildren();
 
   // A student passes nothing and the RPC resolves their own record. A parent
   // names a child, and the enrolment join under RLS is what decides whether
   // that was one of theirs — the `?student=` in the URL is a convenience, not
   // a key.
   const studentId =
-    ctx?.roleCode === "parent" ? (params.student ?? children[0]?.id) : undefined;
+    ctx?.roleCode === "parent" ? (params.student ?? children[0]?.studentId) : undefined;
 
   const rows = await getStudentHomework(studentId);
   const filesFor = await listFilesByOwner(

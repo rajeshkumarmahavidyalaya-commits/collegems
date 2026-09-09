@@ -4,7 +4,8 @@ import { Badge } from "@/components/ui/badge";
 import { getUserContext } from "@/lib/auth/context";
 import { formatPercent, resultLabel } from "@/lib/validations/exams";
 import { ordinal } from "@/lib/validations/report-cards";
-import { listMyChildren, listPublishedResults } from "../exams/report-card-actions";
+import { listPublishedResults } from "../exams/report-card-actions";
+import { listMyChildren } from "@/lib/auth/family";
 import { getLocale } from "@/lib/i18n/server";
 import { formatDate } from "@/lib/i18n/format";
 

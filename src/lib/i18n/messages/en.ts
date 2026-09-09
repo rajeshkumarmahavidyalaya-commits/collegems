@@ -45,6 +45,7 @@ export const en = {
   "nav.exams": "Exams",
   "nav.homework": "Homework",
   "nav.fees": "Fees",
+  "nav.familyFees": "Fees",
   "nav.accounts": "Accounts",
   "nav.hr": "Staff",
   "nav.payroll": "Payroll",
@@ -215,6 +216,29 @@ export const en = {
     "Which language this application speaks to you in. It changes nothing for anybody else, and it does not change the language a notification is written in — that is chosen by whoever sends it.",
   "settings.language.rtlNote":
     "Urdu is written right to left, and the whole interface turns around with it.",
+
+  // --- the family's own screens -------------------------------------------
+  // Rule 15 arriving in a module rather than in the chrome. This is the screen
+  // a parent who chose Urdu is most likely to open, so it is the first module
+  // copy in the catalogue rather than the last.
+  "family.fees.title": "Fees",
+  "family.fees.body":
+    "What the school has billed for each of your children, and what is left to pay. Open a name for the bills, the receipts and every adjustment behind the figure.",
+  "family.fees.owing": "Due",
+  "family.fees.settled": "Settled",
+  "family.fees.inCredit": "In credit",
+  "family.fees.notBilled": "Not billed",
+  "family.fees.nothingBilled": "Nothing billed this year yet",
+  "family.fees.lastPayment": "Last payment {date}",
+  "family.fees.noPaymentYet": "No payment received yet",
+  "family.fees.footnote":
+    "Figures are for the current academic year. A year left owing is shown on the account itself, so nothing is quietly written off.",
+  "family.fees.noChildren.title": "No children linked to this login",
+  "family.fees.noChildren.body":
+    "Ask the school office to link your account to your child’s record. Until then there is no account for this page to show.",
+  "family.fees.staff.title": "This page belongs to a family",
+  "family.fees.staff.body":
+    "It shows a parent or a student their own children’s accounts. To collect a payment or look up any child, use the fee counter.",
 } as const;
 
 export type MessageKey = keyof typeof en;

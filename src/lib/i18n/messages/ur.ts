@@ -30,6 +30,7 @@ export const ur: Messages = {
   "nav.exams": "امتحانات",
   "nav.homework": "گھر کا کام",
   "nav.fees": "فیس",
+  "nav.familyFees": "فیس",
   "nav.accounts": "حسابات",
   "nav.hr": "عملہ",
   "nav.payroll": "تنخواہ",
@@ -191,4 +192,24 @@ export const ur: Messages = {
   "settings.language.body":
     "یہ ایپلی کیشن آپ سے کس زبان میں بات کرے گی۔ اس سے کسی اور کے لیے کچھ نہیں بدلتا، اور یہ بھی نہیں بدلتا کہ اطلاع کس زبان میں لکھی جائے گی — وہ بھیجنے والا طے کرتا ہے۔",
   "settings.language.rtlNote": "اردو دائیں سے بائیں لکھی جاتی ہے، اور پورا انٹرفیس اس کے ساتھ گھوم جاتا ہے۔",
+
+  // --- the family's own screens -------------------------------------------
+  "family.fees.title": "فیس",
+  "family.fees.body":
+    "اسکول نے آپ کے ہر بچے کے لیے جو فیس بنائی ہے اور جتنی باقی ہے۔ بل، رسیدیں اور ہر ترمیم دیکھنے کے لیے نام کھولیں۔",
+  "family.fees.owing": "باقی",
+  "family.fees.settled": "ادا شدہ",
+  "family.fees.inCredit": "جمع رقم",
+  "family.fees.notBilled": "بل نہیں",
+  "family.fees.nothingBilled": "اس سال اب تک کوئی فیس نہیں بنی",
+  "family.fees.lastPayment": "آخری ادائیگی {date}",
+  "family.fees.noPaymentYet": "اب تک کوئی ادائیگی نہیں",
+  "family.fees.footnote":
+    "اعداد و شمار موجودہ تعلیمی سال کے ہیں۔ پچھلے سال کا بقایا کھاتے پر ہی ظاہر ہوتا ہے، اس لیے کچھ خاموشی سے نہیں چھوٹتا۔",
+  "family.fees.noChildren.title": "اس لاگ اِن سے کوئی بچہ منسلک نہیں",
+  "family.fees.noChildren.body":
+    "اسکول دفتر سے کہیں کہ آپ کا اکاؤنٹ آپ کے بچے کے ریکارڈ سے جوڑ دیا جائے۔",
+  "family.fees.staff.title": "یہ صفحہ گھرانے کے لیے ہے",
+  "family.fees.staff.body":
+    "یہ والدین یا طالب علم کو ان کے اپنے کھاتے دکھاتا ہے۔ ادائیگی لینے یا کسی بھی بچے کو تلاش کرنے کے لیے فیس کاؤنٹر استعمال کریں۔",
 };

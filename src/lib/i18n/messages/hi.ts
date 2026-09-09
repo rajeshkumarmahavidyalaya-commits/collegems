@@ -30,6 +30,7 @@ export const hi: Messages = {
   "nav.exams": "परीक्षाएँ",
   "nav.homework": "गृहकार्य",
   "nav.fees": "शुल्क",
+  "nav.familyFees": "शुल्क",
   "nav.accounts": "लेखा",
   "nav.hr": "कर्मचारी",
   "nav.payroll": "वेतन",
@@ -191,4 +192,24 @@ export const hi: Messages = {
   "settings.language.body":
     "यह अनुप्रयोग आपसे किस भाषा में बात करेगा। इससे किसी और के लिए कुछ नहीं बदलता, और सूचना किस भाषा में लिखी जाएगी यह भी नहीं बदलता — वह भेजने वाला तय करता है।",
   "settings.language.rtlNote": "उर्दू दाएँ से बाएँ लिखी जाती है, और पूरा इंटरफ़ेस उसके साथ घूम जाता है।",
+
+  // --- the family's own screens -------------------------------------------
+  "family.fees.title": "शुल्क",
+  "family.fees.body":
+    "स्कूल ने आपके प्रत्येक बच्चे के लिए जो शुल्क बनाया है और जितना बाकी है। बिल, रसीदें और हर समायोजन देखने के लिए नाम पर खोलें।",
+  "family.fees.owing": "बाकी",
+  "family.fees.settled": "चुकता",
+  "family.fees.inCredit": "जमा शेष",
+  "family.fees.notBilled": "बिल नहीं",
+  "family.fees.nothingBilled": "इस वर्ष अब तक कोई शुल्क नहीं बना",
+  "family.fees.lastPayment": "अंतिम भुगतान {date}",
+  "family.fees.noPaymentYet": "अभी तक कोई भुगतान नहीं",
+  "family.fees.footnote":
+    "आंकड़े चालू शैक्षणिक वर्ष के हैं। पिछले वर्ष का बकाया खाते पर ही दिखता है, इसलिए कुछ चुपचाप नहीं छूटता।",
+  "family.fees.noChildren.title": "इस लॉगिन से कोई बच्चा जुड़ा नहीं है",
+  "family.fees.noChildren.body":
+    "स्कूल कार्यालय से अपना खाता अपने बच्चे के रिकॉर्ड से जोड़ने को कहें।",
+  "family.fees.staff.title": "यह पृष्ठ परिवार के लिए है",
+  "family.fees.staff.body":
+    "यह अभिभावक या छात्र को उनके अपने खाते दिखाता है। भुगतान लेने या किसी भी बच्चे को खोजने के लिए शुल्क काउंटर का उपयोग करें।",
 };

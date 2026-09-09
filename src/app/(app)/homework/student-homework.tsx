@@ -39,6 +39,7 @@ import {
   type SubmissionStatusTone,
 } from "@/lib/validations/homework";
 import { AttachmentPanel } from "./attachments";
+import type { FamilyChild } from "@/lib/auth/family";
 import {
   submitHomework,
   unsubmitHomework,
@@ -52,7 +53,7 @@ type Props = {
   /** Attachments keyed by homework id and by submission id, fetched in one go. */
   filesFor: Record<string, FileRow[]>;
   /** Empty for a student; their children for a parent. */
-  children_: { id: string; name: string; sectionLabel: string }[];
+  children_: FamilyChild[];
   selectedChildId?: string;
   canSubmit: boolean;
 };
@@ -79,7 +80,7 @@ export function StudentHomework({
             Child
           </Label>
           <Select
-            value={selectedChildId ?? children_[0].id}
+            value={selectedChildId ?? children_[0].studentId}
             onValueChange={(value) => router.push(`/homework?student=${value}`)}
           >
             <SelectTrigger id="child-picker" className="w-full sm:w-72">
@@ -87,8 +88,9 @@ export function StudentHomework({
             </SelectTrigger>
             <SelectContent>
               {children_.map((child) => (
-                <SelectItem key={child.id} value={child.id}>
-                  {child.name} — {child.sectionLabel}
+                <SelectItem key={child.studentId} value={child.studentId}>
+                  {child.name}
+                  {child.sectionLabel ? ` — ${child.sectionLabel}` : ""}
                 </SelectItem>
               ))}
             </SelectContent>

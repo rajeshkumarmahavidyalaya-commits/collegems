@@ -263,6 +263,52 @@ whether an *Add staff* button is drawn. A nav entry's `roles` list is the same
 kind of thing. **The menu and the boundary must not disagree, and only one of
 them is load-bearing.**
 
+#### …and that sentence is a claim about who the product is for
+
+The load-bearing half being right is what makes the other half easy to leave
+wrong for a year. Nothing fails, nobody is exposed, and the disagreement is only
+visible from a seat nobody signs into.
+
+Read both halves as data — the permission matrix on one side, `nav-config.ts` on
+the other — the menu was wrong for a guardian **in both directions at once**:
+
+- **three entries their permissions cannot reach.** Payroll rendered *"My pay —
+  what you were paid, month by month"* to somebody the school does not employ;
+  `/hr/leave` rendered the staff leave board; `/checks` rendered eight refusals
+  and one finding about the school's own fee-head setup.
+- **nine their permissions can.** A parent holds `fees.view`,
+  `fees_student_balances()` is row-scoped to their own children,
+  `/fees/students/[id]` has always been read-only without `fees.collect`, and
+  `dashboard_summary()` quotes the total on their home page — measured live,
+  ₹26,908.00 owed, two invoices readable. Every fee screen in the product was
+  `roles: ["admin", "accountant"]`. **A number with no link is a bill a family
+  cannot check**, which is rule 6's *"a correct write path nobody can call is
+  not a fix"* arriving on the read side.
+
+All three of the first kind came from an entry with **no `roles` list**, under a
+comment explaining why every member of *staff* needs it — `/hr/leave`'s said
+*"everybody employed here has leave"*, which is true and is exactly the list
+that was missing underneath it. So the guard is on the omission, not on the
+lists: `tests/app-shell/nav-audience.test.ts` fails when a role-less entry is
+not named in `EVERY_ROLE_ON_PURPOSE` with its reason, and it runs without a
+database.
+
+Two corollaries:
+
+- **A count of zero is not by itself the test.** A teacher and a librarian run
+  0 of 9 checks on today's matrix and keep that entry, because a school can
+  grant a teacher `students.manage` any Tuesday and the page fills in. Nobody
+  grants a guardian `staff.manage`. The question is whether the role is a
+  *candidate* for the permission, not whether it holds it today.
+- **When the menu and the matrix disagree, check which one is wrong.**
+  `fees.billing` reached a parent because it was gated on `fees.view`; migration
+  `0189`'s rule already said a critic is gated on the permission held by
+  somebody who may *act* on it, so `0200` moved it to `fees.collect` and the
+  menu entry and the check row were fixed together. Hiding it in the menu alone
+  would have left the boundary saying the opposite.
+
+See `docs/modules/family.md`.
+
 The test itself now has a name — `role_has_permission(code)` — because it had
 been written out by hand in `report_run`, `dashboard_summary` and `checks_run`,
 and a fourth copy is where a rule quietly starts to differ from itself. The
@@ -1731,6 +1777,27 @@ every child they teach; a home screen is not a roster. `mobile_my_students()`
 spells the relationship out and returns an empty list for staff, and a test pins
 that — "make the admin's home screen show the whole school" is a plausible
 mistake nobody would report as a bug.
+
+…and the web app then wrote the same sentence twice more, in two shapes, because
+the phone's version was filed under *mobile*. One of the two answered a
+**student** with an empty list — it opened `if (!ctx?.guardianId) return []` —
+and only the calling page's own `roleCode === "parent"` branch kept that from
+showing, which is to say the bug was real and a second branch was hiding it.
+
+> A contract is not the same thing as a definition. `mobile_my_students()` is a
+> published contract *over* a definition, and filing the definition inside the
+> contract is what made two more of it.
+
+So the relationship is `family_my_students()` and the mobile function is that
+with the contract's bound of ten on it (migration `0199`) — the wrapper stays
+rather than the function being renamed, because **the bound belongs to the
+contract that promised it** and a web screen has no reason to silently drop an
+eleventh child. `src/lib/auth/family.ts` is the single TypeScript caller, and
+the mobile test pins the two together rather than testing each alone.
+
+The intersection matters wherever this is used to *filter* rather than to list:
+`listMyFamilyAccounts()` drives off the relationship and reads balances through
+the policy, so a teacher whose own son is in Grade 4 sees one child and not 302.
 
 **A push token is a capability, not an address.** Anyone holding one plus the
 provider's key can push a message to that handset that looks like the school's,

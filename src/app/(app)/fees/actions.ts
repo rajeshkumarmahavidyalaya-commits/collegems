@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { getUserContext } from "@/lib/auth/context";
+import { listMyChildren } from "@/lib/auth/family";
 import {
   instalmentSchema,
   runInstalmentSchema,
@@ -1537,4 +1538,66 @@ export async function runInstalment(input: unknown): Promise<ActionResult<{ crea
   revalidatePath("/fees");
   revalidatePath("/fees/instalments");
   return { ok: true, data: { created: typeof data === "number" ? data : 0 } };
+}
+
+/**
+ * What each of this family's children owes.
+ *
+ * Two questions, intersected, and the intersection is the point:
+ *
+ *   - `fees_student_balances()` answers *what may I see* — it is the fees
+ *     module's own read path, so this screen and the counter cannot disagree
+ *     about a number (rule 11).
+ *   - `listMyChildren()` answers *who is mine* — a relationship, which no
+ *     policy expresses (rule 14).
+ *
+ * Keeping both matters for the caller who is **both**: a teacher whose own son
+ * is in Grade 4 may read every balance in the school through the policy, and a
+ * family fee screen that showed them 302 rows would be the plausible wrong
+ * answer — the same mistake `mobile_my_students()` was written to avoid, one
+ * module along.
+ */
+export type FamilyFeeAccount = {
+  studentId: string;
+  name: string;
+  admissionNumber: string;
+  sectionLabel: string | null;
+  relationship: string;
+  charged: number;
+  paid: number;
+  balance: number;
+  lastPaymentAt: string | null;
+};
+
+export async function listMyFamilyAccounts(): Promise<FamilyFeeAccount[]> {
+  const children = await listMyChildren();
+  if (children.length === 0) return [];
+
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("fees_student_balances", {
+    p_section_id: undefined,
+    p_only_outstanding: false,
+  });
+  if (error) throw new Error(error.message);
+
+  const balances = new Map((data ?? []).map((r) => [r.student_id, r]));
+
+  // Driven by the children, not by the balances: a child enrolled this year
+  // with nothing billed yet has no row in `fees_student_balances`, and dropping
+  // them here would tell a family the school has forgotten them. They get a
+  // zero and a sentence instead.
+  return children.map((child) => {
+    const row = balances.get(child.studentId);
+    return {
+      studentId: child.studentId,
+      name: child.name,
+      admissionNumber: child.admissionNumber,
+      sectionLabel: child.sectionLabel,
+      relationship: child.relationship,
+      charged: row ? Number(row.charged) + Number(row.fines) : 0,
+      paid: row ? Number(row.paid) - Number(row.refunds) : 0,
+      balance: row ? Number(row.balance) : 0,
+      lastPaymentAt: row?.last_payment_at ?? null,
+    };
+  });
 }

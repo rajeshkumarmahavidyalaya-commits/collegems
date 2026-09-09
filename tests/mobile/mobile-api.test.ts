@@ -70,6 +70,30 @@ describe("the mobile API", () => {
     expect(data ?? []).toHaveLength(0);
   });
 
+  it("answers that question from one place, shared with the web app", async () => {
+    // Migration 0199. `mobile_my_students` is now `family_my_students` with the
+    // published contract's bound of ten on it, and the web app calls the same
+    // definition through `listMyChildren()`. Two implementations of "my
+    // children" is how the phone and the website come to disagree about whose
+    // fee balance a parent is looking at.
+    const [family, mobile] = await Promise.all([
+      a.rpc("family_my_students"),
+      a.rpc("mobile_my_students"),
+    ]);
+    expect(family.error).toBeNull();
+    expect(mobile.error).toBeNull();
+
+    const familyRows = family.data ?? [];
+    const mobileRows = mobile.data ?? [];
+
+    // The bound is the only difference, and it is the mobile function's.
+    expect(mobileRows).toHaveLength(Math.min(familyRows.length, 10));
+    expect(mobileRows).toEqual(familyRows.slice(0, 10));
+
+    // An administrator is not a family, which is the whole point of both.
+    expect(familyRows).toHaveLength(0);
+  });
+
   it("computes today in the school's timezone, not the server's", async () => {
     const { data: today, error } = await a.rpc("mobile_today");
     expect(error).toBeNull();

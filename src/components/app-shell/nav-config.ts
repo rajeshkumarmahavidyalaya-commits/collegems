@@ -278,10 +278,19 @@ export const NAV_GROUPS: NavGroup[] = [
         icon: CalendarCheck,
         roles: ["admin", "teacher", "accountant", "librarian"],
       },
-      // No `roles` filter: everybody employed here has leave, and hiding the
-      // screen from the people who take it is how a form ends up on paper.
-      { title: "Leave",
- messageKey: "nav.leave", href: "/hr/leave", icon: Plane },
+      // Everybody *employed here* has leave, and hiding the screen from the
+      // people who take it is how a form ends up on paper. That sentence stood
+      // here with no `roles` list under it, so it also reached a parent: signed
+      // in as a guardian this page renders the heading "Leave" over the words
+      // "Your leave, and what is left of each kind. Only unpaid leave reaches a
+      // payslip" and an empty board. The list is the sentence, written down.
+      {
+        title: "Leave",
+        messageKey: "nav.leave",
+        href: "/hr/leave",
+        icon: Plane,
+        roles: ["admin", "teacher", "accountant", "librarian"],
+      },
       {
         title: "Salary structures",
         messageKey: "nav.salaryStructures",
@@ -289,17 +298,39 @@ export const NAV_GROUPS: NavGroup[] = [
         icon: Sigma,
         roles: ["admin", "accountant"],
       },
-      // No `roles` filter, same reason as `/homework`: one address, two
-      // screens. A teacher gets their own payslips here, an accountant gets
-      // the runs.
-      { title: "Payroll",
- messageKey: "nav.payroll", href: "/payroll", icon: Wallet },
+      // One address, two screens, same as `/homework`: a teacher gets their own
+      // payslips here and an accountant gets the runs. Both halves are about a
+      // person the school pays -- so the roles list is what the second screen
+      // already assumed. Without it a guardian's menu offered them "Payroll",
+      // which renders "My pay -- what you were paid, month by month" to
+      // somebody the school does not employ.
+      {
+        title: "Payroll",
+        messageKey: "nav.payroll",
+        href: "/payroll",
+        icon: Wallet,
+        roles: ["admin", "teacher", "accountant", "librarian"],
+      },
     ],
   },
   {
     title: "Finance",
     messageKey: "nav.finance",
     items: [
+      // The family's door into this module, and the only entry in the group a
+      // family sees. Everything behind it was already readable -- a parent
+      // holds `fees.view`, `fees_student_balances()` is row-scoped to their own
+      // children, and `/fees/students/[id]` has always rendered read-only for
+      // anybody without `fees.collect`. What was missing was the link: eight
+      // fee screens, all of them `roles: ["admin", "accountant"]`, and a
+      // dashboard card quoting a total with nowhere to go from it.
+      {
+        title: "Fees",
+        messageKey: "nav.familyFees",
+        href: "/fees/family",
+        icon: IndianRupee,
+        roles: ["student", "parent"],
+      },
       {
         title: "Fee counter",
         messageKey: "nav.feeCounter",
@@ -394,15 +425,31 @@ export const NAV_GROUPS: NavGroup[] = [
       // than a menu item that leads to an empty page.
       { title: "Reports",
  messageKey: "nav.reports", href: "/reports", icon: FileSpreadsheet },
-      // No `roles` filter, for the same reason: `checks_run()` gates every
-      // check on the matrix and reports the ones it withheld, so a role that
-      // may act on none of them sees a page that says so rather than a menu
-      // item that vanished. See migration 0188.
+      // `checks_run()` gates every check on the matrix and names the ones it
+      // withheld, which is why a *staff* role with a narrow matrix still gets
+      // this entry: a page saying "your role does not see this" is more use
+      // than a menu item that vanished. See migration 0188.
+      //
+      // A family is not that case. Measured as a guardian: one of the nine
+      // checks ran -- `fees.billing`, about the school's own fee-head setup --
+      // and eight were withheld, so the screen was eight refusals and one
+      // finding a parent can do nothing about. Migration 0200 moves that
+      // check's permission to `fees.collect` for the reason 0189 gave, and the
+      // list here says who the screen is for.
+      //
+      // The difference between a teacher and a parent here is not the count.
+      // On the demo matrix a teacher and a librarian run **0 of 9** too, and
+      // they keep the entry: a school can give a teacher `students.manage` and
+      // the page fills in, which is a matrix decision it may revisit any
+      // Tuesday. Nobody gives a guardian `staff.manage`. Where the count is a
+      // problem it is the matrix's to fix, and the page names every check it
+      // withheld so it is visible there rather than here.
       {
         title: "Needs attention",
         messageKey: "nav.checks",
         href: "/checks",
         icon: ShieldAlert,
+        roles: ["admin", "teacher", "accountant", "librarian"],
       },
     ],
   },

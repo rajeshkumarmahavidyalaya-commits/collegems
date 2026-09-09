@@ -7169,6 +7169,19 @@ export type Database = {
         }[]
       }
       exams_unpublish: { Args: { p_exam_id: string }; Returns: number }
+      family_my_students: {
+        Args: never
+        Returns: {
+          admission_number: string
+          full_name: string
+          photo_path: string
+          relationship: string
+          roll_number: string
+          section_id: string
+          section_label: string
+          student_id: string
+        }[]
+      }
       fees_billable_lines: {
         Args: {
           p_as_of?: string

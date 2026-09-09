@@ -847,45 +847,8 @@ export async function listCurriculum(): Promise<CurriculumOption[]> {
     });
 }
 
-export async function listChildren(): Promise<
-  { id: string; name: string; sectionLabel: string }[]
-> {
-  const ctx = await getUserContext();
-  if (!ctx?.guardianId) return [];
-
-  const supabase = await createClient();
-  const { data: links } = await supabase
-    .from("guardian_student")
-    .select("student_id")
-    .eq("guardian_id", ctx.guardianId);
-
-  if (!links?.length) return [];
-  const ids = links.map((l) => l.student_id);
-
-  const [studentsRes, enrolmentsRes, sectionsRes] = await Promise.all([
-    supabase.from("students").select("id, people:person_id ( first_name, last_name )").in("id", ids),
-    supabase
-      .from("enrolments")
-      .select("student_id, section_id")
-      .in("student_id", ids)
-      .eq("status", "active"),
-    supabase.from("sections").select("id, name, class_levels ( name )"),
-  ]);
-
-  const sections = new Map(
-    (sectionsRes.data ?? []).map((s) => [
-      s.id,
-      s.class_levels ? `${s.class_levels.name} · ${s.name}` : s.name,
-    ]),
-  );
-  const sectionFor = new Map((enrolmentsRes.data ?? []).map((e) => [e.student_id, e.section_id]));
-
-  return (studentsRes.data ?? []).map((s) => {
-    const sectionId = sectionFor.get(s.id);
-    return {
-      id: s.id,
-      name: s.people ? `${s.people.first_name} ${s.people.last_name}` : "Unnamed",
-      sectionLabel: sectionId ? (sections.get(sectionId) ?? "—") : "Not enrolled",
-    };
-  });
-}
+// `listChildren` stood here and answered a **student** with an empty list --
+// it opened `if (!ctx?.guardianId) return []`, and only the page's own
+// `roleCode === "parent"` branch kept that from showing. Use
+// `listMyChildren()` from `@/lib/auth/family`, which is the one definition
+// (migration 0199).

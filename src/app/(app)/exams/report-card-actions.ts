@@ -2,7 +2,6 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
-import { getUserContext } from "@/lib/auth/context";
 import { parseCard, remarkSchema, type ReportCard } from "@/lib/validations/report-cards";
 import type { ActionResult } from "../library/actions";
 
@@ -92,61 +91,9 @@ export async function listPublishedResults(studentId: string): Promise<Published
   }));
 }
 
-/**
- * The children this signed-in family may open a card for. A guardian may have
- * several; a student is their own single entry.
- */
-export type FamilyChild = { studentId: string; name: string; section: string | null };
-
-export async function listMyChildren(): Promise<FamilyChild[]> {
-  const ctx = await getUserContext();
-  if (!ctx) return [];
-
-  const supabase = await createClient();
-
-  if (ctx.roleCode === "student") {
-    if (!ctx.studentId) return [];
-    const { data } = await supabase
-      .from("students")
-      .select("id, people:person_id ( first_name, last_name )")
-      .eq("id", ctx.studentId)
-      .maybeSingle();
-    if (!data) return [];
-    const person = data.people as { first_name: string; last_name: string } | null;
-    return [
-      {
-        studentId: data.id,
-        name: person ? `${person.first_name} ${person.last_name}` : "This student",
-        section: null,
-      },
-    ];
-  }
-
-  if (ctx.roleCode !== "parent" || !ctx.guardianId) return [];
-
-  // RLS on guardian_student already restricts this to the signed-in guardian's
-  // links, so there is no `where guardian_id =` doing the security work here —
-  // it is a query narrowing, not a boundary.
-  const { data, error } = await supabase
-    .from("guardian_student")
-    .select("student_id, students ( id, people:person_id ( first_name, last_name ) )")
-    .eq("guardian_id", ctx.guardianId);
-  if (error) throw new Error(error.message);
-
-  return (data ?? []).map((row) => {
-    const student = row.students as {
-      id: string;
-      people: { first_name: string; last_name: string } | null;
-    } | null;
-    return {
-      studentId: row.student_id,
-      name: student?.people
-        ? `${student.people.first_name} ${student.people.last_name}`
-        : "This student",
-      section: null,
-    };
-  });
-}
+// `listMyChildren` used to live here, and was one of three answers to the same
+// question -- see `src/lib/auth/family.ts` and migration 0199. It is imported
+// from there now; `FamilyChild` moved with it.
 
 // ---------------------------------------------------------------------------
 // Remarks
