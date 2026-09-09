@@ -36,6 +36,7 @@ import {
   type AttendanceStatus,
 } from "@/lib/validations/attendance";
 import { useUnsavedChangesGuard } from "@/components/forms/use-unsaved-changes-guard";
+import { useI18n } from "@/components/providers/i18n-provider";
 import {
   getRegister,
   saveAttendance,
@@ -77,10 +78,6 @@ function todayIso() {
   const now = new Date();
   const offset = now.getTimezoneOffset() * 60_000;
   return new Date(now.getTime() - offset).toISOString().slice(0, 10);
-}
-
-function formatTime(iso: string) {
-  return new Date(iso).toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" });
 }
 
 export function AttendanceMarker({
@@ -517,6 +514,8 @@ function SummaryStrip({
 }
 
 function SaveIndicator({ state, onRetry }: { state: SaveState; onRetry: () => void }) {
+  const { formatTime } = useI18n();
+
   if (state.kind === "saving") {
     return (
       <span className="flex items-center gap-1.5 text-sm text-muted-foreground" aria-live="polite">

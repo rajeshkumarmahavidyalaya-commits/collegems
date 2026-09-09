@@ -7,6 +7,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { getUserContext } from "@/lib/auth/context";
 import { getNotice, listAttachments, markRead, readSummary } from "../actions";
 import { AttachmentLink } from "./attachment-link";
+import { getLocale } from "@/lib/i18n/server";
+import { formatDate } from "@/lib/i18n/format";
 import {
   categoryLabel,
   categoryTone,
@@ -33,7 +35,7 @@ export const metadata = { title: "Notice" };
 export default async function NoticePage({ params }: PageProps<"/notices/[id]">) {
   const { id } = await params;
 
-  const [notice, ctx] = await Promise.all([getNotice(id), getUserContext()]);
+  const [notice, ctx, locale] = await Promise.all([getNotice(id), getUserContext(), getLocale()]);
   if (!notice) notFound();
 
   await markRead(id);
@@ -69,11 +71,7 @@ export default async function NoticePage({ params }: PageProps<"/notices/[id]">)
           )}
           {notice.published_at && (
             <time dateTime={notice.published_at}>
-              {new Date(notice.published_at).toLocaleDateString("en-IN", {
-                day: "2-digit",
-                month: "short",
-                year: "numeric",
-              })}
+              {formatDate(notice.published_at, locale)}
             </time>
           )}
         </div>

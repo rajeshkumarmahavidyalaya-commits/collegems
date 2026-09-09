@@ -39,6 +39,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ErrorSummary } from "@/components/forms/error-summary";
 import { SelectField, TextField, TextareaField } from "@/components/forms/form-fields";
+import { useI18n } from "@/components/providers/i18n-provider";
 import {
   conversionRate,
   convertSchema,
@@ -396,6 +397,7 @@ function GateTable({
   canManage: boolean;
   onAdd: () => void;
 }) {
+  const { formatTime } = useI18n();
   const router = useRouter();
   const [pending, startTransition] = useTransition();
 
@@ -482,10 +484,7 @@ function GateTable({
                       {v.hostName ?? v.studentName ?? "—"}
                     </TableCell>
                     <TableCell className="font-mono tabular-nums text-muted-foreground">
-                      {new Date(v.checkedInAt).toLocaleTimeString([], {
-                        hour: "2-digit",
-                        minute: "2-digit",
-                      })}
+                      {formatTime(v.checkedInAt)}
                     </TableCell>
                     <TableCell>
                       {v.checkedOutAt ? (

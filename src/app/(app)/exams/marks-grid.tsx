@@ -14,6 +14,7 @@ import { Input } from "@/components/ui/input";
 import { useUnsavedChangesGuard } from "@/components/forms/use-unsaved-changes-guard";
 import { enteredCount, parseMarkCell } from "@/lib/validations/exams";
 import { saveMarks, type MarkSheetRow, type PaperComponent } from "./actions";
+import { useI18n } from "@/components/providers/i18n-provider";
 
 /** The whole paper, or one of its parts. A grid is one of these per column. */
 type Column = { id: string | null; label: string; maxMarks: number; passMarks: number };
@@ -61,6 +62,7 @@ export function MarksGrid({
   canEdit,
   isPublished,
 }: Props) {
+  const { formatTime } = useI18n();
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const inputs = useRef<(HTMLInputElement | null)[][]>([]);
@@ -251,7 +253,7 @@ export function MarksGrid({
           )}
           {savedAt && !isDirty && (
             <span className="ms-2 text-muted-foreground">
-              · saved at {savedAt.toLocaleTimeString("en-IN")}
+              · saved at {formatTime(savedAt)}
             </span>
           )}
         </p>

@@ -6,6 +6,8 @@ import { createTranslator, type Translator } from "@/lib/i18n/translate";
 import {
   formatCurrency,
   formatDate,
+  formatDateTime,
+  formatMonth,
   formatNumber,
   formatQuantity,
   formatTime,
@@ -16,6 +18,8 @@ type I18nValue = {
   direction: Direction;
   t: Translator;
   formatDate: (value: string | Date | null | undefined, options?: Intl.DateTimeFormatOptions) => string;
+  formatDateTime: (value: string | Date | null | undefined, options?: Intl.DateTimeFormatOptions) => string;
+  formatMonth: (periodMonth: string | null | undefined) => string;
   formatTime: (value: string | Date | null | undefined, options?: Intl.DateTimeFormatOptions) => string;
   formatNumber: (value: number | string | null | undefined, options?: Intl.NumberFormatOptions) => string;
   formatCurrency: (value: number | string | null | undefined, currency?: string) => string;
@@ -48,6 +52,8 @@ export function I18nProvider({
       direction: directionOf(locale),
       t,
       formatDate: (v, options) => formatDate(v, locale, options),
+      formatDateTime: (v, options) => formatDateTime(v, locale, options),
+      formatMonth: (v) => formatMonth(v, locale),
       formatTime: (v, options) => formatTime(v, locale, options),
       formatNumber: (v, options) => formatNumber(v, locale, options),
       formatCurrency: (v, currency) => formatCurrency(v, locale, currency),

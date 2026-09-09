@@ -29,6 +29,7 @@ import {
 } from "@/components/ui/table";
 import { ErrorSummary } from "@/components/forms/error-summary";
 import { SelectField, TextField, TextareaField } from "@/components/forms/form-fields";
+import { useI18n } from "@/components/providers/i18n-provider";
 import {
   formatDays,
   leaveDays,
@@ -192,6 +193,7 @@ function RequestRow({
   canDecide: boolean;
   today: string;
 }) {
+  const { formatDate } = useI18n();
   const router = useRouter();
   const [pending, startTransition] = useTransition();
 
@@ -249,7 +251,7 @@ function RequestRow({
         </span>
       </TableCell>
       <TableCell className="text-sm">
-        {formatRange(request.startsOn, request.endsOn)}
+        {formatRange(request.startsOn, request.endsOn, formatDate)}
         {(request.halfDayStart || request.halfDayEnd) && (
           <p className="text-xs text-muted-foreground">
             {request.halfDayStart && "First day is a half day"}
@@ -469,9 +471,18 @@ function ApplyDialog({
   );
 }
 
-function formatRange(startsOn: string, endsOn: string) {
+/**
+ * The formatter is passed in rather than reached for: this is module scope,
+ * where `useI18n()` has no component to belong to, and the reader's locale is
+ * not a global.
+ */
+function formatRange(
+  startsOn: string,
+  endsOn: string,
+  formatDate: (value: string, options?: Intl.DateTimeFormatOptions) => string,
+) {
   const format = (value: string) =>
-    new Date(`${value}T00:00:00Z`).toLocaleDateString("en-IN", {
+    formatDate(`${value}T00:00:00Z`, {
       day: "2-digit",
       month: "short",
       timeZone: "UTC",

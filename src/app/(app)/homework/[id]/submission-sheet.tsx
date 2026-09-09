@@ -26,6 +26,7 @@ import {
 } from "@/lib/validations/homework";
 import { AttachmentPanel } from "../attachments";
 import { gradeSubmission, type FileRow, type HomeworkRow, type SubmissionRow } from "../actions";
+import { useI18n } from "@/components/providers/i18n-provider";
 
 type Props = {
   homework: HomeworkRow;
@@ -151,6 +152,7 @@ function StudentRow({
   isOpen: boolean;
   onToggle: () => void;
 }) {
+  const { formatDateTime } = useI18n();
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [marks, setMarks] = useState(row.marksObtained === null ? "" : String(row.marksObtained));
@@ -201,7 +203,7 @@ function StudentRow({
         </TableCell>
         <TableCell className="text-sm text-muted-foreground">
           {row.submittedAt
-            ? new Date(row.submittedAt).toLocaleString("en-IN", {
+            ? formatDateTime(row.submittedAt, {
                 day: "2-digit",
                 month: "short",
                 hour: "2-digit",

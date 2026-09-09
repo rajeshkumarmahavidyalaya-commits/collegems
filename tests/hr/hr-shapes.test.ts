@@ -1,11 +1,11 @@
 import { describe, expect, it } from "vitest";
+import { formatMonth } from "@/lib/i18n/format";
 import {
   ATTENDANCE_STATUSES,
   paymentMethodLabel,
   paymentSchema,
   attendanceLabel,
   formatDays,
-  formatMonth,
   formatOverrides,
   leaveDays,
   leaveRequestSchema,
@@ -250,7 +250,7 @@ describe("display", () => {
   });
 
   it("names a month rather than showing a date", () => {
-    expect(formatMonth("2026-02-01")).toBe("February 2026");
+    expect(formatMonth("2026-02-01", "en")).toBe("February 2026");
   });
 });
 

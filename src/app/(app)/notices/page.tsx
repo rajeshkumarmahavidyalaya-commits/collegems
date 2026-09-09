@@ -6,6 +6,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { getUserContext } from "@/lib/auth/context";
 import { getBoard } from "./actions";
 import { categoryLabel, categoryTone } from "@/lib/validations/notices";
+import { getLocale } from "@/lib/i18n/server";
+import { formatDate } from "@/lib/i18n/format";
 
 export const metadata = { title: "Notice board" };
 
@@ -19,7 +21,7 @@ export const metadata = { title: "Notice board" };
  * already has one, and the second answer is the one that goes wrong.
  */
 export default async function NoticesPage() {
-  const [notices, ctx] = await Promise.all([getBoard(), getUserContext()]);
+  const [notices, ctx, locale] = await Promise.all([getBoard(), getUserContext(), getLocale()]);
   const canWrite = ctx?.roleCode === "admin";
 
   return (
@@ -85,11 +87,7 @@ export default async function NoticesPage() {
                   <div className="flex shrink-0 flex-col items-end gap-1 text-xs text-muted-foreground">
                     {notice.publishedAt && (
                       <time dateTime={notice.publishedAt}>
-                        {new Date(notice.publishedAt).toLocaleDateString("en-IN", {
-                          day: "2-digit",
-                          month: "short",
-                          year: "numeric",
-                        })}
+                        {formatDate(notice.publishedAt, locale)}
                       </time>
                     )}
                     <span className="flex items-center gap-2">

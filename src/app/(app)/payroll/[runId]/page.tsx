@@ -4,7 +4,9 @@ import { ArrowLeft } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { hasPermission } from "@/lib/auth/permissions";
-import { formatMonth, runStatusLabel } from "@/lib/validations/hr";
+import { runStatusLabel } from "@/lib/validations/hr";
+import { formatMonth } from "@/lib/i18n/format";
+import { getLocale } from "@/lib/i18n/server";
 import { getPayslipLines, getRegister, getRun } from "../actions";
 import { RunRegister } from "./run-register";
 
@@ -16,6 +18,7 @@ export default async function PayrollRunPage({
   params: Promise<{ runId: string }>;
 }) {
   const { runId } = await params;
+  const locale = await getLocale();
 
   const [run, rows, canProcess] = await Promise.all([
     getRun(runId),
@@ -38,7 +41,7 @@ export default async function PayrollRunPage({
         </Button>
 
         <div className="flex flex-wrap items-center gap-2">
-          <h1 className="text-2xl font-semibold">{formatMonth(run.periodMonth)}</h1>
+          <h1 className="text-2xl font-semibold">{formatMonth(run.periodMonth, locale)}</h1>
           <Badge variant={run.status === "finalised" ? "default" : "secondary"}>
             {runStatusLabel(run.status)}
           </Badge>

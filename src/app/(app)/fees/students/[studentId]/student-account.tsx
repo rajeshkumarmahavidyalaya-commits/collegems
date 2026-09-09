@@ -44,24 +44,7 @@ const ReverseEntryDialog = dynamic(() =>
   import("../../fee-dialogs").then((m) => m.ReverseEntryDialog),
 );
 import { createPaymentLink, queueInvoiceEmail, type StudentAccount } from "../../actions";
-
-function formatDateTime(iso: string) {
-  return new Date(iso).toLocaleString(undefined, {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-}
-
-function formatDate(iso: string) {
-  return new Date(iso).toLocaleDateString(undefined, {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-  });
-}
+import { useI18n } from "@/components/providers/i18n-provider";
 
 /**
  * A charge is red-ish, a credit is green-ish -- but the sign is always spelled
@@ -94,6 +77,7 @@ export function StudentAccountView({
   onlinePaymentsEnabled: boolean;
   invoiceEmailEnabled: boolean;
 }) {
+  const { formatDate, formatDateTime } = useI18n();
   const router = useRouter();
   const [paying, setPaying] = useState(false);
   const [adjusting, setAdjusting] = useState(false);

@@ -192,8 +192,8 @@ describe("a percentage column in a report", () => {
     // `exam_results.percentage` is numeric to three places. The exams module
     // renders one. A report that renders three disagrees with the card the
     // child took home.
-    expect(formatCell(63.286, "percent")).toBe("63.3%");
-    expect(formatCell(62, "percent")).toBe("62%");
-    expect(formatCell(null, "percent")).toBe("—");
+    expect(formatCell(63.286, "percent", "en")).toBe("63.3%");
+    expect(formatCell(62, "percent", "en")).toBe("62%");
+    expect(formatCell(null, "percent", "en")).toBe("—");
   });
 });

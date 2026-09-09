@@ -68,8 +68,9 @@ type Props = {
  */
 export function ReportRunner({ reports, options }: Props) {
   // The reader's locale, resolved server-side and provided by the shell. Every
-  // number below goes through it rather than through a hardcoded tag — rule 15.
-  const { locale } = useI18n();
+  // number and date below goes through it rather than through a hardcoded tag
+  // — rule 15.
+  const { formatNumber, locale } = useI18n();
   const [selectedKey, setSelectedKey] = useState(reports[0]?.key ?? "");
   const [params, setParams] = useState<Record<string, string>>({});
   const [touched, setTouched] = useState(false);
@@ -157,7 +158,7 @@ export function ReportRunner({ reports, options }: Props) {
       // "₹8,640.00" and "12 Sep 2025" rather than raw numbers and ISO stamps.
       visibleRows.map((row) =>
         Object.fromEntries(
-          report.columns.map((c) => [c.key, formatCell(row[c.key], c.type)]),
+          report.columns.map((c) => [c.key, formatCell(row[c.key], c.type, locale)]),
         ),
       ),
       report.columns.map((c) => ({ key: c.key, label: c.label })),
@@ -195,7 +196,7 @@ export function ReportRunner({ reports, options }: Props) {
       for (const offset of plan.pages) {
         if (controller.cancelled) {
           setExportJob(null);
-          toast.info(`Export stopped. ${collected.length.toLocaleString("en-IN")} rows were discarded.`);
+          toast.info(`Export stopped. ${formatNumber(collected.length)} rows were discarded.`);
           return;
         }
 
@@ -219,12 +220,12 @@ export function ReportRunner({ reports, options }: Props) {
       setExportJob(null);
       exportRowsToCsv(
         collected.map((row) =>
-          Object.fromEntries(report.columns.map((c) => [c.key, formatCell(row[c.key], c.type)])),
+          Object.fromEntries(report.columns.map((c) => [c.key, formatCell(row[c.key], c.type, locale)])),
         ),
         report.columns.map((c) => ({ key: c.key, label: c.label })),
         exportFilename(report.key),
       );
-      toast.success(`${collected.length.toLocaleString("en-IN")} rows exported.`);
+      toast.success(`${formatNumber(collected.length)} rows exported.`);
     })();
   }
 
@@ -300,10 +301,10 @@ export function ReportRunner({ reports, options }: Props) {
           {result && (
             <p className="text-sm text-muted-foreground" aria-live="polite">
               <span className="font-mono tabular-nums text-foreground">
-                {visibleRows.length.toLocaleString("en-IN")}
+                {formatNumber(visibleRows.length)}
               </span>{" "}
               {search ? `of ${result.rows.length} shown` : "rows"}
-              {result.truncated && ` · ${result.totalCount.toLocaleString("en-IN")} in total`}
+              {result.truncated && ` · ${formatNumber(result.totalCount)} in total`}
             </p>
           )}
 
@@ -338,7 +339,7 @@ export function ReportRunner({ reports, options }: Props) {
                   disabled={exportJob !== null}
                 >
                   <DownloadCloud className="size-4" aria-hidden="true" />
-                  All {result.totalCount.toLocaleString("en-IN")}
+                  All {formatNumber(result.totalCount)}
                 </Button>
               )}
               <Button variant="outline" size="sm" onClick={() => window.print()}>
@@ -375,11 +376,11 @@ export function ReportRunner({ reports, options }: Props) {
         {result?.truncated && !exportJob && (
           <Alert data-print="hide">
             <AlertTriangle className="size-4" aria-hidden="true" />
-            <AlertTitle>Showing the first {result.rows.length.toLocaleString("en-IN")} rows</AlertTitle>
+            <AlertTitle>Showing the first {formatNumber(result.rows.length)} rows</AlertTitle>
             <AlertDescription>
-              This report matched {result.totalCount.toLocaleString("en-IN")} rows. Narrow the
+              This report matched {formatNumber(result.totalCount)} rows. Narrow the
               filters to look at a smaller answer, or use <strong>All{" "}
-              {result.totalCount.toLocaleString("en-IN")}</strong> above to download every row —
+              {formatNumber(result.totalCount)}</strong> above to download every row —
               that walks the report in pages as you, so it obeys exactly the permissions this
               screen does.
             </AlertDescription>
@@ -441,7 +442,7 @@ export function ReportRunner({ reports, options }: Props) {
                 {visibleRows.map((row, i) => (
                   <TableRow key={i}>
                     {report?.columns.map((c) => {
-                      const rendered = formatCell(row[c.key], c.type);
+                      const rendered = formatCell(row[c.key], c.type, locale);
                       return (
                         <TableCell
                           key={c.key}

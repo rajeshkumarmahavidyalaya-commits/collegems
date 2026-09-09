@@ -27,6 +27,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { PLATFORMS } from "@/lib/validations/mobile";
+import { useI18n } from "@/components/providers/i18n-provider";
 import {
   CHANNELS,
   channelLabel,
@@ -191,6 +192,7 @@ function DevicesCard({ devices }: { devices: DeviceSummaryRow[] }) {
 }
 
 function ChannelCard({ status }: { status: ChannelStatus }) {
+  const { locale } = useI18n();
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [fromAddress, setFromAddress] = useState(status.fromAddress ?? "");
@@ -281,7 +283,7 @@ function ChannelCard({ status }: { status: ChannelStatus }) {
             </AlertTitle>
             <AlertDescription>
               {status.oldestQueuedAt
-                ? `The oldest has been waiting since ${relativeTime(status.oldestQueuedAt)}. Nothing is lost — they go out when this channel can send.`
+                ? `The oldest has been waiting since ${relativeTime(status.oldestQueuedAt, locale)}. Nothing is lost — they go out when this channel can send.`
                 : "Nothing is lost — they go out when this channel can send."}
             </AlertDescription>
           </Alert>
@@ -365,7 +367,7 @@ function ChannelCard({ status }: { status: ChannelStatus }) {
 
         {status.lastSuccessAt && (
           <p className="text-xs text-muted-foreground">
-            Last sent successfully {relativeTime(status.lastSuccessAt)}.
+            Last sent successfully {relativeTime(status.lastSuccessAt, locale)}.
           </p>
         )}
       </CardContent>

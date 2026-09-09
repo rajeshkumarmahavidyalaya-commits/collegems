@@ -5,6 +5,8 @@ import { getUserContext } from "@/lib/auth/context";
 import { formatPercent, resultLabel } from "@/lib/validations/exams";
 import { ordinal } from "@/lib/validations/report-cards";
 import { listMyChildren, listPublishedResults } from "../exams/report-card-actions";
+import { getLocale } from "@/lib/i18n/server";
+import { formatDate } from "@/lib/i18n/format";
 
 export const metadata = { title: "Report cards" };
 
@@ -16,6 +18,7 @@ export const metadata = { title: "Report cards" };
  */
 export default async function FamilyReportCardsPage() {
   const ctx = await getUserContext();
+  const locale = await getLocale();
   const children = await listMyChildren();
 
   if (!ctx || (ctx.roleCode !== "parent" && ctx.roleCode !== "student")) {
@@ -75,7 +78,7 @@ export default async function FamilyReportCardsPage() {
                         <p className="font-medium">{result.examName}</p>
                         <p className="text-sm text-muted-foreground">
                           {result.publishedAt
-                            ? `Published ${new Date(result.publishedAt).toLocaleDateString()}`
+                            ? `Published ${formatDate(result.publishedAt, locale)}`
                             : "Published"}
                           {result.rankInCohort && result.cohortSize
                             ? ` · ${ordinal(result.rankInCohort)} of ${result.cohortSize}`

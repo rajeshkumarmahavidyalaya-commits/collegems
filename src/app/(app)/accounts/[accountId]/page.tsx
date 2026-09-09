@@ -20,6 +20,8 @@ import {
   normalSide,
 } from "@/lib/validations/accounts";
 import { getAccountLedger, getChart } from "../actions";
+import { getLocale } from "@/lib/i18n/server";
+import { formatDate } from "@/lib/i18n/format";
 
 export const metadata = { title: "Account ledger" };
 
@@ -30,10 +32,11 @@ export default async function AccountLedgerPage({
   params: Promise<{ accountId: string }>;
   searchParams: Promise<{ from?: string; to?: string }>;
 }) {
-  const [{ accountId }, query, canView] = await Promise.all([
+  const [{ accountId }, query, canView, locale] = await Promise.all([
     params,
     searchParams,
     hasPermission("accounts.view"),
+    getLocale(),
   ]);
 
   if (!canView) {
@@ -127,7 +130,7 @@ export default async function AccountLedgerPage({
                     <TableRow key={`${row.voucherId ?? "opening"}-${i}`}>
                       <TableCell className="text-sm text-muted-foreground">
                         {row.voucherDate
-                          ? new Date(`${row.voucherDate}T00:00:00Z`).toLocaleDateString("en-IN", {
+                          ? formatDate(`${row.voucherDate}T00:00:00Z`, locale, {
                               day: "2-digit",
                               month: "short",
                               year: "numeric",

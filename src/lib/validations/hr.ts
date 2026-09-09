@@ -300,17 +300,6 @@ export function formatDays(value: number | string | null | undefined) {
   return Number.isInteger(n) ? String(n) : n.toFixed(1);
 }
 
-/** `2026-02-01` → `February 2026`. */
-export function formatMonth(periodMonth: string) {
-  const [year, month] = periodMonth.split("-").map(Number);
-  if (!year || !month) return periodMonth;
-  return new Date(Date.UTC(year, month - 1, 1)).toLocaleDateString("en-IN", {
-    month: "long",
-    year: "numeric",
-    timeZone: "UTC",
-  });
-}
-
 /** The first of the month, for the payroll picker. */
 export function monthValue(date: Date = new Date()): string {
   return `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, "0")}-01`;

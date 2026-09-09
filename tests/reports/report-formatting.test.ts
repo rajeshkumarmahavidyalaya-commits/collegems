@@ -86,35 +86,35 @@ describe("cell formatting", () => {
   it("renders an absent value as a dash, never as an empty cell", () => {
     // A blank in a printed roster is ambiguous between "no value" and "the
     // column ran off the page". A dash is not.
-    expect(formatCell(null, "text")).toBe("—");
-    expect(formatCell(undefined, "money")).toBe("—");
-    expect(formatCell("", "date")).toBe("—");
+    expect(formatCell(null, "text", "en")).toBe("—");
+    expect(formatCell(undefined, "money", "en")).toBe("—");
+    expect(formatCell("", "date", "en")).toBe("—");
   });
 
   it("keeps a real zero, which is not the same as absent", () => {
-    expect(formatCell(0, "number")).toBe("0");
+    expect(formatCell(0, "number", "en")).toBe("0");
   });
 
   it("formats money in rupees", () => {
-    expect(formatCell(8640, "money")).toContain("8,640");
+    expect(formatCell(8640, "money", "en")).toContain("8,640");
   });
 
   it("formats a percentage", () => {
-    expect(formatCell(91.5, "percent")).toBe("91.5%");
+    expect(formatCell(91.5, "percent", "en")).toBe("91.5%");
   });
 
   it("renders a boolean as a word, not as the string 'true'", () => {
-    expect(formatCell(true, "text")).toBe("Yes");
-    expect(formatCell(false, "text")).toBe("No");
+    expect(formatCell(true, "text", "en")).toBe("Yes");
+    expect(formatCell(false, "text", "en")).toBe("No");
   });
 
   it("title-cases a snake_case enum for a badge", () => {
-    expect(formatCell("transferred_out", "badge")).toBe("Transferred out");
-    expect(formatCell("sent", "badge")).toBe("Sent");
+    expect(formatCell("transferred_out", "badge", "en")).toBe("Transferred out");
+    expect(formatCell("sent", "badge", "en")).toBe("Sent");
   });
 
   it("passes an unparseable date through instead of showing 'Invalid Date'", () => {
-    expect(formatCell("not-a-date", "date")).toBe("not-a-date");
+    expect(formatCell("not-a-date", "date", "en")).toBe("not-a-date");
   });
 });
 

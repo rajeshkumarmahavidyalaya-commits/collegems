@@ -11,6 +11,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { relativeTime } from "@/lib/validations/notifications";
 import { markAllRead, markRead, type InboxRow } from "./actions";
+import { useI18n } from "@/components/providers/i18n-provider";
 
 /**
  * An inbox, not a table. These are messages a person reads once and then wants
@@ -19,6 +20,8 @@ import { markAllRead, markRead, type InboxRow } from "./actions";
  * unread visually first-class, one click to clear.
  */
 export function NotificationInbox({ rows }: { rows: InboxRow[] }) {
+  const { locale } = useI18n();
+  const { formatDateTime } = useI18n();
   const router = useRouter();
   const [filter, setFilter] = useState<"unread" | "all">("unread");
   const [expanded, setExpanded] = useState<string | null>(null);
@@ -131,8 +134,8 @@ export function NotificationInbox({ rows }: { rows: InboxRow[] }) {
                           </span>
                         )}
                         <span className="ms-auto shrink-0 text-xs text-muted-foreground">
-                          <time dateTime={row.createdAt} title={new Date(row.createdAt).toLocaleString("en-IN")}>
-                            {relativeTime(row.createdAt)}
+                          <time dateTime={row.createdAt} title={formatDateTime(row.createdAt)}>
+                            {relativeTime(row.createdAt, locale)}
                           </time>
                         </span>
                       </div>

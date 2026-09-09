@@ -41,6 +41,7 @@ import {
 } from "@/components/ui/select";
 import { SelectField, TextField, TextareaField } from "@/components/forms/form-fields";
 import { ErrorSummary } from "@/components/forms/error-summary";
+import { useI18n } from "@/components/providers/i18n-provider";
 import {
   SLOT_KINDS,
   SUBJECT_KINDS,
@@ -76,14 +77,6 @@ import {
   type SubjectRow,
   type TimeSlotRow,
 } from "./actions";
-
-function formatDate(iso: string) {
-  return new Date(iso).toLocaleDateString("en-IN", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-  });
-}
 
 function todayIso() {
   const now = new Date();
@@ -1126,6 +1119,7 @@ function WeekTab({
 // ---------------------------------------------------------------------------
 
 function HolidaysTab({ holidays, canManage }: { holidays: HolidayRow[]; canManage: boolean }) {
+  const { formatDate } = useI18n();
   const router = useRouter();
   const [editing, setEditing] = useState<HolidayRow | null>(null);
   const [creating, setCreating] = useState(false);

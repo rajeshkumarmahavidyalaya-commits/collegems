@@ -44,6 +44,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ErrorSummary } from "@/components/forms/error-summary";
 import { SelectField, TextField, TextareaField } from "@/components/forms/form-fields";
+import { useI18n } from "@/components/providers/i18n-provider";
 import {
   EXAM_KINDS,
   examKindLabel,
@@ -134,6 +135,7 @@ function ExamsTab({
   onAdd: () => void;
   onEdit: (exam: ExamRow) => void;
 }) {
+  const { formatDate } = useI18n();
   const router = useRouter();
   const [pending, startTransition] = useTransition();
 
@@ -217,11 +219,7 @@ function ExamsTab({
                       </Link>
                       {exam.startsOn && (
                         <p className="text-xs text-muted-foreground">
-                          {new Date(exam.startsOn).toLocaleDateString("en-IN", {
-                            day: "2-digit",
-                            month: "short",
-                            year: "numeric",
-                          })}
+                          {formatDate(exam.startsOn)}
                         </p>
                       )}
                     </TableCell>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
@@ -19,16 +19,17 @@ import { DataTable, exportRowsToCsv } from "@/components/data-table/data-table";
 import { DataTableToolbar } from "@/components/data-table/data-table-toolbar";
 import { formatMoney } from "@/lib/validations/fees-display";
 import { listInvoices, type InvoiceListRow } from "../actions";
+import { useI18n } from "@/components/providers/i18n-provider";
 
-function formatDate(iso: string) {
-  return new Date(iso).toLocaleDateString("en-IN", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-  });
-}
-
-const columns: ColumnDef<InvoiceListRow>[] = [
+/**
+ * Built inside the component rather than at module scope, because the date
+ * formatter is bound to the reader's locale and `useI18n()` has no component
+ * to belong to out here. Everything else about the definition is unchanged.
+ */
+function invoiceColumns(
+  formatDate: (value: string | Date | null | undefined) => string,
+): ColumnDef<InvoiceListRow>[] {
+  return [
   {
     accessorKey: "number",
     header: "Invoice",
@@ -102,10 +103,13 @@ const columns: ColumnDef<InvoiceListRow>[] = [
     enableSorting: false,
     meta: { label: "Status" },
   },
-];
+  ];
+}
 
 export function InvoicesTable() {
   const router = useRouter();
+  const { formatDate } = useI18n();
+  const columns = useMemo(() => invoiceColumns(formatDate), [formatDate]);
   const [pageIndex, setPageIndex] = useState(0);
   const [pageSize, setPageSize] = useState(25);
   const [status, setStatus] = useState("issued");

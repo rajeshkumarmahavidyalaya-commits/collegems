@@ -17,6 +17,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { useI18n } from "@/components/providers/i18n-provider";
 import {
   Select,
   SelectContent,
@@ -147,6 +148,7 @@ function VoucherRowView({
   isOpen: boolean;
   onToggle: () => void;
 }) {
+  const { formatDate } = useI18n();
   const router = useRouter();
   const [pending, startTransition] = useTransition();
 
@@ -176,7 +178,7 @@ function VoucherRowView({
           {voucher.voucherNumber ?? <span className="text-muted-foreground">— draft —</span>}
         </TableCell>
         <TableCell className="text-sm text-muted-foreground">
-          {new Date(`${voucher.voucherDate}T00:00:00Z`).toLocaleDateString("en-IN", {
+          {formatDate(`${voucher.voucherDate}T00:00:00Z`, {
             day: "2-digit",
             month: "short",
             year: "numeric",
@@ -267,7 +269,7 @@ function VoucherRowView({
               {voucher.status === "posted" && (
                 <p className="mt-2 flex items-center gap-2 text-xs text-muted-foreground">
                   <Lock className="size-3.5" aria-hidden="true" />
-                  Posted{voucher.postedAt && ` on ${new Date(voucher.postedAt).toLocaleDateString("en-IN")}`}
+                  Posted{voucher.postedAt && ` on ${formatDate(voucher.postedAt)}`}
                   . No policy matches a posted line, so nothing can change it.
                 </p>
               )}

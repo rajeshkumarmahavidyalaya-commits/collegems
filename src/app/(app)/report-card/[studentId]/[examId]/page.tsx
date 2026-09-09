@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { ReportCardSheet } from "@/components/report-card/report-card-sheet";
 import { getStudentCard } from "../../../exams/report-card-actions";
 import { PrintButton } from "../../../exams/[examId]/report-cards/print-button";
+import { getLocale } from "@/lib/i18n/server";
 
 export const metadata = { title: "Report card" };
 
@@ -13,6 +14,7 @@ export default async function FamilyReportCardPage({
   params: Promise<{ studentId: string; examId: string }>;
 }) {
   const { studentId, examId } = await params;
+  const locale = await getLocale();
   const card = await getStudentCard(examId, studentId);
 
   return (
@@ -28,7 +30,7 @@ export default async function FamilyReportCardPage({
       </div>
 
       {card ? (
-        <ReportCardSheet card={card} />
+        <ReportCardSheet card={card} locale={locale} />
       ) : (
         // Postgres refuses for two different reasons -- not yours, and not
         // published -- and neither is worth spelling out to a family: both mean

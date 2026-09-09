@@ -1762,6 +1762,31 @@ the same class of mistake as hardcoding a grading rule: it works for the first
 customer. Go through `src/lib/i18n/format.ts`, which also keeps money in INR —
 the rupee is a fact about the money, not about the reader.
 
+That rule was written and then broken 42 times, in 30 files, before anybody
+counted: **40 hardcoded `"en-IN"` tags and the rest passing `undefined`**, which
+formats in the *browser's* locale rather than the reader's — the same bug with a
+quieter tell. All 42 now route through the formatter. Four shapes, and the third
+is the one to remember:
+
+- a **client component** destructures the bound formatter (`const { formatDate }
+  = useI18n()`), which keeps every existing call site's name and arguments —
+  deleting the module-scope helper above it is the whole edit;
+- a **server component** takes `await getLocale()` and calls
+  `formatDate(value, locale)`;
+- **anything built before render takes the formatter as a parameter.** A
+  module-scope `ColumnDef[]` has no component for a hook to belong to, so
+  `invoiceColumns(formatDate)` is a factory called inside `useMemo`, and
+  `selectColumn({ all, row })` takes its labels the same way;
+- a **shared component rendered from a Server Component takes the locale as a
+  prop** — `useI18n()` would throw there.
+
+**And the money formatter is the same bug, left deliberately.** Six copies of
+`formatMoney` build `new Intl.NumberFormat("en-IN", …)`. Grouping and digits
+following the reader is a *behaviour* change for the first customer rather than
+a cleanup, `formatCurrency(value, locale)` already exists to receive it, and six
+helpers with fifty call sites is its own change with its own before and after.
+See `docs/ui-review.md`.
+
 ---
 
 ---

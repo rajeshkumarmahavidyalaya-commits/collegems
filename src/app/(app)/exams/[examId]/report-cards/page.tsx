@@ -9,6 +9,7 @@ import { getSectionCards } from "../../report-card-actions";
 import { ReportCardSheet } from "@/components/report-card/report-card-sheet";
 import { SectionPicker } from "./section-picker";
 import { PrintButton } from "./print-button";
+import { getLocale } from "@/lib/i18n/server";
 
 export const metadata = { title: "Report cards" };
 
@@ -22,10 +23,11 @@ export default async function ReportCardsPage({
   const { examId } = await params;
   const { section } = await searchParams;
 
-  const [exams, sections, canView] = await Promise.all([
+  const [exams, sections, canView, locale] = await Promise.all([
     listExams(),
     listSections(),
     hasPermission("exams.view"),
+    getLocale(),
   ]);
 
   const exam = exams.find((e) => e.id === examId);
@@ -112,7 +114,7 @@ export default async function ReportCardsPage({
       ) : (
         <div className="flex flex-col gap-6">
           {cards.map((card) => (
-            <ReportCardSheet key={card.student.id} card={card} />
+            <ReportCardSheet key={card.student.id} card={card} locale={locale} />
           ))}
         </div>
       )}

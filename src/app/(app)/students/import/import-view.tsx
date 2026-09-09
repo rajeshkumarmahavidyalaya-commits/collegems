@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { useI18n } from "@/components/providers/i18n-provider";
 import {
   Select,
   SelectContent,
@@ -517,6 +518,7 @@ function RowEditor({
 }
 
 function PastRuns({ past }: { past: ImportRunRow[] }) {
+  const { formatDate } = useI18n();
   return (
     <Card>
       <CardHeader>
@@ -553,7 +555,7 @@ function PastRuns({ past }: { past: ImportRunRow[] }) {
                   <TableRow key={r.id}>
                     <TableCell className="font-medium">{r.fileName ?? "—"}</TableCell>
                     <TableCell className="text-muted-foreground">
-                      {new Date(r.appliedAt ?? r.createdAt).toLocaleDateString()}
+                      {formatDate(r.appliedAt ?? r.createdAt)}
                     </TableCell>
                     <TableCell className="text-end font-mono tabular-nums">
                       {r.rowCount}

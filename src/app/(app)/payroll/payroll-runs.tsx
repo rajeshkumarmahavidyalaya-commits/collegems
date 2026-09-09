@@ -33,8 +33,9 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { formatMoney, formatMonth, monthValue, runStatusLabel } from "@/lib/validations/hr";
+import { formatMoney, monthValue, runStatusLabel } from "@/lib/validations/hr";
 import { discardPayroll, previewPayroll, type RunRow } from "./actions";
+import { useI18n } from "@/components/providers/i18n-provider";
 
 export function PayrollRuns({ runs, canProcess }: { runs: RunRow[]; canProcess: boolean }) {
   const [open, setOpen] = useState(false);
@@ -105,6 +106,7 @@ export function PayrollRuns({ runs, canProcess }: { runs: RunRow[]; canProcess: 
 }
 
 function RunRowView({ run, canProcess }: { run: RunRow; canProcess: boolean }) {
+  const { formatDate, formatMonth } = useI18n();
   const router = useRouter();
   const [pending, startTransition] = useTransition();
 
@@ -156,11 +158,7 @@ function RunRowView({ run, canProcess }: { run: RunRow; canProcess: boolean }) {
         </Badge>
         {run.finalisedAt && (
           <p className="text-xs text-muted-foreground">
-            {new Date(run.finalisedAt).toLocaleDateString("en-IN", {
-              day: "2-digit",
-              month: "short",
-              year: "numeric",
-            })}
+            {formatDate(run.finalisedAt)}
           </p>
         )}
       </TableCell>
@@ -280,6 +278,8 @@ export function MyPayslips({
 }: {
   payslips: { id: string; periodMonth: string; netPay: number; grossEarnings: number }[];
 }) {
+  const { formatMonth } = useI18n();
+
   return (
     <Card>
       <CardHeader>

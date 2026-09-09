@@ -130,13 +130,43 @@ The academic-years cards rendered `2026-04-01 — 2027-03-31` — the value the
 database returns, not a date anybody reads. They go through
 `src/lib/i18n/format.ts` now: *01 اپریل، 2025 — 31 مارچ، 2026*.
 
-That fix has a much larger sibling, measured and **not** done here: **42 raw
-`toLocaleDateString` / `toLocaleTimeString` calls across 30 files, 40 of them
-with a hardcoded `"en-IN"`.** Rule 15 forbids exactly that — *"it works for the
-first customer"* — and the rest pass `undefined`, which formats in the
-*browser's* locale rather than the reader's. It is a mechanical sweep across
-thirty files and belongs in its own change, with its own before-and-after
-count.
+That fix had a much larger sibling, and it is now done: **42 raw
+`toLocaleDateString` / `toLocaleTimeString` / `toLocaleString` calls across 30
+files, 40 of them with a hardcoded `"en-IN"` — 0 now.** Rule 15 forbids exactly
+that (*"it works for the first customer"*), and the ones that passed `undefined`
+were formatting in the **browser's** locale rather than the reader's, which is
+the same bug with a different tell.
+
+Four shapes came up, and the third is the one worth knowing:
+
+- **A client component** destructures the bound formatter — `const { formatDate
+  } = useI18n()` — and every existing call site keeps its name and its
+  arguments. Deleting the module-scope helper above it is the whole edit.
+- **A server component** takes `const locale = await getLocale()` and calls
+  `formatDate(value, locale)`.
+- **A module-scope column array cannot hold either**, because a hook has no
+  component to belong to out there. `invoiceColumns(formatDate)` is a factory
+  the component calls inside `useMemo`; `formatRange` and `selectColumn` take
+  the formatter and the labels as parameters for the same reason. That is the
+  general answer whenever the thing needing a locale is built before render.
+- **A shared component rendered from a Server Component takes the locale as a
+  prop.** `ReportCardSheet` is rendered from two of them, so `useI18n()` would
+  throw; it defaults to `en` rather than failing on a document somebody is about
+  to hand to a family.
+
+`formatMonth` moved out of `validations/hr.ts` and into `lib/i18n/format.ts`
+alongside a new `formatDateTime`, because a formatter that takes a locale
+belongs with the other formatters rather than in a module's validation file.
+
+### The money formatter is the same bug, deliberately left
+
+Six copies of `formatMoney` — in `accounts`, `transport`, `hr`, `fees-display`,
+`inventory` and `hostel` — each build `new Intl.NumberFormat("en-IN", …)`.
+`fees-display.ts` already says why it was left: grouping and digits following
+the reader is a **behaviour** change for the first customer, not a cleanup, and
+`formatCurrency(value, locale)` already exists in `format.ts` to receive it. Six
+helpers and roughly fifty call sites; its own change, with its own before and
+after.
 
 ## The shape of what is left
 

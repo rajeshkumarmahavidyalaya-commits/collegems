@@ -49,6 +49,46 @@ export function formatTime(
   return fmt ? fmt.format(date) : date.toISOString().slice(11, 16);
 }
 
+/**
+ * A date and a time together.
+ *
+ * Separate from `formatDate` because a receipt taken at 09:14 and a fee due on
+ * the 15th are different facts, and because callers were reaching for
+ * `toLocaleString(undefined, …)` — the *browser's* locale — for want of this.
+ */
+export function formatDateTime(
+  value: string | Date | null | undefined,
+  locale: Locale,
+  options: Intl.DateTimeFormatOptions = {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  },
+): string {
+  if (!value) return "—";
+  const date = typeof value === "string" ? new Date(value) : value;
+  if (Number.isNaN(date.getTime())) return "—";
+
+  const fmt = formatter(() => new Intl.DateTimeFormat(intlTag(locale), options));
+  return fmt ? fmt.format(date) : date.toISOString().slice(0, 16).replace("T", " ");
+}
+
+/** `2026-02-01` → `February 2026`, in the reader's language. */
+export function formatMonth(
+  periodMonth: string | null | undefined,
+  locale: Locale,
+): string {
+  if (!periodMonth) return "—";
+  const [year, month] = periodMonth.split("-").map(Number);
+  if (!year || !month) return periodMonth;
+  return formatDate(new Date(Date.UTC(year, month - 1, 1)), locale, {
+    month: "long",
+    year: "numeric",
+  });
+}
+
 export function formatNumber(
   value: number | string | null | undefined,
   locale: Locale,

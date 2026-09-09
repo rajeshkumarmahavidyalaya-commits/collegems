@@ -9,11 +9,14 @@ import { listSubjects } from "../../academics/actions";
 import { examKindLabel } from "@/lib/validations/exams";
 import { getResultSheet, listExamProblems, listExams, listPapers } from "../actions";
 import { ExamDetail } from "../exam-detail";
+import { getLocale } from "@/lib/i18n/server";
+import { formatDate } from "@/lib/i18n/format";
 
 export const metadata = { title: "Exam" };
 
 export default async function ExamPage({ params }: { params: Promise<{ examId: string }> }) {
   const { examId } = await params;
+  const locale = await getLocale();
 
   const [exams, papers, problems, results, sections, subjects, canManage, canGrade] =
     await Promise.all([
@@ -45,11 +48,7 @@ export default async function ExamPage({ params }: { params: Promise<{ examId: s
             {exam.startsOn && (
               <span className="inline-flex items-center gap-1">
                 <CalendarDays className="size-3.5" aria-hidden="true" />
-                {new Date(exam.startsOn).toLocaleDateString("en-IN", {
-                  day: "2-digit",
-                  month: "short",
-                  year: "numeric",
-                })}
+                {formatDate(exam.startsOn, locale)}
               </span>
             )}
             <span className="inline-flex items-center gap-1">

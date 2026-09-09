@@ -45,6 +45,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { exportRowsToCsv } from "@/components/data-table/data-table";
 import { ErrorSummary } from "@/components/forms/error-summary";
 import { SelectField, TextField, TextareaField } from "@/components/forms/form-fields";
+import { useI18n } from "@/components/providers/i18n-provider";
 import {
   CHANNELS,
   audienceKindLabel,
@@ -97,6 +98,7 @@ export function DeliveryLog({ outbox, templates, eventTypes, canManage }: Props)
 // ---------------------------------------------------------------------------
 
 function SentTab({ outbox, eventTypes }: { outbox: OutboxRow[]; eventTypes: EventType[] }) {
+  const { formatDateTime } = useI18n();
   const [eventFilter, setEventFilter] = useState("all");
   const [expanded, setExpanded] = useState<string | null>(null);
 
@@ -122,7 +124,7 @@ function SentTab({ outbox, eventTypes }: { outbox: OutboxRow[]; eventTypes: Even
   function exportCsv() {
     exportRowsToCsv(
       rows.map((r) => ({
-        sent_at: new Date(r.createdAt).toLocaleString("en-IN"),
+        sent_at: formatDateTime(r.createdAt),
         event: r.eventName,
         subject: r.subject ?? "",
         audience: describeAudience(r.audience),
@@ -239,6 +241,8 @@ function OutboxCard({
   isOpen: boolean;
   onToggle: () => void;
 }) {
+  const { locale } = useI18n();
+  const { formatDateTime } = useI18n();
   const [deliveries, setDeliveries] = useState<DeliveryRow[] | null>(null);
   const [loading, setLoading] = useState(false);
   const [loadError, setLoadError] = useState(false);
@@ -280,8 +284,8 @@ function OutboxCard({
                 {describeAudience(row.audience)}
               </span>
               <span className="ms-auto flex items-center gap-2 text-xs text-muted-foreground">
-                <time dateTime={row.createdAt} title={new Date(row.createdAt).toLocaleString("en-IN")}>
-                  {relativeTime(row.createdAt)}
+                <time dateTime={row.createdAt} title={formatDateTime(row.createdAt)}>
+                  {relativeTime(row.createdAt, locale)}
                 </time>
                 <ChevronDown
                   className={cn("size-4 transition-transform", isOpen && "rotate-180")}

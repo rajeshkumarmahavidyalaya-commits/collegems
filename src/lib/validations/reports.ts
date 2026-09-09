@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { formatMoney } from "./fees";
-import { formatNumber } from "@/lib/i18n/format";
+import { formatDate, formatDateTime, formatNumber } from "@/lib/i18n/format";
 import { DEFAULT_LOCALE, type Locale } from "@/lib/i18n/config";
 
 /**
@@ -111,7 +111,13 @@ const DATE_FORMAT: Intl.DateTimeFormatOptions = {
  * roster is ambiguous between "no value" and "the column ran off the page",
  * and a dash is not.
  */
-export function formatCell(value: unknown, type: ColumnType): string {
+/**
+ * The locale is a parameter rather than something this module reaches for.
+ * It is a pure formatter with no component to hang a hook on, and rule 15's
+ * point is that the reader's language is a property of the person — never a
+ * constant baked into a helper. `"en-IN"` was that constant here, three times.
+ */
+export function formatCell(value: unknown, type: ColumnType, locale: Locale): string {
   if (value === null || value === undefined || value === "") return "—";
 
   switch (type) {
@@ -131,21 +137,25 @@ export function formatCell(value: unknown, type: ColumnType): string {
 
     case "number": {
       const n = Number(value);
-      return Number.isFinite(n) ? n.toLocaleString("en-IN") : String(value);
+      return Number.isFinite(n) ? formatNumber(n, locale) : String(value);
     }
 
     case "date": {
       const parsed = new Date(String(value));
       return Number.isNaN(parsed.getTime())
         ? String(value)
-        : parsed.toLocaleDateString("en-IN", DATE_FORMAT);
+        : formatDate(parsed, locale, DATE_FORMAT);
     }
 
     case "datetime": {
       const parsed = new Date(String(value));
       return Number.isNaN(parsed.getTime())
         ? String(value)
-        : parsed.toLocaleString("en-IN", { ...DATE_FORMAT, hour: "2-digit", minute: "2-digit" });
+        : formatDateTime(parsed, locale, {
+            ...DATE_FORMAT,
+            hour: "2-digit",
+            minute: "2-digit",
+          });
     }
 
     case "badge":

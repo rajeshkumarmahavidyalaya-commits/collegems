@@ -50,6 +50,7 @@ import {
 import { ErrorSummary } from "@/components/forms/error-summary";
 import { SelectField, TextField, TextareaField } from "@/components/forms/form-fields";
 import { dueLabel, homeworkSchema, type HomeworkInput } from "@/lib/validations/homework";
+import { useI18n } from "@/components/providers/i18n-provider";
 import {
   deleteHomework,
   publishHomework,
@@ -67,6 +68,7 @@ type Props = {
 };
 
 export function HomeworkList({ homework, curriculum, today, canManage }: Props) {
+  const { formatDate } = useI18n();
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [open, setOpen] = useState(false);
@@ -260,7 +262,7 @@ export function HomeworkList({ homework, curriculum, today, canManage }: Props) 
                     <TableCell className="text-muted-foreground">{row.sectionLabel}</TableCell>
                     <TableCell>
                       <span className="text-sm">
-                        {new Date(`${row.dueOn}T00:00:00Z`).toLocaleDateString("en-IN", {
+                        {formatDate(`${row.dueOn}T00:00:00Z`, {
                           day: "2-digit",
                           month: "short",
                           timeZone: "UTC",

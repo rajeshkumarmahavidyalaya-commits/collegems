@@ -27,6 +27,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { useI18n } from "@/components/providers/i18n-provider";
 import {
   Table,
   TableBody,
@@ -473,6 +474,7 @@ function PaymentHistory({
   canProcess: boolean;
   open: boolean;
 }) {
+  const { formatDate } = useI18n();
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [payments, setPayments] = useState<
@@ -531,7 +533,7 @@ function PaymentHistory({
               <span className="text-xs text-muted-foreground">
                 {paymentMethodLabel(p.method)}
                 {p.reference && ` · ${p.reference}`} ·{" "}
-                {new Date(`${p.paidOn}T00:00:00Z`).toLocaleDateString("en-IN", {
+                {formatDate(`${p.paidOn}T00:00:00Z`, {
                   day: "2-digit",
                   month: "short",
                   timeZone: "UTC",

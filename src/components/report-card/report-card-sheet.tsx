@@ -1,6 +1,8 @@
 import { AlertTriangle } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { formatPercent, resultLabel } from "@/lib/validations/exams";
+import { formatDate } from "@/lib/i18n/format";
+import { DEFAULT_LOCALE, type Locale } from "@/lib/i18n/config";
 import {
   attendancePercent,
   attendanceSentence,
@@ -19,7 +21,19 @@ import {
  * `data-print="sheet"` strips the card chrome so a school's toner is not spent
  * on a rounded border.
  */
-export function ReportCardSheet({ card }: { card: ReportCard }) {
+/**
+ * The locale arrives as a prop rather than from `useI18n()`: this renders
+ * inside two Server Components, where there is no provider. It defaults so a
+ * caller that forgets still prints a readable date rather than throwing on a
+ * document somebody is about to hand to a family.
+ */
+export function ReportCardSheet({
+  card,
+  locale = DEFAULT_LOCALE,
+}: {
+  card: ReportCard;
+  locale?: Locale;
+}) {
   const papers = card.papers ?? [];
   const rank = rankSentence(card.rank);
   const attendance = attendancePercent(card.attendance);
@@ -233,7 +247,7 @@ export function ReportCardSheet({ card }: { card: ReportCard }) {
           </p>
           <p>
             {card.exam.published_at
-              ? `Published ${new Date(card.exam.published_at).toLocaleDateString()}`
+              ? `Published ${formatDate(card.exam.published_at, locale)}`
               : "Not yet published"}
           </p>
         </footer>

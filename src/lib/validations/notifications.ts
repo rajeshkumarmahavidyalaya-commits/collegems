@@ -1,4 +1,6 @@
 import { z } from "zod";
+import { formatDate } from "@/lib/i18n/format";
+import type { Locale } from "@/lib/i18n/config";
 
 /**
  * Phase 4.1 — the one way anything in this system tells somebody something.
@@ -373,7 +375,7 @@ export function templateVariables(body: string): string[] {
 }
 
 /** "3 minutes ago" / "yesterday" — relative time is what an inbox wants. */
-export function relativeTime(iso: string, now: Date = new Date()) {
+export function relativeTime(iso: string, locale: Locale, now: Date = new Date()) {
   const then = new Date(iso);
   const seconds = Math.round((now.getTime() - then.getTime()) / 1000);
 
@@ -386,5 +388,5 @@ export function relativeTime(iso: string, now: Date = new Date()) {
   if (days === 1) return "yesterday";
   if (days < 30) return `${days} days ago`;
 
-  return then.toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" });
+  return formatDate(then, locale);
 }

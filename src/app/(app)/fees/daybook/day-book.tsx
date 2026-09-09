@@ -15,17 +15,15 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { exportRowsToCsv } from "@/components/data-table/data-table";
 import { formatMoney, methodLabel } from "@/lib/validations/fees-display";
 import { getDayBook } from "../actions";
+import { useI18n } from "@/components/providers/i18n-provider";
 
 function todayIso() {
   const now = new Date();
   return new Date(now.getTime() - now.getTimezoneOffset() * 60_000).toISOString().slice(0, 10);
 }
 
-function formatTime(iso: string) {
-  return new Date(iso).toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" });
-}
-
 export function DayBookView() {
+  const { formatTime } = useI18n();
   const [from, setFrom] = useState(todayIso());
   const [to, setTo] = useState(todayIso());
 

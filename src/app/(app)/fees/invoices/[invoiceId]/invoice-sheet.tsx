@@ -7,14 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { formatMoney, methodLabel } from "@/lib/validations/fees-display";
 import type { InvoiceDocument } from "../../actions";
-
-function formatDate(iso: string) {
-  return new Date(iso).toLocaleDateString("en-IN", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-  });
-}
+import { useI18n } from "@/components/providers/i18n-provider";
 
 /**
  * One student's bill, laid out as a document rather than as a screen.
@@ -28,6 +21,7 @@ function formatDate(iso: string) {
  * school's toner.
  */
 export function InvoiceSheet({ doc }: { doc: InvoiceDocument }) {
+  const { formatDate } = useI18n();
   const { invoice, school, student, lines, payments } = doc;
   const overdue = invoice.status === "issued" && doc.outstanding > 0 && invoice.dueDate < new Date().toISOString().slice(0, 10);
 

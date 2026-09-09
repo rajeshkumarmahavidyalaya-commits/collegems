@@ -9,6 +9,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { setScheduleEnabled, type RunRow, type ScheduleProblem, type ScheduleRow } from "./actions";
+import { useI18n } from "@/components/providers/i18n-provider";
 import {
   KIND_DESCRIPTION,
   graceSentence,
@@ -30,6 +31,7 @@ export function ScheduleCard({
   runs: RunRow[];
   problems: ScheduleProblem[];
 }) {
+  const { formatDateTime } = useI18n();
   const router = useRouter();
   const [pending, startTransition] = useTransition();
 
@@ -120,7 +122,7 @@ export function ScheduleCard({
                   {RUN_STATUS_LABEL[run.status as RunStatus] ?? run.status}
                 </Badge>
                 <span className="font-mono text-xs text-muted-foreground">
-                  {new Date(run.occurrenceAt).toLocaleString()}
+                  {formatDateTime(run.occurrenceAt)}
                 </span>
                 <span className="text-muted-foreground">{runSentence(run)}</span>
               </li>
