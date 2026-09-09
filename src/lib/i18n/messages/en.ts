@@ -239,6 +239,28 @@ export const en = {
   "family.fees.staff.title": "This page belongs to a family",
   "family.fees.staff.body":
     "It shows a parent or a student their own children’s accounts. To collect a payment or look up any child, use the fee counter.",
+
+  // --- the notice board ----------------------------------------------------
+  "notices.title": "Notice board",
+  "notices.body":
+    "Circulars and announcements, kept so they can be read again. You are only shown the ones addressed to you.",
+  "notices.manage": "Write and manage notices",
+  "notices.empty.title": "Nothing on the board",
+  "notices.empty.staff":
+    "Nothing has been published yet. A notice stays here after it is announced, so it can be read again.",
+  "notices.empty.reader": "There are no notices for you at the moment.",
+  "notices.writeFirst": "Write the first one",
+  "notices.pinned": "Pinned",
+  "notices.read": "Read",
+  "notices.new": "New",
+  "notices.attachments.one": "{count} attachment",
+  "notices.attachments.other": "{count} attachments",
+  "notices.category.general": "General",
+  "notices.category.circular": "Circular",
+  "notices.category.event": "Event",
+  "notices.category.examination": "Examination",
+  "notices.category.holiday": "Holiday",
+  "notices.category.urgent": "Urgent",
 } as const;
 
 export type MessageKey = keyof typeof en;

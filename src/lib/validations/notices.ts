@@ -1,5 +1,7 @@
 import { z } from "zod";
 import { audienceSchema, audienceToJson, type AudienceInput } from "./notifications";
+import type { MessageKey } from "@/lib/i18n/messages/en";
+import type { Translator } from "@/lib/i18n/translate";
 
 /**
  * The notice board's client half.
@@ -20,17 +22,28 @@ export const NOTICE_CATEGORIES = [
 ] as const;
 export type NoticeCategory = (typeof NOTICE_CATEGORIES)[number];
 
-export const CATEGORY_LABEL: Record<NoticeCategory, string> = {
-  general: "General",
-  circular: "Circular",
-  event: "Event",
-  examination: "Examination",
-  holiday: "Holiday",
-  urgent: "Urgent",
-};
-
-export function categoryLabel(category: string): string {
-  return CATEGORY_LABEL[category as NoticeCategory] ?? category;
+/**
+ * A category's name, in the reader's language.
+ *
+ * This is the shape rule 15 already settled for formatters — *"a wrapper that
+ * adds domain meaning keeps its name and gains a `locale` parameter"* — with a
+ * translator instead of a locale, because a word has to be looked up rather
+ * than computed. Every call site keeps the name it had and gains one argument.
+ *
+ * `Translator` is imported **as a type**, so this file still pulls nothing new
+ * into the bundle: the catalogue reaches the call site through `t`, not through
+ * here. That matters because `notices.ts` already imports Zod, and a label
+ * helper that dragged the message catalogue in behind it would be the
+ * `fees-display.ts` split undone.
+ *
+ * A value with no key falls back to the raw value rather than to the key — the
+ * translator's own fallback would print `notices.category.staff_only`, which is
+ * worse on a badge than the word the database actually stored.
+ */
+export function categoryLabel(category: string, t: Translator): string {
+  return NOTICE_CATEGORIES.includes(category as NoticeCategory)
+    ? t(`notices.category.${category}` as MessageKey)
+    : category;
 }
 
 /**

@@ -212,4 +212,26 @@ export const hi: Messages = {
   "family.fees.staff.title": "यह पृष्ठ परिवार के लिए है",
   "family.fees.staff.body":
     "यह अभिभावक या छात्र को उनके अपने खाते दिखाता है। भुगतान लेने या किसी भी बच्चे को खोजने के लिए शुल्क काउंटर का उपयोग करें।",
+
+  // --- the notice board ----------------------------------------------------
+  "notices.title": "सूचना पट",
+  "notices.body":
+    "परिपत्र और घोषणाएँ, जो बाद में फिर पढ़ी जा सकें। आपको केवल वही दिखती हैं जो आपके लिए हैं।",
+  "notices.manage": "सूचनाएँ लिखें और प्रबंधित करें",
+  "notices.empty.title": "पट पर कुछ नहीं है",
+  "notices.empty.staff":
+    "अभी तक कुछ प्रकाशित नहीं हुआ। घोषणा के बाद भी सूचना यहीं रहती है, ताकि फिर पढ़ी जा सके।",
+  "notices.empty.reader": "इस समय आपके लिए कोई सूचना नहीं है।",
+  "notices.writeFirst": "पहली सूचना लिखें",
+  "notices.pinned": "पिन किया गया",
+  "notices.read": "पढ़ी गई",
+  "notices.new": "नई",
+  "notices.attachments.one": "{count} संलग्नक",
+  "notices.attachments.other": "{count} संलग्नक",
+  "notices.category.general": "सामान्य",
+  "notices.category.circular": "परिपत्र",
+  "notices.category.event": "आयोजन",
+  "notices.category.examination": "परीक्षा",
+  "notices.category.holiday": "अवकाश",
+  "notices.category.urgent": "अत्यावश्यक",
 };

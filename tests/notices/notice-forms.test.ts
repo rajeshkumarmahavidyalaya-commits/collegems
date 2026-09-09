@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { createTranslator } from "@/lib/i18n/translate";
 import {
   categoryLabel,
   categoryTone,
@@ -125,8 +126,16 @@ describe("how a notice is shown", () => {
     expect(categoryTone("urgent")).toBe("warning");
     expect(categoryTone("circular")).toBe("outline");
     expect(categoryTone("general")).toBe("outline");
-    expect(categoryLabel("examination")).toBe("Examination");
-    expect(categoryLabel("something_else")).toBe("something_else");
+    // The label is looked up in the reader's catalogue now, so the test
+    // supplies one. English is asserted here; the three-locale coverage is
+    // `tests/i18n/i18n.test.ts`'s floor.
+    const t = createTranslator("en");
+    expect(categoryLabel("examination", t)).toBe("Examination");
+
+    // A value the catalogue has no key for falls back to the value itself,
+    // never to the key -- `notices.category.something_else` on a badge is
+    // worse than the word the database actually stored.
+    expect(categoryLabel("something_else", t)).toBe("something_else");
   });
 
   it("distinguishes the three statuses", () => {

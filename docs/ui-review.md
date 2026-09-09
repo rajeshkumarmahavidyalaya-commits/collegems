@@ -229,3 +229,95 @@ the dashboard — all of them are reasoned about from their code in this
 repository and none has been rendered here. That is worth saying plainly,
 because "the UI was reviewed" and "one page of the UI was reviewed with a
 browser" are different claims.
+
+---
+
+## The module copy, and the 44 helpers that are half of it
+
+The chrome is translated: the sidebar, the data table, the login page, the theme
+toggle, the skip link. Behind it are twenty-five modules of English.
+
+Counted rather than estimated, over the twelve screens a guardian can reach:
+
+```
+/                        15 strings      /fees/family          0  (translated)
+/timetable               40              /reports             23
+/attendance/leave        21              /notifications       16
+/homework                71              /notices              9  (translated)
+/study-material          24              /library/books       29
+/report-card              7              /settings/language    1  (translated)
+                                         ---------------------------
+                                         238 distinct strings
+```
+
+But 238 loose strings is the wrong shape of the problem, and finding the right
+one is what makes this tractable:
+
+> **44 `*Label` helpers, in 12 modules, called from 95 places in 57 files.**
+
+Those are the shared half. `channelLabel` is on nine screens; `periodLabel` on
+seven; `decisionLabel` on five. One edit reaches every screen that renders that
+badge, which is not true of a heading.
+
+Three things the count turned up:
+
+- **The import-resolved number is 95, not the 170 a plain grep gives.** Three
+  helper *names* mean different things in different modules — `statusLabel` in
+  four (attendance, concessions, notifications, student-leave), `kindLabel` in
+  four (certificates, concessions, schedules, student-leave), `periodLabel` in
+  two — so a grep by name counts each module's call sites against every module's
+  helper. The same `formatMoney`-under-four-names shape this document already
+  recorded once, one layer along.
+- **`CATEGORY_LABEL` was exported and had no caller.** A `Record` beside the
+  function that read it, public, unused — the rule-15 lesson again: a correct
+  string nobody renders is not a feature. It went with the rewrite.
+- **A helper cannot import the catalogue.** `notices.ts` already imports Zod,
+  and a label helper that pulled the message catalogue in behind it would undo
+  the `fees-display.ts` split. So the translator arrives as a **parameter**, and
+  `Translator` is imported as a *type* — erased at build.
+
+### The shape, settled once
+
+Rule 15 already decided this for the formatter version: *"a wrapper that adds
+domain meaning keeps its name and gains a `locale` parameter"*. A label needs a
+lookup rather than a computation, so it gains a `Translator`:
+
+```ts
+export function categoryLabel(category: string, t: Translator): string {
+  return NOTICE_CATEGORIES.includes(category as NoticeCategory)
+    ? t(`notices.category.${category}` as MessageKey)
+    : category;
+}
+```
+
+Every call site keeps the name it had and gains one argument — `getT()` in a
+Server Component, `useT()` in a client one.
+
+**The fallback is the value, not the key.** `createTranslator` returns the key
+for an unknown one, which is right for a missing translation and wrong here: a
+category the catalogue has not heard of would render
+`notices.category.staff_only` on a badge, where the word the database stored is
+strictly better. The membership check is what makes the difference, and the test
+pins both halves.
+
+### `/notices` is the first module through it
+
+Chosen because rule 10 makes it the screen a family comes back to — *"nothing to
+come back to in March to check what the circular said"* — and because it is
+small enough to do completely: 9 strings, 6 category names, one helper, three
+call sites, three locales. The board, the notice itself and the manage screen
+all read the same catalogue now.
+
+### The guard is a floor, run backwards
+
+`tests/i18n/label-helpers.test.ts` mirrors `i18n.test.ts`'s per-locale floor and
+points the other way: a floor says how much of the **catalogue** exists, this
+says how much of the **interface** reaches it.
+
+- every name in `LOCALE_AWARE` must still take a `Translator` — so a conversion
+  cannot be quietly undone;
+- the number that still hardcode English (**43**) may shrink and never grow — so
+  a new helper written the old way fails the test.
+
+Same bargain as the coverage floor, and the same reason: the only way either can
+fail is that somebody's work was undone.

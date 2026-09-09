@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Ban, Loader2, Megaphone, Plus, Send } from "lucide-react";
 import { toast } from "sonner";
+import { useT } from "@/components/providers/i18n-provider";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -92,6 +93,7 @@ export function ManageNotices({
 }
 
 function NoticeRowCard({ notice }: { notice: NoticeRow }) {
+  const t = useT();
   const router = useRouter();
   const [pending, startTransition] = useTransition();
 
@@ -136,7 +138,7 @@ function NoticeRowCard({ notice }: { notice: NoticeRow }) {
                 {notice.title}
               </Link>
               <Badge variant={categoryTone(notice.category)}>
-                {categoryLabel(notice.category)}
+                {categoryLabel(notice.category, t)}
               </Badge>
               <Badge variant={statusTone(notice.status)}>
                 {STATUS_LABEL[notice.status as NoticeStatus] ?? notice.status}
@@ -242,6 +244,7 @@ function Withdraw({ noticeId, title }: { noticeId: string; title: string }) {
 }
 
 function NewNotice({ sections, roles }: { sections: Section[]; roles: Role[] }) {
+  const t = useT();
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [pending, startTransition] = useTransition();
@@ -327,7 +330,7 @@ function NewNotice({ sections, roles }: { sections: Section[]; roles: Role[] }) 
               <SelectContent>
                 {NOTICE_CATEGORIES.map((c) => (
                   <SelectItem key={c} value={c}>
-                    {categoryLabel(c)}
+                    {categoryLabel(c, t)}
                   </SelectItem>
                 ))}
               </SelectContent>

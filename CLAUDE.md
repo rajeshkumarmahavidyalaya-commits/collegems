@@ -2030,6 +2030,39 @@ parameter — `formatColumn` (a dash for zero in a ledger column) and
 something is not the same as deleting a duplicate that says nothing. See
 `docs/ui-review.md`.
 
+**And the same sentence decides the module copy, which is the larger half.** The
+chrome is translated; behind it are twenty-five modules of English — 238
+distinct strings over the twelve screens a guardian can reach. But 238 loose
+strings is the wrong shape of the problem:
+
+> **44 `*Label` helpers, in 12 modules, called from 95 places in 57 files.**
+> Those are the shared half: `channelLabel` is on nine screens, `periodLabel` on
+> seven. One edit reaches every screen that renders that badge, which is not
+> true of a heading.
+
+So a label helper **keeps its name and gains a `Translator`** — the formatter
+rule with a lookup instead of a computation — imported as a *type*, so a
+validations module still drags nothing new into the bundle. Three things:
+
+- **Resolve imports before quoting a number.** A plain grep says 170 call sites;
+  three helper *names* mean different things in different modules
+  (`statusLabel` in four, `kindLabel` in four, `periodLabel` in two), so the
+  grep counts each module's sites against every module's helper. The
+  `formatMoney`-under-four-names shape, one layer along. It is **95**.
+- **The fallback is the value, not the key.** `createTranslator` returns the key
+  for an unknown one, which is right for a missing *translation* and wrong for
+  an unknown *value*: `notices.category.staff_only` on a badge is worse than the
+  word the database stored. Check membership, then translate.
+- **The guard is a floor run backwards.** `tests/i18n/label-helpers.test.ts`
+  asserts every converted helper still takes a `Translator`, and that the number
+  still hardcoding English may shrink and never grow. A per-locale floor says
+  how much of the *catalogue* exists; this says how much of the *interface*
+  reaches it — and the only way either can fail is that somebody's work was
+  undone.
+
+`/notices` is the first module through it, chosen because rule 10 makes it the
+screen a family comes back to in March.
+
 ---
 
 ---

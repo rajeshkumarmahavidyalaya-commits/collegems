@@ -212,4 +212,26 @@ export const ur: Messages = {
   "family.fees.staff.title": "یہ صفحہ گھرانے کے لیے ہے",
   "family.fees.staff.body":
     "یہ والدین یا طالب علم کو ان کے اپنے کھاتے دکھاتا ہے۔ ادائیگی لینے یا کسی بھی بچے کو تلاش کرنے کے لیے فیس کاؤنٹر استعمال کریں۔",
+
+  // --- the notice board ----------------------------------------------------
+  "notices.title": "نوٹس بورڈ",
+  "notices.body":
+    "سرکلر اور اعلانات، جو بعد میں دوبارہ پڑھے جا سکیں۔ آپ کو صرف وہی دکھائے جاتے ہیں جو آپ کے لیے ہیں۔",
+  "notices.manage": "نوٹس لکھیں اور سنبھالیں",
+  "notices.empty.title": "بورڈ پر کچھ نہیں",
+  "notices.empty.staff":
+    "ابھی تک کچھ شائع نہیں ہوا۔ اعلان کے بعد بھی نوٹس یہیں رہتا ہے، تاکہ دوبارہ پڑھا جا سکے۔",
+  "notices.empty.reader": "اس وقت آپ کے لیے کوئی نوٹس نہیں ہے۔",
+  "notices.writeFirst": "پہلا نوٹس لکھیں",
+  "notices.pinned": "پن کیا گیا",
+  "notices.read": "پڑھا گیا",
+  "notices.new": "نیا",
+  "notices.attachments.one": "{count} منسلکہ",
+  "notices.attachments.other": "{count} منسلکات",
+  "notices.category.general": "عام",
+  "notices.category.circular": "سرکلر",
+  "notices.category.event": "تقریب",
+  "notices.category.examination": "امتحان",
+  "notices.category.holiday": "تعطیل",
+  "notices.category.urgent": "فوری",
 };

@@ -7,7 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { getUserContext } from "@/lib/auth/context";
 import { getNotice, listAttachments, markRead, readSummary } from "../actions";
 import { AttachmentLink } from "./attachment-link";
-import { getLocale } from "@/lib/i18n/server";
+import { getLocale, getT } from "@/lib/i18n/server";
 import { formatDate } from "@/lib/i18n/format";
 import {
   categoryLabel,
@@ -35,7 +35,12 @@ export const metadata = { title: "Notice" };
 export default async function NoticePage({ params }: PageProps<"/notices/[id]">) {
   const { id } = await params;
 
-  const [notice, ctx, locale] = await Promise.all([getNotice(id), getUserContext(), getLocale()]);
+  const [notice, ctx, locale, t] = await Promise.all([
+    getNotice(id),
+    getUserContext(),
+    getLocale(),
+    getT(),
+  ]);
   if (!notice) notFound();
 
   await markRead(id);
@@ -63,7 +68,7 @@ export default async function NoticePage({ params }: PageProps<"/notices/[id]">)
           {notice.title}
         </h1>
         <div className="mt-2 flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
-          <Badge variant={categoryTone(notice.category)}>{categoryLabel(notice.category)}</Badge>
+          <Badge variant={categoryTone(notice.category)}>{categoryLabel(notice.category, t)}</Badge>
           {notice.status !== "published" && (
             <Badge variant={statusTone(notice.status)}>
               {STATUS_LABEL[notice.status as NoticeStatus] ?? notice.status}

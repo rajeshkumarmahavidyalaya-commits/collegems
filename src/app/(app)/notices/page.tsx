@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { getUserContext } from "@/lib/auth/context";
 import { getBoard } from "./actions";
 import { categoryLabel, categoryTone } from "@/lib/validations/notices";
-import { getLocale } from "@/lib/i18n/server";
+import { getLocale, getT } from "@/lib/i18n/server";
 import { formatDate } from "@/lib/i18n/format";
 
 export const metadata = { title: "Notice board" };
@@ -21,22 +21,26 @@ export const metadata = { title: "Notice board" };
  * already has one, and the second answer is the one that goes wrong.
  */
 export default async function NoticesPage() {
-  const [notices, ctx, locale] = await Promise.all([getBoard(), getUserContext(), getLocale()]);
+  const [notices, ctx, locale, t] = await Promise.all([
+    getBoard(),
+    getUserContext(),
+    getLocale(),
+    getT(),
+  ]);
   const canWrite = ctx?.roleCode === "admin";
 
   return (
     <div className="flex flex-col gap-6">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-semibold">Notice board</h1>
+          <h1 className="text-2xl font-semibold">{t("notices.title")}</h1>
           <p className="max-w-2xl text-sm text-muted-foreground">
-            Circulars and announcements, kept so they can be read again. You are only shown the
-            ones addressed to you.
+{t("notices.body")}
           </p>
         </div>
         {canWrite && (
           <Button asChild>
-            <Link href="/notices/manage">Write and manage notices</Link>
+            <Link href="/notices/manage">{t("notices.manage")}</Link>
           </Button>
         )}
       </div>
@@ -46,18 +50,18 @@ export default async function NoticesPage() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-base">
               <ScrollText className="size-4 text-muted-foreground" aria-hidden="true" />
-              Nothing on the board
+              {t("notices.empty.title")}
             </CardTitle>
             <CardDescription>
               {canWrite
-                ? "Nothing has been published yet. A notice stays here after it is announced, so it can be read again."
-                : "There are no notices for you at the moment."}
+                ? t("notices.empty.staff")
+                : t("notices.empty.reader")}
             </CardDescription>
           </CardHeader>
           {canWrite && (
             <CardContent>
               <Button asChild variant="outline">
-                <Link href="/notices/manage">Write the first one</Link>
+                <Link href="/notices/manage">{t("notices.writeFirst")}</Link>
               </Button>
             </CardContent>
           )}
@@ -74,11 +78,11 @@ export default async function NoticesPage() {
                   <div className="min-w-0">
                     <h2 className="flex flex-wrap items-center gap-2 font-medium">
                       {notice.isPinned && (
-                        <Pin className="size-3.5 text-warning" aria-label="Pinned" />
+                        <Pin className="size-3.5 text-warning" aria-label={t("notices.pinned")} />
                       )}
                       {notice.title}
                       <Badge variant={categoryTone(notice.category)}>
-                        {categoryLabel(notice.category)}
+                        {categoryLabel(notice.category, t)}
                       </Badge>
                     </h2>
                     <p className="mt-1 line-clamp-2 text-sm text-muted-foreground">{notice.body}</p>
@@ -94,7 +98,10 @@ export default async function NoticesPage() {
                       {notice.attachments > 0 && (
                         <span className="inline-flex items-center gap-1">
                           <Paperclip className="size-3" aria-hidden="true" />
-                          {notice.attachments}
+                          <span className="sr-only">
+                            {t.plural("notices.attachments", notice.attachments)}
+                          </span>
+                          <span aria-hidden="true">{notice.attachments}</span>
                         </span>
                       )}
                       {/* Read state is a word plus an icon, never the icon
@@ -102,10 +109,10 @@ export default async function NoticesPage() {
                       {notice.isRead ? (
                         <span className="inline-flex items-center gap-1 text-success">
                           <CheckCircle2 className="size-3" aria-hidden="true" />
-                          Read
+                          {t("notices.read")}
                         </span>
                       ) : (
-                        <span className="font-medium text-foreground">New</span>
+                        <span className="font-medium text-foreground">{t("notices.new")}</span>
                       )}
                     </span>
                   </div>
