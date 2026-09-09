@@ -64,6 +64,55 @@ four it cannot — `TRUNCATE`, `TRIGGER`, `REFERENCES`, `MAINTAIN` (migration
   migration `0160` and `docs/modules/privileges.md` rather than being a quiet
   `where` clause.
 
+#### …and a third guard, on the indexes that hold rule 1 up
+
+`tenant_id` leads every table, so it leads every composite index — and the
+convention put `x_tenant_idx ON (tenant_id)` on every table too. The moment a
+composite index arrived beside it, the single-column one answered nothing.
+Measured with a prefix test over `pg_index`: **87 of the 262 plain indexes in
+`public` and `reference` were strict prefixes of another plain index on the same
+table**, a third of them. Migration `0204` drops them;
+`index_guard_violations()` is the fourth executable check, beside the schema,
+privilege and audit ones.
+
+> **A btree on (a) is a strict prefix of a btree on (a, b): every seek the short
+> one serves, the long one serves too.** That is a property of the structure,
+> not a guess about query shapes — which is why the guard needs no workload to
+> be true, and why partial and expression indexes are excluded on both sides.
+> A partial index is a different index over different rows and is doing real
+> work.
+
+Two things about it are the point, and the second cost a rewritten migration:
+
+- **The advisor is not the instrument.** Supabase's performance advisor reports
+  103 unindexed foreign keys here. It asks whether an index's leading columns
+  *exactly match* the FK's, in order; a foreign-key check needs a seek, which
+  any index starting with one of those columns serves. Re-measured, it is **55**,
+  and only **2** sit on an `ON UPDATE CASCADE` path — both pointing at
+  `reference.locales`, whose key never changes. Rule 4's composite-key device is
+  correctly indexed everywhere: the cascade from `exam_subjects` runs
+  `Index Scan using marks_paper_idx`. Do not "fix" the 103.
+- **It is not a speedup, and the first measurement said it was.** Inserting 300
+  register marks went 635.5 ms → 329.8 ms, which would have been a 48%
+  improvement in a commit message. In the same trace the *audit trigger* moved
+  342.4 → 183.7 ms — and dropping an index on `attendance_records` cannot make
+  `audit_log` faster. It was cache warmth. Measured properly, four runs each in
+  one warm session with the control recreated inside the transaction: **102.0 ms
+  with the redundant indexes, 105.7 ms without.** Indistinguishable.
+
+> **When a number moves that your change cannot explain, the number is measuring
+> something else.** The sweep rule — *a number measured with a broken instrument
+> is worse than no number, because it is a number people quote* — has a timing
+> half, and this is it.
+
+So the justification is that the claim "two indexes are needed here" was false,
+and that the write removed scales with the table: ~nothing at 6,000 attendance
+rows, real at the 80,000 a school writes each year. Five other candidates in the
+same pass measured clean and are recorded in `docs/performance.md` so nobody
+proposes them twice — the RLS helpers are already `STABLE`, no policy calls a
+bare `auth.uid()`, and a statement-level audit trigger buys 8% because the cost
+was never the per-row invocation.
+
 And the honest scope, because overclaiming a finding is its own inaccuracy:
 PostgREST emits only the SQL it builds, so no browser was one request away from
 this. What was missing was **the last line of defence** — the whole argument of

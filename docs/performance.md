@@ -349,3 +349,95 @@ the boundary to make a page faster is the wrong trade and the wrong risk, and
 the isolation suite that would prove such a change safe cannot run in this
 sandbox. Asking the expensive question once is the same win without touching
 anything that decides who sees what.
+
+---
+
+## An optimisation pass where five of six candidates were wrong
+
+A deliberate sweep of the database looking for the next `concession_problems`.
+It found one change worth making and five hypotheses that measurement
+destroyed — and the five are the more useful half of the record, because each
+one is a plausible fix somebody will propose again.
+
+### What the advisor said, and what was true
+
+Supabase's performance advisor reports **103 unindexed foreign keys**, 137
+unused indexes and 102 tables with multiple permissive policies.
+
+The 103 is measured with the wrong instrument. It asks whether an index's
+leading columns *exactly match* the FK's columns in order. What a foreign-key
+check actually needs is a seek on equality predicates, which **any** index whose
+first column is one of the FK's columns can serve. Re-measured that way it is
+**55**, and only **2** of those sit on an `ON UPDATE CASCADE` path — both
+pointing at `reference.locales`, a static table whose key never changes.
+
+That matters because rule 4's composite-key device is *entirely* built on
+`ON UPDATE CASCADE`: finalising a payroll run, publishing an exam, narrowing a
+route. Twenty such constraints exist and the hypothesis was that every one of
+them was doing a sequential scan of its child table. Probed directly:
+
+```
+Trigger for constraint marks_exam_subject_fkey on exam_subjects: time=37.641 calls=1
+  ->  Index Scan using marks_paper_idx on marks
+```
+
+`marks_paper_idx` is `(tenant_id, exam_subject_id)` and the FK is
+`(tenant_id, exam_subject_id, max_marks)` — a prefix, and prefixes seek. The
+device is correctly indexed everywhere. **Do not "fix" the advisor's 103.**
+
+### Four more that measured clean
+
+| hypothesis | measurement | verdict |
+|---|---|---|
+| `user_profiles` is scanned 63,733 times with 1 index scan | it is a 3-row table and `id` is the primary key | planner is right; it flips on its own as the table grows |
+| the RLS helpers are `VOLATILE`, so they re-run per row | `current_tenant_id`, `current_session_id`, `current_role_code`, `role_has_permission`, `notice_matches_me` — all already `STABLE` | already done |
+| some policies still call bare `auth.uid()` | 0 of them; every policy wraps it as `(select auth.uid())` | already done |
+| the audit trigger's per-row overhead dominates bulk writes | statement-level trigger with transition tables: 81.4 ms → 75.2 ms average, ranges overlapping (61.6–94.5 vs 72.0–80.2) | not worth the risk to rule 9 |
+
+The audit one is the interesting negative. The audit trigger genuinely *is*
+~55% of a bulk register write — but the cost is building `to_jsonb` per row and
+inserting ~900-byte rows into a 22 MB table with four indexes. Batching 300
+inserts into one statement avoids none of that. **The per-row invocation was
+never the cost**, so converting 89 tables' triggers would have bought ~8% and
+put rule 9's audit trail at risk to get it.
+
+### The one change: 87 indexes that answer nothing
+
+`tenant_id` leads every table (rule 1) and therefore leads every composite
+index. So `x_tenant_idx ON (tenant_id)` kept being created beside an index that
+already covered it. Measured with a prefix test over `pg_index`: **87 of the 262
+plain indexes in `public` and `reference` are strict prefixes of another plain
+index on the same table** — a third of them. Every one is covered by an index
+that is *not itself* in the drop set, so there is no chain.
+
+Migration `0204` drops them and adds `index_guard_violations()`, the fourth
+executable guard beside the schema, privilege and audit ones. 576 → 489 indexes.
+
+**And it is not a speedup.** The first measurement said it was — inserting 300
+register marks went 635.5 ms to 329.8 ms, the Insert node 209.7 → 91.1 ms. That
+number is wrong, and the tell was in the same trace: the *audit trigger* moved
+342.4 → 183.7 ms, and dropping an index on `attendance_records` cannot make
+`audit_log` faster. It was cache warmth between two cold runs.
+
+Measured properly — both variants in one warm session, four runs each, the two
+indexes recreated inside the transaction for the control:
+
+| | best | avg | worst |
+|---|---|---|---|
+| with the redundant indexes | 96.3 ms | **102.0 ms** | 108.6 ms |
+| without them | 92.4 ms | **105.7 ms** | 136.8 ms |
+
+Indistinguishable, and nominally slower without. Two redundant indexes over 300
+rows is 600 btree inserts inside a statement whose real cost is the audit
+trigger and four FK checks.
+
+So the justification is not latency. It is that a strict-prefix index is a claim
+that two indexes are needed and the claim is false; that the write it removes
+scales with the table, so it is ~nothing at 6,000 attendance rows and real at
+the 80,000 a school writes each year; and that 15 MB of index for a 303-student
+school is worth not carrying.
+
+> **Quote the second table, never the first.** This file nearly carried a 48%
+> improvement that was a warm cache — the same lesson the session-scope sweep
+> learned about a broken grep, arriving on the timing side. When a number moves
+> that your change cannot explain, the number is measuring something else.

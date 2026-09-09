@@ -50,4 +50,27 @@ describe("schema invariants", () => {
     expect(error).toBeNull();
     expect(data ?? []).toEqual([]);
   });
+
+  it("no plain index is a strict prefix of another plain index", async () => {
+    // Rule 1's fourth guard, added by 0204. `tenant_id` leads every table and
+    // every composite index, so `x_tenant_idx ON (tenant_id)` kept being added
+    // beside a longer index that already covered it — 87 of them, a third of
+    // every plain index in the schema.
+    //
+    // A btree on (a) is a strict prefix of a btree on (a, b): every seek the
+    // short one serves, the long one serves too. So this is not a heuristic
+    // about query shapes, and the check needs no workload to be true.
+    //
+    // What it is NOT is a latency test. Measured both ways in one warm session,
+    // inserting 300 register marks was 102.0 ms with the redundant indexes and
+    // 105.7 ms without — indistinguishable. The saving is a write per row per
+    // index, which is ~nothing at 6,000 rows and real at the 80,000 a school
+    // writes each year. Do not "restore" one of these because a screen felt
+    // slow; it will not have been this.
+    const client = await tenantAClient();
+    const { data, error } = await client.rpc("index_guard_violations");
+
+    expect(error).toBeNull();
+    expect(data ?? []).toEqual([]);
+  });
 });

@@ -7892,6 +7892,15 @@ export type Database = {
         }[]
       }
       import_validate_run: { Args: { p_run_id: string }; Returns: number }
+      index_guard_violations: {
+        Args: never
+        Returns: {
+          covered_by: string
+          index_name: string
+          schema_name: string
+          table_name: string
+        }[]
+      }
       library_issue_book: {
         Args: { p_book_id: string; p_due_at?: string; p_member_id: string }
         Returns: {
