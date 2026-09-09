@@ -1,4 +1,6 @@
 import { z } from "zod";
+import { labelFor } from "./labels";
+import type { Translator } from "@/lib/i18n/translate";
 
 /**
  * Substitutions — the client half.
@@ -42,8 +44,9 @@ export const SEVERITY_LABEL: Record<ProblemSeverity, string> = {
   info: "Note",
 };
 
-export function severityLabel(severity: string): string {
-  return SEVERITY_LABEL[severity as ProblemSeverity] ?? severity;
+export function severityLabel(severity: string, t: Translator): string {
+  const fallback = SEVERITY_LABEL[severity as ProblemSeverity];
+  return fallback ? labelFor(`severity.${severity}`, fallback, t) : severity;
 }
 
 /** Never colour alone — `severityLabel` always sits beside this. */
@@ -123,8 +126,11 @@ export function coverSummary(gaps: { arranged: boolean; reason?: string }[]): st
  * is a teacher, and a screen that showed them identically would have the office
  * arranging the same emergency every day until July. See migration 0176.
  */
-export function reasonLabel(reason: string): string {
-  return reason === "unassigned" ? "No teacher assigned" : "Teacher away";
+export function reasonLabel(reason: string, t: Translator): string {
+  // Two reasons, two different problems for two different people -- rule 12's
+  // own sentence about not conflating "not here today" with "nobody teaches
+  // this any more". They stay two strings.
+  return reason === "unassigned" ? t("cover.reason.unassigned") : t("cover.reason.away");
 }
 
 export function reasonTone(reason: string): "destructive" | "warning" {
@@ -132,8 +138,17 @@ export function reasonTone(reason: string): "destructive" | "warning" {
 }
 
 /** "Period 3 · 10:15" — the two things a person actually looks for. */
-export function periodLabel(periodNumber: number | null, startsAt: string | null): string {
-  const period = periodNumber === null ? "Period" : `Period ${periodNumber}`;
+export function periodLabel(
+  periodNumber: number | null,
+  startsAt: string | null,
+  t: Translator,
+): string {
+  // Not the same function as `timetable.periodLabel` despite the name -- that
+  // one resolves the school's own label, this one adds a clock time. A name
+  // collision, not a duplicate, and it is why a grep by name over-counted the
+  // call sites of both by 75.
+  const period =
+    periodNumber === null ? t("timetable.periodBare") : t("timetable.period", { n: periodNumber });
   if (!startsAt) return period;
   return `${period} · ${startsAt.slice(0, 5)}`;
 }

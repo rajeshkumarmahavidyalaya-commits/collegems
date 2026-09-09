@@ -8,6 +8,7 @@ import { kindLabel } from "@/lib/validations/certificates";
 import { CancelCertificate } from "./cancel-certificate";
 import { PrintButton } from "./print-button";
 import { AuditTrail } from "@/components/audit/audit-trail";
+import { getT } from "@/lib/i18n/server";
 
 export const metadata = { title: "Certificate" };
 
@@ -21,6 +22,7 @@ export const metadata = { title: "Certificate" };
  * refuses to be clever.
  */
 export default async function CertificatePage({ params }: PageProps<"/certificates/[id]">) {
+  const t = await getT();
   const { id } = await params;
   const certificate = await getCertificate(id);
   if (!certificate) notFound();
@@ -46,7 +48,7 @@ export default async function CertificatePage({ params }: PageProps<"/certificat
             </Badge>
           </h1>
           <p className="text-sm text-muted-foreground">
-            {kindLabel(certificate.kind)} · {certificate.template_name} · issued{" "}
+            {kindLabel(certificate.kind, t)} · {certificate.template_name} · issued{" "}
             {certificate.issued_on}
           </p>
         </div>
@@ -83,7 +85,7 @@ export default async function CertificatePage({ params }: PageProps<"/certificat
             <p className="mt-1 text-sm text-muted-foreground">{snapshot["school.address"]}</p>
           )}
           <p className="mt-4 text-sm font-semibold uppercase tracking-[0.2em]">
-            {kindLabel(certificate.kind)}
+            {kindLabel(certificate.kind, t)}
           </p>
         </header>
 

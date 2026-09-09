@@ -2103,6 +2103,29 @@ row where a translator was wanted. **`t` as a loop variable is a landmine in a
 codebase that has just made `t` mean one thing**; rename the row, never the
 translator.
 
+**And the batch after that shipped a bug the batch before it introduced.** The
+weekday work put `useI18n()` into `week-view.tsx`, which has no `"use client"`
+and whose own comment says it is a Server Component. `tsc` passed, `next build`
+passed, and `/timetable/me` would have thrown for every teacher and student who
+opened their own week.
+
+> **A file with no `"use client"` may not call a hook.** It is the one place the
+> compiler cannot help, and the failure is a blank screen rather than a red
+> squiggle. `react-hooks/rules-of-hooks` catches a hook in the wrong *function*;
+> it does not know which *file* runs on the server.
+
+`tests/i18n/server-components.test.ts` does — every `.tsx` under `src/app` and
+`src/components` without the directive, checked for fifteen hook names, and
+verified by running it against the commit that shipped the bug, where it names
+the file. A Server Component uses `await getT()` and `await getLocale()`.
+
+One more thing the same batch settled: `timetable.periodLabel` and
+`substitutions.periodLabel` are a **name collision, not a duplicate** — different
+arguments, different output — which is exactly what made a grep by name count
+each module's sites against both. Only the shared fragment `Period {n}` became a
+key; a school's own name for a period ("Assembly") is the school's word and is
+not translated.
+
 ---
 
 ---

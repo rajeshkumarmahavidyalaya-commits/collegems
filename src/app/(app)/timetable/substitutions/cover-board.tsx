@@ -30,6 +30,7 @@ import {
   severityTone,
   todayIso,
 } from "@/lib/validations/substitutions";
+import { useT } from "@/components/providers/i18n-provider";
 import {
   arrangeCover,
   clearCover,
@@ -48,6 +49,7 @@ export function CoverBoard({
   problems: ProblemRow[];
   onDate?: string;
 }) {
+  const t = useT();
   const [arranging, setArranging] = useState<GapRow | null>(null);
   const date = onDate ?? todayIso();
 
@@ -69,7 +71,7 @@ export function CoverBoard({
                   <AlertTriangle className="size-4" aria-hidden="true" />
                   <AlertTitle className="flex items-center gap-2">
                     <Badge variant={severityTone(problem.severity)}>
-                      {severityLabel(problem.severity)}
+                      {severityLabel(problem.severity, t)}
                     </Badge>
                   </AlertTitle>
                   <AlertDescription>{problem.message}</AlertDescription>
@@ -132,6 +134,7 @@ function GapCard({
   date: string;
   onArrange: () => void;
 }) {
+  const t = useT();
   const router = useRouter();
   const [pending, startTransition] = useTransition();
 
@@ -155,7 +158,7 @@ function GapCard({
             <CardTitle className="flex flex-wrap items-center gap-2 text-base">
               {gap.sectionLabel}
               <span className="text-sm font-normal text-muted-foreground">{gap.subjectName}</span>
-              <Badge variant={reasonTone(gap.reason)}>{reasonLabel(gap.reason)}</Badge>
+              <Badge variant={reasonTone(gap.reason)}>{reasonLabel(gap.reason, t)}</Badge>
               {gap.arranged ? (
                 <Badge variant={gap.substituteStaffId ? "success" : "warning"}>
                   {gap.substituteStaffId ? "Covered" : "Merged / supervised"}
@@ -165,7 +168,7 @@ function GapCard({
               )}
             </CardTitle>
             <CardDescription className="mt-1">
-              {periodLabel(gap.periodNumber, gap.startsAt)} &middot;{" "}
+              {periodLabel(gap.periodNumber, gap.startsAt, t)} &middot;{" "}
               {gap.reason === "unassigned"
                 ? "nobody teaches this — the timetable needs a teacher, not just cover"
                 : `${gap.absentTeacher} is away`}
@@ -212,6 +215,7 @@ function ArrangeDialog({
   date: string;
   onOpenChange: (open: boolean) => void;
 }) {
+  const t = useT();
   const router = useRouter();
   const [candidates, setCandidates] = useState<CandidateRow[] | null>(null);
   const [note, setNote] = useState("");
@@ -258,7 +262,7 @@ function ArrangeDialog({
       <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>
-            {gap ? `${gap.sectionLabel} · ${periodLabel(gap.periodNumber, gap.startsAt)}` : "Cover"}
+            {gap ? `${gap.sectionLabel} · ${periodLabel(gap.periodNumber, gap.startsAt, t)}` : "Cover"}
           </DialogTitle>
           <DialogDescription>
             {gap

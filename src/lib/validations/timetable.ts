@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { WEEKDAYS, toClockTime } from "./academics";
+import type { Translator } from "@/lib/i18n/translate";
 
 /**
  * Phase 1.2 — the class routine.
@@ -63,8 +64,10 @@ export function weekdayName(value: number) {
  * "Period 3" or the school's own label for it. Schools that name periods
  * ("Assembly", "Games") mean the name; the rest get the number.
  */
-export function periodLabel(periodNumber: number, label: string | null) {
-  return label?.trim() || `Period ${periodNumber}`;
+export function periodLabel(periodNumber: number, label: string | null, t: Translator) {
+  // A school's own name for a period ("Assembly", "Games") is the school's
+  // word and is not translated -- only the fallback is ours to say.
+  return label?.trim() || t("timetable.period", { n: periodNumber });
 }
 
 /**

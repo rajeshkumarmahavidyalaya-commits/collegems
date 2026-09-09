@@ -449,3 +449,56 @@ catalogue again, 32 more keys in three languages. The weekday work added **none*
 of it — that is the point of asking ICU.
 
 **35 → 31** helpers still hardcoding English.
+
+### The staff batch, and a bug the previous batch shipped
+
+Six more helpers — `timetable.periodLabel`, `substitutions.periodLabel`,
+`severityLabel` and `reasonLabel`, `staff-display.staffStatusLabel`,
+`certificates.kindLabel` — over the screens a teacher opens daily. Transport
+still out of the pass.
+
+**The two `periodLabel`s are a name collision, not a duplicate**, and it is
+worth writing down because it is the thing that made the first count wrong:
+
+```ts
+timetable.periodLabel(periodNumber, label)      // the school's own name, or "Period 3"
+substitutions.periodLabel(periodNumber, startsAt) // "Period 3 · 10:15"
+```
+
+Different arguments, different output, same name — so a grep by name counted
+each module's ten call sites against both. They stay separate; only the shared
+English fragment `Period {n}` became one key. A school's *own* name for a period
+("Assembly", "Games") is the school's word and is **not** translated: only the
+fallback is ours to say.
+
+#### A hook in a Server Component compiles, builds, and throws
+
+The weekday batch put `useI18n()` into `week-view.tsx`, which has no
+`"use client"` and whose own comment says *"a read-only view, so it is a Server
+Component with no state at all"*. `tsc` was happy. `next build` was happy.
+`/timetable/me` would have thrown for every teacher and every student who opened
+their own week. It shipped, and the next batch's typecheck found it by accident.
+
+> **A file with no `"use client"` may not call a hook.** That is not a style rule
+> — it is the one place the compiler cannot help, and the failure is a blank
+> screen rather than a red squiggle.
+
+eslint's `react-hooks/rules-of-hooks` catches a hook in the wrong *function*; it
+does not know which *file* runs on the server. So
+`tests/i18n/server-components.test.ts` does: every `.tsx` under `src/app` and
+`src/components` without the directive is checked for fifteen hook names.
+**Verified against the previous commit's tree, where it names
+`week-view.tsx calls useI18n()` and fails.** The component is `async` now and
+uses `await getT()` / `await getLocale()`.
+
+Two other instances of the third shape in the same batch, both mechanical
+consequences of the same rule:
+
+- `staff-table.tsx`'s `columns` was a **module-scope `ColumnDef[]`** —
+  `staffColumns(t)` now, called inside `useMemo`, exactly as
+  `invoiceColumns(formatDate)` already was.
+- `certificates/issue/issue-form.tsx` mapped `templates.map((t) => …)`. The
+  second `t` collision in two batches; the row was renamed again.
+
+**31 → 24** helpers still hardcoding English. Routes moved 1 kB or less
+(`/timetable` 224 → 225 kB, `/staff` and `/certificates` unchanged).

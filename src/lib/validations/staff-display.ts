@@ -8,6 +8,9 @@
  * was extracted from.
  */
 
+import { labelFor, optionsFor } from "./labels";
+import type { Translator } from "@/lib/i18n/translate";
+
 /**
  * The five words `staff_status_check` allows. A retirement and a dismissal are
  * not the same fact -- they read differently on a reference and are treated
@@ -25,8 +28,18 @@ export const STAFF_STATUSES = [
 /** The four somebody can *leave* as. `active` is not one of them. */
 export const STAFF_LEAVING_STATUSES = STAFF_STATUSES.filter((s) => s.value !== "active");
 
-export function staffStatusLabel(status: string): string {
-  return STAFF_STATUSES.find((s) => s.value === status)?.label ?? status;
+export function staffStatusLabel(status: string, t: Translator): string {
+  const found = STAFF_STATUSES.find((s) => s.value === status);
+  return found ? labelFor(`staff.status.${status}`, found.label, t) : status;
+}
+
+export function staffStatusOptions(t: Translator) {
+  return optionsFor(STAFF_STATUSES, "staff.status", t);
+}
+
+/** The four somebody can leave as, named. `active` is not one of them. */
+export function staffLeavingStatusOptions(t: Translator) {
+  return optionsFor(STAFF_LEAVING_STATUSES, "staff.status", t);
 }
 
 /**

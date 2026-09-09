@@ -3,7 +3,8 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { GRID_WEEKDAYS, periodLabel, toClockTime } from "@/lib/validations/timetable";
 import type { TeacherRoutineEntry } from "./actions";
-import { useI18n } from "@/components/providers/i18n-provider";
+import { getLocale, getT } from "@/lib/i18n/server";
+import { formatWeekday } from "@/lib/i18n/format";
 
 /**
  * One person's week, grouped by day. A read-only view, so it is a Server
@@ -11,8 +12,12 @@ import { useI18n } from "@/components/providers/i18n-provider";
  * with a different job, and sharing a component between them would have meant
  * shipping the editing code to every student who looks at their routine.
  */
-export function WeekView({ entries }: { entries: TeacherRoutineEntry[] }) {
-  const { formatWeekday } = useI18n();
+export async function WeekView({ entries }: { entries: TeacherRoutineEntry[] }) {
+  // `async` and the server helpers, not `useI18n()`. This has no "use client"
+  // and its own comment above says so -- a hook here compiles, builds, and
+  // throws the moment somebody opens /timetable/me. See the guard in
+  // tests/i18n/server-components.test.ts.
+  const [t, locale] = await Promise.all([getT(), getLocale()]);
   if (entries.length === 0) {
     return (
       <Card>
@@ -43,7 +48,7 @@ export function WeekView({ entries }: { entries: TeacherRoutineEntry[] }) {
           <Card key={day.value}>
             <CardContent className="flex flex-col gap-2 p-4">
               <div className="flex items-baseline justify-between">
-                <h2 className="font-medium">{formatWeekday(day.value)}</h2>
+                <h2 className="font-medium">{formatWeekday(day.value, locale)}</h2>
                 <span className="text-xs text-muted-foreground">
                   {dayEntries.length} {dayEntries.length === 1 ? "period" : "periods"}
                 </span>
@@ -54,7 +59,7 @@ export function WeekView({ entries }: { entries: TeacherRoutineEntry[] }) {
                   <li key={entry.id} className="flex gap-3 rounded-md border px-3 py-2">
                     <div className="w-16 shrink-0">
                       <p className="text-xs font-medium">
-                        {periodLabel(entry.periodNumber, null)}
+                        {periodLabel(entry.periodNumber, null, t)}
                       </p>
                       <p className="font-mono text-[11px] text-muted-foreground">
                         {toClockTime(entry.startsAt)}

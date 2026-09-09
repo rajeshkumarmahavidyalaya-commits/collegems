@@ -19,6 +19,7 @@ import {
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { issueCertificate, previewCertificate, type TemplateRow } from "../actions";
+import { useT } from "@/components/providers/i18n-provider";
 import {
   KIND_CONSEQUENCE,
   kindLabel,
@@ -52,6 +53,7 @@ export function IssueCertificateForm({
   templates: TemplateRow[];
   initialStudents: StudentOption[];
 }) {
+  const t = useT();
   const router = useRouter();
   const [studentId, setStudentId] = useState("");
   const [templateId, setTemplateId] = useState(
@@ -157,9 +159,9 @@ export function IssueCertificateForm({
                 <SelectValue placeholder="Choose a certificate" />
               </SelectTrigger>
               <SelectContent>
-                {templates.map((t) => (
-                  <SelectItem key={t.id} value={t.id}>
-                    {t.name} · {kindLabel(t.kind)}
+                {templates.map((template) => (
+                  <SelectItem key={template.id} value={template.id}>
+                    {template.name} · {kindLabel(template.kind, t)}
                   </SelectItem>
                 ))}
               </SelectContent>

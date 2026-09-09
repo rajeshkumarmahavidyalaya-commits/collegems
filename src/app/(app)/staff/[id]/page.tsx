@@ -9,6 +9,7 @@ import { hasPermission } from "@/lib/auth/permissions";
 import { staffStatusLabel, staffStatusTone } from "@/lib/validations/staff-display";
 import { getStaffRecord } from "../actions";
 import { StaffExitControl } from "./staff-exit-control";
+import { getT } from "@/lib/i18n/server";
 
 export const metadata = { title: "Staff record" };
 
@@ -22,6 +23,7 @@ function Fact({ label, value }: { label: string; value: React.ReactNode }) {
 }
 
 export default async function StaffDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  const t = await getT();
   const { id } = await params;
   const [record, canManage] = await Promise.all([
     getStaffRecord(id),
@@ -43,7 +45,7 @@ export default async function StaffDetailPage({ params }: { params: Promise<{ id
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-2">
             <h1 className="text-2xl font-semibold break-words">{person.full_name}</h1>
-            <Badge variant={staffStatusTone(staff.status)}>{staffStatusLabel(staff.status)}</Badge>
+            <Badge variant={staffStatusTone(staff.status)}>{staffStatusLabel(staff.status, t)}</Badge>
             {record.away_today && !hasLeft && <Badge variant="warning">Away today</Badge>}
           </div>
           <p className="mt-1 text-sm text-muted-foreground">

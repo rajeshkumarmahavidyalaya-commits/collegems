@@ -7,6 +7,7 @@ import { periodLabel } from "@/lib/validations/substitutions";
 import { listGaps, listMyCovers, listProblems } from "./actions";
 import { CoverBoard } from "./cover-board";
 import { DayPicker } from "./day-picker";
+import { getT } from "@/lib/i18n/server";
 
 export const metadata = { title: "Cover" };
 
@@ -27,6 +28,7 @@ export default async function SubstitutionsPage({
 }: {
   searchParams: Promise<{ date?: string }>;
 }) {
+  const t = await getT();
   const params = await searchParams;
   const onDate = /^\d{4}-\d{2}-\d{2}$/.test(params.date ?? "") ? params.date : undefined;
 
@@ -87,7 +89,7 @@ export default async function SubstitutionsPage({
                       </span>
                     </CardTitle>
                     <CardDescription>
-                      {periodLabel(cover.periodNumber, cover.startsAt)} &middot; covering for{" "}
+                      {periodLabel(cover.periodNumber, cover.startsAt, t)} &middot; covering for{" "}
                       {cover.coveringFor}
                       {cover.room ? ` · ${cover.room}` : ""}
                     </CardDescription>

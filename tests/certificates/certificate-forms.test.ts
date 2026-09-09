@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { createTranslator } from "@/lib/i18n/translate";
 import {
   cleanExtra,
   countBySeverity,
@@ -23,6 +24,11 @@ import {
  *   - a template descriptor that drifted must degrade, not crash the page;
  *   - `can_issue` is the server's answer and must never be recomputed here.
  */
+
+// The labels are looked up in the reader's catalogue now, so the tests
+// supply one. English is asserted here; three-locale coverage is the floor in
+// tests/i18n.
+const t = createTranslator("en");
 
 describe("a template's own fields", () => {
   it("reads a well-formed descriptor", () => {
@@ -180,8 +186,8 @@ describe("what the form sends", () => {
 
 describe("labels", () => {
   it("names every kind, and falls back to the raw value for one it has not met", () => {
-    expect(kindLabel("transfer")).toBe("Transfer certificate");
-    expect(kindLabel("sports_day")).toBe("sports_day");
+    expect(kindLabel("transfer", t)).toBe("Transfer certificate");
+    expect(kindLabel("sports_day", t)).toBe("sports_day");
   });
 
   it("warns before the one kind that changes a record, and only that one", () => {

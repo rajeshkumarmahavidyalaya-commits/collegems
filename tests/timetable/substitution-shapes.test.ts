@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { createTranslator } from "@/lib/i18n/translate";
 import {
   arrangeCoverSchema,
   reasonLabel,
@@ -22,6 +23,11 @@ import {
  * that required it would make "the class is merged into 5B" unsayable, and the
  * screen would then leave a silent gap instead of a recorded decision.
  */
+
+// The labels are looked up in the reader's catalogue now, so the tests
+// supply one. English is asserted here; three-locale coverage is the floor in
+// tests/i18n.
+const t = createTranslator("en");
 
 describe("arranging cover", () => {
   const lesson = "3acf9da4-e93c-4175-85d2-8562b79bba69";
@@ -93,8 +99,8 @@ describe("why a lesson is on the morning list", () => {
     // `away` is arranged today. `unassigned` will be there tomorrow too, and
     // showing them identically would have the office arranging the same
     // emergency every day until July. Migration 0176.
-    expect(reasonLabel("away")).toBe("Teacher away");
-    expect(reasonLabel("unassigned")).toBe("No teacher assigned");
+    expect(reasonLabel("away", t)).toBe("Teacher away");
+    expect(reasonLabel("unassigned", t)).toBe("No teacher assigned");
     expect(reasonTone("unassigned")).toBe("destructive");
     expect(reasonTone("away")).toBe("warning");
   });
@@ -136,25 +142,25 @@ describe("severity", () => {
   it("never relies on colour alone", () => {
     // Every severity the function can return has a word beside the tone.
     for (const severity of PROBLEM_SEVERITIES) {
-      expect(severityLabel(severity)).not.toBe(severity);
+      expect(severityLabel(severity, t)).not.toBe(severity);
       expect(severityTone(severity)).toBeTruthy();
     }
   });
 
   it("degrades to something readable for a severity it has never seen", () => {
-    expect(severityLabel("catastrophe")).toBe("catastrophe");
+    expect(severityLabel("catastrophe", t)).toBe("catastrophe");
     expect(severityTone("catastrophe")).toBe("secondary");
   });
 });
 
 describe("the two things a person looks for", () => {
   it("puts the period and the clock together", () => {
-    expect(periodLabel(3, "10:15:00")).toBe("Period 3 · 10:15");
+    expect(periodLabel(3, "10:15:00", t)).toBe("Period 3 · 10:15");
   });
 
   it("says what it knows when it does not know the time", () => {
-    expect(periodLabel(3, null)).toBe("Period 3");
-    expect(periodLabel(null, null)).toBe("Period");
+    expect(periodLabel(3, null, t)).toBe("Period 3");
+    expect(periodLabel(null, null, t)).toBe("Period");
   });
 });
 

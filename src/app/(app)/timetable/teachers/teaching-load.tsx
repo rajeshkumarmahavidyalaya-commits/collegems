@@ -33,6 +33,7 @@ import { useI18n } from "@/components/providers/i18n-provider";
  * ninety degrees.
  */
 export function TeachingLoad({ rows }: { rows: TeacherLoadRow[] }) {
+  const { t } = useI18n();
   const { formatWeekday } = useI18n();
   const [open, setOpen] = useState<TeacherLoadRow | null>(null);
   const [week, setWeek] = useState<TeacherRoutineEntry[] | null>(null);
@@ -203,7 +204,7 @@ export function TeachingLoad({ rows }: { rows: TeacherLoadRow[] }) {
                             </span>
                           </span>
                           <span className="shrink-0 text-xs text-muted-foreground">
-                            {periodLabel(entry.periodNumber, null)}
+                            {periodLabel(entry.periodNumber, null, t)}
                           </span>
                         </li>
                       ))}

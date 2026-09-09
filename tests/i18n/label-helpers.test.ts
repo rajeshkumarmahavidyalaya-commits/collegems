@@ -40,10 +40,17 @@ const LOCALE_AWARE = new Set([
   "notifications.channelLabel",
   "notifications.statusLabel",
   "notifications.audienceKindLabel",
+  // The staff daily-work batch.
+  "timetable.periodLabel",
+  "substitutions.periodLabel",
+  "substitutions.severityLabel",
+  "substitutions.reasonLabel",
+  "staff-display.staffStatusLabel",
+  "certificates.kindLabel",
 ]);
 
 /** How many still render English to every reader. Only ever goes down. */
-const STILL_ENGLISH = 31;
+const STILL_ENGLISH = 24;
 
 type Helper = { module: string; name: string; takesTranslator: boolean };
 

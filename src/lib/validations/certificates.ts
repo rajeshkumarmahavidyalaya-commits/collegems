@@ -1,4 +1,6 @@
 import { z } from "zod";
+import { labelFor } from "./labels";
+import type { Translator } from "@/lib/i18n/translate";
 
 /**
  * The certificates module's client half.
@@ -42,8 +44,9 @@ export const KIND_CONSEQUENCE: Partial<Record<CertificateKind, string>> = {
     "Issuing this marks the student as transferred and takes them off the active roll. Cancelling the certificate puts them back.",
 };
 
-export function kindLabel(kind: string): string {
-  return KIND_LABEL[kind as CertificateKind] ?? kind;
+export function kindLabel(kind: string, t: Translator): string {
+  const fallback = KIND_LABEL[kind as CertificateKind];
+  return fallback ? labelFor(`certificate.kind.${kind}`, fallback, t) : kind;
 }
 
 // ---------------------------------------------------------------------------

@@ -90,6 +90,7 @@ export function RoutineGrid({
   canManage,
   emptySections,
 }: Props) {
+  const { t } = useI18n();
   const { formatWeekday } = useI18n();
   const [sectionId, setSectionId] = useState(sections[0]?.id ?? "");
   const [entries, setEntries] = useState<RoutineEntry[] | null>(null);
@@ -267,7 +268,7 @@ export function RoutineGrid({
                   <li key={slot.id} className="flex gap-3">
                     <div className="w-20 shrink-0 pt-2">
                       <p className="text-xs font-medium">
-                        {periodLabel(slot.periodNumber, slot.label)}
+                        {periodLabel(slot.periodNumber, slot.label, t)}
                       </p>
                       <p className="font-mono text-[11px] text-muted-foreground">
                         {toClockTime(slot.startsAt)}
@@ -278,7 +279,7 @@ export function RoutineGrid({
                         entry={byCell.get(cellKey(mobileDay, slot.id))}
                         canManage={canManage}
                         onEdit={() => setEditing({ weekday: mobileDay, slot })}
-                        label={`${weekdayName(mobileDay)}, ${periodLabel(slot.periodNumber, slot.label)}`}
+                        label={`${weekdayName(mobileDay)}, ${periodLabel(slot.periodNumber, slot.label, t)}`}
                       />
                     </div>
                   </li>
@@ -329,7 +330,7 @@ export function RoutineGrid({
                           className="sticky start-0 z-10 bg-background px-3 py-2 text-start align-top font-medium"
                         >
                           <span className="block">
-                            {periodLabel(slot.periodNumber, slot.label)}
+                            {periodLabel(slot.periodNumber, slot.label, t)}
                           </span>
                           <span className="block font-mono text-[11px] font-normal text-muted-foreground">
                             {toClockTime(slot.startsAt)}–{toClockTime(slot.endsAt)}
@@ -341,7 +342,7 @@ export function RoutineGrid({
                               entry={byCell.get(cellKey(d.value, slot.id))}
                               canManage={canManage}
                               onEdit={() => setEditing({ weekday: d.value, slot })}
-                              label={`${formatWeekday(d.value)}, ${periodLabel(slot.periodNumber, slot.label)}`}
+                              label={`${formatWeekday(d.value)}, ${periodLabel(slot.periodNumber, slot.label, t)}`}
                             />
                           </td>
                         ))}
@@ -554,6 +555,7 @@ function CellDialog({
   rooms: { id: string; label: string }[];
   onSaved: () => void;
 }) {
+  const { t } = useI18n();
   const [pending, startTransition] = useTransition();
   const [busy, setBusy] = useState<BusyRow[] | null>(null);
 
@@ -637,7 +639,7 @@ function CellDialog({
       <DialogContent className="max-h-[90svh] overflow-y-auto sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>
-            {weekdayName(weekday)}, {periodLabel(slot.periodNumber, slot.label)}
+            {weekdayName(weekday)}, {periodLabel(slot.periodNumber, slot.label, t)}
           </DialogTitle>
           <DialogDescription>
             {toClockTime(slot.startsAt)}–{toClockTime(slot.endsAt)}. Only subjects on this

@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { createTranslator } from "@/lib/i18n/translate";
 import {
   GRID_WEEKDAYS,
   WEEKDAYS,
@@ -31,6 +32,11 @@ const validEntry = {
   note: "",
 };
 
+// The labels are looked up in the reader's catalogue now, so the tests
+// supply one. English is asserted here; three-locale coverage is the floor in
+// tests/i18n.
+const t = createTranslator("en");
+
 describe("weekday numbering", () => {
   it("is ISO: Monday is 1 and Sunday is 7", () => {
     expect(WEEKDAYS[0]).toMatchObject({ value: 1, label: "Monday" });
@@ -52,12 +58,12 @@ describe("weekday numbering", () => {
 
 describe("period labelling", () => {
   it("prefers the school's own name for a period", () => {
-    expect(periodLabel(1, "Assembly")).toBe("Assembly");
+    expect(periodLabel(1, "Assembly", t)).toBe("Assembly");
   });
 
   it("falls back to the number when there is no name", () => {
-    expect(periodLabel(4, null)).toBe("Period 4");
-    expect(periodLabel(4, "   ")).toBe("Period 4");
+    expect(periodLabel(4, null, t)).toBe("Period 4");
+    expect(periodLabel(4, "   ", t)).toBe("Period 4");
   });
 });
 

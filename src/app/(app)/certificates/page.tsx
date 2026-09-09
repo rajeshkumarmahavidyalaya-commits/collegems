@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/table";
 import { listCertificates } from "./actions";
 import { kindLabel } from "@/lib/validations/certificates";
+import { getT } from "@/lib/i18n/server";
 
 export const metadata = { title: "Certificates" };
 
@@ -26,6 +27,7 @@ export const metadata = { title: "Certificates" };
  * paper they were handed.
  */
 export default async function CertificatesPage() {
+  const t = await getT();
   const rows = await listCertificates();
 
   return (
@@ -101,7 +103,7 @@ export default async function CertificatesPage() {
                         </Link>
                       </TableCell>
                       <TableCell className="whitespace-nowrap">{row.issuedOn}</TableCell>
-                      <TableCell>{kindLabel(row.kind)}</TableCell>
+                      <TableCell>{kindLabel(row.kind, t)}</TableCell>
                       <TableCell className="font-medium">{row.student}</TableCell>
                       <TableCell className="font-mono text-xs">{row.admissionNumber}</TableCell>
                       <TableCell>{row.classAtIssue ?? "—"}</TableCell>

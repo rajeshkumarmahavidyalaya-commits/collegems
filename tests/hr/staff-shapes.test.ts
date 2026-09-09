@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { createTranslator } from "@/lib/i18n/translate";
 import {
   STAFF_LEAVING_STATUSES,
   STAFF_STATUSES,
@@ -12,6 +13,11 @@ import { staffSchema } from "@/lib/validations/staff";
  * claims below are about the contract between the form, the badge and the
  * CHECK constraint, and none of them needs a school to be true.
  */
+// The labels are looked up in the reader's catalogue now, so the tests
+// supply one. English is asserted here; three-locale coverage is the floor in
+// tests/i18n.
+const t = createTranslator("en");
+
 describe("staff statuses", () => {
   /**
    * `staff_status_check` allows exactly these five. A sixth in the list would
@@ -34,8 +40,8 @@ describe("staff statuses", () => {
   });
 
   it("gives every status a label, and an unknown one its own name", () => {
-    for (const s of STAFF_STATUSES) expect(staffStatusLabel(s.value)).toBe(s.label);
-    expect(staffStatusLabel("seconded")).toBe("seconded");
+    for (const s of STAFF_STATUSES) expect(staffStatusLabel(s.value, t)).toBe(s.label);
+    expect(staffStatusLabel("seconded", t)).toBe("seconded");
   });
 
   it("gives every status a tone, so a badge is never unstyled", () => {

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
@@ -19,87 +19,99 @@ import { DataTable, exportRowsToCsv } from "@/components/data-table/data-table";
 import { DataTableToolbar } from "@/components/data-table/data-table-toolbar";
 import { STAFF_STATUSES, staffStatusLabel, staffStatusTone } from "@/lib/validations/staff-display";
 import { listStaff, type StaffRow } from "./actions";
+import { useT } from "@/components/providers/i18n-provider";
+import type { Translator } from "@/lib/i18n/translate";
 
-const columns: ColumnDef<StaffRow>[] = [
-  {
-    accessorKey: "employeeCode",
-    header: "Code",
-    cell: ({ row }) => (
-      <Link
-        href={`/staff/${row.original.id}`}
-        className="font-mono text-xs underline-offset-4 hover:underline"
-        onClick={(e) => e.stopPropagation()}
-      >
-        {row.original.employeeCode}
-      </Link>
-    ),
-    enableSorting: false,
-    meta: { label: "Code" },
-  },
-  {
-    accessorKey: "fullName",
-    header: "Name",
-    cell: ({ row }) => <span className="font-medium">{row.original.fullName}</span>,
-    enableSorting: false,
-    meta: { label: "Name" },
-  },
-  {
-    accessorKey: "designation",
-    header: "Designation",
-    enableSorting: false,
-    meta: { label: "Designation" },
-  },
-  {
-    accessorKey: "department",
-    header: "Department",
-    cell: ({ row }) => row.original.department ?? <span className="text-muted-foreground">—</span>,
-    enableSorting: false,
-    meta: { label: "Department" },
-  },
-  {
-    accessorKey: "lessons",
-    header: "Lessons",
-    cell: ({ row }) => (
-      <span className="font-mono text-xs tabular-nums">
-        {row.original.lessons}
-        {row.original.classTeacherOf > 0 && (
-          <span className="ms-2 text-muted-foreground">
-            · CT&nbsp;{row.original.classTeacherOf}
-          </span>
-        )}
-      </span>
-    ),
-    enableSorting: false,
-    meta: { label: "Lessons" },
-  },
-  {
-    accessorKey: "phone",
-    header: "Phone",
-    cell: ({ row }) => <span className="font-mono text-xs">{row.original.phone ?? "—"}</span>,
-    enableSorting: false,
-    meta: { label: "Phone" },
-  },
-  {
-    accessorKey: "status",
-    header: "Status",
-    cell: ({ row }) => (
-      <div className="flex flex-col gap-0.5">
-        <Badge variant={staffStatusTone(row.original.status)} className="w-fit">
-          {staffStatusLabel(row.original.status)}
-        </Badge>
-        {row.original.dateOfLeaving && (
-          <span className="text-xs text-muted-foreground">
-            left {row.original.dateOfLeaving}
-          </span>
-        )}
-      </div>
-    ),
-    enableSorting: false,
-    meta: { label: "Status" },
-  },
-];
+/**
+ * A factory, not a constant. A module-scope `ColumnDef[]` has no component for
+ * a hook to belong to — rule 15's third shape, the same reason
+ * `invoiceColumns(formatDate)` exists — so the translator arrives as an
+ * argument and the call sits inside `useMemo`.
+ */
+function staffColumns(t: Translator): ColumnDef<StaffRow>[] {
+  return [
+    {
+      accessorKey: "employeeCode",
+      header: "Code",
+      cell: ({ row }) => (
+        <Link
+          href={`/staff/${row.original.id}`}
+          className="font-mono text-xs underline-offset-4 hover:underline"
+          onClick={(e) => e.stopPropagation()}
+        >
+          {row.original.employeeCode}
+        </Link>
+      ),
+      enableSorting: false,
+      meta: { label: "Code" },
+    },
+    {
+      accessorKey: "fullName",
+      header: "Name",
+      cell: ({ row }) => <span className="font-medium">{row.original.fullName}</span>,
+      enableSorting: false,
+      meta: { label: "Name" },
+    },
+    {
+      accessorKey: "designation",
+      header: "Designation",
+      enableSorting: false,
+      meta: { label: "Designation" },
+    },
+    {
+      accessorKey: "department",
+      header: "Department",
+      cell: ({ row }) => row.original.department ?? <span className="text-muted-foreground">—</span>,
+      enableSorting: false,
+      meta: { label: "Department" },
+    },
+    {
+      accessorKey: "lessons",
+      header: "Lessons",
+      cell: ({ row }) => (
+        <span className="font-mono text-xs tabular-nums">
+          {row.original.lessons}
+          {row.original.classTeacherOf > 0 && (
+            <span className="ms-2 text-muted-foreground">
+              · CT&nbsp;{row.original.classTeacherOf}
+            </span>
+          )}
+        </span>
+      ),
+      enableSorting: false,
+      meta: { label: "Lessons" },
+    },
+    {
+      accessorKey: "phone",
+      header: "Phone",
+      cell: ({ row }) => <span className="font-mono text-xs">{row.original.phone ?? "—"}</span>,
+      enableSorting: false,
+      meta: { label: "Phone" },
+    },
+    {
+      accessorKey: "status",
+      header: "Status",
+      cell: ({ row }) => (
+        <div className="flex flex-col gap-0.5">
+          <Badge variant={staffStatusTone(row.original.status)} className="w-fit">
+            {staffStatusLabel(row.original.status, t)}
+          </Badge>
+          {row.original.dateOfLeaving && (
+            <span className="text-xs text-muted-foreground">
+              left {row.original.dateOfLeaving}
+            </span>
+          )}
+        </div>
+      ),
+      enableSorting: false,
+      meta: { label: "Status" },
+    },
+  ];
+}
 
 export function StaffTable({ canManage }: { canManage: boolean }) {
+  const t = useT();
+  const columns = useMemo(() => staffColumns(t), [t]);
   const router = useRouter();
   const [pageIndex, setPageIndex] = useState(0);
   const [pageSize, setPageSize] = useState(25);
