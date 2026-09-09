@@ -14,6 +14,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { useT } from "@/components/providers/i18n-provider";
 import { useSavedViews, type SavedViewState } from "./use-saved-views";
 
 export function DataTableToolbar<TData>({
@@ -21,7 +22,7 @@ export function DataTableToolbar<TData>({
   viewsKey,
   searchValue,
   onSearchChange,
-  searchPlaceholder = "Search…",
+  searchPlaceholder,
   onExport,
   children,
 }: {
@@ -33,6 +34,7 @@ export function DataTableToolbar<TData>({
   onExport?: () => void;
   children?: React.ReactNode;
 }) {
+  const t = useT();
   const [newViewName, setNewViewName] = useState("");
   const savedViews = useSavedViews(viewsKey ?? "");
 
@@ -53,16 +55,16 @@ export function DataTableToolbar<TData>({
           <Input
             value={searchValue ?? ""}
             onChange={(e) => onSearchChange(e.target.value)}
-            placeholder={searchPlaceholder}
+            placeholder={searchPlaceholder ?? t("table.search")}
             className="ps-8"
-            aria-label={searchPlaceholder}
+            aria-label={searchPlaceholder ?? t("table.search")}
           />
           {searchValue && (
             <button
               type="button"
               onClick={() => onSearchChange("")}
               className="absolute top-1/2 end-2 -translate-y-1/2 text-muted-foreground hover:text-foreground cursor-pointer"
-              aria-label="Clear search"
+              aria-label={t("table.clearSearch")}
             >
               <X className="size-3.5" />
             </button>
@@ -82,9 +84,9 @@ export function DataTableToolbar<TData>({
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-64">
-              <DropdownMenuLabel>Saved views</DropdownMenuLabel>
+              <DropdownMenuLabel>{t("table.savedViews")}</DropdownMenuLabel>
               {savedViews.views.length === 0 && (
-                <p className="px-2 py-1.5 text-sm text-muted-foreground">No saved views yet</p>
+                <p className="px-2 py-1.5 text-sm text-muted-foreground">{t("table.noSavedViews")}</p>
               )}
               {savedViews.views.map((view) => (
                 <DropdownMenuItem
@@ -105,7 +107,7 @@ export function DataTableToolbar<TData>({
                       savedViews.remove(view.name);
                     }}
                     className="text-muted-foreground hover:text-destructive cursor-pointer"
-                    aria-label={`Delete view ${view.name}`}
+                    aria-label={t("table.deleteView", { name: view.name })}
                   >
                     <X className="size-3.5" />
                   </button>
@@ -116,7 +118,7 @@ export function DataTableToolbar<TData>({
                 <Input
                   value={newViewName}
                   onChange={(e) => setNewViewName(e.target.value)}
-                  placeholder="Name this view"
+                  placeholder={t("table.nameThisView")}
                   className="h-8"
                 />
                 <Button
@@ -128,7 +130,7 @@ export function DataTableToolbar<TData>({
                     setNewViewName("");
                   }}
                 >
-                  Save
+                  {t("table.save")}
                 </Button>
               </div>
             </DropdownMenuContent>
@@ -138,7 +140,7 @@ export function DataTableToolbar<TData>({
         {onExport && (
           <Button variant="outline" size="sm" onClick={onExport}>
             <Download className="size-3.5" aria-hidden="true" />
-            Export
+            {t("table.export")}
           </Button>
         )}
 
@@ -146,7 +148,7 @@ export function DataTableToolbar<TData>({
           <DropdownMenuTrigger asChild>
             <Button variant="outline" size="sm">
               <Columns3 className="size-3.5" aria-hidden="true" />
-              Columns
+              {t("table.columns")}
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">

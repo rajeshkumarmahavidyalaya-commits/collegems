@@ -96,6 +96,61 @@ is no help), and the collapse button's label was hardcoded English.
   `oklch()` colours reliably. Rather than publish a number that is not a
   measurement, it is left unmeasured and stated as such.
 
+## Every list in the product spoke English
+
+The `/login` findings sent me looking for the same shape elsewhere, and the
+DataTable primitive — the one on roughly twenty list screens — had **no
+translated string in it at all**. There were no `table.*` keys in the
+catalogue, so nothing had ever been missed; the strings were simply written in
+place:
+
+```
+No results · Showing 1–25 of 412 · Rows per page · Page 1 of 3
+First page · Previous page · Next page · Last page
+Search… · Clear search · Saved views · No saved views yet · Name this view
+Save · Export · Columns · Nothing here yet · Couldn't load this data
+Something went wrong on our end · Try again · Select all rows on this page
+```
+
+Twenty-six keys later, verified in Urdu against a running build: the footer
+reads *کوئی نتیجہ نہیں*, *فی صفحہ سطریں*, *صفحہ ۱ / ۱*, and the pager arrows
+mirror to the reading direction.
+
+### The footer contradicted the table above it
+
+While a page is in flight `totalCount` is 0, so the footer asserted **"No
+results"** underneath a loading skeleton — the table says *loading*, the line
+beneath says *there is nothing*, and the sentence is louder than the animation.
+`aria-live="polite"` read it out, too. `DataTablePagination` now takes
+`isLoading` and says so instead.
+
+### A date is not an ISO string
+
+The academic-years cards rendered `2026-04-01 — 2027-03-31` — the value the
+database returns, not a date anybody reads. They go through
+`src/lib/i18n/format.ts` now: *01 اپریل، 2025 — 31 مارچ، 2026*.
+
+That fix has a much larger sibling, measured and **not** done here: **42 raw
+`toLocaleDateString` / `toLocaleTimeString` calls across 30 files, 40 of them
+with a hardcoded `"en-IN"`.** Rule 15 forbids exactly that — *"it works for the
+first customer"* — and the rest pass `undefined`, which formats in the
+*browser's* locale rather than the reader's. It is a mechanical sweep across
+thirty files and belongs in its own change, with its own before-and-after
+count.
+
+## The shape of what is left
+
+| | |
+|---|---|
+| screens under `src/app/(app)` | 160 `.tsx` files |
+| of those, using the message catalogue at all | **53** |
+
+The shared chrome is translated now. The module copy — every heading, every
+empty state, every button on every screen — is not, and a Hindi reader gets an
+English application with a translated frame around it. Naming that with a
+number is more useful than another round of keys, because it says how big the
+job is rather than implying it is nearly done.
+
 ## What this pass could not see
 
 Every screen behind the login. The staff roster, the fee counter, the register,

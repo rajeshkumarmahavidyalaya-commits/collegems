@@ -1,7 +1,18 @@
 import type { ColumnDef } from "@tanstack/react-table";
 import { Checkbox } from "@/components/ui/checkbox";
 
-export function selectColumn<TData>(): ColumnDef<TData, unknown> {
+/**
+ * Row-selection checkboxes.
+ *
+ * The labels are parameters rather than `useT()` calls because this builds a
+ * column definition at module scope, where a hook has no component to belong
+ * to. Pass `t("table.selectAll")` and `t("table.selectRow")` from the client
+ * component that owns the table.
+ */
+export function selectColumn<TData>(labels: {
+  all: string;
+  row: string;
+}): ColumnDef<TData, unknown> {
   return {
     id: "select",
     header: ({ table }) => (
@@ -11,7 +22,7 @@ export function selectColumn<TData>(): ColumnDef<TData, unknown> {
           (table.getIsSomePageRowsSelected() && "indeterminate")
         }
         onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
-        aria-label="Select all rows on this page"
+        aria-label={labels.all}
       />
     ),
     cell: ({ row }) => (
@@ -19,7 +30,7 @@ export function selectColumn<TData>(): ColumnDef<TData, unknown> {
         checked={row.getIsSelected()}
         onCheckedChange={(value) => row.toggleSelected(!!value)}
         onClick={(e) => e.stopPropagation()}
-        aria-label="Select row"
+        aria-label={labels.row}
       />
     ),
     enableSorting: false,

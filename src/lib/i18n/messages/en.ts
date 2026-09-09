@@ -153,6 +153,36 @@ export const en = {
     "This login is not attached to a school yet. Ask your administrator to send you an invitation.",
 
   // --- notification channels, the newest screen and a full one ------------
+
+  // The DataTable's own chrome. It is on roughly twenty list screens, and
+  // every string in it was English until these keys existed.
+  "table.loading": "Loading…",
+  "table.noResults": "No results",
+  "table.showing": "Showing {from}–{to} of {total}",
+  "table.selected": "{count} of {total} selected",
+  "table.rowsPerPage": "Rows per page",
+  "table.pageOf": "Page {page} of {pages}",
+  "table.firstPage": "First page",
+  "table.previousPage": "Previous page",
+  "table.nextPage": "Next page",
+  "table.lastPage": "Last page",
+  "table.search": "Search…",
+  "table.clearSearch": "Clear search",
+  "table.savedViews": "Saved views",
+  "table.noSavedViews": "No saved views yet",
+  "table.nameThisView": "Name this view",
+  "table.save": "Save",
+  "table.deleteView": "Delete the view {name}",
+  "table.export": "Export",
+  "table.columns": "Columns",
+  "table.emptyTitle": "Nothing here yet",
+  "table.emptyDescription": "Once records exist, they will show up here.",
+  "table.errorTitle": "Couldn’t load this",
+  "table.errorDescription": "Something went wrong at our end.",
+  "table.retry": "Try again",
+  "table.selectAll": "Select every row on this page",
+  "table.selectRow": "Select this row",
+
   "channels.title": "Notification channels",
   "channels.subtitle":
     "Whether a message actually leaves the building has three parts: this build has to have a driver for the channel, the school has to have turned it on and given it an address, and the dispatcher has to have found its credentials.",

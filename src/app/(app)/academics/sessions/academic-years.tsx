@@ -22,6 +22,8 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { TextField } from "@/components/forms/form-fields";
 import { ErrorSummary } from "@/components/forms/error-summary";
+import { useI18n } from "@/components/providers/i18n-provider";
+import { formatDate } from "@/lib/i18n/format";
 import {
   academicSessionSchema,
   type AcademicSessionInput,
@@ -222,6 +224,10 @@ export function AcademicYears({
   canManage: boolean;
 }) {
   const router = useRouter();
+  // Dates go through the formatter, never `toLocaleDateString("en-IN")` and
+  // never the raw ISO string the database returns — `2026-03-31` is a value,
+  // not a date somebody reads.
+  const { locale } = useI18n();
   const [adding, setAdding] = useState(false);
   const [editing, setEditing] = useState<AcademicYear | null>(null);
   const [activating, setActivating] = useState<AcademicYear | null>(null);
@@ -240,7 +246,8 @@ export function AcademicYears({
         <Card className="border-destructive/40">
           <CardHeader>
             <CardTitle className="text-base">
-              {current!.name} ended on {current!.endDate}, and is still the current year
+              {current!.name} ended on {formatDate(current!.endDate, locale)}, and is still the
+              current year
             </CardTitle>
             <CardDescription>
               Everything written since then has been filed under it — invisible to every report of
@@ -293,7 +300,7 @@ export function AcademicYears({
                 </div>
                 <CardDescription className="flex items-center gap-1.5">
                   <CalendarRange className="size-3.5" aria-hidden="true" />
-                  {y.startDate} — {y.endDate}
+                  {formatDate(y.startDate, locale)} — {formatDate(y.endDate, locale)}
                 </CardDescription>
               </CardHeader>
               <CardContent className="flex flex-col gap-3">

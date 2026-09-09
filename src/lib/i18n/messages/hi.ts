@@ -134,6 +134,36 @@ export const hi: Messages = {
   "login.noTenant":
     "यह लॉगिन अभी किसी विद्यालय से जुड़ा नहीं है। अपने प्रशासक से निमंत्रण भेजने को कहें।",
 
+
+  // The DataTable's own chrome. It is on roughly twenty list screens, and
+  // every string in it was English until these keys existed.
+  "table.loading": "लोड हो रहा है…",
+  "table.noResults": "कोई परिणाम नहीं",
+  "table.showing": "{total} में से {from}–{to} दिखाए जा रहे हैं",
+  "table.selected": "{total} में से {count} चुने गए",
+  "table.rowsPerPage": "प्रति पृष्ठ पंक्तियाँ",
+  "table.pageOf": "पृष्ठ {page} / {pages}",
+  "table.firstPage": "पहला पृष्ठ",
+  "table.previousPage": "पिछला पृष्ठ",
+  "table.nextPage": "अगला पृष्ठ",
+  "table.lastPage": "अंतिम पृष्ठ",
+  "table.search": "खोजें…",
+  "table.clearSearch": "खोज साफ़ करें",
+  "table.savedViews": "सहेजे गए दृश्य",
+  "table.noSavedViews": "अभी कोई सहेजा गया दृश्य नहीं",
+  "table.nameThisView": "इस दृश्य को नाम दें",
+  "table.save": "सहेजें",
+  "table.deleteView": "दृश्य {name} हटाएँ",
+  "table.export": "निर्यात",
+  "table.columns": "स्तंभ",
+  "table.emptyTitle": "यहाँ अभी कुछ नहीं है",
+  "table.emptyDescription": "रिकॉर्ड बनने पर वे यहाँ दिखेंगे।",
+  "table.errorTitle": "इसे लोड नहीं किया जा सका",
+  "table.errorDescription": "हमारी ओर से कुछ गड़बड़ हुई।",
+  "table.retry": "फिर कोशिश करें",
+  "table.selectAll": "इस पृष्ठ की सभी पंक्तियाँ चुनें",
+  "table.selectRow": "यह पंक्ति चुनें",
+
   "channels.title": "सूचना चैनल",
   "channels.subtitle": "संदेश वास्तव में बाहर जाएगा या नहीं, यह तीन बातों पर निर्भर है: इस बिल्ड में उस चैनल का ड्राइवर हो, विद्यालय ने उसे चालू करके पता दिया हो, और डिस्पैचर को उसकी कुंजियाँ मिली हों।",
   "channels.sending": "भेजा जा रहा है",

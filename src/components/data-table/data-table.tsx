@@ -21,6 +21,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
+import { useT } from "@/components/providers/i18n-provider";
 import { Skeleton } from "@/components/ui/skeleton";
 import { DataTablePagination } from "./data-table-pagination";
 
@@ -79,13 +80,14 @@ export function DataTable<TData, TValue>({
   isLoading,
   isError,
   onRetry,
-  emptyTitle = "Nothing here yet",
-  emptyDescription = "Once records exist, they'll show up here.",
+  emptyTitle,
+  emptyDescription,
   emptyAction,
   onRowClick,
   toolbar,
   bulkActions,
 }: DataTableProps<TData, TValue>) {
+  const t = useT();
   const table = useReactTable({
     data,
     columns,
@@ -169,14 +171,14 @@ export function DataTable<TData, TValue>({
                   <div className="flex flex-col items-center justify-center gap-3 py-8">
                     <FileX2 className="size-8 text-muted-foreground" aria-hidden="true" />
                     <div>
-                      <p className="font-medium">Couldn&apos;t load this data</p>
+                      <p className="font-medium">{t("table.errorTitle")}</p>
                       <p className="text-sm text-muted-foreground">
-                        Something went wrong on our end.
+                        {t("table.errorDescription")}
                       </p>
                     </div>
                     {onRetry && (
                       <Button variant="outline" size="sm" onClick={onRetry}>
-                        Try again
+                        {t("table.retry")}
                       </Button>
                     )}
                   </div>
@@ -188,8 +190,10 @@ export function DataTable<TData, TValue>({
                   <div className="flex flex-col items-center justify-center gap-3 py-8">
                     <Inbox className="size-8 text-muted-foreground" aria-hidden="true" />
                     <div>
-                      <p className="font-medium">{emptyTitle}</p>
-                      <p className="text-sm text-muted-foreground">{emptyDescription}</p>
+                      <p className="font-medium">{emptyTitle ?? t("table.emptyTitle")}</p>
+                      <p className="text-sm text-muted-foreground">
+                        {emptyDescription ?? t("table.emptyDescription")}
+                      </p>
                     </div>
                     {emptyAction}
                   </div>
@@ -219,6 +223,7 @@ export function DataTable<TData, TValue>({
         pageIndex={pageIndex}
         pageSize={pageSize}
         totalCount={totalCount}
+        isLoading={isLoading}
         selectedCount={selectedRows.length || undefined}
         onPageChange={onPageChange}
         onPageSizeChange={onPageSizeChange}

@@ -2,6 +2,7 @@
 
 import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useT } from "@/components/providers/i18n-provider";
 import {
   Select,
   SelectContent,
@@ -18,6 +19,7 @@ export function DataTablePagination({
   onPageChange,
   onPageSizeChange,
   pageSizeOptions = [10, 25, 50, 100],
+  isLoading,
 }: {
   pageIndex: number;
   pageSize: number;
@@ -26,7 +28,15 @@ export function DataTablePagination({
   onPageChange: (index: number) => void;
   onPageSizeChange: (size: number) => void;
   pageSizeOptions?: number[];
+  /**
+   * While a page is in flight, `totalCount` is 0 and the footer used to assert
+   * **"No results"** underneath a skeleton — the table says "loading" and the
+   * line beneath it says "there is nothing", and the second one is louder
+   * because it is a sentence. `aria-live="polite"` announced it too.
+   */
+  isLoading?: boolean;
 }) {
+  const t = useT();
   const pageCount = Math.max(1, Math.ceil(totalCount / pageSize));
   const from = totalCount === 0 ? 0 : pageIndex * pageSize + 1;
   const to = Math.min(totalCount, (pageIndex + 1) * pageSize);
@@ -34,23 +44,26 @@ export function DataTablePagination({
   return (
     <div className="flex flex-col-reverse items-start gap-4 px-1 py-3 sm:flex-row sm:items-center sm:justify-between">
       <div className="text-sm text-muted-foreground" aria-live="polite">
-        {selectedCount ? (
-          <span>{selectedCount} of {totalCount} row(s) selected</span>
+        {isLoading ? (
+          t("table.loading")
+        ) : selectedCount ? (
+          t("table.selected", { count: String(selectedCount), total: String(totalCount) })
         ) : totalCount === 0 ? (
-          "No results"
+          t("table.noResults")
         ) : (
-          <span>
-            Showing <span className="font-medium text-foreground">{from}–{to}</span> of{" "}
-            <span className="font-medium text-foreground">{totalCount}</span>
-          </span>
+          t("table.showing", {
+            from: String(from),
+            to: String(to),
+            total: String(totalCount),
+          })
         )}
       </div>
 
       <div className="flex items-center gap-6">
         <div className="flex items-center gap-2">
-          <span className="text-sm text-muted-foreground">Rows per page</span>
+          <span className="text-sm text-muted-foreground">{t("table.rowsPerPage")}</span>
           <Select value={String(pageSize)} onValueChange={(v) => onPageSizeChange(Number(v))}>
-            <SelectTrigger size="sm" className="w-[70px]" aria-label="Rows per page">
+            <SelectTrigger size="sm" className="w-[70px]" aria-label={t("table.rowsPerPage")}>
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -65,7 +78,7 @@ export function DataTablePagination({
 
         <div className="flex items-center gap-1">
           <span className="hidden text-sm text-muted-foreground sm:inline">
-            Page {pageIndex + 1} of {pageCount}
+            {t("table.pageOf", { page: String(pageIndex + 1), pages: String(pageCount) })}
           </span>
           <Button
             variant="outline"
@@ -73,7 +86,7 @@ export function DataTablePagination({
             className="size-8"
             onClick={() => onPageChange(0)}
             disabled={pageIndex === 0}
-            aria-label="First page"
+            aria-label={t("table.firstPage")}
           >
             <ChevronsLeft className="size-4" />
           </Button>
@@ -83,7 +96,7 @@ export function DataTablePagination({
             className="size-8"
             onClick={() => onPageChange(pageIndex - 1)}
             disabled={pageIndex === 0}
-            aria-label="Previous page"
+            aria-label={t("table.previousPage")}
           >
             <ChevronLeft className="size-4" />
           </Button>
@@ -93,7 +106,7 @@ export function DataTablePagination({
             className="size-8"
             onClick={() => onPageChange(pageIndex + 1)}
             disabled={pageIndex + 1 >= pageCount}
-            aria-label="Next page"
+            aria-label={t("table.nextPage")}
           >
             <ChevronRight className="size-4" />
           </Button>
@@ -103,7 +116,7 @@ export function DataTablePagination({
             className="size-8"
             onClick={() => onPageChange(pageCount - 1)}
             disabled={pageIndex + 1 >= pageCount}
-            aria-label="Last page"
+            aria-label={t("table.lastPage")}
           >
             <ChevronsRight className="size-4" />
           </Button>

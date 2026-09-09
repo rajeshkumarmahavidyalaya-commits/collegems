@@ -134,6 +134,36 @@ export const ur: Messages = {
   "login.noTenant":
     "یہ لاگ اِن ابھی کسی اسکول سے منسلک نہیں۔ اپنے منتظم سے دعوت نامہ بھیجنے کو کہیں۔",
 
+
+  // The DataTable's own chrome. It is on roughly twenty list screens, and
+  // every string in it was English until these keys existed.
+  "table.loading": "لوڈ ہو رہا ہے…",
+  "table.noResults": "کوئی نتیجہ نہیں",
+  "table.showing": "{total} میں سے {from}–{to} دکھائے جا رہے ہیں",
+  "table.selected": "{total} میں سے {count} منتخب",
+  "table.rowsPerPage": "فی صفحہ سطریں",
+  "table.pageOf": "صفحہ {page} / {pages}",
+  "table.firstPage": "پہلا صفحہ",
+  "table.previousPage": "پچھلا صفحہ",
+  "table.nextPage": "اگلا صفحہ",
+  "table.lastPage": "آخری صفحہ",
+  "table.search": "تلاش کریں…",
+  "table.clearSearch": "تلاش صاف کریں",
+  "table.savedViews": "محفوظ منظر",
+  "table.noSavedViews": "ابھی کوئی محفوظ منظر نہیں",
+  "table.nameThisView": "اس منظر کو نام دیں",
+  "table.save": "محفوظ کریں",
+  "table.deleteView": "منظر {name} حذف کریں",
+  "table.export": "برآمد",
+  "table.columns": "کالم",
+  "table.emptyTitle": "یہاں ابھی کچھ نہیں",
+  "table.emptyDescription": "ریکارڈ بننے پر یہاں دکھائی دیں گے۔",
+  "table.errorTitle": "یہ لوڈ نہیں ہو سکا",
+  "table.errorDescription": "ہماری طرف سے کچھ گڑبڑ ہوئی۔",
+  "table.retry": "دوبارہ کوشش کریں",
+  "table.selectAll": "اس صفحے کی تمام سطریں منتخب کریں",
+  "table.selectRow": "یہ سطر منتخب کریں",
+
   "channels.title": "اطلاعاتی چینلز",
   "channels.subtitle": "پیغام واقعی باہر جائے گا یا نہیں، اس کے تین حصے ہیں: اس بلڈ میں اُس چینل کا ڈرائیور ہو، اسکول نے اسے چالو کر کے پتہ دیا ہو، اور ڈسپیچر کو اس کی کلیدیں ملی ہوں۔",
   "channels.sending": "بھیجا جا رہا ہے",
