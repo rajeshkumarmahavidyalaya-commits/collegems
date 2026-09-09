@@ -161,6 +161,22 @@ it *inside the function that produces the data*, not in the UI — which is the
 distinction that keeps this consistent with the sentence above rather than an
 exception to it.
 
+`staff_roster` and `staff_record` are the second instance, and they make the
+distinction easy to see in one screen: the roster is gated in SQL — a teacher
+reads 15 rows of `staff` through the policy and is **refused** by the function
+in a sentence — while `hasPermission("staff.manage")` on the page decides only
+whether an *Add staff* button is drawn. A nav entry's `roles` list is the same
+kind of thing. **The menu and the boundary must not disagree, and only one of
+them is load-bearing.**
+
+The test itself now has a name — `role_has_permission(code)` — because it had
+been written out by hand in `report_run`, `dashboard_summary` and `checks_run`,
+and a fourth copy is where a rule quietly starts to differ from itself. The
+three existing copies are deliberately left alone rather than swept up:
+replacing a load-bearing authorization check is a probe of that function as
+several roles, not a tidy-up, and `checks_run` is the one that already taught
+this the expensive way.
+
 ### An invoker function over row-ownership RLS lies quietly
 
 The counter-case, and it is the more dangerous one because it never raises.

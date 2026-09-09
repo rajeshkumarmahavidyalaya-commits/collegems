@@ -73,6 +73,7 @@ export const en = {
   "nav.reportCards": "Report cards",
   "nav.busAssignments": "Bus assignments",
   "nav.staff": "Staff",
+  "nav.staffList": "Staff list",
   "nav.staffAttendance": "Staff attendance",
   "nav.leave": "Leave",
   "nav.salaryStructures": "Salary structures",

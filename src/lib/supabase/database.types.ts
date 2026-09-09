@@ -8494,6 +8494,7 @@ export type Database = {
           row_data: Json
         }[]
       }
+      role_has_permission: { Args: { p_code: string }; Returns: boolean }
       salary_structure_problems: {
         Args: { p_components: Json }
         Returns: string[]
@@ -8617,6 +8618,35 @@ export type Database = {
           severity: string
         }[]
       }
+      staff_admit: {
+        Args: {
+          p_date_of_joining?: string
+          p_department?: string
+          p_designation: string
+          p_employee_code: string
+          p_person: Json
+          p_person_id?: string
+        }
+        Returns: {
+          created_at: string
+          date_of_joining: string
+          date_of_leaving: string | null
+          department: string | null
+          designation: string
+          employee_code: string
+          id: string
+          person_id: string
+          status: string
+          tenant_id: string
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "staff"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       staff_directory: {
         Args: never
         Returns: {
@@ -8646,6 +8676,59 @@ export type Database = {
       staff_is_away: {
         Args: { p_date: string; p_staff_id: string }
         Returns: boolean
+      }
+      staff_record: { Args: { p_staff_id: string }; Returns: Json }
+      staff_roster: {
+        Args: {
+          p_limit?: number
+          p_offset?: number
+          p_search?: string
+          p_status?: string
+        }
+        Returns: {
+          class_teacher_of: number
+          date_of_joining: string
+          date_of_leaving: string
+          department: string
+          designation: string
+          email: string
+          employee_code: string
+          full_name: string
+          lessons: number
+          phone: string
+          staff_id: string
+          status: string
+          total_count: number
+        }[]
+      }
+      staff_update: {
+        Args: {
+          p_date_of_joining?: string
+          p_department?: string
+          p_designation: string
+          p_employee_code: string
+          p_person: Json
+          p_staff_id: string
+        }
+        Returns: {
+          created_at: string
+          date_of_joining: string
+          date_of_leaving: string | null
+          department: string | null
+          designation: string
+          employee_code: string
+          id: string
+          person_id: string
+          status: string
+          tenant_id: string
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "staff"
+          isOneToOne: true
+          isSetofReturn: false
+        }
       }
       stock_issued_assets: {
         Args: never

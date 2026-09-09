@@ -78,6 +78,7 @@ After any migration, regenerate types into
 | [docs/modules/renewals.md](./docs/modules/renewals.md) | Carrying a bus seat and a bed into the new year, through the modules' own doors |
 | [docs/modules/checks.md](./docs/modules/checks.md) | Needs attention: every critic on one screen, and what probing as a teacher found |
 | [docs/modules/staff-directory.md](./docs/modules/staff-directory.md) | The staff directory: why a row policy could not express "name and designation only" |
+| [docs/modules/staff.md](./docs/modules/staff.md) | Staff: the roster, and the gate that is in the function rather than on the page |
 | [docs/performance.md](./docs/performance.md) | What was actually slow, measured before and after |
 | [docs/design/decisions.md](./docs/design/decisions.md) | Palette, type, spacing — and why |
 | `design-system/schoolos/MASTER.md` | Source of truth for all UI values |

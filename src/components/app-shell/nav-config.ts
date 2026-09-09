@@ -248,6 +248,17 @@ export const NAV_GROUPS: NavGroup[] = [
     title: "Staff",
     messageKey: "nav.staff",
     items: [
+      // The roster itself, and the only surface `staff_exit` has. Gated on
+      // `staff.view` inside `staff_roster` rather than here — this `roles`
+      // filter is a menu, not a boundary, and the two must not disagree about
+      // who may look.
+      {
+        title: "Staff list",
+        messageKey: "nav.staffList",
+        href: "/staff",
+        icon: Users,
+        roles: ["admin"],
+      },
       {
         title: "Staff attendance",
         messageKey: "nav.staffAttendance",

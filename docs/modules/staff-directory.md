@@ -123,9 +123,6 @@ on a card comes from the run, not from a family's read.
 
 ## Not built
 
-**The staff module itself.** There is still no `/staff` screen: no roster, no
-way to add a member of staff, and no surface for `staff_exit` — which means the
-guards migration `0191` put on `timetable_set_entry` and `substitution_arrange`
-protect against a status nobody can currently set through the app. That is the
-next piece, and it is the same criticism rule 6 makes of a correct write path
-nobody can call.
+Nothing, now. The staff module arrived in `0194` — `/staff`, `/staff/[id]`,
+`/staff/new` and the first caller `staff_exit` has ever had. See
+[staff.md](./staff.md).
