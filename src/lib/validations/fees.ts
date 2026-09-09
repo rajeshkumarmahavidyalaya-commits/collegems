@@ -7,7 +7,6 @@ export {
   ENTRY_TYPES,
   ADJUSTMENT_TYPES,
   PAYMENT_METHODS,
-  formatMoney,
   entryTypeLabel,
   methodLabel,
 } from "./fees-display";

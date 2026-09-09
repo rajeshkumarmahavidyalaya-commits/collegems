@@ -24,7 +24,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { formatMoney } from "@/lib/validations/fees-display";
+
 import {
   decisionTone,
   fareChange,
@@ -33,6 +33,7 @@ import {
   type RenewalRunRow,
 } from "@/lib/validations/renewals";
 import { applyRenewalRun, discardRenewalRun, renewInto, skipRenewal } from "../actions";
+import { useI18n } from "@/components/providers/i18n-provider";
 
 type Target = { id: string; label: string; fare: number; routeDirection: string };
 
@@ -43,6 +44,7 @@ type Props = {
 };
 
 export function RenewalReview({ run, decisions, targets }: Props) {
+  const { formatCurrency } = useI18n();
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [editing, setEditing] = useState<RenewalDecisionRow | null>(null);
@@ -159,7 +161,7 @@ export function RenewalReview({ run, decisions, targets }: Props) {
         </div>
         <div className="rounded-lg border p-3">
           <p className="font-mono text-2xl font-semibold tabular-nums">
-            {formatMoney(monthlyTotal)}
+            {formatCurrency(monthlyTotal)}
           </p>
           <p className="text-sm font-medium">A month, once applied</p>
         </div>
@@ -221,7 +223,7 @@ export function RenewalReview({ run, decisions, targets }: Props) {
                   <td className="p-3">
                     <p>{row.fromLabel}</p>
                     <p className="font-mono text-xs tabular-nums text-muted-foreground">
-                      {formatMoney(row.fromFare)}
+                      {formatCurrency(row.fromFare)}
                     </p>
                   </td>
                   <td className="p-3">
@@ -235,7 +237,7 @@ export function RenewalReview({ run, decisions, targets }: Props) {
                       <>
                         <p className="mt-1">{row.toLabel ?? "—"}</p>
                         <p className="font-mono text-xs tabular-nums text-muted-foreground">
-                          {row.toFare === null ? "—" : formatMoney(row.toFare)}
+                          {row.toFare === null ? "—" : formatCurrency(row.toFare)}
                           {change === "up" && " · up on last year"}
                           {change === "down" && " · down on last year"}
                         </p>
@@ -326,7 +328,7 @@ export function RenewalReview({ run, decisions, targets }: Props) {
               <SelectContent>
                 {targets.map((t) => (
                   <SelectItem key={t.id} value={t.id}>
-                    {t.label} · {formatMoney(t.fare)}
+                    {t.label} · {formatCurrency(t.fare)}
                   </SelectItem>
                 ))}
               </SelectContent>

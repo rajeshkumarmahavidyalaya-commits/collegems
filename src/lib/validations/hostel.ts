@@ -86,16 +86,6 @@ export function hostelKindLabel(value: string) {
   return HOSTEL_KINDS.find((k) => k.value === value)?.label ?? value;
 }
 
-/** `3200` → `₹3,200.00`. */
-export function formatFare(value: number | string | null | undefined) {
-  if (value === null || value === undefined || value === "") return "—";
-  return new Intl.NumberFormat("en-IN", {
-    style: "currency",
-    currency: "INR",
-    minimumFractionDigits: 2,
-  }).format(Number(value));
-}
-
 /**
  * How full a room is, as a sentence. Unlike a bus, a room always has a bed
  * count — there is no "no vehicle assigned" case — so this never has to

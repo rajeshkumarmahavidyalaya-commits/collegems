@@ -33,7 +33,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { formatMoney, monthValue, runStatusLabel } from "@/lib/validations/hr";
+import { monthValue, runStatusLabel } from "@/lib/validations/hr";
 import { discardPayroll, previewPayroll, type RunRow } from "./actions";
 import { useI18n } from "@/components/providers/i18n-provider";
 
@@ -106,6 +106,7 @@ export function PayrollRuns({ runs, canProcess }: { runs: RunRow[]; canProcess: 
 }
 
 function RunRowView({ run, canProcess }: { run: RunRow; canProcess: boolean }) {
+  const { formatCurrency } = useI18n();
   const { formatDate, formatMonth } = useI18n();
   const router = useRouter();
   const [pending, startTransition] = useTransition();
@@ -142,7 +143,7 @@ function RunRowView({ run, canProcess }: { run: RunRow; canProcess: boolean }) {
       </TableCell>
       <TableCell className="text-end font-mono tabular-nums">{run.payslipCount}</TableCell>
       <TableCell className="text-end font-mono tabular-nums">
-        {formatMoney(run.totalNet)}
+        {formatCurrency(run.totalNet)}
       </TableCell>
       <TableCell>
         <Badge
@@ -278,6 +279,7 @@ export function MyPayslips({
 }: {
   payslips: { id: string; periodMonth: string; netPay: number; grossEarnings: number }[];
 }) {
+  const { formatCurrency } = useI18n();
   const { formatMonth } = useI18n();
 
   return (
@@ -317,10 +319,10 @@ export function MyPayslips({
                   <TableRow key={p.id}>
                     <TableCell className="font-medium">{formatMonth(p.periodMonth)}</TableCell>
                     <TableCell className="text-end font-mono tabular-nums">
-                      {formatMoney(p.grossEarnings)}
+                      {formatCurrency(p.grossEarnings)}
                     </TableCell>
                     <TableCell className="text-end font-mono tabular-nums">
-                      {formatMoney(p.netPay)}
+                      {formatCurrency(p.netPay)}
                     </TableCell>
                   </TableRow>
                 ))}

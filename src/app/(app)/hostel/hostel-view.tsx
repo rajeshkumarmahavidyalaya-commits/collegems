@@ -52,18 +52,8 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ErrorSummary } from "@/components/forms/error-summary";
 import { SelectField, TextField, TextareaField } from "@/components/forms/form-fields";
-import {
-  bedsSentence,
-  formatFare,
-  genderAllowed,
-  hostelKindLabel,
-  HOSTEL_KINDS,
-  hostelSchema,
-  occupancyTone,
-  roomSchema,
-  type HostelInput,
-  type RoomInput,
-} from "@/lib/validations/hostel";
+import { bedsSentence, genderAllowed, hostelKindLabel, HOSTEL_KINDS, hostelSchema, occupancyTone, roomSchema, type HostelInput, type RoomInput } from "@/lib/validations/hostel";
+import { useI18n } from "@/components/providers/i18n-provider";
 import {
   allocateStudent,
   saveHostel,
@@ -190,6 +180,7 @@ function RoomsTab({
   onAdd: (hostelId: string) => void;
   onEdit: (room: RoomRow) => void;
 }) {
+  const { formatCurrency } = useI18n();
   return (
     <Card>
       <CardHeader className="flex flex-row flex-wrap items-start justify-between gap-3">
@@ -261,7 +252,7 @@ function RoomsTab({
                         </Badge>
                       </TableCell>
                       <TableCell className="text-end font-mono tabular-nums">
-                        {room.monthlyFare > 0 ? formatFare(room.monthlyFare) : "Free"}
+                        {room.monthlyFare > 0 ? formatCurrency(room.monthlyFare) : "Free"}
                       </TableCell>
                       <TableCell>
                         <Badge variant={room.isActive ? "outline" : "secondary"}>
@@ -395,6 +386,7 @@ function HousesTab({
 }
 
 function AllocateCard({ rooms }: { rooms: RoomRow[] }) {
+  const { formatCurrency } = useI18n();
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [term, setTerm] = useState("");
@@ -545,7 +537,7 @@ function AllocateCard({ rooms }: { rooms: RoomRow[] }) {
                 .filter((r) => r.isActive)
                 .map((r) => (
                   <SelectItem key={r.roomId} value={r.roomId} className="cursor-pointer">
-                    {r.hostelName} {r.roomNumber} — {formatFare(r.monthlyFare)}
+                    {r.hostelName} {r.roomNumber} — {formatCurrency(r.monthlyFare)}
                     {r.bedsFree <= 0 ? " (full)" : ` (${r.bedsFree} free)`}
                   </SelectItem>
                 ))}

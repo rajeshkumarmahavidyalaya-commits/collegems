@@ -36,12 +36,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import {
-  PAYMENT_METHODS,
-  formatDays,
-  formatMoney,
-  paymentMethodLabel,
-} from "@/lib/validations/hr";
+import { PAYMENT_METHODS, formatDays, paymentMethodLabel } from "@/lib/validations/hr";
 import {
   editPayslip,
   finalisePayroll,
@@ -69,6 +64,7 @@ type Props = {
 };
 
 export function RunRegister({ run, rows, lines, canProcess }: Props) {
+  const { formatCurrency } = useI18n();
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [openId, setOpenId] = useState<string | null>(null);
@@ -114,11 +110,11 @@ export function RunRegister({ run, rows, lines, canProcess }: Props) {
     <div className="flex flex-col gap-6">
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <Stat label="Payslips" value={String(rows.length)} />
-        <Stat label="Gross" value={formatMoney(totals.gross)} />
-        <Stat label="Deductions" value={formatMoney(totals.deductions)} />
+        <Stat label="Gross" value={formatCurrency(totals.gross)} />
+        <Stat label="Deductions" value={formatCurrency(totals.deductions)} />
         <Stat
           label={run.status === "finalised" ? "Paid" : "Net payable"}
-          value={run.status === "finalised" ? formatMoney(totals.paid) : formatMoney(totals.net)}
+          value={run.status === "finalised" ? formatCurrency(totals.paid) : formatCurrency(totals.net)}
           emphasis
         />
       </div>
@@ -270,6 +266,7 @@ function PayslipRow({
   onEdit: () => void;
   onPay: () => void;
 }) {
+  const { formatCurrency } = useI18n();
   const fullyPaid = row.netPay <= 0 || row.amountPaid >= row.netPay - 0.005;
   const partlyPaid = row.amountPaid > 0.005 && !fullyPaid;
   const router = useRouter();
@@ -326,13 +323,13 @@ function PayslipRow({
           )}
         </TableCell>
         <TableCell className="text-end font-mono tabular-nums">
-          {formatMoney(row.grossEarnings)}
+          {formatCurrency(row.grossEarnings)}
         </TableCell>
         <TableCell className="text-end font-mono tabular-nums text-muted-foreground">
-          {formatMoney(row.totalDeductions)}
+          {formatCurrency(row.totalDeductions)}
         </TableCell>
         <TableCell className="text-end font-mono font-medium tabular-nums">
-          {formatMoney(row.netPay)}
+          {formatCurrency(row.netPay)}
         </TableCell>
         {isFinalised && (
           <TableCell className="text-end">
@@ -342,7 +339,7 @@ function PayslipRow({
               <Badge variant="default">Paid</Badge>
             ) : partlyPaid ? (
               <span className="font-mono text-xs tabular-nums text-brand-accent">
-                {formatMoney(row.amountPaid)}
+                {formatCurrency(row.amountPaid)}
               </span>
             ) : (
               <Badge variant="outline">Unpaid</Badge>
@@ -436,7 +433,7 @@ function PayslipRow({
                           </TableCell>
                           <TableCell className="text-end font-mono tabular-nums">
                             {line.kind === "deduction" ? "−" : ""}
-                            {formatMoney(line.amount)}
+                            {formatCurrency(line.amount)}
                           </TableCell>
                         </TableRow>
                       ))}
@@ -474,6 +471,7 @@ function PaymentHistory({
   canProcess: boolean;
   open: boolean;
 }) {
+  const { formatCurrency } = useI18n();
   const { formatDate } = useI18n();
   const router = useRouter();
   const [pending, startTransition] = useTransition();
@@ -528,7 +526,7 @@ function PaymentHistory({
               <CircleDollarSign className="size-3.5 text-muted-foreground" aria-hidden="true" />
               <span className="font-mono tabular-nums">
                 {p.isReversal ? "−" : ""}
-                {formatMoney(Math.abs(p.amount))}
+                {formatCurrency(Math.abs(p.amount))}
               </span>
               <span className="text-xs text-muted-foreground">
                 {paymentMethodLabel(p.method)}
@@ -659,6 +657,7 @@ function EditDialog({ row, onClose }: { row: RegisterRow | null; onClose: () => 
 }
 
 function PaymentDialog({ row, onClose }: { row: RegisterRow | null; onClose: () => void }) {
+  const { formatCurrency } = useI18n();
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [amount, setAmount] = useState("");
@@ -698,7 +697,7 @@ function PaymentDialog({ row, onClose }: { row: RegisterRow | null; onClose: () 
         <DialogHeader>
           <DialogTitle>Pay {row?.staffName}</DialogTitle>
           <DialogDescription>
-            {formatMoney(outstanding)} outstanding of a net {formatMoney(row?.netPay ?? 0)}. Paying
+            {formatCurrency(outstanding)} outstanding of a net {formatCurrency(row?.netPay ?? 0)}. Paying
             more than is owed is refused — the payslip is the figure that was agreed.
           </DialogDescription>
         </DialogHeader>

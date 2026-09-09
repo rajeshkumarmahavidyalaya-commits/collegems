@@ -30,14 +30,9 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ErrorSummary } from "@/components/forms/error-summary";
 import { TextField } from "@/components/forms/form-fields";
-import {
-  directionLabel,
-  formatFare,
-  formatStopTime,
-  stopSchema,
-  type StopInput,
-} from "@/lib/validations/transport";
+import { directionLabel, formatStopTime, stopSchema, type StopInput } from "@/lib/validations/transport";
 import { deleteStop, saveStop, type ManifestRow, type StopRow } from "../actions";
+import { useI18n } from "@/components/providers/i18n-provider";
 
 export function RouteDetail({
   routeId,
@@ -222,6 +217,7 @@ function StopsTab({
   onAdd: () => void;
   onEdit: (stop: StopRow) => void;
 }) {
+  const { formatCurrency } = useI18n();
   const router = useRouter();
   const [pending, startTransition] = useTransition();
 
@@ -303,7 +299,7 @@ function StopsTab({
                     <TableCell className="text-end">
                       {stop.monthlyFare > 0 ? (
                         <span className="font-mono tabular-nums">
-                          {formatFare(stop.monthlyFare)}
+                          {formatCurrency(stop.monthlyFare)}
                         </span>
                       ) : (
                         <Badge variant="secondary">Free</Badge>

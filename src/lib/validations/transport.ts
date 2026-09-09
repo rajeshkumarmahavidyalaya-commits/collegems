@@ -107,16 +107,6 @@ export function directionLabel(value: string) {
   return DIRECTIONS.find((d) => d.value === value)?.label ?? value;
 }
 
-/** `1500` → `₹1,500.00`. Fares are money and print like money. */
-export function formatFare(value: number | string | null | undefined) {
-  if (value === null || value === undefined || value === "") return "—";
-  return new Intl.NumberFormat("en-IN", {
-    style: "currency",
-    currency: "INR",
-    minimumFractionDigits: 2,
-  }).format(Number(value));
-}
-
 /** `"07:05:00"` → `"07:05"`. A timetable does not need seconds. */
 export function formatStopTime(value: string | null | undefined) {
   if (!value) return "—";

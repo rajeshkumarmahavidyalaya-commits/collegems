@@ -17,7 +17,7 @@ import {
 } from "@/components/ui/select";
 import { DataTable, exportRowsToCsv } from "@/components/data-table/data-table";
 import { DataTableToolbar } from "@/components/data-table/data-table-toolbar";
-import { formatMoney } from "@/lib/validations/fees-display";
+
 import { listInvoices, type InvoiceListRow } from "../actions";
 import { useI18n } from "@/components/providers/i18n-provider";
 
@@ -28,6 +28,7 @@ import { useI18n } from "@/components/providers/i18n-provider";
  */
 function invoiceColumns(
   formatDate: (value: string | Date | null | undefined) => string,
+  formatCurrency: (value: number | string | null | undefined) => string,
 ): ColumnDef<InvoiceListRow>[] {
   return [
   {
@@ -86,7 +87,7 @@ function invoiceColumns(
     accessorKey: "total",
     header: "Amount",
     cell: ({ row }) => (
-      <span className="font-mono tabular-nums">{formatMoney(row.original.total)}</span>
+      <span className="font-mono tabular-nums">{formatCurrency(row.original.total)}</span>
     ),
     enableSorting: false,
     meta: { label: "Amount" },
@@ -108,8 +109,11 @@ function invoiceColumns(
 
 export function InvoicesTable() {
   const router = useRouter();
-  const { formatDate } = useI18n();
-  const columns = useMemo(() => invoiceColumns(formatDate), [formatDate]);
+  const { formatDate, formatCurrency } = useI18n();
+  const columns = useMemo(
+    () => invoiceColumns(formatDate, formatCurrency),
+    [formatDate, formatCurrency],
+  );
   const [pageIndex, setPageIndex] = useState(0);
   const [pageSize, setPageSize] = useState(25);
   const [status, setStatus] = useState("issued");

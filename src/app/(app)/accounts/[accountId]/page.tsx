@@ -93,7 +93,7 @@ export default async function AccountLedgerPage({
           <div className="text-end">
             <p className="text-xs text-muted-foreground">Closing balance</p>
             <p className="font-mono text-xl font-semibold tabular-nums">
-              {formatBalance(closing)}
+              {formatBalance(closing, locale)}
             </p>
           </div>
         </CardHeader>
@@ -158,13 +158,13 @@ export default async function AccountLedgerPage({
                         )}
                       </TableCell>
                       <TableCell className="text-end font-mono tabular-nums">
-                        {formatColumn(row.debit)}
+                        {formatColumn(row.debit, locale)}
                       </TableCell>
                       <TableCell className="text-end font-mono tabular-nums">
-                        {formatColumn(row.credit)}
+                        {formatColumn(row.credit, locale)}
                       </TableCell>
                       <TableCell className="text-end font-mono tabular-nums">
-                        {formatBalance(row.runningBalance)}
+                        {formatBalance(row.runningBalance, locale)}
                       </TableCell>
                     </TableRow>
                   ))}

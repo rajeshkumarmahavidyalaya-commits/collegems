@@ -40,15 +40,8 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ErrorSummary } from "@/components/forms/error-summary";
 import { SelectField, TextField, TextareaField } from "@/components/forms/form-fields";
-import {
-  ACCOUNT_TYPES,
-  accountSchema,
-  accountTypeLabel,
-  formatAmount,
-  formatBalance,
-  formatColumn,
-  type AccountInput,
-} from "@/lib/validations/accounts";
+import { ACCOUNT_TYPES, accountSchema, accountTypeLabel, formatBalance, formatColumn, type AccountInput } from "@/lib/validations/accounts";
+import { useI18n } from "@/components/providers/i18n-provider";
 import {
   saveAccount,
   syncSubledgers,
@@ -74,6 +67,7 @@ export function ChartView({
   canManage,
   canPost,
 }: Props) {
+  const { locale } = useI18n();
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<ChartRow | null>(null);
 
@@ -175,7 +169,7 @@ export function ChartView({
                           {accountTypeLabel(row.accountType)}
                         </TableCell>
                         <TableCell className="text-end font-mono tabular-nums">
-                          {formatBalance(row.balance)}
+                          {formatBalance(row.balance, locale)}
                         </TableCell>
                         {canManage && (
                           <TableCell className="text-end">
@@ -310,6 +304,8 @@ function SyncBanner({ unposted }: { unposted: number }) {
 }
 
 function TrialBalance({ rows }: { rows: TrialBalanceRow[] }) {
+  const { locale } = useI18n();
+  const { formatCurrency } = useI18n();
   const totals = useMemo(
     () => ({
       debit: rows.reduce((s, r) => s + r.debit, 0),
@@ -371,20 +367,20 @@ function TrialBalance({ rows }: { rows: TrialBalanceRow[] }) {
                       </span>
                     </TableCell>
                     <TableCell className="text-end font-mono tabular-nums">
-                      {formatColumn(row.debit)}
+                      {formatColumn(row.debit, locale)}
                     </TableCell>
                     <TableCell className="text-end font-mono tabular-nums">
-                      {formatColumn(row.credit)}
+                      {formatColumn(row.credit, locale)}
                     </TableCell>
                   </TableRow>
                 ))}
                 <TableRow className="border-t-2 font-medium">
                   <TableCell colSpan={2}>Total</TableCell>
                   <TableCell className="text-end font-mono tabular-nums">
-                    {formatAmount(totals.debit)}
+                    {formatCurrency(totals.debit)}
                   </TableCell>
                   <TableCell className="text-end font-mono tabular-nums">
-                    {formatAmount(totals.credit)}
+                    {formatCurrency(totals.credit)}
                   </TableCell>
                 </TableRow>
               </TableBody>
@@ -399,11 +395,11 @@ function TrialBalance({ rows }: { rows: TrialBalanceRow[] }) {
           >
             {ties ? (
               <span className="text-muted-foreground">
-                The books tie: debits and credits both come to {formatAmount(totals.debit)}.
+                The books tie: debits and credits both come to {formatCurrency(totals.debit)}.
               </span>
             ) : (
               <span className="font-medium text-destructive">
-                The books do not tie — out by {formatAmount(Math.abs(totals.debit - totals.credit))}.
+                The books do not tie — out by {formatCurrency(Math.abs(totals.debit - totals.credit))}.
                 That should be impossible; please report it.
               </span>
             )}

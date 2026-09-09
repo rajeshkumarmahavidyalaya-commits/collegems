@@ -4,18 +4,16 @@ import { ArrowLeft } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { hasPermission } from "@/lib/auth/permissions";
-import {
-  formatMoney,
-  quantityWithUnit,
-  stockSentence,
-  stockValue,
-} from "@/lib/validations/inventory";
+import { quantityWithUnit, stockSentence, stockValue } from "@/lib/validations/inventory";
 import { getItemLedger, listStock } from "../actions";
 import { ItemLedger } from "./item-ledger";
+import { formatCurrency } from "@/lib/i18n/format";
+import { getLocale } from "@/lib/i18n/server";
 
 export const metadata = { title: "Item" };
 
 export default async function ItemPage({ params }: { params: Promise<{ itemId: string }> }) {
+  const locale = await getLocale();
   const { itemId } = await params;
   const [stock, ledger, canAdjust] = await Promise.all([
     listStock(),
@@ -48,7 +46,7 @@ export default async function ItemPage({ params }: { params: Promise<{ itemId: s
             <span>
               {item.averageCost === null
                 ? "No cost recorded"
-                : `${formatMoney(item.averageCost)} each · ${formatMoney(value)} on the shelf`}
+                : `${formatCurrency(item.averageCost, locale)} each · ${formatCurrency(value, locale)} on the shelf`}
             </span>
           </p>
         </div>

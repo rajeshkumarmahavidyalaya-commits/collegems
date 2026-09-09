@@ -3,11 +3,14 @@ import { hasPermission } from "@/lib/auth/permissions";
 import { listStaffOptions } from "../hr/actions";
 import { listAssetsOut, listCategories, listStock } from "./actions";
 import { InventoryView } from "./inventory-view";
-import { formatMoney, stockValue } from "@/lib/validations/inventory";
+import { stockValue } from "@/lib/validations/inventory";
+import { formatCurrency } from "@/lib/i18n/format";
+import { getLocale } from "@/lib/i18n/server";
 
 export const metadata = { title: "Store" };
 
 export default async function InventoryPage() {
+  const locale = await getLocale();
   const [canView, canManage, canAdjust] = await Promise.all([
     hasPermission("inventory.view"),
     hasPermission("inventory.manage"),
@@ -53,7 +56,7 @@ export default async function InventoryPage() {
           <PackageSearch className="size-5 text-muted-foreground" aria-hidden="true" />
           <div>
             <p className="font-mono text-lg font-semibold tabular-nums">
-              {valued.length === stock.length ? formatMoney(total) : `${formatMoney(total)}+`}
+              {valued.length === stock.length ? formatCurrency(total, locale) : `${formatCurrency(total, locale)}+`}
             </p>
             <p className="text-xs text-muted-foreground">
               at average cost

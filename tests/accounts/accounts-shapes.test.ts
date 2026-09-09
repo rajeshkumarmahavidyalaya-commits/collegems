@@ -188,17 +188,17 @@ describe("a posting rule", () => {
 
 describe("presenting money in a ledger", () => {
   it("shows a zero column as a dash, not as currency clutter", () => {
-    expect(formatColumn(0)).toBe("—");
-    expect(formatColumn(null)).toBe("—");
-    expect(formatColumn(100)).toContain("100");
+    expect(formatColumn(0, "en")).toBe("—");
+    expect(formatColumn(null, "en")).toBe("—");
+    expect(formatColumn(100, "en")).toContain("100");
   });
 
   it("brackets a negative balance, as an accountant expects", () => {
-    expect(formatBalance(-500)).toMatch(/^\(.*\)$/);
-    expect(formatBalance(500)).not.toContain("(");
+    expect(formatBalance(-500, "en")).toMatch(/^\(.*\)$/);
+    expect(formatBalance(500, "en")).not.toContain("(");
   });
 
   it("always shows two decimals — a ledger that rounds is not trusted", () => {
-    expect(formatBalance(1000)).toContain(".00");
+    expect(formatBalance(1000, "en")).toContain(".00");
   });
 });

@@ -208,7 +208,7 @@ export default async function DashboardPage() {
 
       {/* Money and results. */}
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-        {brief.fees && <FeesCard fees={brief.fees} icon={IndianRupee} />}
+        {brief.fees && <FeesCard fees={brief.fees} icon={IndianRupee} locale={locale} />}
         {!brief.withheld.includes("exam") && <ExamCard exam={brief.exam} icon={Award} />}
       </div>
 

@@ -1780,12 +1780,32 @@ is the one to remember:
 - a **shared component rendered from a Server Component takes the locale as a
   prop** — `useI18n()` would throw there.
 
-**And the money formatter is the same bug, left deliberately.** Six copies of
-`formatMoney` build `new Intl.NumberFormat("en-IN", …)`. Grouping and digits
-following the reader is a *behaviour* change for the first customer rather than
-a cleanup, `formatCurrency(value, locale)` already exists to receive it, and six
-helpers with fifty call sites is its own change with its own before and after.
-See `docs/ui-review.md`.
+**The money formatter was the same bug six times over, under four names** —
+`formatMoney` in `fees-display`, `hr` and `inventory`, `formatAmount` in
+`accounts`, `formatFare` in `transport` and `hostel`, 91 call sites, each
+building `new Intl.NumberFormat("en-IN", …)` with slightly different options.
+Measured before deleting them: **all three option sets produce identical
+output** for every value tried, which is exactly why nobody noticed there were
+six. That is `library.fine_per_day`'s lesson again — copies that agree cost
+nothing until the day one of them has to change.
+
+Two things came out of collapsing them into `formatCurrency(value, locale)`:
+
+- **The guards did not agree, and that one was visible.** Three copies checked
+  only `null` and `undefined`, so `""` — what an untouched form field submits —
+  rendered as **₹0.00** and `"abc"` as **₹NaN**. *No value* and *zero rupees*
+  are different facts, the same distinction this file already draws about a
+  collection rate being null rather than 0. The single implementation returns
+  `—`, which is the stricter of the two behaviours rather than a new one.
+- **The rupee does not move; the grouping does.** `₹12,34,567.89` in `en-IN`
+  and `hi-IN`, `₹1,234,567.89` in `ur-PK`. That is the whole visible effect,
+  and `tests/i18n/money.test.ts` pins it alongside the two-decimal rule.
+
+A wrapper that adds domain meaning keeps its name and gains a `locale`
+parameter — `formatColumn` (a dash for zero in a ledger column) and
+`formatBalance` (brackets for a negative) survived; deleting a helper that says
+something is not the same as deleting a duplicate that says nothing. See
+`docs/ui-review.md`.
 
 ---
 

@@ -25,13 +25,9 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import {
-  formatMoney,
-  formatQuantity,
-  movementLabel,
-  quantityWithUnit,
-} from "@/lib/validations/inventory";
+import { formatQuantity, movementLabel, quantityWithUnit } from "@/lib/validations/inventory";
 import { reverseMovement, type LedgerRow } from "../actions";
+import { useI18n } from "@/components/providers/i18n-provider";
 
 /**
  * One item's history with a running balance — the same shape as the general
@@ -47,6 +43,7 @@ export function ItemLedger({
   unit: string;
   canAdjust: boolean;
 }) {
+  const { formatCurrency } = useI18n();
   const [reversing, setReversing] = useState<LedgerRow | null>(null);
 
   return (
@@ -106,7 +103,7 @@ export function ItemLedger({
                         {quantityWithUnit(row.running, unit)}
                       </TableCell>
                       <TableCell className="text-end font-mono tabular-nums text-muted-foreground">
-                        {row.unitCost === null ? "—" : formatMoney(row.unitCost)}
+                        {row.unitCost === null ? "—" : formatCurrency(row.unitCost)}
                       </TableCell>
                       <TableCell className="text-muted-foreground">
                         {row.counterparty ?? "—"}

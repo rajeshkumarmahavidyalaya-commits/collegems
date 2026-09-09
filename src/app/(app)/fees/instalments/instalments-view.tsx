@@ -39,15 +39,8 @@ import {
 } from "@/components/ui/table";
 import { ErrorSummary } from "@/components/forms/error-summary";
 import { TextField } from "@/components/forms/form-fields";
-import {
-  collectsSentence,
-  FEE_FREQUENCIES,
-  formatMoney,
-  frequencyLabel,
-  instalmentSchema,
-  uncollectedFrequencies,
-  type InstalmentInput,
-} from "@/lib/validations/fees";
+import { useI18n } from "@/components/providers/i18n-provider";
+import { collectsSentence, FEE_FREQUENCIES, frequencyLabel, instalmentSchema, uncollectedFrequencies, type InstalmentInput } from "@/lib/validations/fees";
 import {
   previewInstalment,
   runInstalment,
@@ -220,6 +213,7 @@ function RunCard({
   instalments: InstalmentRow[];
   sections: { id: string; label: string }[];
 }) {
+  const { formatCurrency } = useI18n();
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [sectionId, setSectionId] = useState("");
@@ -345,7 +339,7 @@ function RunCard({
               <Stat label="Already billed" value={String(rows.filter((r) => r.alreadyBilled).length)} />
               <Stat label="Nothing due" value={String(rows.filter((r) => r.lineCount === 0).length)} />
               <Stat label="Would raise" value={String(toBill.length)} />
-              <Stat label="Total" value={formatMoney(total)} mono />
+              <Stat label="Total" value={formatCurrency(total)} mono />
             </div>
 
             {rows.length === 0 ? (
@@ -376,7 +370,7 @@ function RunCard({
                           {row.lineCount}
                         </TableCell>
                         <TableCell className="text-end font-mono tabular-nums">
-                          {row.total > 0 ? formatMoney(row.total) : "—"}
+                          {row.total > 0 ? formatCurrency(row.total) : "—"}
                         </TableCell>
                         <TableCell>
                           {/* Text, not colour alone. */}

@@ -13,7 +13,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import { exportRowsToCsv } from "@/components/data-table/data-table";
-import { formatMoney, methodLabel } from "@/lib/validations/fees-display";
+import { methodLabel } from "@/lib/validations/fees-display";
 import { getDayBook } from "../actions";
 import { useI18n } from "@/components/providers/i18n-provider";
 
@@ -23,6 +23,7 @@ function todayIso() {
 }
 
 export function DayBookView() {
+  const { formatCurrency } = useI18n();
   const { formatTime } = useI18n();
   const [from, setFrom] = useState(todayIso());
   const [to, setTo] = useState(todayIso());
@@ -147,7 +148,7 @@ export function DayBookView() {
               <CardHeader className="pb-2">
                 <CardDescription>Received</CardDescription>
                 <CardTitle className="font-mono text-2xl tabular-nums text-success">
-                  {formatMoney(book.received)}
+                  {formatCurrency(book.received)}
                 </CardTitle>
               </CardHeader>
               <CardContent className="pt-0 text-sm text-muted-foreground">
@@ -158,7 +159,7 @@ export function DayBookView() {
               <CardHeader className="pb-2">
                 <CardDescription>Paid out</CardDescription>
                 <CardTitle className="font-mono text-2xl tabular-nums">
-                  {formatMoney(book.refunded)}
+                  {formatCurrency(book.refunded)}
                 </CardTitle>
               </CardHeader>
               <CardContent className="pt-0 text-sm text-muted-foreground">
@@ -169,7 +170,7 @@ export function DayBookView() {
               <CardHeader className="pb-2">
                 <CardDescription>Net in the drawer</CardDescription>
                 <CardTitle className="font-mono text-2xl tabular-nums">
-                  {formatMoney(book.net)}
+                  {formatCurrency(book.net)}
                 </CardTitle>
               </CardHeader>
               <CardContent className="pt-0 text-sm text-muted-foreground">
@@ -201,13 +202,13 @@ export function DayBookView() {
                       <tr key={m.method} className="border-t border-border">
                         <td className="px-3 py-2">{methodLabel(m.method)}</td>
                         <td className="px-3 py-2 text-end font-mono tabular-nums">
-                          {formatMoney(m.received)}
+                          {formatCurrency(m.received)}
                         </td>
                         <td className="px-3 py-2 text-end font-mono tabular-nums">
-                          {m.refunded > 0 ? formatMoney(m.refunded) : "—"}
+                          {m.refunded > 0 ? formatCurrency(m.refunded) : "—"}
                         </td>
                         <td className="px-3 py-2 text-end font-mono font-medium tabular-nums">
-                          {formatMoney(m.net)}
+                          {formatCurrency(m.net)}
                         </td>
                       </tr>
                     ))}
@@ -299,7 +300,7 @@ export function DayBookView() {
                                 positive, out is negative, whatever the ledger
                                 convention behind it. */}
                             {isIn ? "+" : "−"}
-                            {formatMoney(Math.abs(e.amount))}
+                            {formatCurrency(Math.abs(e.amount))}
                           </td>
                         </tr>
                       );

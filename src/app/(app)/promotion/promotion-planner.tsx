@@ -23,6 +23,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { useI18n } from "@/components/providers/i18n-provider";
 import {
   Select,
   SelectContent,
@@ -30,7 +31,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { formatMoney } from "@/lib/validations/fees-display";
+
 import {
   DECISIONS,
   EVALUATION_ORDER,
@@ -55,6 +56,7 @@ type Props = {
 };
 
 export function PromotionPlanner({ sessions, runs }: Props) {
+  const { formatCurrency } = useI18n();
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [preview, setPreview] = useState<PreviewResult | null>(null);
@@ -393,7 +395,7 @@ export function PromotionPlanner({ sessions, runs }: Props) {
                 <Alert>
                   <Info className="size-4" aria-hidden="true" />
                   <AlertTitle>
-                    {formatMoney(leaversOwing)} is owed by students who are leaving
+                    {formatCurrency(leaversOwing)} is owed by students who are leaving
                   </AlertTitle>
                   <AlertDescription>
                     A graduate gets no enrolment in the receiving year, so there is nothing to carry

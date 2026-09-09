@@ -18,7 +18,7 @@ import {
 } from "@/components/ui/select";
 import { DataTable, exportRowsToCsv } from "@/components/data-table/data-table";
 import { DataTableToolbar } from "@/components/data-table/data-table-toolbar";
-import { formatMoney } from "@/lib/validations/fees-display";
+
 import { formatDate } from "@/lib/i18n/format";
 import { useI18n } from "@/components/providers/i18n-provider";
 import { listIssues, returnBook, waiveStaffFine, type IssueRow } from "../actions";
@@ -30,6 +30,7 @@ function StatusBadge({ row }: { row: IssueRow }) {
 }
 
 export function IssuesTable({ canManage }: { canManage: boolean }) {
+  const { formatCurrency } = useI18n();
   const queryClient = useQueryClient();
   // Rule 15: the reader's locale, never a hardcoded tag. This also removed the
   // last two `date-fns` calls in the app -- a whole date library for one
@@ -74,7 +75,7 @@ export function IssuesTable({ canManage }: { canManage: boolean }) {
     } else if (billedToFees && studentId) {
       // The fine is now a ledger entry, not a number on this row, so say so
       // and offer the place it can actually be collected.
-      toast.success(`Returned. ${formatMoney(fineAmount)} billed to the fee account`, {
+      toast.success(`Returned. ${formatCurrency(fineAmount)} billed to the fee account`, {
         action: {
           label: "Open account",
           onClick: () => router.push(`/fees/students/${studentId}`),
@@ -84,14 +85,14 @@ export function IssuesTable({ canManage }: { canManage: boolean }) {
       // Staff have no fee account; the fine is collected on the next payroll run
       // (migration 0065) or waived here.
       toast.success(
-        `Returned. ${formatMoney(fineAmount)} staff fine — it will be collected on the next payroll run, or can be waived here.`,
+        `Returned. ${formatCurrency(fineAmount)} staff fine — it will be collected on the next payroll run, or can be waived here.`,
       );
     }
     queryClient.invalidateQueries({ queryKey: ["library-issues"] });
   }
 
   async function handleWaive(row: IssueRow) {
-    if (!window.confirm(`Waive the ${formatMoney(row.fineAmount)} fine for ${row.memberName}? This records a write-off; it does not erase that the book was late.`)) {
+    if (!window.confirm(`Waive the ${formatCurrency(row.fineAmount)} fine for ${row.memberName}? This records a write-off; it does not erase that the book was late.`)) {
       return;
     }
     setWaivingId(row.id);
@@ -176,7 +177,7 @@ export function IssuesTable({ canManage }: { canManage: boolean }) {
           }
           return (
             <div className="flex flex-col gap-0.5">
-              <span className="font-mono tabular-nums">{formatMoney(issue.accruedFine)}</span>
+              <span className="font-mono tabular-nums">{formatCurrency(issue.accruedFine)}</span>
               <span className="text-xs text-muted-foreground">
                 Accruing · {issue.daysLate} {issue.daysLate === 1 ? "day" : "days"}
               </span>
@@ -190,7 +191,7 @@ export function IssuesTable({ canManage }: { canManage: boolean }) {
 
         return (
           <div className="flex flex-col items-start gap-1">
-            <span className="font-mono tabular-nums">{formatMoney(issue.fineAmount)}</span>
+            <span className="font-mono tabular-nums">{formatCurrency(issue.fineAmount)}</span>
             {issue.isStaff ? (
               issue.staffFineWaived ? (
                 <span className="text-xs text-muted-foreground">Waived</span>

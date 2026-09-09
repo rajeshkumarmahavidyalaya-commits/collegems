@@ -25,7 +25,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { formatMoney } from "@/lib/validations/fees-display";
+import { useI18n } from "@/components/providers/i18n-provider";
+
 import {
   concessionSentence,
   kindLabel,
@@ -154,6 +155,7 @@ export function ConcessionsView({
 }
 
 function AwardCard({ award, canManage }: { award: AwardRow; canManage: boolean }) {
+  const { formatCurrency } = useI18n();
   const router = useRouter();
   const [reason, setReason] = useState("");
   const [confirming, setConfirming] = useState(false);
@@ -187,7 +189,7 @@ function AwardCard({ award, canManage }: { award: AwardRow; canManage: boolean }
             <CardDescription className="mt-1">
               {award.concession} &middot; from {award.grantedOn}
               {award.endsOn ? ` to ${award.endsOn}` : ""} &middot; credited{" "}
-              <span className="font-medium text-foreground">{formatMoney(award.credited)}</span>
+              <span className="font-medium text-foreground">{formatCurrency(award.credited)}</span>
             </CardDescription>
           </div>
 

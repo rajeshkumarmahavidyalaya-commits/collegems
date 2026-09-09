@@ -25,16 +25,8 @@ import {
 import { Form } from "@/components/ui/form";
 import { SelectField, TextField, TextareaField } from "@/components/forms/form-fields";
 import { ErrorSummary } from "@/components/forms/error-summary";
-import {
-  FEE_CATEGORIES,
-  FEE_FREQUENCIES,
-  feeHeadSchema,
-  feeStructureSchema,
-  formatMoney,
-  generateSectionInvoicesSchema,
-  type FeeHeadInput,
-  type FeeStructureInput,
-} from "@/lib/validations/fees";
+import { useI18n } from "@/components/providers/i18n-provider";
+import { FEE_CATEGORIES, FEE_FREQUENCIES, feeHeadSchema, feeStructureSchema, generateSectionInvoicesSchema, type FeeHeadInput, type FeeStructureInput } from "@/lib/validations/fees";
 import {
   deleteFeeStructure,
   generateSectionInvoices,
@@ -86,6 +78,7 @@ export function FeeSetup({
   schoolProfile: SchoolProfile;
   canManageSettings: boolean;
 }) {
+  const { formatCurrency } = useI18n();
   const router = useRouter();
   const [headOpen, setHeadOpen] = useState(false);
   const [structureOpen, setStructureOpen] = useState(false);
@@ -147,7 +140,7 @@ export function FeeSetup({
                   <CardHeader className="pb-3">
                     <CardTitle className="text-base">{className}</CardTitle>
                     <CardDescription className="font-mono tabular-nums">
-                      {formatMoney(rows.reduce((s, r) => s + r.amount, 0))} per instalment set
+                      {formatCurrency(rows.reduce((s, r) => s + r.amount, 0))} per instalment set
                     </CardDescription>
                   </CardHeader>
                   <CardContent>
@@ -161,7 +154,7 @@ export function FeeSetup({
                             </span>
                           </span>
                           <span className="flex shrink-0 items-center gap-1">
-                            <span className="font-mono tabular-nums">{formatMoney(row.amount)}</span>
+                            <span className="font-mono tabular-nums">{formatCurrency(row.amount)}</span>
                             <Button
                               size="icon"
                               variant="ghost"
@@ -294,7 +287,7 @@ export function FeeSetup({
             <DialogTitle>Remove this amount?</DialogTitle>
             <DialogDescription>
               {confirmDelete &&
-                `${confirmDelete.feeHead} · ${confirmDelete.classLevel} · ${formatMoney(confirmDelete.amount)}`}
+                `${confirmDelete.feeHead} · ${confirmDelete.classLevel} · ${formatCurrency(confirmDelete.amount)}`}
             </DialogDescription>
           </DialogHeader>
           <Alert>

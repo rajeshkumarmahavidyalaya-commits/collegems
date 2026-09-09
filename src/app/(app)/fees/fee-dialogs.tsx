@@ -18,19 +18,9 @@ import { Form } from "@/components/ui/form";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { SelectField, TextField, TextareaField } from "@/components/forms/form-fields";
 import { ErrorSummary } from "@/components/forms/error-summary";
-import {
-  ADJUSTMENT_TYPES,
-  PAYMENT_METHODS,
-  adjustmentSchema,
-  formatMoney,
-  paymentSchema,
-  refundSchema,
-  reversalSchema,
-  type AdjustmentInput,
-  type PaymentInput,
-  type RefundInput,
-} from "@/lib/validations/fees";
+import { ADJUSTMENT_TYPES, PAYMENT_METHODS, adjustmentSchema, paymentSchema, refundSchema, reversalSchema, type AdjustmentInput, type PaymentInput, type RefundInput } from "@/lib/validations/fees";
 import { recordAdjustment, recordPayment, recordRefund, reverseEntry } from "./actions";
+import { useI18n } from "@/components/providers/i18n-provider";
 
 function todayIso() {
   const now = new Date();
@@ -65,6 +55,7 @@ export function RecordPaymentDialog({
   onOpenChange: (open: boolean) => void;
   onDone?: () => void;
 }) {
+  const { formatCurrency } = useI18n();
   const [serverError, setServerError] = useState<string | null>(null);
 
   const form = useForm<PaymentInput>({
@@ -106,7 +97,7 @@ export function RecordPaymentDialog({
           <DialogTitle>Collect fees</DialogTitle>
           <DialogDescription>
             {student.fullName} · {student.admissionNumber} · outstanding{" "}
-            {formatMoney(student.balance)}
+            {formatCurrency(student.balance)}
           </DialogDescription>
         </DialogHeader>
 
@@ -296,6 +287,7 @@ export function RecordRefundDialog({
   onOpenChange: (open: boolean) => void;
   onDone?: () => void;
 }) {
+  const { formatCurrency } = useI18n();
   const [serverError, setServerError] = useState<string | null>(null);
 
   const form = useForm<RefundInput>({
@@ -333,7 +325,7 @@ export function RecordRefundDialog({
           <DialogDescription>
             {student.fullName} · {student.admissionNumber}
             {student.balance < 0
-              ? ` · ${formatMoney(-student.balance)} held in credit`
+              ? ` · ${formatCurrency(-student.balance)} held in credit`
               : " · this account is not in credit"}
           </DialogDescription>
         </DialogHeader>
@@ -398,6 +390,7 @@ export function ReverseEntryDialog({
   onOpenChange: (open: boolean) => void;
   onDone?: () => void;
 }) {
+  const { formatCurrency } = useI18n();
   const [serverError, setServerError] = useState<string | null>(null);
 
   const form = useForm<{ entryId: string; reason: string }>({
@@ -431,7 +424,7 @@ export function ReverseEntryDialog({
             <Alert>
               <AlertTitle>The original entry stays on the ledger</AlertTitle>
               <AlertDescription>
-                Reversing adds an opposite entry of {formatMoney(Math.abs(entry?.amount ?? 0))} that
+                Reversing adds an opposite entry of {formatCurrency(Math.abs(entry?.amount ?? 0))} that
                 cancels this one out. Both remain visible, so the account still matches the receipts
                 the family holds. Nothing is deleted.
               </AlertDescription>

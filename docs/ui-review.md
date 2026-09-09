@@ -158,15 +158,56 @@ Four shapes came up, and the third is the one worth knowing:
 alongside a new `formatDateTime`, because a formatter that takes a locale
 belongs with the other formatters rather than in a module's validation file.
 
-### The money formatter is the same bug, deliberately left
+### Six copies of the money formatter, under four names
 
-Six copies of `formatMoney` — in `accounts`, `transport`, `hr`, `fees-display`,
-`inventory` and `hostel` — each build `new Intl.NumberFormat("en-IN", …)`.
-`fees-display.ts` already says why it was left: grouping and digits following
-the reader is a **behaviour** change for the first customer, not a cleanup, and
-`formatCurrency(value, locale)` already exists in `format.ts` to receive it. Six
-helpers and roughly fifty call sites; its own change, with its own before and
-after.
+`formatMoney` in `fees-display`, `hr` and `inventory`; `formatAmount` in
+`accounts`; `formatFare` in `transport` and `hostel`. Six functions, 91 call
+sites, each building `new Intl.NumberFormat("en-IN", …)` with slightly
+different options:
+
+| copies | options |
+|---|---|
+| `fees-display`, `hr` | `maximumFractionDigits: 2` |
+| `inventory`, `transport`, `hostel` | `minimumFractionDigits: 2` |
+| `accounts` | both |
+
+**Measured before deleting them: all three produce identical output** for
+`1500`, `1500.005`, `1500.5`, `0` and `1234567.891`. That is precisely why
+nobody noticed there were six — they agreed, so the cost was the one
+`CLAUDE.md` already names about `library.fine_per_day`: changing it means
+finding six copies, and the seventh reader writes their own.
+
+The **guards** did not agree, and that difference was visible:
+
+```
+formatMoney("")    -> ₹0.00     (fees-display, hr, accounts)
+formatMoney("  ")  -> ₹0.00
+formatMoney("abc") -> ₹NaN
+```
+
+An untouched form field submits `""`. Three of the six copies turned *no value*
+into **zero rupees** — the same confusion this codebase calls out about a
+collection rate being null rather than 0 before anything is billed. The single
+implementation returns `—` for all three, which is the stricter of the two
+behaviours rather than a new one.
+
+And the locale, which is what the sweep was for:
+
+| | `12,34,567.89` |
+|---|---|
+| `en-IN` | ₹12,34,567.89 |
+| `hi-IN` | ₹12,34,567.89 |
+| `ur-PK` | **₹1,234,567.89** |
+
+That is the entire visible behaviour change: an Urdu reader's digits stop being
+grouped in lakhs. The rupee does not move — rule 15 says currency is a fact
+about the money, not about the reader — and `tests/i18n/money.test.ts` pins
+that, the two-decimal rule, the grouping per locale, and the `—`.
+
+The two accounts wrappers that add domain meaning — `formatColumn` (a dash for
+zero in a ledger column) and `formatBalance` (brackets for a negative) — kept
+their names and gained a `locale` parameter. Deleting a helper that says
+something is not the same as deleting a duplicate that says nothing.
 
 ## The shape of what is left
 

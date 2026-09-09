@@ -1,6 +1,5 @@
 import { z } from "zod";
-import { formatMoney } from "./fees";
-import { formatDate, formatDateTime, formatNumber } from "@/lib/i18n/format";
+import { formatCurrency, formatDate, formatDateTime, formatNumber } from "@/lib/i18n/format";
 import { DEFAULT_LOCALE, type Locale } from "@/lib/i18n/config";
 
 /**
@@ -122,7 +121,7 @@ export function formatCell(value: unknown, type: ColumnType, locale: Locale): st
 
   switch (type) {
     case "money":
-      return formatMoney(Number(value));
+      return formatCurrency(Number(value), locale);
 
     case "percent": {
       // One decimal, and none at all when the number is whole. `exam_results`

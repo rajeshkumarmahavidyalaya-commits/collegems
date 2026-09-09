@@ -5,7 +5,7 @@ import { ArrowLeft, Ban, Printer } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { formatMoney, methodLabel } from "@/lib/validations/fees-display";
+import { methodLabel } from "@/lib/validations/fees-display";
 import type { InvoiceDocument } from "../../actions";
 import { useI18n } from "@/components/providers/i18n-provider";
 
@@ -21,6 +21,7 @@ import { useI18n } from "@/components/providers/i18n-provider";
  * school's toner.
  */
 export function InvoiceSheet({ doc }: { doc: InvoiceDocument }) {
+  const { formatCurrency } = useI18n();
   const { formatDate } = useI18n();
   const { invoice, school, student, lines, payments } = doc;
   const overdue = invoice.status === "issued" && doc.outstanding > 0 && invoice.dueDate < new Date().toISOString().slice(0, 10);
@@ -171,7 +172,7 @@ export function InvoiceSheet({ doc }: { doc: InvoiceDocument }) {
                   <tr key={line.id} className="border-b border-border/60">
                     <td className="py-2">{line.description}</td>
                     <td className="py-2 text-end font-mono tabular-nums">
-                      {formatMoney(line.amount)}
+                      {formatCurrency(line.amount)}
                     </td>
                   </tr>
                 ))}
@@ -182,7 +183,7 @@ export function InvoiceSheet({ doc }: { doc: InvoiceDocument }) {
                     Total charged
                   </th>
                   <td className="py-2 text-end font-mono font-medium tabular-nums">
-                    {formatMoney(doc.total)}
+                    {formatCurrency(doc.total)}
                   </td>
                 </tr>
               </tfoot>
@@ -228,7 +229,7 @@ export function InvoiceSheet({ doc }: { doc: InvoiceDocument }) {
                       </td>
                       <td className="py-2 text-end font-mono tabular-nums">
                         {p.amount < 0 ? "−" : ""}
-                        {formatMoney(Math.abs(p.amount))}
+                        {formatCurrency(Math.abs(p.amount))}
                       </td>
                     </tr>
                   ))}
@@ -243,11 +244,11 @@ export function InvoiceSheet({ doc }: { doc: InvoiceDocument }) {
           <dl className="ms-auto flex max-w-xs flex-col gap-1 text-sm">
             <div className="flex justify-between gap-4">
               <dt className="text-muted-foreground">Total charged</dt>
-              <dd className="font-mono tabular-nums">{formatMoney(doc.total)}</dd>
+              <dd className="font-mono tabular-nums">{formatCurrency(doc.total)}</dd>
             </div>
             <div className="flex justify-between gap-4">
               <dt className="text-muted-foreground">Less paid</dt>
-              <dd className="font-mono tabular-nums">{formatMoney(doc.paid)}</dd>
+              <dd className="font-mono tabular-nums">{formatCurrency(doc.paid)}</dd>
             </div>
             <div className="mt-1 flex justify-between gap-4 border-t border-border pt-2 text-base">
               <dt className="font-medium">
@@ -259,7 +260,7 @@ export function InvoiceSheet({ doc }: { doc: InvoiceDocument }) {
                   doc.outstanding > 0 && "text-destructive",
                 )}
               >
-                {formatMoney(Math.abs(doc.outstanding))}
+                {formatCurrency(Math.abs(doc.outstanding))}
               </dd>
             </div>
           </dl>

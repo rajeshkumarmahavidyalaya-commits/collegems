@@ -4,7 +4,8 @@ import { ArrowRight } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
-import { formatMoney } from "@/lib/validations/fees-display";
+import { formatCurrency } from "@/lib/i18n/format";
+import type { Locale } from "@/lib/i18n/config";
 import {
   collectionRate,
   staffRegisterReading,
@@ -224,9 +225,13 @@ export function StaffRegisterCard({
 export function FeesCard({
   fees,
   icon,
+  locale,
 }: {
   fees: NonNullable<DashboardSummary["fees"]>;
   icon: LucideIcon;
+  // A prop, not `useI18n()`: the home page is a Server Component and there is
+  // no provider above this.
+  locale: Locale;
 }) {
   const rate = collectionRate(fees);
 
@@ -244,7 +249,7 @@ export function FeesCard({
     >
       <div className="flex flex-col gap-3">
         <p className="font-mono text-3xl font-semibold tabular-nums">
-          {formatMoney(fees.outstanding)}
+          {formatCurrency(fees.outstanding, locale)}
         </p>
         <p className="text-xs text-muted-foreground">
           Outstanding across {fees.students_owing}{" "}
@@ -258,9 +263,9 @@ export function FeesCard({
           />
         )}
         <dl className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-          <Figure label="Billed" value={formatMoney(fees.billed)} tone="muted" />
-          <Figure label="Collected" value={formatMoney(fees.collected)} tone="success" />
-          <Figure label="In today" value={formatMoney(fees.collected_today)} />
+          <Figure label="Billed" value={formatCurrency(fees.billed, locale)} tone="muted" />
+          <Figure label="Collected" value={formatCurrency(fees.collected, locale)} tone="success" />
+          <Figure label="In today" value={formatCurrency(fees.collected_today, locale)} />
           <Figure label="Receipts today" value={String(fees.receipts_today)} tone="muted" />
         </dl>
       </div>

@@ -126,15 +126,6 @@ export function quantityWithUnit(value: number | string | null | undefined, unit
   return `${formatQuantity(value)} ${unit}`;
 }
 
-export function formatMoney(value: number | string | null | undefined): string {
-  if (value === null || value === undefined || value === "") return "—";
-  return new Intl.NumberFormat("en-IN", {
-    style: "currency",
-    currency: "INR",
-    minimumFractionDigits: 2,
-  }).format(Number(value));
-}
-
 /**
  * What the shelf is worth, at average receipt cost. Null when nothing was ever
  * received with a price against it — a store that guesses a valuation is worse

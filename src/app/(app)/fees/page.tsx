@@ -11,14 +11,17 @@ import { Button } from "@/components/ui/button";
 import { StatCard } from "@/components/dashboard/stat-card";
 import { getUserContext } from "@/lib/auth/context";
 import { hasPermission } from "@/lib/auth/permissions";
-import { formatMoney } from "@/lib/validations/fees-display";
+
 import { listSections } from "../students/actions";
 import { getCollectionSummary } from "./actions";
 import { FeesTable } from "./fees-table";
+import { formatCurrency } from "@/lib/i18n/format";
+import { getLocale } from "@/lib/i18n/server";
 
 export const metadata = { title: "Fees" };
 
 export default async function FeesPage() {
+  const locale = await getLocale();
   const [ctx, sections, summary, canCollect, canManage] = await Promise.all([
     getUserContext(),
     listSections(),
@@ -66,14 +69,14 @@ export default async function FeesPage() {
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <StatCard
           label="Collected"
-          value={formatMoney(summary.collected)}
+          value={formatCurrency(summary.collected, locale)}
           icon={IndianRupee}
           tone="success"
-          hint={`of ${formatMoney(summary.charged - summary.relieved)} billable`}
+          hint={`of ${formatCurrency(summary.charged - summary.relieved, locale)} billable`}
         />
         <StatCard
           label="Outstanding"
-          value={formatMoney(summary.outstanding)}
+          value={formatCurrency(summary.outstanding, locale)}
           icon={AlertTriangle}
           tone={summary.outstanding > 0 ? "warning" : "success"}
           hint={`${summary.defaulters} ${summary.defaulters === 1 ? "family owes" : "families owe"}`}
@@ -89,11 +92,11 @@ export default async function FeesPage() {
                 ? "success"
                 : "warning"
           }
-          hint={`${formatMoney(summary.relieved)} in discounts and write-offs`}
+          hint={`${formatCurrency(summary.relieved, locale)} in discounts and write-offs`}
         />
         <StatCard
           label="Held in credit"
-          value={formatMoney(summary.inCredit)}
+          value={formatCurrency(summary.inCredit, locale)}
           icon={Users}
           hint={`Across ${summary.students} enrolled students`}
         />

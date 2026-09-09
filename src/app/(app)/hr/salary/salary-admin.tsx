@@ -32,14 +32,8 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ErrorSummary } from "@/components/forms/error-summary";
 import { SelectField, TextField, TextareaField } from "@/components/forms/form-fields";
-import {
-  formatMoney,
-  formatOverrides,
-  salaryAssignmentSchema,
-  salaryStructureSchema,
-  type SalaryAssignmentInput,
-  type SalaryStructureInput,
-} from "@/lib/validations/hr";
+import { formatOverrides, salaryAssignmentSchema, salaryStructureSchema, type SalaryAssignmentInput, type SalaryStructureInput } from "@/lib/validations/hr";
+import { useI18n } from "@/components/providers/i18n-provider";
 import {
   saveAssignment,
   saveStructure,
@@ -55,6 +49,7 @@ type Props = {
 };
 
 export function SalaryAdmin({ structures, assignments, staff, canManage }: Props) {
+  const { formatCurrency } = useI18n();
   const [structureOpen, setStructureOpen] = useState(false);
   const [editingStructure, setEditingStructure] = useState<StructureRow | null>(null);
   const [assignmentOpen, setAssignmentOpen] = useState(false);
@@ -235,7 +230,7 @@ export function SalaryAdmin({ structures, assignments, staff, canManage }: Props
                           ) : (
                             Object.entries(row.overrides).map(([code, value]) => (
                               <span key={code} className="block">
-                                {code} {formatMoney(value as number)}
+                                {code} {formatCurrency(value as number)}
                               </span>
                             ))
                           )}

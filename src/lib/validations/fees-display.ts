@@ -39,24 +39,6 @@ export const PAYMENT_METHODS = [
   { value: "online", label: "Online gateway" },
 ] as const;
 
-/**
- * Money, as this product shows it.
- *
- * The hardcoded `en-IN` is a known rule-15 violation, carried across unchanged
- * from `fees.ts` rather than fixed here: `src/lib/i18n/format.ts` already has
- * `formatCurrency(value, locale)`, and moving 25 call sites onto it is a
- * behaviour change (grouping and digits follow the reader) that belongs in its
- * own commit rather than riding along inside a bundle-size fix.
- */
-export function formatMoney(value: number | null | undefined): string {
-  if (value === null || value === undefined) return "—";
-  return new Intl.NumberFormat("en-IN", {
-    style: "currency",
-    currency: "INR",
-    maximumFractionDigits: 2,
-  }).format(value);
-}
-
 export function entryTypeLabel(value: string): string {
   return ENTRY_TYPES.find((t) => t.value === value)?.label ?? value;
 }

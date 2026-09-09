@@ -1,4 +1,6 @@
 import { z } from "zod";
+import { formatCurrency } from "@/lib/i18n/format";
+import type { Locale } from "@/lib/i18n/config";
 
 /**
  * Phase 2.2 — the chart of accounts and double-entry vouchers.
@@ -157,30 +159,25 @@ export function sourceKindLabel(value: string) {
   return SOURCE_KINDS.find((s) => s.value === value)?.label ?? value;
 }
 
-/** `₹45,200.00`. Two decimals always: a ledger that rounds is a ledger nobody trusts. */
-export function formatAmount(value: number | string | null | undefined) {
-  if (value === null || value === undefined) return "—";
-  return new Intl.NumberFormat("en-IN", {
-    style: "currency",
-    currency: "INR",
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  }).format(Number(value));
-}
-
-/** Zero renders as a dash in a ledger column, not as `₹0.00` clutter. */
-export function formatColumn(value: number | string | null | undefined) {
+/**
+ * Zero renders as a dash in a ledger column, not as `₹0.00` clutter.
+ *
+ * The locale is a parameter because this is a pure helper with no component to
+ * hang a hook on — and because a ledger read in Urdu groups its digits the way
+ * that reader expects (rule 15).
+ */
+export function formatColumn(value: number | string | null | undefined, locale: Locale) {
   const n = Number(value ?? 0);
   if (!Number.isFinite(n) || n === 0) return "—";
-  return formatAmount(n);
+  return formatCurrency(n, locale);
 }
 
 /** A negative balance is shown in brackets, as an accountant expects. */
-export function formatBalance(value: number | string | null | undefined) {
+export function formatBalance(value: number | string | null | undefined, locale: Locale) {
   const n = Number(value ?? 0);
   if (!Number.isFinite(n)) return "—";
-  if (n < 0) return `(${formatAmount(Math.abs(n))})`;
-  return formatAmount(n);
+  if (n < 0) return `(${formatCurrency(Math.abs(n), locale)})`;
+  return formatCurrency(n, locale);
 }
 
 export function emptyLine(): VoucherLineInput {

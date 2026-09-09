@@ -33,20 +33,8 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ErrorSummary } from "@/components/forms/error-summary";
 import { SelectField, TextField, TextareaField } from "@/components/forms/form-fields";
-import {
-  formatMoney,
-  formatQuantity,
-  itemSchema,
-  kindTakesCost,
-  MOVEMENT_KINDS,
-  movementDirection,
-  movementSchema,
-  quantityWithUnit,
-  stockSentence,
-  stockTone,
-  type ItemInput,
-  type MovementInput,
-} from "@/lib/validations/inventory";
+import { formatQuantity, itemSchema, kindTakesCost, MOVEMENT_KINDS, movementDirection, movementSchema, quantityWithUnit, stockSentence, stockTone, type ItemInput, type MovementInput } from "@/lib/validations/inventory";
+import { useI18n } from "@/components/providers/i18n-provider";
 import {
   addCategory,
   recordMovement,
@@ -150,6 +138,7 @@ function StockTab({
   onEdit: (item: StockRow) => void;
   onMove: (item: StockRow) => void;
 }) {
+  const { formatCurrency } = useI18n();
   return (
     <Card>
       <CardHeader className="flex flex-row flex-wrap items-start justify-between gap-3">
@@ -235,7 +224,7 @@ function StockTab({
                         )}
                       </TableCell>
                       <TableCell className="text-end font-mono tabular-nums text-muted-foreground">
-                        {item.averageCost === null ? "—" : formatMoney(item.averageCost)}
+                        {item.averageCost === null ? "—" : formatCurrency(item.averageCost)}
                       </TableCell>
                       <TableCell className="font-mono tabular-nums text-muted-foreground">
                         {item.lastMovement ?? "—"}

@@ -19,10 +19,11 @@ import {
 import { DataTable, exportRowsToCsv } from "@/components/data-table/data-table";
 import { DataTableColumnHeader } from "@/components/data-table/data-table-column-header";
 import { DataTableToolbar } from "@/components/data-table/data-table-toolbar";
-import { formatMoney } from "@/lib/validations/fees-display";
+
 import { listBalances, type BalanceRow } from "./actions";
 import dynamic from "next/dynamic";
 import type { StudentTarget } from "./fee-dialogs";
+import { useI18n } from "@/components/providers/i18n-provider";
 
 /**
  * The dialog was already rendered conditionally — but Next bundles what is
@@ -49,8 +50,11 @@ function balanceState(balance: number): { label: string; variant: "success" | "d
   return { label: "Settled", variant: "success" };
 }
 
-function money(value: number) {
-  return <span className="font-mono tabular-nums">{formatMoney(value)}</span>;
+function money(
+  value: number,
+  formatCurrency: (value: number | string | null | undefined) => string,
+) {
+  return <span className="font-mono tabular-nums">{formatCurrency(value)}</span>;
 }
 
 export function FeesTable({
@@ -60,6 +64,7 @@ export function FeesTable({
   sections: { id: string; label: string }[];
   canCollect: boolean;
 }) {
+  const { formatCurrency } = useI18n();
   const [pageIndex, setPageIndex] = useState(0);
   const [pageSize, setPageSize] = useState(25);
   const [sorting, setSorting] = useState<SortingState>([{ id: "balance", desc: true }]);
@@ -141,33 +146,33 @@ export function FeesTable({
     {
       accessorKey: "charged",
       header: ({ column }) => <DataTableColumnHeader column={column} title="Billed" />,
-      cell: ({ row }) => money(row.original.charged + row.original.fines),
+      cell: ({ row }) => money(row.original.charged + row.original.fines, formatCurrency),
       meta: { label: "Billed" },
     },
     {
       accessorKey: "discounts",
       header: "Discounts",
-      cell: ({ row }) => money(row.original.discounts),
+      cell: ({ row }) => money(row.original.discounts, formatCurrency),
       enableSorting: false,
       meta: { label: "Discounts" },
     },
     {
       accessorKey: "writeOffs",
       header: "Written off",
-      cell: ({ row }) => money(row.original.writeOffs),
+      cell: ({ row }) => money(row.original.writeOffs, formatCurrency),
       enableSorting: false,
       meta: { label: "Written off" },
     },
     {
       accessorKey: "paid",
       header: ({ column }) => <DataTableColumnHeader column={column} title="Paid" />,
-      cell: ({ row }) => money(row.original.paid),
+      cell: ({ row }) => money(row.original.paid, formatCurrency),
       meta: { label: "Paid" },
     },
     {
       accessorKey: "refunds",
       header: "Refunded",
-      cell: ({ row }) => money(row.original.refunds),
+      cell: ({ row }) => money(row.original.refunds, formatCurrency),
       enableSorting: false,
       meta: { label: "Refunded" },
     },
@@ -179,7 +184,7 @@ export function FeesTable({
         return (
           <div className="flex items-center gap-2">
             <span className="font-mono font-medium tabular-nums">
-              {formatMoney(Math.abs(row.original.balance))}
+              {formatCurrency(Math.abs(row.original.balance))}
             </span>
             <Badge variant={state.variant}>{state.label}</Badge>
           </div>

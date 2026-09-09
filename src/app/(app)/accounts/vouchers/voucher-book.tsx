@@ -33,19 +33,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import {
-  emptyLine,
-  formatAmount,
-  formatColumn,
-  isBalanced,
-  outOfBalanceBy,
-  sourceKindLabel,
-  toAmount,
-  totalCredit,
-  totalDebit,
-  voucherStatusLabel,
-  type VoucherLineInput,
-} from "@/lib/validations/accounts";
+import { emptyLine, formatColumn, isBalanced, outOfBalanceBy, sourceKindLabel, toAmount, totalCredit, totalDebit, voucherStatusLabel, type VoucherLineInput } from "@/lib/validations/accounts";
 import {
   createVoucher,
   reverseVoucher,
@@ -148,6 +136,8 @@ function VoucherRowView({
   isOpen: boolean;
   onToggle: () => void;
 }) {
+  const { locale } = useI18n();
+  const { formatCurrency } = useI18n();
   const { formatDate } = useI18n();
   const router = useRouter();
   const [pending, startTransition] = useTransition();
@@ -202,7 +192,7 @@ function VoucherRowView({
           {sourceKindLabel(voucher.sourceKind)}
         </TableCell>
         <TableCell className="text-end font-mono tabular-nums">
-          {formatAmount(voucher.total)}
+          {formatCurrency(voucher.total)}
         </TableCell>
         <TableCell className="text-end">
           <div className="flex justify-end gap-1">
@@ -257,10 +247,10 @@ function VoucherRowView({
                         {line.narration ?? "—"}
                       </TableCell>
                       <TableCell className="text-end font-mono tabular-nums">
-                        {formatColumn(line.debit)}
+                        {formatColumn(line.debit, locale)}
                       </TableCell>
                       <TableCell className="text-end font-mono tabular-nums">
-                        {formatColumn(line.credit)}
+                        {formatColumn(line.credit, locale)}
                       </TableCell>
                     </TableRow>
                   ))}
@@ -298,6 +288,7 @@ function JournalDialog({
   postable: ChartRow[];
   today: string;
 }) {
+  const { formatCurrency } = useI18n();
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [voucherDate, setVoucherDate] = useState(today);
@@ -434,10 +425,10 @@ function JournalDialog({
                 <TableRow className="border-t-2 font-medium">
                   <TableCell>Total</TableCell>
                   <TableCell className="text-end font-mono tabular-nums">
-                    {formatAmount(debit)}
+                    {formatCurrency(debit)}
                   </TableCell>
                   <TableCell className="text-end font-mono tabular-nums">
-                    {formatAmount(credit)}
+                    {formatCurrency(credit)}
                   </TableCell>
                   <TableCell />
                 </TableRow>
@@ -460,7 +451,7 @@ function JournalDialog({
                 <span className="text-muted-foreground">Balanced.</span>
               ) : (
                 <span className="font-medium text-brand-accent">
-                  Out by {formatAmount(Math.abs(out))}
+                  Out by {formatCurrency(Math.abs(out))}
                 </span>
               )}
             </p>

@@ -25,13 +25,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import {
-  allowedDirections,
-  directionLabel,
-  formatFare,
-  formatStopTime,
-  type Direction,
-} from "@/lib/validations/transport";
+import { allowedDirections, directionLabel, formatStopTime, type Direction } from "@/lib/validations/transport";
+import { useI18n } from "@/components/providers/i18n-provider";
 import {
   assignStudent,
   cancelAssignment,
@@ -60,6 +55,7 @@ export function AssignmentsView({
 }
 
 function AssignForm({ stops }: { stops: StopOption[] }) {
+  const { formatCurrency } = useI18n();
   const router = useRouter();
   const [pending, startTransition] = useTransition();
 
@@ -230,7 +226,7 @@ function AssignForm({ stops }: { stops: StopOption[] }) {
                 .filter((s) => s.routeIsActive)
                 .map((s) => (
                   <SelectItem key={s.stopId} value={s.stopId} className="cursor-pointer">
-                    {s.routeCode} · {s.stopName} — {formatFare(s.monthlyFare)}
+                    {s.routeCode} · {s.stopName} — {formatCurrency(s.monthlyFare)}
                     {s.seatsFree !== null && s.seatsFree <= 0 ? " (full)" : ""}
                   </SelectItem>
                 ))}
@@ -315,6 +311,7 @@ function AssignmentList({
   assignments: AssignmentRow[];
   canAssign: boolean;
 }) {
+  const { formatCurrency } = useI18n();
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [busy, setBusy] = useState<string | null>(null);
@@ -417,7 +414,7 @@ function AssignmentList({
                       {directionLabel(row.direction)}
                     </TableCell>
                     <TableCell className="text-end font-mono tabular-nums">
-                      {formatFare(row.monthlyFare)}
+                      {formatCurrency(row.monthlyFare)}
                     </TableCell>
                     <TableCell className="text-muted-foreground">
                       {row.startsOn}

@@ -4,13 +4,16 @@ import { ArrowLeft, Users } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { hasPermission } from "@/lib/auth/permissions";
-import { directionLabel, formatFare, seatsSentence } from "@/lib/validations/transport";
+import { directionLabel, seatsSentence } from "@/lib/validations/transport";
 import { getManifest, listRoutes, listStops } from "../actions";
 import { RouteDetail } from "./route-detail";
+import { formatCurrency } from "@/lib/i18n/format";
+import { getLocale } from "@/lib/i18n/server";
 
 export const metadata = { title: "Route" };
 
 export default async function RoutePage({ params }: { params: Promise<{ routeId: string }> }) {
+  const locale = await getLocale();
   const { routeId } = await params;
 
   const [routes, stops, manifest, canManage] = await Promise.all([
@@ -42,7 +45,7 @@ export default async function RoutePage({ params }: { params: Promise<{ routeId:
               {seatsSentence(route.capacity, route.assigned)}
             </span>
             <span>{route.registrationNumber ?? "No vehicle"}</span>
-            <span>{formatFare(route.monthlyRevenue)} a month in fares</span>
+            <span>{formatCurrency(route.monthlyRevenue, locale)} a month in fares</span>
           </p>
         </div>
         <Button asChild variant="outline">

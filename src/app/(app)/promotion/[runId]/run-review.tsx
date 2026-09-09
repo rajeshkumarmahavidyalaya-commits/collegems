@@ -34,7 +34,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { exportRowsToCsv } from "@/components/data-table/data-table";
-import { formatMoney } from "@/lib/validations/fees-display";
+
 import {
   DECISIONS,
   decisionLabel,
@@ -45,6 +45,7 @@ import {
 import { DecisionBadge } from "../promotion-planner";
 import { applyRun, discardRun, overrideDecision, type DecisionRow, type RunRow } from "../actions";
 import type { LeftBehindNote } from "@/lib/validations/promotion";
+import { useI18n } from "@/components/providers/i18n-provider";
 
 type Props = {
   run: RunRow;
@@ -58,6 +59,7 @@ type Props = {
 };
 
 export function RunReview({ run, decisions, sections, leftBehind }: Props) {
+  const { formatCurrency } = useI18n();
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [search, setSearch] = useState("");
@@ -239,7 +241,7 @@ export function RunReview({ run, decisions, sections, leftBehind }: Props) {
           {carried > 0 && (
             <Alert>
               <AlertTriangle className="size-4" aria-hidden="true" />
-              <AlertTitle>{formatMoney(carried)} will be carried forward</AlertTitle>
+              <AlertTitle>{formatCurrency(carried)} will be carried forward</AlertTitle>
               <AlertDescription>
                 Each carried balance becomes an opening invoice in {run.toSessionName}, with its own
                 receipt number — the debt arrives as a document the family can be shown, not as a
@@ -358,7 +360,7 @@ export function RunReview({ run, decisions, sections, leftBehind }: Props) {
                     {row.reason}
                   </td>
                   <td className="px-3 py-1.5 text-end font-mono tabular-nums">
-                    {row.carryForward > 0 ? formatMoney(row.carryForward) : "—"}
+                    {row.carryForward > 0 ? formatCurrency(row.carryForward) : "—"}
                   </td>
                   {!applied && (
                     <td className="px-3 py-1.5 text-end">

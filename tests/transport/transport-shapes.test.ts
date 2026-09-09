@@ -1,11 +1,11 @@
 import { describe, expect, it } from "vitest";
+import { formatCurrency } from "@/lib/i18n/format";
 import {
   allowedDirections,
   assignmentSchema,
   DIRECTIONS,
   directionAllowed,
   directionLabel,
-  formatFare,
   formatStopTime,
   isCurrent,
   occupancyTone,
@@ -89,9 +89,9 @@ describe("seatsSentence", () => {
 
 describe("formatting", () => {
   it("prints a fare as money", () => {
-    expect(formatFare(1500)).toBe("₹1,500.00");
-    expect(formatFare("900.00")).toBe("₹900.00");
-    expect(formatFare(null)).toBe("—");
+    expect(formatCurrency(1500, "en")).toBe("₹1,500.00");
+    expect(formatCurrency("900.00", "en")).toBe("₹900.00");
+    expect(formatCurrency(null, "en")).toBe("—");
   });
 
   it("drops the seconds a timetable does not need", () => {

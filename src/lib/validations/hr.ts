@@ -283,16 +283,6 @@ export function runStatusLabel(value: string) {
   return RUN_STATUSES.find((s) => s.value === value)?.label ?? value;
 }
 
-/** `₹45,200`. Rupees, grouped the Indian way, because that is who this is for. */
-export function formatMoney(value: number | string | null | undefined) {
-  if (value === null || value === undefined) return "—";
-  return new Intl.NumberFormat("en-IN", {
-    style: "currency",
-    currency: "INR",
-    maximumFractionDigits: 2,
-  }).format(Number(value));
-}
-
 /** `22` not `22.0`, `21.5` not `21.50`. Days are read, not computed with. */
 export function formatDays(value: number | string | null | undefined) {
   if (value === null || value === undefined) return "—";

@@ -33,18 +33,9 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ErrorSummary } from "@/components/forms/error-summary";
 import { SelectField, TextField, TextareaField } from "@/components/forms/form-fields";
-import {
-  DIRECTIONS,
-  directionLabel,
-  formatFare,
-  occupancyTone,
-  routeSchema,
-  seatsSentence,
-  vehicleSchema,
-  type RouteInput,
-  type VehicleInput,
-} from "@/lib/validations/transport";
+import { DIRECTIONS, directionLabel, occupancyTone, routeSchema, seatsSentence, vehicleSchema, type RouteInput, type VehicleInput } from "@/lib/validations/transport";
 import { saveRoute, saveVehicle, type RouteLoadRow, type VehicleRow } from "./actions";
+import { useI18n } from "@/components/providers/i18n-provider";
 
 type Props = {
   routes: RouteLoadRow[];
@@ -149,6 +140,7 @@ function RoutesTab({
   onAdd: () => void;
   onEdit: (route: RouteLoadRow) => void;
 }) {
+  const { formatCurrency } = useI18n();
   return (
     <Card>
       <CardHeader className="flex flex-row flex-wrap items-start justify-between gap-3">
@@ -235,7 +227,7 @@ function RoutesTab({
                         </Badge>
                       </TableCell>
                       <TableCell className="text-end font-mono tabular-nums">
-                        {formatFare(route.monthlyRevenue)}
+                        {formatCurrency(route.monthlyRevenue)}
                       </TableCell>
                       <TableCell className="text-end">
                         {canManage && (

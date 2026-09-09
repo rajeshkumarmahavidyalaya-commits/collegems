@@ -31,19 +31,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Form } from "@/components/ui/form";
 import { SelectField, TextField, TextareaField } from "@/components/forms/form-fields";
 import { ErrorSummary } from "@/components/forms/error-summary";
-import {
-  ADJUSTMENT_TYPES,
-  PAYMENT_METHODS,
-  adjustmentSchema,
-  chargeSchema,
-  formatMoney,
-  paymentSchema,
-  refundSchema,
-  type AdjustmentInput,
-  type ChargeInput,
-  type PaymentInput,
-  type RefundInput,
-} from "@/lib/validations/fees";
+import { useI18n } from "@/components/providers/i18n-provider";
+import { ADJUSTMENT_TYPES, PAYMENT_METHODS, adjustmentSchema, chargeSchema, paymentSchema, refundSchema, type AdjustmentInput, type ChargeInput, type PaymentInput, type RefundInput } from "@/lib/validations/fees";
 import {
   getStudentAccount,
   raiseCharge,
@@ -74,6 +63,7 @@ export function FeeCounter({
 }: {
   feeHeads: { id: string; name: string }[];
 }) {
+  const { formatCurrency } = useI18n();
   const [query, setQuery] = useState("");
   const [selected, setSelected] = useState<CounterHit | null>(null);
   const [highlight, setHighlight] = useState(0);
@@ -259,7 +249,7 @@ export function FeeCounter({
                       </span>
                       <span className="shrink-0 text-end">
                         <span className="block font-mono text-sm tabular-nums">
-                          {formatMoney(Math.abs(hit.balance))}
+                          {formatCurrency(Math.abs(hit.balance))}
                         </span>
                         <Badge
                           variant={
@@ -288,8 +278,8 @@ export function FeeCounter({
           <Check className="size-4 text-success" aria-hidden="true" />
           <AlertTitle>
             {done.kind === "receipt"
-              ? `Received ${formatMoney(done.amount)} from ${done.student}`
-              : `Charged ${formatMoney(done.amount)} to ${done.student}`}
+              ? `Received ${formatCurrency(done.amount)} from ${done.student}`
+              : `Charged ${formatCurrency(done.amount)} to ${done.student}`}
           </AlertTitle>
           <AlertDescription>
             <p aria-live="polite">
@@ -336,7 +326,7 @@ export function FeeCounter({
                   balance={balance}
                   invoices={openInvoices.map((i) => ({
                     id: i.id,
-                    label: `${i.invoiceNumber} · ${formatMoney(i.total)} · due ${i.dueDate}`,
+                    label: `${i.invoiceNumber} · ${formatCurrency(i.total)} · due ${i.dueDate}`,
                   }))}
                   onDone={(amount, receipt) =>
                     finish({
@@ -407,7 +397,7 @@ export function FeeCounter({
                   {account.isLoading ? (
                     <Skeleton className="h-9 w-32" />
                   ) : (
-                    formatMoney(Math.abs(balance))
+                    formatCurrency(Math.abs(balance))
                   )}
                 </CardTitle>
               </CardHeader>
@@ -425,7 +415,7 @@ export function FeeCounter({
                 {(account.data?.earlier.length ?? 0) > 0 && (
                   <p className="text-muted-foreground">
                     <Badge variant="destructive">Earlier years</Badge>{" "}
-                    {formatMoney(
+                    {formatCurrency(
                       (account.data?.earlier ?? []).reduce((sum, y) => sum + y.balance, 0),
                     )}{" "}
                     outstanding from{" "}
@@ -478,7 +468,7 @@ export function FeeCounter({
                             </span>
                           </span>
                           <span className="shrink-0 font-mono tabular-nums">
-                            {formatMoney(i.total)}
+                            {formatCurrency(i.total)}
                           </span>
                         </li>
                       );
@@ -538,6 +528,7 @@ function ReceiveForm({
   invoices: { id: string; label: string }[];
   onDone: (amount: number, receipt: string | null) => void;
 }) {
+  const { formatCurrency } = useI18n();
   const [serverError, setServerError] = useState<string | null>(null);
   const amountRef = useRef<HTMLDivElement>(null);
 
@@ -598,7 +589,7 @@ function ReceiveForm({
               label="Amount received"
               type="number"
               required
-              description={balance > 0 ? `Full balance is ${formatMoney(balance)}` : undefined}
+              description={balance > 0 ? `Full balance is ${formatCurrency(balance)}` : undefined}
             />
           </div>
           <SelectField control={form.control} name="method" label="Mode" required options={methodOptions} />
@@ -820,6 +811,7 @@ function RefundForm({
   balance: number;
   onDone: (amount: number, receipt: string | null) => void;
 }) {
+  const { formatCurrency } = useI18n();
   const [serverError, setServerError] = useState<string | null>(null);
 
   const form = useForm<RefundInput>({
@@ -855,7 +847,7 @@ function RefundForm({
 
         <p className="text-sm text-muted-foreground">
           {balance < 0
-            ? `This account holds ${formatMoney(-balance)} in credit.`
+            ? `This account holds ${formatCurrency(-balance)} in credit.`
             : "This account is not in credit — refunding will leave the family owing more."}
         </p>
 

@@ -24,7 +24,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { entryTypeLabel, formatMoney, methodLabel } from "@/lib/validations/fees-display";
+import { entryTypeLabel, methodLabel } from "@/lib/validations/fees-display";
 import dynamic from "next/dynamic";
 import type { StudentTarget } from "../../fee-dialogs";
 
@@ -51,7 +51,10 @@ import { useI18n } from "@/components/providers/i18n-provider";
  * out with a + or - and the entry type is named, so the meaning never rests on
  * colour alone.
  */
-function amountCell(amount: number) {
+function amountCell(
+  amount: number,
+  formatCurrency: (value: number | string | null | undefined) => string,
+) {
   const isCharge = amount > 0;
   return (
     <span
@@ -61,7 +64,7 @@ function amountCell(amount: number) {
       )}
     >
       {isCharge ? "+" : "−"}
-      {formatMoney(Math.abs(amount))}
+      {formatCurrency(Math.abs(amount))}
     </span>
   );
 }
@@ -77,6 +80,7 @@ export function StudentAccountView({
   onlinePaymentsEnabled: boolean;
   invoiceEmailEnabled: boolean;
 }) {
+  const { formatCurrency } = useI18n();
   const { formatDate, formatDateTime } = useI18n();
   const router = useRouter();
   const [paying, setPaying] = useState(false);
@@ -173,7 +177,7 @@ export function StudentAccountView({
       {paymentUrl && (
         <Alert>
           <Link2 className="size-4" aria-hidden="true" />
-          <AlertTitle>Payment link for {formatMoney(account.balance)}</AlertTitle>
+          <AlertTitle>Payment link for {formatCurrency(account.balance)}</AlertTitle>
           <AlertDescription>
             <p className="font-mono text-xs break-all">{paymentUrl}</p>
             <p>
@@ -205,7 +209,7 @@ export function StudentAccountView({
           <CardHeader className="pb-2">
             <CardDescription>Billed this session</CardDescription>
             <CardTitle className="font-mono text-2xl tabular-nums">
-              {formatMoney(account.charged)}
+              {formatCurrency(account.charged)}
             </CardTitle>
           </CardHeader>
         </Card>
@@ -233,7 +237,7 @@ export function StudentAccountView({
                 account.balance < 0 && "text-success",
               )}
             >
-              {formatMoney(Math.abs(account.balance))}
+              {formatCurrency(Math.abs(account.balance))}
             </CardTitle>
           </CardHeader>
           <CardContent className="pt-0">
@@ -275,7 +279,7 @@ export function StudentAccountView({
                       <span className="font-medium text-foreground">{year.sessionName}</span>
                       <span className="text-xs text-muted-foreground">
                         {year.invoiceCount === 1 ? "1 invoice" : `${year.invoiceCount} invoices`} ·
-                        billed {formatMoney(year.charged)}
+                        billed {formatCurrency(year.charged)}
                       </span>
                     </span>
                     <span className="flex items-center gap-2">
@@ -286,7 +290,7 @@ export function StudentAccountView({
                           year.balance < 0 && "text-success",
                         )}
                       >
-                        {formatMoney(Math.abs(year.balance))}
+                        {formatCurrency(Math.abs(year.balance))}
                       </span>
                       <Badge variant={year.balance > 0 ? "destructive" : "secondary"}>
                         {year.balance > 0 ? "Owing" : "In credit"}
@@ -389,7 +393,7 @@ export function StudentAccountView({
                         )}
                       </td>
                       <td className="px-3 py-2 text-end whitespace-nowrap">
-                        {amountCell(entry.amount)}
+                        {amountCell(entry.amount, formatCurrency)}
                       </td>
                       <td className="px-3 py-2 text-end">
                         {canCollect && !entry.isReversed && !entry.reversesEntryId && (
@@ -399,7 +403,7 @@ export function StudentAccountView({
                             onClick={() =>
                               setReversing({
                                 id: entry.id,
-                                label: `${entryTypeLabel(entry.entryType)} of ${formatMoney(
+                                label: `${entryTypeLabel(entry.entryType)} of ${formatCurrency(
                                   Math.abs(entry.amount),
                                 )} on ${formatDate(entry.occurredAt)}${
                                   entry.receiptNumber ? ` · ${entry.receiptNumber}` : ""
@@ -457,7 +461,7 @@ export function StudentAccountView({
                       <Badge variant="secondary">Issued</Badge>
                     )}
                     <span className="font-mono font-medium tabular-nums">
-                      {formatMoney(invoice.total)}
+                      {formatCurrency(invoice.total)}
                     </span>
                     <Button size="sm" variant="outline" asChild>
                       <Link href={`/fees/invoices/${invoice.id}`}>
@@ -501,7 +505,7 @@ export function StudentAccountView({
                     {invoice.lines.map((line) => (
                       <li key={line.id} className="flex items-baseline justify-between gap-4">
                         <span>{line.description}</span>
-                        <span className="font-mono tabular-nums">{formatMoney(line.amount)}</span>
+                        <span className="font-mono tabular-nums">{formatCurrency(line.amount)}</span>
                       </li>
                     ))}
                   </ul>
@@ -526,7 +530,7 @@ export function StudentAccountView({
             student={target}
             invoices={openInvoices.map((i) => ({
               id: i.id,
-              label: `${i.invoiceNumber} · ${formatMoney(i.total)} · due ${formatDate(i.dueDate)}`,
+              label: `${i.invoiceNumber} · ${formatCurrency(i.total)} · due ${formatDate(i.dueDate)}`,
             }))}
             open={paying}
             onOpenChange={setPaying}
