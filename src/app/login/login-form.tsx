@@ -100,22 +100,52 @@ export function LoginForm({ next }: { next?: string }) {
   );
 }
 
+/**
+ * The product name, isolated from the direction of the text around it.
+ *
+ * `SchoolOS` is a Latin string, and inside an RTL paragraph the bidi algorithm
+ * reorders the neutral characters at its edges: `© 2026 SchoolOS` rendered as
+ * `SchoolOS 2026 ©`, and a sentence ending in an English clause put its full
+ * stop at the *start* of the line. `<bdi>` is the element for exactly this —
+ * it isolates the run so the surrounding direction stops leaking into it.
+ */
+function Brand({ className }: { className?: string }) {
+  return <bdi className={className}>SchoolOS</bdi>;
+}
+
 export function LoginBranding() {
+  const t = useT();
+
   return (
     <div className="flex h-full flex-col justify-between bg-primary p-10 text-primary-foreground">
       <div className="flex items-center gap-2 font-semibold">
         <GraduationCap className="size-6" aria-hidden="true" />
-        SchoolOS
+        <Brand />
       </div>
       <div className="max-w-sm">
-        <p className="text-lg font-medium text-balance">
-          One system for admissions, attendance, fees, and everything else that keeps a school running.
-        </p>
-        <p className="mt-3 text-sm text-primary-foreground/80">
-          Built for the people who run the school, not just the people who buy the software.
-        </p>
+        <p className="text-lg font-medium text-balance">{t("login.brandHeadline")}</p>
+        <p className="mt-3 text-sm text-primary-foreground/80">{t("login.brandSub")}</p>
       </div>
-      <p className="text-xs text-primary-foreground/60">© {new Date().getFullYear()} SchoolOS</p>
+      <p className="text-xs text-primary-foreground/60">
+        {t("login.copyright", { year: String(new Date().getFullYear()) })}
+      </p>
+    </div>
+  );
+}
+
+/**
+ * The same identity, for a phone.
+ *
+ * The branding panel is `hidden lg:block`, so on a 375px screen the whole page
+ * was an unlabelled form on a plain field: no logo, no product name, nothing
+ * saying what you are about to sign in to. That is the screen most parents will
+ * ever see.
+ */
+export function LoginBrandingCompact() {
+  return (
+    <div className="mb-8 flex items-center gap-2 font-semibold text-foreground lg:hidden">
+      <GraduationCap className="size-6 text-primary" aria-hidden="true" />
+      <Brand />
     </div>
   );
 }

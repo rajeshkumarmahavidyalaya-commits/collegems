@@ -8,6 +8,8 @@ export const hi: Messages = {
   "app.search": "खोजें",
   "app.commandPalette": "कमांड पैलेट",
   "app.navigation": "नेविगेशन",
+  "app.sidebar.expand": "साइडबार खोलें",
+  "app.sidebar.collapse": "साइडबार समेटें",
   "app.openNav": "नेविगेशन मेन्यू खोलें",
   "app.theme.toggle": "थीम बदलें",
   "app.theme.light": "उजला",
@@ -124,6 +126,9 @@ export const hi: Messages = {
   "login.submitting": "साइन इन हो रहा है…",
   "login.forgot": "पासवर्ड भूल गए?",
   "login.showPassword": "पासवर्ड दिखाएँ",
+  "login.brandHeadline": "प्रवेश, उपस्थिति, शुल्क और वह सब कुछ जो विद्यालय को चलाता है — एक ही प्रणाली में।",
+  "login.brandSub": "उन लोगों के लिए बनाया गया जो विद्यालय चलाते हैं, केवल उनके लिए नहीं जो सॉफ़्टवेयर खरीदते हैं।",
+  "login.copyright": "© {year} SchoolOS",
   "login.hidePassword": "पासवर्ड छिपाएँ",
   "login.failed": "यह ईमेल पता और पासवर्ड मेल नहीं खाते।",
   "login.noTenant":

@@ -75,7 +75,14 @@ export function SidebarContent({
         {!collapsed && <span className="truncate font-semibold">{tenantName || "SchoolOS"}</span>}
       </div>
 
-      <nav className="flex-1 overflow-y-auto px-2 py-3" onClick={onNavigate}>
+      {/* A named landmark. Two navigations exist — this and the mobile
+          drawer — and an unnamed one is announced as just "navigation", which
+          is no help when there are two of them. */}
+      <nav
+        aria-label={t("app.navigation")}
+        className="flex-1 overflow-y-auto px-2 py-3"
+        onClick={onNavigate}
+      >
         {navGroups.map((group) => (
           <div key={group.title} className="mb-4">
             {!collapsed && (
@@ -115,6 +122,8 @@ export function DesktopSidebar({
   collapsed: boolean;
   onToggleCollapsed: () => void;
 }) {
+  const t = useT();
+
   return (
     <aside
       data-print="hide"
@@ -132,7 +141,7 @@ export function DesktopSidebar({
           size="icon"
           className="w-full text-sidebar-foreground hover:bg-sidebar-accent"
           onClick={onToggleCollapsed}
-          aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+          aria-label={collapsed ? t("app.sidebar.expand") : t("app.sidebar.collapse")}
         >
           {collapsed ? <PanelLeftOpen className="size-4" /> : <PanelLeftClose className="size-4" />}
         </Button>

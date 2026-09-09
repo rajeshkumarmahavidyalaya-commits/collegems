@@ -59,6 +59,23 @@ export function AppShell({
 
   return (
     <div className="flex min-h-svh w-full">
+      {/*
+        The first focusable thing on every page.
+        `main#main-content` has been the target of this link since the shell was
+        written; the link itself was never rendered, and `app.skipToContent` sat
+        translated into three languages with no caller. Without it a keyboard
+        user tabs through nine navigation groups to reach the page they opened.
+
+        Visible only when focused, which is the point: it is not decoration for
+        people who never press Tab.
+      */}
+      <a
+        href="#main-content"
+        className="sr-only focus:not-sr-only focus:absolute focus:top-3 focus:start-3 focus:z-50 focus:rounded-md focus:bg-primary focus:px-4 focus:py-2 focus:text-sm focus:font-medium focus:text-primary-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+      >
+        {t("app.skipToContent")}
+      </a>
+
       <DesktopSidebar
         navGroups={navGroups}
         tenantName={tenantName}
@@ -109,7 +126,7 @@ export function AppShell({
           </div>
         </header>
 
-        <main id="main-content" className="flex-1 p-4 sm:p-6">
+        <main id="main-content" tabIndex={-1} className="flex-1 p-4 sm:p-6 focus:outline-none">
           {children}
         </main>
       </div>

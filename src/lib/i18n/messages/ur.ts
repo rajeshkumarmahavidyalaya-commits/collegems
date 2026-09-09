@@ -8,6 +8,8 @@ export const ur: Messages = {
   "app.search": "تلاش کریں",
   "app.commandPalette": "کمانڈ پیلٹ",
   "app.navigation": "نیویگیشن",
+  "app.sidebar.expand": "سائیڈ بار کھولیں",
+  "app.sidebar.collapse": "سائیڈ بار سمیٹیں",
   "app.openNav": "نیویگیشن مینو کھولیں",
   "app.theme.toggle": "تھیم بدلیں",
   "app.theme.light": "روشن",
@@ -124,6 +126,9 @@ export const ur: Messages = {
   "login.submitting": "سائن اِن ہو رہا ہے…",
   "login.forgot": "پاس ورڈ بھول گئے؟",
   "login.showPassword": "پاس ورڈ دکھائیں",
+  "login.brandHeadline": "داخلے، حاضری، فیس اور وہ سب کچھ جو اسکول کو چلاتا ہے — ایک ہی نظام میں۔",
+  "login.brandSub": "اُن لوگوں کے لیے بنایا گیا جو اسکول چلاتے ہیں، صرف اُن کے لیے نہیں جو سافٹ ویئر خریدتے ہیں۔",
+  "login.copyright": "© {year} SchoolOS",
   "login.hidePassword": "پاس ورڈ چھپائیں",
   "login.failed": "یہ ای میل پتہ اور پاس ورڈ آپس میں میل نہیں کھاتے۔",
   "login.noTenant":

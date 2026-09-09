@@ -22,6 +22,8 @@ export const en = {
   "app.search": "Search",
   "app.commandPalette": "Command palette",
   "app.navigation": "Navigation",
+  "app.sidebar.expand": "Expand the sidebar",
+  "app.sidebar.collapse": "Collapse the sidebar",
   "app.openNav": "Open the navigation menu",
   "app.theme.toggle": "Toggle theme",
   "app.theme.light": "Light",
@@ -142,6 +144,9 @@ export const en = {
   "login.submitting": "Signing in…",
   "login.forgot": "Forgotten your password?",
   "login.showPassword": "Show password",
+  "login.brandHeadline": "One system for admissions, attendance, fees, and everything else that keeps a school running.",
+  "login.brandSub": "Built for the people who run the school, not just the people who buy the software.",
+  "login.copyright": "© {year} SchoolOS",
   "login.hidePassword": "Hide password",
   "login.failed": "That email address and password do not match.",
   "login.noTenant":

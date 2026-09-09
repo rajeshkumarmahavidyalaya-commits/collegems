@@ -22,7 +22,21 @@ import { useI18n } from "@/components/providers/i18n-provider";
  * language cannot find "Hindi" in a list written in English, which is the one
  * thing this control has to get right.
  */
-export function LanguageSwitcher({ schoolLocale }: { schoolLocale?: Locale }) {
+export function LanguageSwitcher({
+  schoolLocale,
+  showLabel = false,
+}: {
+  schoolLocale?: Locale;
+  /**
+   * Show the current language's own name beside the globe.
+   *
+   * Off in the app shell, where the header is tight and everything around it
+   * is already in a language the person has chosen. **On at the login page**,
+   * which is the one screen where the reader may not be able to read anything
+   * else on it: a bare globe asks them to guess, and `اردو` does not.
+   */
+  showLabel?: boolean;
+}) {
   const router = useRouter();
   const { locale, t } = useI18n();
   const [pending, startTransition] = useTransition();
@@ -46,11 +60,22 @@ export function LanguageSwitcher({ schoolLocale }: { schoolLocale?: Locale }) {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost" size="icon" aria-label={t("app.language.choose")}>
+        <Button
+          variant="ghost"
+          size={showLabel ? "sm" : "icon"}
+          aria-label={t("app.language.choose")}
+        >
           {pending ? (
             <Loader2 className="size-4 animate-spin" aria-hidden="true" />
           ) : (
             <Globe className="size-4" aria-hidden="true" />
+          )}
+          {showLabel && (
+            // Written in its own language and its own direction, for the same
+            // reason the menu items are.
+            <span dir={LOCALES.find((l) => l.code === locale)?.direction}>
+              {LOCALES.find((l) => l.code === locale)?.nativeName ?? localeName(locale)}
+            </span>
           )}
         </Button>
       </DropdownMenuTrigger>

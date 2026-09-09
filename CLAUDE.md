@@ -1743,7 +1743,16 @@ wrapper.
 
 **Keep at least one RTL locale in the list.** Urdu is there so that right-to-left
 is exercised rather than declared; RTL that nothing uses is RTL that is broken
-and nobody has noticed. Icons are the part no codemod can do — an arrow meaning
+and nobody has noticed.
+
+**And an untranslated string in an RTL locale is not "English for now" — it is
+broken typography.** Rendered with `dir="rtl"`, the login page's two hardcoded
+English sentences put their full stops at the **start** of the line
+(`.else that keeps a school running`), because a neutral character at the end of
+an LTR run inside an RTL paragraph belongs to the paragraph. Correct bidi, wrong
+sentence, and invisible from the default locale. Wrap a Latin token that must
+sit inside translated text in `<bdi>`, and check the *screenshot* of the RTL
+locale rather than the key count. Icons are the part no codemod can do — an arrow meaning
 "back" flips and an arrow meaning "download" does not — so directional lucide
 icons are flipped by name in `globals.css` rather than by an `rtl:` variant at
 thirty call sites.
@@ -1774,7 +1783,13 @@ the rupee is a fact about the money, not about the reader.
    through the CSS variables in `src/app/globals.css` and the Tailwind tokens
    mapped from them (`bg-primary`, `text-muted-foreground`, `border-border`,
    `font-mono`, …).
-5. **Run the skill's pre-delivery checklist against every screen** before
+5. **A string in the catalogue is not a control on the page.** Three keys —
+   `app.skipToContent`, `app.theme.toggle`, `app.theme.light/dark/system` —
+   were translated into all three languages and rendered **nowhere**, and
+   `main#main-content` was the target of a skip link that did not exist. Rule
+   6's sentence, arriving in the interface: a correct string nobody renders is
+   not a feature. Grep for the caller, not for the key.
+6. **Run the skill's pre-delivery checklist against every screen** before
    calling it done. The non-negotiable subset:
    - Real SVG icons only (lucide-react). **Zero emoji as UI.**
    - Light **and** dark mode, both at 4.5:1 text contrast.
