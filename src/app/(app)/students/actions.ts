@@ -88,12 +88,32 @@ export async function listStudents(
   };
 }
 
+/**
+ * The class picker, on seventeen screens.
+ *
+ * **Scoped to the current academic year, which it was not.** `sections` carries
+ * `session_id` — rule 2 puts it there so every query can filter on it without a
+ * join — and this one did not, so it returned 24 rows across two years with
+ * *"Grade 1 · A"* appearing twice under the same label and no way to tell them
+ * apart. A bursar setting a fee structure, a teacher publishing study material
+ * and an office enrolling a child could each pick last year's class and be
+ * right about the name.
+ *
+ * RLS does not help here and is not supposed to: a policy answers *which tenant*
+ * and *whose rows*, never *which year*. The year is a label, and a label is only
+ * enforced by the reader.
+ */
 export async function listSections() {
+  const ctx = await getUserContext();
   const supabase = await createClient();
-  const { data } = await supabase
+  let query = supabase
     .from("sections")
     .select("id, name, class_levels ( name, sequence )")
     .order("name");
+
+  if (ctx?.currentSessionId) query = query.eq("session_id", ctx.currentSessionId);
+
+  const { data } = await query;
 
   return (data ?? [])
     .map((s) => ({

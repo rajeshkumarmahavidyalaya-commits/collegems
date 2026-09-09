@@ -222,6 +222,49 @@ date from the session their subjects belong to.
 
 Migrations `0195`–`0198`; see `docs/modules/academic-years.md`.
 
+### …and the read side of it is not a bug until somebody rolls a year forward
+
+`0198` gave a dated *write* its year. The reads were never given one, and the
+reason that survived two hundred migrations is worth stating: **a list with no
+session filter is indistinguishable from a correct one until a second year
+exists in the table.**
+
+`academics_roll_forward_sections` had run on the demo school, which makes
+`sections` the only table holding two years — and the only place the omission is
+visible. Everything else measured identical across years (`fee_structures` 24/24,
+`homework` 32/32, `exams` 2/2) because nothing has been rolled forward into it
+*yet*.
+
+What it cost today: `listSections()` feeds the class picker on **seventeen
+screens** and returned **24 rows across two years**, with *"Grade 1 · A"*
+appearing twice under an identical label.
+
+> **RLS answers which tenant and whose rows. It never answers which year.**
+> `session_id` is on the table so a reader can filter without a join; a reader
+> that does not is not protected by anything. And the failure is not the row
+> count — it is the **duplicate name**, which no picker and no person can
+> resolve.
+
+Three things generalise:
+
+- **The same omission handed a family another child's timetable.** `/timetable`
+  defaulted to `sections[0]`, so a guardian of a child in Grade 6 A arrived on
+  Grade 1 A's 35 lessons and had to find their own among twenty-four entries.
+  The fix is the *list*, not the component: narrowing what a picker is given
+  narrows its default with it.
+- **A sweep is a starting point, not a bug count.** 90 unfiltered selects, 42 of
+  them whole-table reads — and the accounts module, the fee account and the
+  certificate register are *deliberately* cross-year (rule 6: a date question is
+  answered with dates). Publishing 42 as a defect count would be its own
+  inaccuracy. Fix what is measured, and name the rest with the question that
+  decides each one: **is this list "now", or is it "ever"?**
+- **Guard a Server Action's query by reading it, not by calling it.** These call
+  `cookies()` from `next/headers`, so a test that imports one throws outside a
+  request and never runs its assertion — a check that can never go green is a
+  check people learn to ignore. `tests/academics/section-picker.test.ts` reads
+  the function body for the filter and separately asserts, against the database,
+  that no two classes in one year share a label.
+
 ## 3. Auth
 
 - Supabase Auth. A trigger on `auth.users` (`handle_new_auth_user`) resolves a

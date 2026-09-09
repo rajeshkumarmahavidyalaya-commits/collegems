@@ -89,6 +89,9 @@ export async function listMarkableSections(): Promise<SectionOption[]> {
   const supabase = await createClient();
   let query = supabase.from("sections").select("id, name, class_levels ( name, sequence )");
 
+  // The year, which no policy supplies. See `listSections` in students/actions.
+  if (ctx.currentSessionId) query = query.eq("session_id", ctx.currentSessionId);
+
   if (ctx.roleCode === "teacher") {
     if (!ctx.staffId) return [];
     query = query.eq("class_teacher_staff_id", ctx.staffId);
@@ -99,12 +102,18 @@ export async function listMarkableSections(): Promise<SectionOption[]> {
   return sortSections(data ?? []);
 }
 
-/** Every section in the tenant, for read-only views (reports, a parent's child). */
+/**
+ * Every section in **this year**, for read-only views (reports, a parent's
+ * child). The year matters as much here as in the markable list: a register
+ * report offering last year's Grade 1 A under the same name as this year's is a
+ * report somebody will run and believe.
+ */
 export async function listAllSections(): Promise<SectionOption[]> {
+  const ctx = await getUserContext();
   const supabase = await createClient();
-  const { data, error } = await supabase
-    .from("sections")
-    .select("id, name, class_levels ( name, sequence )");
+  let query = supabase.from("sections").select("id, name, class_levels ( name, sequence )");
+  if (ctx?.currentSessionId) query = query.eq("session_id", ctx.currentSessionId);
+  const { data, error } = await query;
   if (error) throw new Error(error.message);
   return sortSections(data ?? []);
 }

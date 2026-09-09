@@ -249,3 +249,104 @@ rows already violate it and cannot be mechanically repaired (see above), so
 adding it means deciding what a school does with a year of registers taken
 against the wrong enrolments — which is the school's decision, not a
 migration's.
+
+---
+
+## The rollover creates next year, and seventeen screens had not been told
+
+`0198` gave a dated write its year. This is the read side of the same question,
+and it stayed hidden for two hundred migrations for a reason worth stating: **it
+is not a bug until a school rolls a year forward.**
+
+`academics_roll_forward_sections` had run on the demo school, so `sections` is
+the one table in this schema holding two years at once. Measured:
+
+| list | all years | this year |
+|---|---|---|
+| **sections** | **24** | **12** |
+| section_subjects | 96 | 96 |
+| fee_structures | 24 | 24 |
+| homework | 32 | 32 |
+| study_material | 8 | 8 |
+| exams | 2 | 2 |
+| transport_routes | 2 | 2 |
+| notices | 1 | 1 |
+
+Every other row of that table is a coincidence: only sections have been rolled
+forward, so only sections can disagree. The readers were equally unfiltered in
+all eight cases — the data simply had not caught up with them yet.
+
+### What that cost, today
+
+`listSections()` feeds the class picker on **seventeen screens** — students,
+fees, fee setup, instalments, study material, academics, front office,
+notification compose, three exam screens, student new and edit, import, notices
+and the timetable. It returned 24 rows over two academic years, with
+*"Grade 1 · A"* appearing **twice, under an identical label**.
+
+> A picker cannot answer *"which of these two Grade 1 A's is mine"*, and neither
+> can the person using it. The row count is not the failure; the duplicate name
+> is.
+
+RLS does not help and is not meant to: **a policy answers which tenant and whose
+rows, never which year.** Rule 2 puts `session_id` on the table precisely so a
+reader can filter without a join — and then three readers did not
+(`listSections`, `listAllSections`, `listMarkableSections`).
+
+### …and a family landed on another child's class
+
+The same page showed what an unscoped picker does to somebody who cannot correct
+for it. `/timetable` handed a guardian the office's screen unchanged: a picker
+of all twenty-four entries, defaulting to `sections[0]`. Probed as the guardian
+of a child in **Grade 6 A**:
+
+```
+sections in the picker      24
+picker defaults to          Grade 1 · A
+lessons shown on arrival    35   (Grade 1 A's, in full)
+their own child's class     Grade 6 A, 14 lessons
+```
+
+The fix is the list, not the component: `RoutineGrid` already defaults to its
+first entry, so narrowing the list narrows the default with it.
+`listMyChildren()` (migration `0199`) supplies the relationship, a member of
+staff gets `[]` from it and keeps the whole school, and the page's copy stops
+telling a parent that *"the grid you build is one that can actually be taught"*.
+
+The empty state moved with it. *"Add a class under Academics first"* is the
+right sentence for an administrator and the wrong one for a family whose child
+has no enrolment, and only the page knows which caller it is drawing for — so it
+passes the sentence in rather than the component guessing.
+
+### The guard, in two halves because neither is enough
+
+`tests/academics/section-picker.test.ts`:
+
+- **the source**, and it reads the query rather than calling it. These are
+  Server Actions — they call `cookies()` from `next/headers`, so importing one
+  into a test throws outside a request and the assertion never runs. A check
+  that can never go green is a check people learn to ignore.
+- **the data**, asserting no two classes in one year share a label — because the
+  source check would still pass if somebody filtered on the wrong session.
+
+### What was deliberately not swept
+
+Sweeping the app for `.from("<session-scoped table>").select(...)` finds **90
+statements with no session filter, 42 of them whole-table list reads.** That
+number is a starting point, not a bug count, and publishing it as one would be
+its own inaccuracy. Three groups:
+
+- **Correct as they are, and a later "fix" would break them.** The accounts
+  module is date-ranged on purpose (rule 6: *"a date question is answered with
+  dates"*), so `journal_vouchers` and `ledger_entries` there must not be
+  session-filtered. The fee account deliberately asks **every** year and keeps
+  the ones that come back owing — rule 6 again, and the word that mattered was
+  *settled*. The certificate register and the payroll run list are histories.
+- **Fixed here**: the three section readers.
+- **Latent, and named rather than changed**: the exam list, the route list,
+  homework, study material, notices, holidays, the curriculum and fee
+  structures. Each is a list of "what is happening now" with no year on it, and
+  each is correct today only because nothing has been rolled forward into it. A
+  blanket `.eq("session_id", …)` across all of them is a change nobody could
+  review; they want the same treatment one at a time, with the screen's own
+  question asked first — *is this list "now", or is it "ever"?*

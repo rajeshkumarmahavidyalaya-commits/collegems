@@ -72,6 +72,12 @@ type Props = {
   rooms: { id: string; label: string }[];
   teachers: { id: string; label: string }[];
   canManage: boolean;
+  /**
+   * What to say when there is nothing to pick. The office's sentence ("add a
+   * class under Academics") is the wrong one for a family whose child has no
+   * enrolment, and only the page knows which caller it is drawing for.
+   */
+  emptySections?: { title: string; description: string };
 };
 
 export function RoutineGrid({
@@ -81,6 +87,7 @@ export function RoutineGrid({
   rooms,
   teachers,
   canManage,
+  emptySections,
 }: Props) {
   const [sectionId, setSectionId] = useState(sections[0]?.id ?? "");
   const [entries, setEntries] = useState<RoutineEntry[] | null>(null);
@@ -131,8 +138,11 @@ export function RoutineGrid({
     return (
       <EmptyState
         icon={CalendarDays}
-        title="No classes to build a routine for"
-        description="Add a class under Academics first — a timetable needs something to schedule."
+        title={emptySections?.title ?? "No classes to build a routine for"}
+        description={
+          emptySections?.description ??
+          "Add a class under Academics first — a timetable needs something to schedule."
+        }
       />
     );
   }
