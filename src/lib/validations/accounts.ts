@@ -1,6 +1,8 @@
 import { z } from "zod";
 import { formatCurrency } from "@/lib/i18n/format";
 import type { Locale } from "@/lib/i18n/config";
+import { labelFor, optionsFor } from "./labels";
+import type { Translator } from "@/lib/i18n/translate";
 
 /**
  * Phase 2.2 — the chart of accounts and double-entry vouchers.
@@ -140,8 +142,14 @@ export function isBalanced(lines: { debit: string; credit: string }[]): boolean 
 // Display
 // ---------------------------------------------------------------------------
 
-export function accountTypeLabel(value: string) {
-  return ACCOUNT_TYPES.find((t) => t.value === value)?.label ?? value;
+export function accountTypeLabel(value: string, t: Translator) {
+  const found = ACCOUNT_TYPES.find((entry) => entry.value === value);
+  return found ? labelFor(`accounts.type.${value}`, found.label, t) : value;
+}
+
+/** The same five, for a picker. A badge and its `<Select>` read one label. */
+export function accountTypeOptions(t: Translator) {
+  return optionsFor(ACCOUNT_TYPES, "accounts.type", t);
 }
 
 /** Which column an account's balance naturally sits in. */
@@ -151,12 +159,14 @@ export function normalSide(accountType: string): "debit" | "credit" {
     : "debit";
 }
 
-export function voucherStatusLabel(value: string) {
-  return VOUCHER_STATUSES.find((s) => s.value === value)?.label ?? value;
+export function voucherStatusLabel(value: string, t: Translator) {
+  const found = VOUCHER_STATUSES.find((s) => s.value === value);
+  return found ? labelFor(`accounts.voucherStatus.${value}`, found.label, t) : value;
 }
 
-export function sourceKindLabel(value: string) {
-  return SOURCE_KINDS.find((s) => s.value === value)?.label ?? value;
+export function sourceKindLabel(value: string, t: Translator) {
+  const found = SOURCE_KINDS.find((s) => s.value === value);
+  return found ? labelFor(`accounts.source.${value}`, found.label, t) : value;
 }
 
 /**

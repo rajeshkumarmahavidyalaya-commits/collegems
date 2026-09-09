@@ -47,10 +47,27 @@ const LOCALE_AWARE = new Set([
   "substitutions.reasonLabel",
   "staff-display.staffStatusLabel",
   "certificates.kindLabel",
+  // The money-and-stores batch: payroll, the journal, the fee calendar, the
+  // store ledger. Three more names that mean different things in different
+  // modules -- `hr.PAYMENT_METHODS` is four ways to pay a teacher and
+  // `fees-display.PAYMENT_METHODS` is seven ways to take a fee -- which is why
+  // each has its own key prefix rather than a shared one.
+  "homework.dueLabel",
+  "hr.paymentMethodLabel",
+  "hr.attendanceLabel",
+  "hr.leaveStatusLabel",
+  "hr.runStatusLabel",
+  "accounts.accountTypeLabel",
+  "accounts.voucherStatusLabel",
+  "accounts.sourceKindLabel",
+  "fees.frequencyLabel",
+  "concessions.kindLabel",
+  "concessions.statusLabel",
+  "inventory.movementLabel",
 ]);
 
 /** How many still render English to every reader. Only ever goes down. */
-const STILL_ENGLISH = 24;
+const STILL_ENGLISH = 12;
 
 type Helper = { module: string; name: string; takesTranslator: boolean };
 

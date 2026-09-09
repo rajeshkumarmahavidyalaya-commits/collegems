@@ -26,7 +26,7 @@ import { Form } from "@/components/ui/form";
 import { SelectField, TextField, TextareaField } from "@/components/forms/form-fields";
 import { ErrorSummary } from "@/components/forms/error-summary";
 import { useI18n } from "@/components/providers/i18n-provider";
-import { FEE_CATEGORIES, FEE_FREQUENCIES, feeHeadSchema, feeStructureSchema, generateSectionInvoicesSchema, type FeeHeadInput, type FeeStructureInput } from "@/lib/validations/fees";
+import { FEE_CATEGORIES, feeHeadSchema, frequencyOptions, feeStructureSchema, generateSectionInvoicesSchema, type FeeHeadInput, type FeeStructureInput } from "@/lib/validations/fees";
 import {
   deleteFeeStructure,
   generateSectionInvoices,
@@ -418,6 +418,7 @@ function FeeStructureDialog({
   feeHeads: FeeHead[];
   onDone: () => void;
 }) {
+  const { t } = useI18n();
   const [serverError, setServerError] = useState<string | null>(null);
   const form = useForm<FeeStructureInput>({
     resolver: zodResolver(feeStructureSchema),
@@ -476,7 +477,7 @@ function FeeStructureDialog({
                 name="frequency"
                 label="Frequency"
                 required
-                options={FEE_FREQUENCIES.map((f) => ({ value: f.value, label: f.label }))}
+                options={frequencyOptions(t)}
                 description="How often this instalment is billed"
               />
             </div>

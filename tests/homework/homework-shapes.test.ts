@@ -17,6 +17,8 @@ import {
   safeFileName,
 } from "@/lib/storage/constants";
 
+const t = createTranslator("en");
+
 /**
  * The homework module's pure logic.
  *
@@ -121,7 +123,6 @@ describe("marking", () => {
   });
 
   it("names every status in words, so colour is never the only signal", () => {
-    const t = createTranslator("en");
     for (const status of ["pending", "submitted", "graded", "returned"]) {
       expect(submissionStatusLabel(status, t)).not.toBe(status);
       expect(submissionStatusLabel(status, t).length).toBeGreaterThan(0);
@@ -131,15 +132,15 @@ describe("marking", () => {
 
 describe("what a due date means to a person", () => {
   it("counts in days, not in dates", () => {
-    expect(dueLabel("2026-09-03", "2026-09-03")).toBe("Due today");
-    expect(dueLabel("2026-09-04", "2026-09-03")).toBe("Due tomorrow");
-    expect(dueLabel("2026-09-02", "2026-09-03")).toBe("Due yesterday");
-    expect(dueLabel("2026-09-08", "2026-09-03")).toBe("Due in 5 days");
-    expect(dueLabel("2026-08-31", "2026-09-03")).toBe("3 days overdue");
+    expect(dueLabel("2026-09-03", "2026-09-03", t)).toBe("Due today");
+    expect(dueLabel("2026-09-04", "2026-09-03", t)).toBe("Due tomorrow");
+    expect(dueLabel("2026-09-02", "2026-09-03", t)).toBe("Due yesterday");
+    expect(dueLabel("2026-09-08", "2026-09-03", t)).toBe("Due in 5 days");
+    expect(dueLabel("2026-08-31", "2026-09-03", t)).toBe("3 days overdue");
   });
 
   it("counts across a month boundary rather than within one", () => {
-    expect(dueLabel("2026-10-01", "2026-09-30")).toBe("Due tomorrow");
+    expect(dueLabel("2026-10-01", "2026-09-30", t)).toBe("Due tomorrow");
   });
 
   it("resolves today where the school is, not where the server is", () => {

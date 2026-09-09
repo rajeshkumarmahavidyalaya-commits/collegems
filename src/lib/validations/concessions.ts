@@ -1,4 +1,6 @@
 import { z } from "zod";
+import { labelFor } from "./labels";
+import type { Translator } from "@/lib/i18n/translate";
 
 /**
  * Fee concessions — the client half.
@@ -18,15 +20,18 @@ export const KIND_LABEL: Record<ConcessionKind, string> = {
   amount: "Fixed amount",
 };
 
-export function kindLabel(kind: string): string {
-  return KIND_LABEL[kind as ConcessionKind] ?? kind;
+export function kindLabel(kind: string, t: Translator): string {
+  const fallback = KIND_LABEL[kind as ConcessionKind];
+  return fallback ? labelFor(`concession.kind.${kind}`, fallback, t) : kind;
 }
 
 export const AWARD_STATUSES = ["active", "revoked"] as const;
 export type AwardStatus = (typeof AWARD_STATUSES)[number];
 
-export function statusLabel(status: string): string {
-  return status === "revoked" ? "Withdrawn" : "Active";
+export function statusLabel(status: string, t: Translator): string {
+  // A revoked award keeps its credits -- rule 12's "end, do not cancel" -- so
+  // the word is "withdrawn", not "deleted", in every language.
+  return status === "revoked" ? t("concession.status.revoked") : t("concession.status.active");
 }
 
 /** Never colour alone — the label is always beside it. */

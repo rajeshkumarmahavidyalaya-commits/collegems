@@ -107,7 +107,7 @@ export function PayrollRuns({ runs, canProcess }: { runs: RunRow[]; canProcess: 
 
 function RunRowView({ run, canProcess }: { run: RunRow; canProcess: boolean }) {
   const { formatCurrency } = useI18n();
-  const { formatDate, formatMonth } = useI18n();
+  const { formatDate, formatMonth, t } = useI18n();
   const router = useRouter();
   const [pending, startTransition] = useTransition();
 
@@ -155,7 +155,7 @@ function RunRowView({ run, canProcess }: { run: RunRow; canProcess: boolean }) {
                 : "secondary"
           }
         >
-          {runStatusLabel(run.status)}
+          {runStatusLabel(run.status, t)}
         </Badge>
         {run.finalisedAt && (
           <p className="text-xs text-muted-foreground">

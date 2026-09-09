@@ -68,7 +68,7 @@ type Props = {
 };
 
 export function HomeworkList({ homework, curriculum, today, canManage }: Props) {
-  const { formatDate } = useI18n();
+  const { formatDate, t } = useI18n();
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [open, setOpen] = useState(false);
@@ -268,7 +268,7 @@ export function HomeworkList({ homework, curriculum, today, canManage }: Props) 
                           timeZone: "UTC",
                         })}
                       </span>
-                      <p className="text-xs text-muted-foreground">{dueLabel(row.dueOn, today)}</p>
+                      <p className="text-xs text-muted-foreground">{dueLabel(row.dueOn, today, t)}</p>
                     </TableCell>
                     <TableCell className="text-end font-mono tabular-nums">
                       {row.collectsSubmissions ? (

@@ -40,7 +40,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ErrorSummary } from "@/components/forms/error-summary";
 import { SelectField, TextField, TextareaField } from "@/components/forms/form-fields";
-import { ACCOUNT_TYPES, accountSchema, accountTypeLabel, formatBalance, formatColumn, type AccountInput } from "@/lib/validations/accounts";
+import { accountSchema, accountTypeLabel, accountTypeOptions, formatBalance, formatColumn, type AccountInput } from "@/lib/validations/accounts";
 import { useI18n } from "@/components/providers/i18n-provider";
 import {
   saveAccount,
@@ -67,7 +67,7 @@ export function ChartView({
   canManage,
   canPost,
 }: Props) {
-  const { locale } = useI18n();
+  const { locale, t } = useI18n();
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<ChartRow | null>(null);
 
@@ -166,7 +166,7 @@ export function ChartView({
                           </span>
                         </TableCell>
                         <TableCell className="text-muted-foreground">
-                          {accountTypeLabel(row.accountType)}
+                          {accountTypeLabel(row.accountType, t)}
                         </TableCell>
                         <TableCell className="text-end font-mono tabular-nums">
                           {formatBalance(row.balance, locale)}
@@ -304,7 +304,7 @@ function SyncBanner({ unposted }: { unposted: number }) {
 }
 
 function TrialBalance({ rows }: { rows: TrialBalanceRow[] }) {
-  const { locale } = useI18n();
+  const { locale, t } = useI18n();
   const { formatCurrency } = useI18n();
   const totals = useMemo(
     () => ({
@@ -363,7 +363,7 @@ function TrialBalance({ rows }: { rows: TrialBalanceRow[] }) {
                         {row.name}
                       </Link>
                       <span className="ms-2 text-xs text-muted-foreground">
-                        {accountTypeLabel(row.accountType)}
+                        {accountTypeLabel(row.accountType, t)}
                       </span>
                     </TableCell>
                     <TableCell className="text-end font-mono tabular-nums">
@@ -422,6 +422,7 @@ function AccountDialog({
   chart: ChartRow[];
 }) {
   const router = useRouter();
+  const { t } = useI18n();
   const [pending, startTransition] = useTransition();
 
   const form = useForm<AccountInput>({
@@ -491,7 +492,7 @@ function AccountDialog({
                 name="accountType"
                 label="Type"
                 required
-                options={ACCOUNT_TYPES.map((t) => ({ value: t.value, label: t.label }))}
+                options={accountTypeOptions(t)}
               />
             </div>
 

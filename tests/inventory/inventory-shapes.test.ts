@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { createTranslator } from "@/lib/i18n/translate";
 import {
   formatQuantity,
   itemSchema,
@@ -13,6 +14,8 @@ import {
   stockTone,
   stockValue,
 } from "@/lib/validations/inventory";
+
+const t = createTranslator("en");
 
 /**
  * Inventory, browser half.
@@ -49,8 +52,8 @@ describe("movement kinds", () => {
   });
 
   it("labels a kind, and leaves an unknown one alone", () => {
-    expect(movementLabel("write_off")).toBe("Written off");
-    expect(movementLabel("teleported")).toBe("teleported");
+    expect(movementLabel("write_off", t)).toBe("Written off");
+    expect(movementLabel("teleported", t)).toBe("teleported");
   });
 });
 

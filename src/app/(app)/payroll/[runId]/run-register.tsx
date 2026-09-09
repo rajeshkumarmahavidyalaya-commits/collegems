@@ -473,7 +473,7 @@ function PaymentHistory({
   open: boolean;
 }) {
   const { formatCurrency } = useI18n();
-  const { formatDate } = useI18n();
+  const { formatDate, t } = useI18n();
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [payments, setPayments] = useState<
@@ -530,7 +530,7 @@ function PaymentHistory({
                 {formatCurrency(Math.abs(p.amount))}
               </span>
               <span className="text-xs text-muted-foreground">
-                {paymentMethodLabel(p.method)}
+                {paymentMethodLabel(p.method, t)}
                 {p.reference && ` · ${p.reference}`} ·{" "}
                 {formatDate(`${p.paidOn}T00:00:00Z`, {
                   day: "2-digit",

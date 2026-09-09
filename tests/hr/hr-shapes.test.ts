@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { createTranslator } from "@/lib/i18n/translate";
 import { formatMonth } from "@/lib/i18n/format";
 import {
   ATTENDANCE_STATUSES,
@@ -14,6 +15,8 @@ import {
   parseSalaryDocument,
   salaryStructureSchema,
 } from "@/lib/validations/hr";
+
+const t = createTranslator("en");
 
 /**
  * The HR module's pure logic.
@@ -138,8 +141,8 @@ describe("attendance statuses", () => {
   it("names 'not marked' rather than showing it as present", () => {
     // The difference between a register nobody filled in and a school where
     // everybody turned up.
-    expect(attendanceLabel(null)).toBe("Not marked");
-    expect(attendanceLabel("present")).toBe("Present");
+    expect(attendanceLabel(null, t)).toBe("Not marked");
+    expect(attendanceLabel("present", t)).toBe("Present");
   });
 
   it("keeps on-duty separate from present", () => {
@@ -275,7 +278,7 @@ describe("recording a payment", () => {
   });
 
   it("names each method in words", () => {
-    expect(paymentMethodLabel("bank_transfer")).toBe("Bank transfer");
-    expect(paymentMethodLabel("cheque")).toBe("Cheque");
+    expect(paymentMethodLabel("bank_transfer", t)).toBe("Bank transfer");
+    expect(paymentMethodLabel("cheque", t)).toBe("Cheque");
   });
 });

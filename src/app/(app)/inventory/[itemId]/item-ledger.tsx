@@ -43,7 +43,7 @@ export function ItemLedger({
   unit: string;
   canAdjust: boolean;
 }) {
-  const { formatCurrency } = useI18n();
+  const { formatCurrency, t } = useI18n();
   const [reversing, setReversing] = useState<LedgerRow | null>(null);
 
   return (
@@ -91,7 +91,7 @@ export function ItemLedger({
                       </TableCell>
                       <TableCell>
                         <Badge variant={row.quantity > 0 ? "outline" : "secondary"}>
-                          {movementLabel(row.kind)}
+                          {movementLabel(row.kind, t)}
                         </Badge>
                       </TableCell>
                       <TableCell className="text-end font-mono tabular-nums">
@@ -149,6 +149,7 @@ function ReverseDialog({
   unit: string;
 }) {
   const router = useRouter();
+  const { t } = useI18n();
   const [pending, startTransition] = useTransition();
   const [reason, setReason] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -180,7 +181,7 @@ function ReverseDialog({
           <DialogDescription>
             {row && (
               <>
-                {movementLabel(row.kind)} of {quantityWithUnit(Math.abs(row.quantity), unit)} on{" "}
+                {movementLabel(row.kind, t)} of {quantityWithUnit(Math.abs(row.quantity), unit)} on{" "}
                 {row.happenedOn}. This writes an opposing movement — the original stays, because the
                 point of a store ledger is that it records what happened.
               </>

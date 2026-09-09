@@ -176,6 +176,7 @@ function HomeworkCard({
   canSubmit: boolean;
 }) {
   const router = useRouter();
+  const t = useT();
   const [pending, startTransition] = useTransition();
   const [submitOpen, setSubmitOpen] = useState(false);
   const [note, setNote] = useState("");
@@ -217,7 +218,7 @@ function HomeworkCard({
             <span>{row.subjectName}</span>
             <span aria-hidden="true">·</span>
             <span className={row.isOverdue ? "font-medium text-destructive" : undefined}>
-              {dueLabel(row.dueOn, today)}
+              {dueLabel(row.dueOn, today, t)}
             </span>
           </CardDescription>
         </div>

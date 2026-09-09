@@ -33,7 +33,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ErrorSummary } from "@/components/forms/error-summary";
 import { SelectField, TextField, TextareaField } from "@/components/forms/form-fields";
-import { formatQuantity, itemSchema, kindTakesCost, MOVEMENT_KINDS, movementDirection, movementSchema, quantityWithUnit, stockSentence, stockTone, type ItemInput, type MovementInput } from "@/lib/validations/inventory";
+import { formatQuantity, itemSchema, kindTakesCost, MOVEMENT_KINDS, movementDirection, movementKindOptions, movementSchema, quantityWithUnit, stockSentence, stockTone, type ItemInput, type MovementInput } from "@/lib/validations/inventory";
 import { useI18n } from "@/components/providers/i18n-provider";
 import {
   addCategory,
@@ -343,6 +343,7 @@ function MovementDialog({
   canAdjust: boolean;
 }) {
   const router = useRouter();
+  const { t } = useI18n();
   const [pending, startTransition] = useTransition();
 
   const form = useForm<MovementInput>({
@@ -367,7 +368,7 @@ function MovementDialog({
   // Only what the kind can carry: an adjustment or a receipt takes a cost, an
   // issue takes a holder. Showing every field for every kind is how a store
   // ends up with suppliers recorded against write-offs.
-  const kinds = MOVEMENT_KINDS.filter((k) => canAdjust || k.value === "receipt" || k.value === "issue" || k.value === "return");
+  const kinds = movementKindOptions(t).filter((k) => canAdjust || k.value === "receipt" || k.value === "issue" || k.value === "return");
 
   function onSubmit(values: MovementInput) {
     startTransition(async () => {
@@ -402,7 +403,7 @@ function MovementDialog({
               control={form.control}
               name="kind"
               label="What happened"
-              options={kinds.map((k) => ({ value: k.value, label: k.label }))}
+              options={kinds}
               description={MOVEMENT_KINDS.find((k) => k.value === kind)?.hint}
             />
 

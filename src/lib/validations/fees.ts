@@ -1,4 +1,6 @@
 import { z } from "zod";
+import { labelFor, optionsFor } from "./labels";
+import type { Translator } from "@/lib/i18n/translate";
 
 // The vocabulary and the display helpers live in a Zod-free module so that a
 // component wanting only `formatMoney` does not pull 91 kB of schema library
@@ -166,8 +168,13 @@ export const runInstalmentSchema = z.object({
   instalmentId: z.string().uuid("Choose a billing period"),
 });
 
-export function frequencyLabel(value: string) {
-  return FEE_FREQUENCIES.find((f) => f.value === value)?.label ?? value;
+export function frequencyLabel(value: string, t: Translator) {
+  const found = FEE_FREQUENCIES.find((f) => f.value === value);
+  return found ? labelFor(`fees.frequency.${value}`, found.label, t) : value;
+}
+
+export function frequencyOptions(t: Translator) {
+  return optionsFor(FEE_FREQUENCIES, "fees.frequency", t);
 }
 
 /**

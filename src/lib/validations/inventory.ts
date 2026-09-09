@@ -1,4 +1,6 @@
 import { z } from "zod";
+import { labelFor, optionsFor } from "./labels";
+import type { Translator } from "@/lib/i18n/translate";
 
 /**
  * Inventory.
@@ -49,8 +51,14 @@ export function movementDirection(kind: string): "in" | "out" | "either" {
   return MOVEMENT_KINDS.find((k) => k.value === kind)?.direction ?? "either";
 }
 
-export function movementLabel(kind: string) {
-  return MOVEMENT_KINDS.find((k) => k.value === kind)?.label ?? kind;
+export function movementLabel(kind: string, t: Translator) {
+  const found = MOVEMENT_KINDS.find((k) => k.value === kind);
+  return found ? labelFor(`stock.movement.${kind}`, found.label, t) : kind;
+}
+
+/** Every kind, translated. The caller filters by what its user may record. */
+export function movementKindOptions(t: Translator) {
+  return optionsFor(MOVEMENT_KINDS, "stock.movement", t);
 }
 
 /** Only receipts and adjustments carry a price — a store that values its issues invents numbers. */

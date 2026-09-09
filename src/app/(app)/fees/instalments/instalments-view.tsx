@@ -40,7 +40,7 @@ import {
 import { ErrorSummary } from "@/components/forms/error-summary";
 import { TextField } from "@/components/forms/form-fields";
 import { useI18n } from "@/components/providers/i18n-provider";
-import { collectsSentence, FEE_FREQUENCIES, frequencyLabel, instalmentSchema, uncollectedFrequencies, type InstalmentInput } from "@/lib/validations/fees";
+import { collectsSentence, frequencyLabel, frequencyOptions, instalmentSchema, uncollectedFrequencies, type InstalmentInput } from "@/lib/validations/fees";
 import {
   previewInstalment,
   runInstalment,
@@ -60,6 +60,7 @@ export function InstalmentsView({
   usedFrequencies: string[];
   canManage: boolean;
 }) {
+  const { t } = useI18n();
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<InstalmentRow | null>(null);
 
@@ -75,7 +76,7 @@ export function InstalmentsView({
           <AlertTitle>Some fees would never be charged</AlertTitle>
           <AlertDescription>
             No active period collects{" "}
-            {uncollected.map((f) => frequencyLabel(f).toLowerCase()).join(", ")} fees, but fee
+            {uncollected.map((f) => frequencyLabel(f, t)).join(", ")} fees, but fee
             structures use {uncollected.length === 1 ? "it" : "them"}. Those charges will not appear
             on any invoice until a period collects them.
           </AlertDescription>
@@ -434,6 +435,7 @@ function InstalmentDialog({
   nextSequence: number;
 }) {
   const router = useRouter();
+  const { t } = useI18n();
   const [pending, startTransition] = useTransition();
 
   const form = useForm<InstalmentInput>({
@@ -535,7 +537,7 @@ function InstalmentDialog({
                   *
                 </span>
               </legend>
-              {FEE_FREQUENCIES.map((f) => (
+              {frequencyOptions(t).map((f) => (
                 <label
                   key={f.value}
                   className="flex cursor-pointer items-start gap-2 text-sm"

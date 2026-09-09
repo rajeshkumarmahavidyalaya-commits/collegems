@@ -2119,6 +2119,45 @@ opened their own week.
 verified by running it against the commit that shipped the bug, where it names
 the file. A Server Component uses `await getT()` and `await getLocale()`.
 
+**The money-and-stores batch found three more collisions and kept all three
+apart.** `PAYMENT_METHODS` is four ways to pay a teacher in `hr` and seven ways
+to take a fee in `fees-display`; `ATTENDANCE_STATUSES` is five in `hr` (a
+teacher can be *on duty*; a child cannot) and four in `attendance`;
+`LEAVE_STATUSES` says `rejected` in one and `refused` in the other. Each got its
+own key prefix. **The reflex on meeting a third `PAYMENT_METHODS` is to collapse
+it**, and a shared `method.cash` would have read correctly on the day it was
+written while tying a school's payroll wording to its fee-counter wording for
+ever.
+
+**And it is the batch that priced the catalogue.** Built before and after and
+diffed across all 83 routes: **56 moved, every one by 1–2 kB**, several of them
+routes the batch never touched — because the catalogue is **one 56.9 kB chunk**
+pulled into any route that calls `useI18n()` on the client, and 42 keys × 3
+languages is that 1–2 kB. `First Load JS shared by all` is 103 kB before and
+after, so it is not in the shared bundle. One route moved further: **`/hr`, 156
+→ 172 kB**, because the staff register was its *first* client-side i18n consumer
+and the whole catalogue arrived at once.
+
+> **Translating one badge is nearly free on a route that already speaks, and
+> costs the whole catalogue on a route that does not.** Splitting the catalogue
+> per module is a real option not taken here; the day to take it is when a light
+> route pays 16 kB for one word.
+
+Two words in that batch turned out not to be labels at all, and both say the
+same thing from opposite directions:
+
+- **`.toLowerCase()` on a translated label is an English-only operation.** Two
+  sites lowercased one to fit a sentence; Hindi and Urdu have no letter case, so
+  the call was a no-op in every locale except the one it was written for, and in
+  Turkish it would be wrong. The word above `formatWeekday` applies — do not
+  hardcode the *output* of a locale rule either.
+- **`short` is a key on a keyboard, not a word on a screen.** The staff register
+  marks a class with `P`/`A`/`H`/`L`/`D`, so `optionsFor` translates `label` and
+  carries `short` through untouched: a Devanagari `short` has no key on the
+  keyboard the school types on. The button row reads the translated list and
+  `onKeyDown` deliberately reads the raw constant, commented where somebody
+  would otherwise tidy the inconsistency away.
+
 One more thing the same batch settled: `timetable.periodLabel` and
 `substitutions.periodLabel` are a **name collision, not a duplicate** — different
 arguments, different output — which is exactly what made a grep by name count

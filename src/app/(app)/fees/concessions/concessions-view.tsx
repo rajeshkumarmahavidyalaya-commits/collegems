@@ -54,6 +54,7 @@ export function ConcessionsView({
   students: Student[];
   canManage: boolean;
 }) {
+  const { t } = useI18n();
   const [creating, setCreating] = useState(false);
   const [awarding, setAwarding] = useState(false);
 
@@ -80,7 +81,7 @@ export function ConcessionsView({
                   <CardHeader className="pb-3">
                     <CardTitle className="flex flex-wrap items-center gap-2 text-base">
                       {c.name}
-                      <Badge variant="outline">{kindLabel(c.kind)}</Badge>
+                      <Badge variant="outline">{kindLabel(c.kind, t)}</Badge>
                       {!c.isActive && <Badge variant="secondary">Switched off</Badge>}
                     </CardTitle>
                     <CardDescription>
@@ -155,7 +156,7 @@ export function ConcessionsView({
 }
 
 function AwardCard({ award, canManage }: { award: AwardRow; canManage: boolean }) {
-  const { formatCurrency } = useI18n();
+  const { formatCurrency, t } = useI18n();
   const router = useRouter();
   const [reason, setReason] = useState("");
   const [confirming, setConfirming] = useState(false);
@@ -184,7 +185,7 @@ function AwardCard({ award, canManage }: { award: AwardRow; canManage: boolean }
               <span className="font-mono text-xs text-muted-foreground">
                 {award.admissionNumber}
               </span>
-              <Badge variant={statusTone(award.status)}>{statusLabel(award.status)}</Badge>
+              <Badge variant={statusTone(award.status)}>{statusLabel(award.status, t)}</Badge>
             </CardTitle>
             <CardDescription className="mt-1">
               {award.concession} &middot; from {award.grantedOn}

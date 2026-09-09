@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { hasPermission } from "@/lib/auth/permissions";
+import { getT } from "@/lib/i18n/server";
 import { dueLabel, schoolToday } from "@/lib/validations/homework";
 import { AttachmentPanel } from "../attachments";
 import {
@@ -24,6 +25,7 @@ export default async function HomeworkDetailPage({
 }) {
   const { id } = await params;
 
+  const t = await getT();
   const [homework, rows, questionFiles, canManage] = await Promise.all([
     getHomework(id),
     getSubmissionSheet(id),
@@ -64,7 +66,7 @@ export default async function HomeworkDetailPage({
           </span>
           <span className="flex items-center gap-1.5">
             <CalendarDays className="size-4" aria-hidden="true" />
-            {dueLabel(homework.dueOn, today)}
+            {dueLabel(homework.dueOn, today, t)}
           </span>
           {homework.maxMarks !== null && <span>Marked out of {homework.maxMarks}</span>}
         </div>

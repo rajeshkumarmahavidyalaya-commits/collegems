@@ -17,7 +17,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { ATTENDANCE_STATUSES, attendanceLabel } from "@/lib/validations/hr";
+import { useI18n } from "@/components/providers/i18n-provider";
+import { ATTENDANCE_STATUSES, attendanceLabel, attendanceStatusOptions } from "@/lib/validations/hr";
 import { markAttendance, type AttendanceRow } from "./actions";
 
 type Props = {
@@ -35,6 +36,11 @@ type Draft = Record<string, string>;
  */
 export function AttendanceRegister({ date, rows, canMark }: Props) {
   const router = useRouter();
+  const { t } = useI18n();
+  // The button row and the count strip read one list. `short` and `tone`
+  // survive the translation; the keyboard shortcut below deliberately does not
+  // read it, because `P` is a key on a keyboard, not a word on a screen.
+  const statuses = attendanceStatusOptions(t);
   const [pending, startTransition] = useTransition();
   const [draft, setDraft] = useState<Draft>(() =>
     Object.fromEntries(rows.map((r) => [r.staffId, r.status ?? ""])),
@@ -150,13 +156,15 @@ export function AttendanceRegister({ date, rows, canMark }: Props) {
 
         <p className="text-sm text-muted-foreground" aria-live="polite">
           {rows.length} on the roll ·{" "}
-          {ATTENDANCE_STATUSES.filter((s) => counts[s.value]).map((s, i) => (
-            <span key={s.value}>
-              {i > 0 && " · "}
-              {counts[s.value]} {s.label.toLowerCase()}
-            </span>
-          ))}
-          {counts.unmarked ? ` · ${counts.unmarked} not marked` : ""}
+          {statuses
+            .filter((s) => counts[s.value])
+            .map((s, i) => (
+              <span key={s.value}>
+                {i > 0 && " · "}
+                {counts[s.value]} {s.label}
+              </span>
+            ))}
+          {counts.unmarked ? ` · ${counts.unmarked} ${t("hr.attendance.unmarked")}` : ""}
         </p>
 
         {rows.length === 0 ? (
@@ -208,7 +216,7 @@ export function AttendanceRegister({ date, rows, canMark }: Props) {
                           onKeyDown={(e) => onKeyDown(e, row.staffId, index)}
                           className="flex flex-wrap gap-1 rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                         >
-                          {ATTENDANCE_STATUSES.map((status) => (
+                          {statuses.map((status) => (
                             <Button
                               key={status.value}
                               type="button"
@@ -240,7 +248,7 @@ export function AttendanceRegister({ date, rows, canMark }: Props) {
                         </div>
                       ) : (
                         <Badge variant={row.status ? "default" : "outline"}>
-                          {attendanceLabel(row.status)}
+                          {attendanceLabel(row.status, t)}
                         </Badge>
                       )}
                     </TableCell>
@@ -274,6 +282,7 @@ export function RegisterDatePicker({ date }: { date: string }) {
 }
 
 export function MyAttendance({ rows }: { rows: AttendanceRow[] }) {
+  const { t } = useI18n();
   return (
     <Card>
       <CardHeader>
@@ -288,7 +297,7 @@ export function MyAttendance({ rows }: { rows: AttendanceRow[] }) {
         ) : (
           <p className="flex items-center gap-2 text-sm">
             <UserCheck className="size-4 text-muted-foreground" aria-hidden="true" />
-            <span className="font-medium">{attendanceLabel(rows[0].status)}</span>
+            <span className="font-medium">{attendanceLabel(rows[0].status, t)}</span>
             {rows[0].leaveTypeName && (
               <span className="text-muted-foreground">· {rows[0].leaveTypeName}</span>
             )}

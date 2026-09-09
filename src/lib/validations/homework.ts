@@ -149,17 +149,27 @@ export function materialKindOptions(t: Translator) {
  * the caller decides which clock counts — the server renders in UTC and the
  * school does not.
  */
-export function dueLabel(dueOn: string, today: string): string {
+export function dueLabel(dueOn: string, today: string, t: Translator): string {
   const due = Date.parse(`${dueOn}T00:00:00Z`);
   const now = Date.parse(`${today}T00:00:00Z`);
   if (Number.isNaN(due) || Number.isNaN(now)) return dueOn;
 
   const days = Math.round((due - now) / 86_400_000);
-  if (days === 0) return "Due today";
-  if (days === 1) return "Due tomorrow";
-  if (days === -1) return "Due yesterday";
-  if (days > 1) return `Due in ${days} days`;
-  return `${Math.abs(days)} days overdue`;
+
+  // Today, tomorrow and yesterday are their own words in every language this
+  // ships in — not "in 1 day" and not "1 day overdue". Rule 2's sentence about
+  // number agreement, arriving as a vocabulary question rather than a plural
+  // one: some counts have a name, and a language that has the name uses it.
+  if (days === 0) return t("homework.due.today");
+  if (days === 1) return t("homework.due.tomorrow");
+  if (days === -1) return t("homework.due.yesterday");
+
+  // ...and past that the count and the noun are one sentence, so `t.plural`
+  // picks both. English needs "days"; Urdu's plural rule is not English's, and
+  // neither is derivable from a stem.
+  return days > 1
+    ? t.plural("homework.due.inDays", days)
+    : t.plural("homework.due.overdue", Math.abs(days));
 }
 
 /** Today where the school is, not where Vercel is. */

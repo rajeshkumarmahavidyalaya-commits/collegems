@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { hasPermission } from "@/lib/auth/permissions";
 import { runStatusLabel } from "@/lib/validations/hr";
 import { formatMonth } from "@/lib/i18n/format";
-import { getLocale } from "@/lib/i18n/server";
+import { getLocale, getT } from "@/lib/i18n/server";
 import { getPayslipLines, getRegister, getRun } from "../actions";
 import { RunRegister } from "./run-register";
 
@@ -19,6 +19,7 @@ export default async function PayrollRunPage({
 }) {
   const { runId } = await params;
   const locale = await getLocale();
+  const t = await getT();
 
   const [run, rows, canProcess] = await Promise.all([
     getRun(runId),
@@ -43,7 +44,7 @@ export default async function PayrollRunPage({
         <div className="flex flex-wrap items-center gap-2">
           <h1 className="text-2xl font-semibold">{formatMonth(run.periodMonth, locale)}</h1>
           <Badge variant={run.status === "finalised" ? "default" : "secondary"}>
-            {runStatusLabel(run.status)}
+            {runStatusLabel(run.status, t)}
           </Badge>
         </div>
         {run.note && <p className="text-sm text-muted-foreground">{run.note}</p>}

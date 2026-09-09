@@ -502,3 +502,77 @@ consequences of the same rule:
 
 **31 → 24** helpers still hardcoding English. Routes moved 1 kB or less
 (`/timetable` 224 → 225 kB, `/staff` and `/certificates` unchanged).
+
+### The money-and-stores batch, and two words that are not labels
+
+Twelve helpers, over the screens the office uses rather than the ones a family
+does: `hr.paymentMethodLabel`, `attendanceLabel`, `leaveStatusLabel` and
+`runStatusLabel`; `accounts.accountTypeLabel`, `voucherStatusLabel` and
+`sourceKindLabel`; `fees.frequencyLabel`; `concessions.kindLabel` and
+`statusLabel`; `inventory.movementLabel`; and `homework.dueLabel`. **42 keys in
+three languages**, 36 call sites, five pickers. Transport still out of the pass.
+
+**Three more name collisions, and all three are correctly separate** — which is
+the point, because the reflex on meeting a third `PAYMENT_METHODS` is to
+collapse it:
+
+| name | one module | the other |
+|---|---|---|
+| `PAYMENT_METHODS` | `hr` — four ways to pay a teacher | `fees-display` — seven ways to take a fee |
+| `ATTENDANCE_STATUSES` | `hr` — five, including `on_duty` | `attendance` — four; a child is never *on duty* |
+| `LEAVE_STATUSES` | `hr` — `rejected`, worded *"Refused"* | `student-leave` — `refused` |
+
+Same word, different vocabulary, so each got its own key prefix (`hr.method.*`,
+`hr.attendance.*`, `hr.leaveStatus.*`) rather than a shared one. A single
+`method.cash` key would have read correctly today and quietly tied a school's
+payroll wording to its fee-counter wording for ever.
+
+#### `.toLowerCase()` on a translated label is an English-only operation
+
+Two sites did it — the staff register's count strip (`3 present · 1 absent`) and
+the instalment warning (`No active period collects monthly fees`) — and the tell
+is what happens in the other two languages: **Hindi and Urdu have no letter
+case, so the call is a no-op in every locale except the one it was written
+for.** In Turkish it would be actively wrong. Both dropped; the strip reads
+`3 Present · 1 Absent`, which is what the badge beside it already said.
+
+#### `short` is a key on a keyboard, not a word on a screen
+
+The staff register marks a whole class from the keyboard: `P`, `A`, `H`, `L`,
+`D`, matched against `ATTENDANCE_STATUSES[].short`. `optionsFor` translates
+`label` and carries `short` and `tone` through untouched, which is exactly
+right — a Devanagari `short` has no key on the keyboard the school actually
+types on. So the button row and the count strip read the translated list and
+`onKeyDown` deliberately still reads the raw constant, with a comment saying so
+at the point where somebody would otherwise "fix" the inconsistency.
+
+And one that is not a value: `attendanceLabel(null)` returns *"Not marked"*.
+Its key is `hr.attendance.unmarked`, outside the value namespace on purpose —
+`null` is the absence of a status, not a status, and a key that sat beside
+`present` and `absent` would invite somebody to add it to the constant.
+
+#### What it weighs, measured on all 83 routes
+
+`npm run build` on the tree before and after, diffed route by route:
+
+- **56 of 83 routes moved, every one by 1–2 kB** — including `/login`,
+  `/library/members` and `/transport`, which this batch never touched. That is
+  the catalogue: **one chunk of 56.9 kB raw**
+  (`.next/static/chunks/6174-*.js`, the only file containing
+  `hr.attendance.present`), pulled into every route that calls `useI18n()` on
+  the client. 42 keys × 3 languages is the 1–2 kB.
+- **`/hr` moved 156 → 172 kB**, and it is the only route that moved more than
+  2 kB. Nothing about it is heavier than the rest: `attendance-register.tsx` was
+  the route's *first* client-side i18n consumer, so the whole catalogue chunk
+  arrived at once.
+- **First Load JS shared by all is 103 kB before and after.** The catalogue is
+  not in it.
+
+> **Translating one badge is nearly free on a route that already speaks, and
+> costs the whole catalogue on a route that does not.** The bargain is worth
+> naming rather than discovering: splitting the catalogue per module is a real
+> option this codebase has not taken, and the day to take it is when a light
+> route pays 16 kB for one word — not before.
+
+The staff register is a screen an office marks forty people on every morning,
+so `/hr` pays it. **24 → 12** helpers still hardcoding English.

@@ -136,7 +136,7 @@ function VoucherRowView({
   isOpen: boolean;
   onToggle: () => void;
 }) {
-  const { locale } = useI18n();
+  const { locale, t } = useI18n();
   const { formatCurrency } = useI18n();
   const { formatDate } = useI18n();
   const router = useRouter();
@@ -179,7 +179,7 @@ function VoucherRowView({
           <p className="text-sm">{voucher.narration ?? "—"}</p>
           <span className="mt-1 flex flex-wrap gap-1">
             <Badge variant={voucher.status === "posted" ? "default" : "outline"}>
-              {voucherStatusLabel(voucher.status)}
+              {voucherStatusLabel(voucher.status, t)}
             </Badge>
             {voucher.reversesVoucherId && (
               <Badge variant="outline" className="text-[10px]">
@@ -189,7 +189,7 @@ function VoucherRowView({
           </span>
         </TableCell>
         <TableCell className="text-muted-foreground">
-          {sourceKindLabel(voucher.sourceKind)}
+          {sourceKindLabel(voucher.sourceKind, t)}
         </TableCell>
         <TableCell className="text-end font-mono tabular-nums">
           {formatCurrency(voucher.total)}

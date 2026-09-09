@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { createTranslator } from "@/lib/i18n/translate";
 import {
   collectsSentence,
   FEE_FREQUENCIES,
@@ -6,6 +7,8 @@ import {
   instalmentSchema,
   uncollectedFrequencies,
 } from "@/lib/validations/fees";
+
+const t = createTranslator("en");
 
 /**
  * Billing periods, browser half.
@@ -37,8 +40,8 @@ describe("the frequency vocabulary", () => {
   });
 
   it("labels a frequency, and leaves an unknown one alone", () => {
-    expect(frequencyLabel("one_time")).toBe("One time");
-    expect(frequencyLabel("fortnightly")).toBe("fortnightly");
+    expect(frequencyLabel("one_time", t)).toBe("One time");
+    expect(frequencyLabel("fortnightly", t)).toBe("fortnightly");
   });
 });
 

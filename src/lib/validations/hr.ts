@@ -1,4 +1,6 @@
 import { z } from "zod";
+import { labelFor, optionsFor } from "./labels";
+import type { Translator } from "@/lib/i18n/translate";
 
 /**
  * Phase 2.3 — staff attendance, leave, and payroll.
@@ -190,8 +192,11 @@ export const paymentSchema = z.object({
 });
 export type PaymentInput = z.infer<typeof paymentSchema>;
 
-export function paymentMethodLabel(value: string) {
-  return PAYMENT_METHODS.find((m) => m.value === value)?.label ?? value;
+// Not `fees-display.PAYMENT_METHODS`: a school pays its staff by four means
+// and collects fees by seven. Same name, different vocabulary, different keys.
+export function paymentMethodLabel(value: string, t: Translator) {
+  const found = PAYMENT_METHODS.find((m) => m.value === value);
+  return found ? labelFor(`hr.method.${value}`, found.label, t) : value;
 }
 
 export const payslipEditSchema = z.object({
@@ -265,9 +270,18 @@ export function formatOverrides(overrides: Record<string, unknown> | null | unde
 // Display helpers
 // ---------------------------------------------------------------------------
 
-export function attendanceLabel(value: string | null) {
-  if (!value) return "Not marked";
-  return ATTENDANCE_STATUSES.find((s) => s.value === value)?.label ?? value;
+// The null branch is not a status. "Nobody marked this person" and "this
+// person was absent" are different facts and the register must not collapse
+// them -- rule 11's three-states rule, in one helper.
+export function attendanceLabel(value: string | null, t: Translator) {
+  if (!value) return t("hr.attendance.unmarked");
+  const found = ATTENDANCE_STATUSES.find((s) => s.value === value);
+  return found ? labelFor(`hr.attendance.${value}`, found.label, t) : value;
+}
+
+/** The same five, for the register's button row. `short` and `tone` survive. */
+export function attendanceStatusOptions(t: Translator) {
+  return optionsFor(ATTENDANCE_STATUSES, "hr.attendance", t);
 }
 
 export function attendanceTone(value: string | null) {
@@ -275,12 +289,14 @@ export function attendanceTone(value: string | null) {
   return ATTENDANCE_STATUSES.find((s) => s.value === value)?.tone ?? "muted";
 }
 
-export function leaveStatusLabel(value: string) {
-  return LEAVE_STATUSES.find((s) => s.value === value)?.label ?? value;
+export function leaveStatusLabel(value: string, t: Translator) {
+  const found = LEAVE_STATUSES.find((s) => s.value === value);
+  return found ? labelFor(`hr.leaveStatus.${value}`, found.label, t) : value;
 }
 
-export function runStatusLabel(value: string) {
-  return RUN_STATUSES.find((s) => s.value === value)?.label ?? value;
+export function runStatusLabel(value: string, t: Translator) {
+  const found = RUN_STATUSES.find((s) => s.value === value);
+  return found ? labelFor(`hr.runStatus.${value}`, found.label, t) : value;
 }
 
 /** `22` not `22.0`, `21.5` not `21.50`. Days are read, not computed with. */

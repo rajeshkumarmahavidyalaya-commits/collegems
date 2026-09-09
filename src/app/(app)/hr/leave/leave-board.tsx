@@ -193,7 +193,7 @@ function RequestRow({
   canDecide: boolean;
   today: string;
 }) {
-  const { formatDate } = useI18n();
+  const { formatDate, t } = useI18n();
   const router = useRouter();
   const [pending, startTransition] = useTransition();
 
@@ -272,7 +272,7 @@ function RequestRow({
                 : "outline"
           }
         >
-          {leaveStatusLabel(request.status)}
+          {leaveStatusLabel(request.status, t)}
         </Badge>
         {request.decisionNote && (
           <p className="mt-1 max-w-[16rem] text-xs text-muted-foreground">

@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { createTranslator } from "@/lib/i18n/translate";
 import {
   awardConcessionSchema,
   concessionSentence,
@@ -9,6 +10,8 @@ import {
   statusLabel,
   statusTone,
 } from "@/lib/validations/concessions";
+
+const t = createTranslator("en");
 
 /**
  * Concessions' client half, without a database.
@@ -38,7 +41,7 @@ describe("what a concession says it is", () => {
 
   it("labels every kind the database allows", () => {
     for (const kind of CONCESSION_KINDS) {
-      expect(kindLabel(kind)).not.toBe(kind);
+      expect(kindLabel(kind, t)).not.toBe(kind);
     }
   });
 });
@@ -69,8 +72,8 @@ describe("whether an award is doing anything today", () => {
 
 describe("status", () => {
   it("says withdrawn rather than revoked, and never relies on colour", () => {
-    expect(statusLabel("revoked")).toBe("Withdrawn");
-    expect(statusLabel("active")).toBe("Active");
+    expect(statusLabel("revoked", t)).toBe("Withdrawn");
+    expect(statusLabel("active", t)).toBe("Active");
     expect(statusTone("revoked")).toBe("secondary");
     expect(statusTone("active")).toBe("success");
   });
