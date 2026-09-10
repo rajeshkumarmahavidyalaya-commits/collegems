@@ -8385,6 +8385,31 @@ export type Database = {
           issue_id: string
         }[]
       }
+      platform_am_i_an_operator: { Args: never; Returns: boolean }
+      platform_colleges: {
+        Args: never
+        Returns: {
+          created_at: string
+          last_activity: string
+          logins: number
+          name: string
+          over_limit: boolean
+          plan_code: string
+          plan_status: string
+          slug: string
+          staff: number
+          staff_limit: number
+          student_limit: number
+          students: number
+          tenant_id: string
+          timezone: string
+          trial_ends_on: string
+        }[]
+      }
+      platform_set_plan: {
+        Args: { p_plan_code: string; p_status?: string; p_tenant_id: string }
+        Returns: Json
+      }
       platform_slug_available: { Args: { p_slug: string }; Returns: boolean }
       platform_start_school: {
         Args: {

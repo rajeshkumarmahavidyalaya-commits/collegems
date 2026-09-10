@@ -449,6 +449,63 @@ And the thing it refuses, which matters more than what it builds:
 
 See `docs/modules/saas.md`.
 
+### …and it was built on exactly those terms
+
+The paragraph above is the specification, and `0209` met it. What made it
+possible without touching one policy:
+
+> **An operator has a login and no tenant.** `current_tenant_id()` is null for
+> them, so every RLS policy in `public` — all sixty — already refuses them every
+> row. An operator is, to the rest of the database, the tenantless caller rule 3
+> calls *"the correct failure mode"*.
+
+So nothing was weakened. Probed as a signed-in operator through PostgREST:
+`platform_colleges()` returns 2 colleges, and `students`, `people`,
+`ledger_entries` and `subscriptions` return **0, 0, 0, 0**. A direct
+`select * from platform.operators` is `permission denied for schema platform` —
+`revoke all on schema platform` means even an operator reaches the operator
+tables through nothing but the definer functions. As a college principal, both
+operator functions refuse.
+
+Five things generalise, and the last one is about the guard rather than the
+schema:
+
+- **Metadata only, and not by a `where` clause.** Colleges, plans, usage counts,
+  health — no student, guardian, invoice or mark is *in the projection*. That is
+  what makes the cost of a mistake here **counts** rather than **children**.
+  "Is this college alive" is `max(audit_log.created_at)`: the timestamp of the
+  last audited change, never the change itself.
+- **The refusal says nothing.** The same flat *"This is not available."* to a
+  principal, a student and a stranger — a message that distinguished them would
+  be a way of asking which addresses are operator accounts. The page carries the
+  other half: `listColleges()` returns `College[] | null`, because *you should
+  not be here* and *there are no customers yet* are different screens.
+- **Log before answering.** `require_operator()` writes the access-log row and
+  then the function produces its answer, so a query that errors part-way still
+  records that somebody asked. `platform.access_log` is append-only by **revoke**
+  (rule 6's stronger shape). The routing check `platform_am_i_an_operator()` is
+  deliberately *not* logged — an access log padded with routing is one nobody
+  reads.
+- **An operator may not also own a college.** `platform_start_school` authorises
+  on *"the caller has no tenant"*, and an operator has no tenant, so without a
+  second predicate they could found a college and hold both identities at once.
+  **Dual identity in an authorisation system is how a boundary quietly stops
+  being one.** Refused in a sentence.
+- **A guard that a `--` disarms reports on the prose, not the schema.**
+  `tests/platform/operator-boundary.test.ts` reads the migrations for four
+  properties — no grant into `platform`, no operator check inside a policy, every
+  `public.platform_*` function calling `require_operator()`, the access log
+  keeping its revoke. Each was verified by planting the violation. The fourth
+  passed on a **commented-out** revoke until the check learned to strip comments
+  first.
+
+And what it still refuses: **support impersonation**. Entering a college and
+seeing what a principal sees needs consent, a time limit and an audit trail the
+college itself can read — a migration that argues for itself, never a quiet
+`or is_operator()` added to sixty policies.
+
+See `docs/modules/platform.md`.
+
 ### A tier is who you are; the matrix is what you may do
 
 Six roles have existed since `0005` and they are genuinely different — measured

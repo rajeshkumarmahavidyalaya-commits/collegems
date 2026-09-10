@@ -237,14 +237,29 @@ that is plausible for the wrong school.**
 definition. Nothing in `0205` or `0206` creates a role, a policy exception, or a
 definer read model that can see two tenants at once.
 
-When that console is built it needs its own decision, its own schema and its own
-guard — not a quiet exception bolted onto a subscriptions table. The cheap
-version of it is the one that puts a hole in every other rule in this file.
+> When that console is built it needs its own decision, its own schema and its
+> own guard — not a quiet exception bolted onto a subscriptions table. The cheap
+> version of it is the one that puts a hole in every other rule in this file.
+
+**It was built, on those terms** — migration `0209`, `docs/modules/platform.md`.
+Its own schema (`platform`, revoked from every role a person holds), its own
+guard (`tests/platform/operator-boundary.test.ts`), and the property that made
+it possible without touching a single policy: an operator **belongs to no
+tenant**, so `current_tenant_id()` is null for them and all sixty policies
+already refuse them every row. Metadata only — counts and plans, no student,
+fee or mark anywhere in the projection. The paragraph above stands as written;
+this is what meeting it cost.
 
 **Self-serve plan changes.** `/settings/plan` lists the other plans and says
 plainly that changing is not self-serve yet, rather than drawing a button that
 does nothing. Rule 10's instinct: an honest skip beats a queue that can never
 drain.
+
+…and *"get in touch"* is only honest if somebody can then act on it, so
+`platform_set_plan` is the other half of that sentence. A screen that asks a
+college to write in, to a product where nobody could change the answer, is the
+failure this codebase keeps naming — a correct read path with no write path
+behind it.
 
 **Billing.** `subscriptions` carries `provider`, `provider_customer_id` and
 `provider_subscription_id` and nothing writes them yet. When Razorpay

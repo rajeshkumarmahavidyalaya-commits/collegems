@@ -19,6 +19,25 @@ const PUBLIC_PATHS = ["/login", "/signup", "/auth", "/api/health"];
  */
 const TENANTLESS_PATH = "/start";
 
+/**
+ * Where a platform operator works.
+ *
+ * An operator has a login and **no tenant** — that is the property the whole
+ * design rests on, because it means every RLS policy in `public` already
+ * refuses them every row. But it also means the redirect above would send them
+ * to `/start` and invite them to found a college, which
+ * `platform_start_school` now refuses outright ("this login runs the platform
+ * and cannot own a college on it").
+ *
+ * So `/platform` is reachable by a signed-in session with no tenant, and the
+ * middleware does not try to decide whether this *particular* tenantless
+ * session is an operator: that would be a database round trip in front of every
+ * request, and it would be the wrong place for the decision anyway. The gate is
+ * `platform.require_operator()` inside each definer function, and the page
+ * merely renders what it is allowed to fetch. Routing is not authorization.
+ */
+const OPERATOR_PATH = "/platform";
+
 /** Not an error: "this request has no session and never claimed to". */
 class SignedOut extends Error {}
 
@@ -131,7 +150,11 @@ export async function middleware(request: NextRequest) {
   // is minted before the tenant exists, so a caller who does not refresh keeps
   // arriving back here with a school that is already built.
   if (user && !user.app_metadata?.tenant_id) {
-    if (pathname !== TENANTLESS_PATH && !isPublicPath(pathname)) {
+    const allowedWithoutTenant =
+      pathname === TENANTLESS_PATH ||
+      pathname === OPERATOR_PATH ||
+      pathname.startsWith(`${OPERATOR_PATH}/`);
+    if (!allowedWithoutTenant && !isPublicPath(pathname)) {
       return NextResponse.redirect(new URL(TENANTLESS_PATH, request.url));
     }
   } else if (user && pathname === TENANTLESS_PATH) {
