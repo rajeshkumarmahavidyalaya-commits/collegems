@@ -262,7 +262,14 @@ failure this codebase keeps naming — a correct read path with no write path
 behind it.
 
 **Billing.** `subscriptions` carries `provider`, `provider_customer_id` and
-`provider_subscription_id` and nothing writes them yet. When Razorpay
+`provider_subscription_id` and nothing writes them yet.
+
+…**and migrations `0214`–`0217` built it**, on the shape described just below.
+The one thing that paragraph did not anticipate is that the platform charging a
+college is a **different merchant account** from a college charging a family, so
+it is a second pair of Edge Functions with `PLATFORM_RAZORPAY_*` secrets rather
+than a reuse of the first. See `docs/modules/billing.md`.
+ When Razorpay
 subscriptions are wired in, the callback copies the shape rule 6 already
 established for `fees_settle_gateway_payment`: `SECURITY DEFINER`, narrow,
 revoked from `public`, `anon` **and** `authenticated`, idempotent on the

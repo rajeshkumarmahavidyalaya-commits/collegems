@@ -1,9 +1,11 @@
-import { CircleAlert, Users } from "lucide-react";
+import { CircleAlert, ExternalLink, Users } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { createClient } from "@/lib/supabase/server";
 import { formatCurrency, formatDate } from "@/lib/i18n/format";
 import { getLocale } from "@/lib/i18n/server";
+import { hasPermission } from "@/lib/auth/permissions";
+import { UpgradeButton } from "./upgrade-button";
 
 export const metadata = { title: "Plan" };
 
@@ -15,6 +17,17 @@ type Plan = {
   price_minor: number | null;
   bill_every: string;
   limits: Record<string, number>;
+  /** Has an id at the payment provider, so a checkout can be started (0217). */
+  purchasable?: boolean;
+};
+
+/** The college's own open checkout, if it has one. At most one exists. */
+type Checkout = {
+  id: string;
+  plan_code: string;
+  status: string;
+  checkout_url: string | null;
+  expires_at: string;
 };
 type Overview = {
   subscription: {
@@ -26,6 +39,7 @@ type Overview = {
   plan: Plan | null;
   usage: Usage[];
   available: Plan[];
+  checkout: Checkout | null;
 };
 
 const RESOURCE_LABEL: Record<string, string> = {
@@ -44,6 +58,14 @@ export default async function PlanPage() {
   const plan = overview.plan ?? null;
   const rows = overview.usage ?? [];
   const available = overview.available ?? [];
+  const checkout = overview.checkout ?? null;
+
+  // `users.manage`, the same permission subscription_start_checkout checks —
+  // committing a college to a monthly charge is the same kind of act as
+  // deciding who may sign in. It is not the gate: that function is DEFINER over
+  // a table with no write policy and does its own check, so a teacher pressing
+  // this is refused by Postgres.
+  const canBuy = await hasPermission("users.manage");
 
   return (
     <div className="flex flex-col gap-6">
@@ -160,15 +182,47 @@ export default async function PlanPage() {
         </CardContent>
       </Card>
 
+      {checkout && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">A change is part-way through</CardTitle>
+            <CardDescription>
+              {/* Shown rather than silently superseded: starting again is
+                  allowed and supersedes this one, but somebody who left a
+                  payment page open in another tab should be given it back
+                  rather than made to create a second subscription. */}
+              Somebody asked to move this college to{" "}
+              <span className="font-medium">{checkout.plan_code}</span>. Nothing has been charged
+              yet.
+            </CardDescription>
+          </CardHeader>
+          {checkout.checkout_url && (
+            <CardContent>
+              <a
+                href={checkout.checkout_url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1.5 text-sm underline underline-offset-4"
+              >
+                <ExternalLink className="size-4" aria-hidden="true" />
+                Open the payment page
+              </a>
+            </CardContent>
+          )}
+        </Card>
+      )}
+
       {available.length > 0 && (
         <Card>
           <CardHeader>
             <CardTitle className="text-base">Other plans</CardTitle>
             <CardDescription>
-              {/* Honest about what is not built yet, rather than drawing a button
-                  that does nothing. Rule 10's instinct: a queue that can never
-                  drain is worse than an honest skip. */}
-              Changing plan is not self-serve yet — tell us which one and we will move you.
+              {/* Was "not self-serve yet", which was honest while nothing could
+                  take the money. Migration 0214 built the half that can, so the
+                  sentence had to move with it — and a plan with no id at the
+                  provider still draws no button rather than one that refuses. */}
+              Moving to a paid plan opens a payment page. Nothing changes until the first payment
+              clears.
             </CardDescription>
           </CardHeader>
           <CardContent className="grid gap-3 sm:grid-cols-3">
@@ -194,6 +248,14 @@ export default async function PlanPage() {
                   ) : null}
                 </p>
                 <p className="mt-1 text-xs text-muted-foreground">{p.description}</p>
+
+                {canBuy && p.code !== sub?.plan_code && (
+                  <UpgradeButton
+                    planCode={p.code}
+                    planName={p.name}
+                    purchasable={p.purchasable === true}
+                  />
+                )}
               </div>
             ))}
           </CardContent>

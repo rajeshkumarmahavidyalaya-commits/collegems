@@ -5694,6 +5694,115 @@ export type Database = {
           },
         ]
       }
+      subscription_checkouts: {
+        Row: {
+          checkout_url: string | null
+          created_at: string
+          created_by: string | null
+          expires_at: string
+          failure_reason: string | null
+          id: string
+          plan_code: string
+          provider: string
+          provider_subscription_id: string | null
+          status: string
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          checkout_url?: string | null
+          created_at?: string
+          created_by?: string | null
+          expires_at?: string
+          failure_reason?: string | null
+          id?: string
+          plan_code: string
+          provider?: string
+          provider_subscription_id?: string | null
+          status?: string
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          checkout_url?: string | null
+          created_at?: string
+          created_by?: string | null
+          expires_at?: string
+          failure_reason?: string | null
+          id?: string
+          plan_code?: string
+          provider?: string
+          provider_subscription_id?: string | null
+          status?: string
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "subscription_checkouts_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      subscription_invoices: {
+        Row: {
+          amount_minor: number
+          created_at: string
+          currency: string
+          id: string
+          occurred_at: string
+          period_end: string
+          period_start: string
+          plan_code: string
+          provider: string
+          provider_event_id: string
+          provider_payment_id: string | null
+          status: string
+          tenant_id: string
+        }
+        Insert: {
+          amount_minor: number
+          created_at?: string
+          currency?: string
+          id?: string
+          occurred_at?: string
+          period_end: string
+          period_start: string
+          plan_code: string
+          provider?: string
+          provider_event_id: string
+          provider_payment_id?: string | null
+          status: string
+          tenant_id: string
+        }
+        Update: {
+          amount_minor?: number
+          created_at?: string
+          currency?: string
+          id?: string
+          occurred_at?: string
+          period_end?: string
+          period_start?: string
+          plan_code?: string
+          provider?: string
+          provider_event_id?: string
+          provider_payment_id?: string | null
+          status?: string
+          tenant_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "subscription_invoices_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       subscriptions: {
         Row: {
           created_at: string
@@ -9144,6 +9253,23 @@ export type Database = {
           message: string
           severity: string
         }[]
+      }
+      subscription_settle_provider_event: {
+        Args: {
+          p_amount_minor?: number
+          p_event: string
+          p_period_end?: string
+          p_period_start?: string
+          p_provider: string
+          p_provider_event_id: string
+          p_provider_payment_id?: string
+          p_provider_subscription_id: string
+        }
+        Returns: Json
+      }
+      subscription_start_checkout: {
+        Args: { p_plan_code: string }
+        Returns: Json
       }
       subscription_usage: {
         Args: never

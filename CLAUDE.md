@@ -1419,6 +1419,52 @@ callback-driven write, copy that shape: definer, narrow, revoked from people,
 and taking its authority from a row this system wrote rather than from the
 callback body.
 
+**And there are two flows of money, in opposite directions.** The sentence above
+is about a **college charging a family**. The platform charging a college is the
+other one, and it is a *different merchant account*:
+
+> Two flows of money in opposite directions must not share a secret. A signature
+> bug in the fee webhook would then also be a signature bug in the one that
+> decides whether a school keeps its subscription — and a college's own merchant
+> credentials would be collecting the platform's revenue.
+
+So `PLATFORM_RAZORPAY_KEY_ID`, `_KEY_SECRET` and `_WEBHOOK_SECRET` live on their
+own two Edge Functions (`platform-subscription-link`,
+`platform-subscription-webhook`), and `tests/platform/billing-boundary.test.ts`
+reads the source in both directions — plus that each webhook verifies the
+signature **before** `JSON.parse`, fails closed on a missing secret, and never
+converts the amount. Each verified by planting the violation.
+
+Two things the module itself is worth copying for:
+
+- **The callback is trusted for almost nothing.** The amount is re-read from
+  `reference.plans` and a mismatch is refused, so a forged body cannot decide
+  what a college paid. Probed: `charged` with the wrong amount refused by name;
+  the correct one applied; **the same event redelivered wrote 1 invoice, not
+  2**; and the settle function is `permission denied` to everybody holding a
+  JWT, an administrator included.
+- **A control that will refuse you is worse than no control**, because it costs
+  the person the work of trying. `subscription_overview()` therefore reports
+  `purchasable` per plan, and an unmapped plan draws no button — the third
+  instance of that defect in a week, after a teacher taken through a whole
+  certificate form to meet a Postgres error and an accountant shown every
+  schedule switch and refused on each.
+
+And one about writing migrations, met twice in three of them:
+
+> **A comment describing what a migration *ought* to contain reads exactly like
+> one describing what it does.** `0214`'s header said *"see
+> `subscription_problems()` below"* and there was no such thing below; the same
+> header claimed rule 9's audit exemption, and `audit_guard_violations()`
+> disagreed by name in the same session. **If a comment names a function, open
+> it** — and the precedent settles the second one against the comment:
+> `ledger_entries` and `stock_movements` are both append-only by revoke and both
+> **audited**, because the log records *inserts* too. Append-only is not the
+> exemption test; *the row is the record* is, and a money row fails it — a read
+> receipt has nobody to name, a charge does. Corrections in `0215` and `0216`.
+
+See `docs/modules/billing.md`.
+
 The scheduler needed the same shape and made the boundary of it explicit.
 `notify_send_for` takes the tenant as an argument and is revoked from everybody
 holding a JWT; `notify_send` is now a thin wrapper doing the admin check — one
