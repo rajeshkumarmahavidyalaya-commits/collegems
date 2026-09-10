@@ -153,6 +153,83 @@ never an empty progress bar.
 
 ---
 
+## A trial that never ends is a free product
+
+`0205` wrote `trial_ends_on = current_date + 30` and `status = 'trialing'`, and
+then **nothing anywhere read that date again**. Thirty days later the school
+keeps its fifty children for ever, and the only way anybody finds out is by
+looking.
+
+That is this codebase's own recurring shape, arriving one migration after being
+written down: a column that records an intention, with no executable half.
+`ends_on` on a bus seat was the same mistake (rule 2); so was
+`fee_structures.frequency`, stored for seventy migrations and never acted on.
+
+`0207` is the missing two thirds.
+
+### The write half runs on a timer, and it is the timer that already exists
+
+`subscription_expire_trials()` moves a lapsed trial to `expired`. It passes rule
+7's test for scheduled work cleanly — *whether thirty days have elapsed is
+arithmetic, with nobody's authority in it* — so it takes the `notify_send_for`
+shape: `SECURITY DEFINER`, revoked from `public`, `anon` **and**
+`authenticated`.
+
+It is called from `schedule-tick`, not from a Postgres cron job. That function
+already exists to be woken every fifteen minutes as the service role across
+every school, and **a second timing mechanism is a second place to look when
+something did not run**. Its failure is reported in the response and is
+deliberately not fatal: a provider outage on the housekeeping must not stop four
+hundred parents being told their children were absent.
+
+### What `expired` does, stated rather than left in a boolean
+
+`0205`'s trigger read the plan's limits and ignored the status, so an expired
+trial was indistinguishable from a live one. Now:
+
+- **The school keeps everything.** Nothing is deleted, hidden or locked. Every
+  register, receipt and report reads exactly as before. A product that holds a
+  school's records hostage over a lapsed card is not one to trust with the
+  records.
+- **It cannot grow.** No new children, no new staff — the whole consequence,
+  reversible the moment somebody pays, and the message says so:
+  *"This school's trial has ended, so no more students can be added. Everything
+  already recorded stays exactly as it is, and adding resumes as soon as the
+  plan does."*
+- **`past_due` is not `expired`.** A card that failed on Tuesday is a bank, not
+  a decision. Only `expired` and `cancelled` refuse.
+
+### And a critic, because a date nobody is warned about is an ambush
+
+`subscription_problems()`, catalogued in `reference.checks` as
+`platform.subscription` so it is reachable — rule 11's *"a critic is only worth
+what it costs to reach it"*. Gated on `settings.manage` by migration `0189`'s
+rule: a critic is addressed to somebody who can act on it, and a class teacher
+cannot choose a plan.
+
+Every branch clears rule 12's bar — *is somebody going to have to do something
+about it* — and is silent until it does. Probed end to end on a school
+provisioned inside a rolled-back transaction:
+
+| step | result |
+|---|---|
+| fresh trial, 30 days out | **silent** |
+| usage as that admin | `staff 0/10, students 0/50` |
+| five days left | *"The trial ends on 15 Sep 2026. After that the roll is frozen where it is…"* |
+| lapsed, before the sweep | still `trialing` — nothing changes it until the sweep runs |
+| the sweep | `1 subscription(s)` expired |
+| admit after expiry | refused, with the sentence above |
+| the demo school | `premium/active`, untouched |
+
+**The first run of that probe reported 303 students against a school with
+none** — because it did `reset role` before setting the JWT claims, so
+`subscription_usage()` ran as `postgres`, RLS was bypassed, and it counted every
+student in the database. That is precisely the trap `CLAUDE.md` documents about
+`DO` blocks under the performance rule, and it produced a plausible number
+rather than an error. The design was right; the instrument was not. **Probe as
+`authenticated` with the claims set, every time — and be suspicious of a number
+that is plausible for the wrong school.**
+
 ## What this deliberately does not build
 
 **A platform-operator console.** Reading across tenants is the single thing rule

@@ -9098,7 +9098,16 @@ export type Database = {
           student_id: string
         }[]
       }
+      subscription_expire_trials: { Args: never; Returns: number }
       subscription_overview: { Args: never; Returns: Json }
+      subscription_problems: {
+        Args: never
+        Returns: {
+          key: string
+          message: string
+          severity: string
+        }[]
+      }
       subscription_usage: {
         Args: never
         Returns: {

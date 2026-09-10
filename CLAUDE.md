@@ -415,6 +415,30 @@ Three things generalise from building it:
   Probed: a member's `update` touches **0 rows**, which is the count rule 6 says
   to assert rather than the error it does not raise.
 
+**And `0205` shipped the same mistake it was fixing, one layer down.** It wrote
+`trial_ends_on = current_date + 30` and then nothing anywhere read that date
+again — a column recording an intention with no executable half, exactly like
+`ends_on` on a bus seat (rule 2) and `fee_structures.frequency` (rule 6).
+**A trial that never ends is a free product.** `0207` adds the write half
+(`subscription_expire_trials()`, called from `schedule-tick` because a second
+timing mechanism is a second place to look when something did not run) and the
+critic (`subscription_problems()`, catalogued so it is reachable).
+
+Two things about it worth carrying:
+
+- **What an expired plan does is a product decision, so it is stated rather than
+  left in a boolean.** The school keeps everything — nothing deleted, hidden or
+  locked — and simply cannot grow: no new children, no new staff, reversible the
+  moment somebody pays, with the message saying so. `past_due` is deliberately
+  *not* `expired`: a card that failed on Tuesday is a bank, not a decision.
+- **The probe reported 303 students against a school with none.** It did
+  `reset role` before setting the JWT claims, so `subscription_usage()` ran as
+  `postgres`, RLS was bypassed, and it counted every student in the database.
+  The design was right; the instrument was not — and it produced a *plausible
+  number* rather than an error, which is the whole danger. The `DO`-block rule
+  under "measure as the caller" is not only about timings: **be suspicious of a
+  number that is plausible for the wrong tenant.**
+
 And the thing it refuses, which matters more than what it builds:
 
 > **A platform-operator console reads across tenants, and that is the one thing

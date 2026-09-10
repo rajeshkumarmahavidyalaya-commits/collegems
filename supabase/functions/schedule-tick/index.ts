@@ -82,6 +82,30 @@ Deno.serve(async (req) => {
   const totals = { ran: 0, missed: 0, failed: 0, notified: 0 };
   let remaining = 0;
 
+  // Platform housekeeping, before the per-school work.
+  //
+  // A trial ending is a fact about a date with nobody's authority in it, which
+  // is rule 7's test for something a scheduler may do. It lives here rather
+  // than in a Postgres cron job for the reason this function already exists:
+  // one thing that gets woken up, so there is one place to look when something
+  // did not run.
+  //
+  // It is one UPDATE over a table with a row per school, so it is bounded by
+  // the number of customers and needs no batching. Its failure is reported and
+  // NOT fatal -- a provider outage on the housekeeping must not stop four
+  // hundred parents being told their children were absent.
+  let trialsExpired = 0;
+  let housekeepingError: string | null = null;
+  {
+    const { data, error } = await supabase.rpc("subscription_expire_trials");
+    if (error) {
+      housekeepingError = error.message;
+      console.error("[schedule-tick] could not expire trials:", error.message);
+    } else {
+      trialsExpired = (data as number) ?? 0;
+    }
+  }
+
   while (totals.ran < MAX_OCCURRENCES && Date.now() - started < BUDGET_MS) {
     const { data, error } = await supabase.rpc("schedules_tick", {
       p_limit: BATCH,
@@ -109,6 +133,11 @@ Deno.serve(async (req) => {
   return json({
     ...totals,
     remaining,
+    trials_expired: trialsExpired,
+    // Reported rather than swallowed. A run that could not expire a trial is
+    // still a successful run for the schedules, and conflating the two is how
+    // a school stays on a free trial for a year without anybody noticing.
+    ...(housekeepingError ? { housekeeping_error: housekeepingError } : {}),
     // Said out loud, so the caller knows whether to invoke again rather than
     // guessing from a count that could mean either.
     truncated: remaining > 0,

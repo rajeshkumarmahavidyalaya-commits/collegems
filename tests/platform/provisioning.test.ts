@@ -81,14 +81,30 @@ describe("who may start a school", () => {
     expect(data?.length).toBe(1);
   });
 
-  it("cannot rewrite the price list", async () => {
-    // reference.plans has RLS off and writes revoked by GRANT -- the same shape
-    // as reference.permissions. The refusal is a privilege error, not a silent
-    // no-op, which is the distinction rule 6 draws between the two ways to be
-    // unwritable.
+  it("reads the plan catalogue through a function, because the schema is not exposed", async () => {
+    // Two independent things stop a client rewriting the price list, and it is
+    // worth being precise about which one does the work.
+    //
+    // The GRANT is the boundary: `reference.plans` has RLS off and INSERT,
+    // UPDATE and DELETE revoked from anon and authenticated, exactly like
+    // `reference.permissions`. Probed in SQL as `authenticated`, a write raises
+    // `42501 permission denied` -- so a caller who somehow reached the table
+    // still cannot change it.
+    //
+    // But a *PostgREST* client cannot reach it at all: `reference` is not an
+    // exposed schema, which is why every catalogue in it is read through a
+    // function (`report_list`, and now `subscription_overview`). That is also
+    // why this test cannot be written as `.schema("reference").from("plans")` --
+    // the generated types have no such relation, and TypeScript says so.
+    //
+    // So the assertion is the reachable path: the catalogue arrives, as data,
+    // through the one function that serves it.
     const client = await tenantAClient();
-    const { error } = await client.schema("reference").from("plans").update({ price_minor: 0 }).eq("code", "standard");
+    const { data, error } = await client.rpc("subscription_overview");
 
-    expect(error).not.toBeNull();
+    expect(error).toBeNull();
+    const overview = data as { available?: { code: string }[] } | null;
+    expect(Array.isArray(overview?.available)).toBe(true);
+    expect((overview?.available ?? []).length).toBeGreaterThan(0);
   });
 });
