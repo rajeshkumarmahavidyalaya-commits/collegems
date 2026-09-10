@@ -95,6 +95,7 @@ Deno.serve(async (req) => {
   // NOT fatal -- a provider outage on the housekeeping must not stop four
   // hundred parents being told their children were absent.
   let trialsExpired = 0;
+  let staleExpired = 0;
   let housekeepingError: string | null = null;
   {
     const { data, error } = await supabase.rpc("subscription_expire_trials");
@@ -103,6 +104,26 @@ Deno.serve(async (req) => {
       console.error("[schedule-tick] could not expire trials:", error.message);
     } else {
       trialsExpired = (data as number) ?? 0;
+    }
+  }
+  {
+    // The second piece of housekeeping, here for the same reason as the first:
+    // one thing that gets woken up. Rule 10 says a held channel keeps its
+    // queue, and 0218 adds the end of that sentence — a message is kept while
+    // it is still worth sending, per kind. Without this sweep, connecting a
+    // provider in March sends last September's results.
+    //
+    // Bounded by construction: one UPDATE over the queued rows whose kind has
+    // an interval, and a queue that has grown large is exactly the one that
+    // most needs clearing.
+    const { data, error } = await supabase.rpc("notify_expire_stale");
+    if (error) {
+      housekeepingError = housekeepingError
+        ? `${housekeepingError}; ${error.message}`
+        : error.message;
+      console.error("[schedule-tick] could not expire stale deliveries:", error.message);
+    } else {
+      staleExpired = (data as number) ?? 0;
     }
   }
 
@@ -134,6 +155,7 @@ Deno.serve(async (req) => {
     ...totals,
     remaining,
     trials_expired: trialsExpired,
+    stale_deliveries_expired: staleExpired,
     // Reported rather than swallowed. A run that could not expire a trial is
     // still a successful run for the schedules, and conflating the two is how
     // a school stays on a free trial for a year without anybody noticing.

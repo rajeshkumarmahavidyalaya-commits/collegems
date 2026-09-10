@@ -7194,6 +7194,7 @@ export type Database = {
         }
         Returns: string
       }
+      exams_announce_results: { Args: { p_exam_id: string }; Returns: Json }
       exams_attendance_summary: {
         Args: { p_session_id: string; p_student_id: string; p_upto?: string }
         Returns: {
@@ -7344,6 +7345,11 @@ export type Database = {
           section_label: string
           student_id: string
         }[]
+      }
+      fees_announce_invoice: { Args: { p_invoice_id: string }; Returns: Json }
+      fees_announce_payment: {
+        Args: { p_ledger_entry_id: string }
+        Returns: Json
       }
       fees_billable_lines: {
         Args: {
@@ -8298,6 +8304,7 @@ export type Database = {
           name: string
         }[]
       }
+      notify_expire_stale: { Args: { p_tenant_id?: string }; Returns: number }
       notify_inbox: {
         Args: { p_limit?: number; p_only_unread?: boolean }
         Returns: {

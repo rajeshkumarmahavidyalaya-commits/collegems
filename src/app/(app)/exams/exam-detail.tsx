@@ -626,7 +626,15 @@ function ResultsTab({
       const result = await publishExam(exam.id);
       if (!result.ok) toast.error(result.error);
       else {
-        toast.success(`Published ${result.data.frozen} results.`);
+        // Two facts, and they are allowed to differ: the results are frozen
+        // either way, and the announcement is a courtesy that can fail on its
+        // own. Saying only the first would let a school believe four hundred
+        // families were told when nobody was.
+        toast.success(
+          result.data.announcedTo === null
+            ? `Published ${result.data.frozen} results. Families were not notified — check Delivery log.`
+            : `Published ${result.data.frozen} results and told ${result.data.announcedTo} families.`,
+        );
         router.refresh();
       }
     });

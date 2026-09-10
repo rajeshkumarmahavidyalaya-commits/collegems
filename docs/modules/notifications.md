@@ -478,3 +478,154 @@ JWT-revoked twin of `notify_send`, in the `fees_settle_gateway_payment` shape �
 and `notify_send` is now a thin wrapper over the same body, so a scheduled
 message and a composed one are frozen, addressed and preference-checked by
 exactly the same code. See `docs/modules/schedules.md`.
+
+---
+
+## Nine events declared, four raised
+
+*Migrations `0218` and `0219`. Guard:
+`tests/notifications/events-have-raisers.test.ts`.*
+
+`reference.notification_types` declares nine events. Measured on the demo
+college before this work: **1 notification ever sent, 2 deliveries, 0 templates,
+0 preferences.** The dispatcher, five drivers, the WhatsApp template freeze, the
+delivery log and the channel settings are all built, and one screen calls them.
+
+Four events had a raiser — `attendance.absent`, `fees.due_reminder` and
+`library.book_overdue` through `schedule_run`, `notice.published` from the
+board, plus `general.announcement` from the compose screen. Five did not, and
+three of those are what a family actually waits for:
+
+| event | declared | raised by |
+|---|---|---|
+| `exam.results_published` | `0082` | nothing |
+| `fees.invoice_raised` | `0035` | nothing |
+| `fees.payment_received` | `0035` | nothing |
+
+### And the reason was not neglect
+
+`notify_resolve_audience` understood four kinds: `all`, `role`, `users`,
+`section`. **None of them could say "this child's family."**
+
+> A receipt is addressed to one family. It could not be expressed, so it was
+> never raised. **Look at what the audience can express before concluding a
+> module forgot to call the dispatcher.**
+
+`0219` adds a fifth kind, `students`, taking a list — a receipt is a list of
+one, an exam is the cohort that sat it, so there is one kind rather than a
+singular and a plural that will drift. Additive: every existing audience
+document keeps working, and the guard pins all five.
+
+It deliberately does **not** filter on `enrolments.status`. A receipt for a
+child who left last week is still that family's receipt; the other four kinds
+are about people who are here *now*, and narrowing a list the caller chose would
+be a second opinion about a decision somebody already made.
+
+### Three raisers, each somebody's act
+
+`notify_send` is `SECURITY DEFINER` with `current_role_code() = 'admin'`, and
+**an accountant taking a payment is not an administrator** — so the fee module
+could not call it at all. Rule 6 already says what to do: a narrower caller gets
+a narrower function answering only its own question.
+
+| function | gated on | audience |
+|---|---|---|
+| `fees_announce_payment(ledger_entry_id)` | `fees.collect` | that child's family |
+| `fees_announce_invoice(invoice_id)` | `fees.collect` | that child's family |
+| `exams_announce_results(exam_id)` | `exams.publish` | everyone with a frozen result row |
+
+**None takes a subject or a body from its caller.** A function that let a caller
+choose the words would be `notify_send` with a different name and without its
+admin check, which is how a teacher comes to send a message that looks like the
+principal's. Each reads its figures back from the row — a receipt cannot
+announce an amount that is not in the ledger — and each refuses a draft: an
+unissued invoice tells a family about a charge the office has not decided to
+make.
+
+Probed as five seats, and the college restored afterwards:
+
+| seat | result |
+|---|---|
+| teacher announcing a receipt | `42501 — Your role does not send fee receipts.` |
+| teacher announcing results | `42501 — Your role does not publish results.` |
+| **parent announcing their own receipt** | `42501 — Your role does not send fee receipts.` |
+| **accountant announcing a receipt** | ok — RC-2025-00001 |
+| accountant announcing an invoice | ok — IN-2025-00001 |
+| administrator announcing results | ok — 301 students |
+
+The accountant row is the point: that is the case `notify_send` could never
+serve.
+
+### A failed announcement is not a failed payment
+
+The notice board's rule, arriving at the counter. The receipt is the point and
+the text message is a courtesy, so a family with no login, a channel switched
+off or a provider that is down must not turn a recorded payment into an error on
+a screen where somebody is holding cash. The reason goes to the log rather than
+being swallowed, and `notification_deliveries` carries the per-recipient half.
+
+Publishing an exam says **both** facts on one toast — *"Published 42 results and
+told 40 families"*, or *"Families were not notified — check Delivery log"* —
+because saying only the first is how a school comes to believe four hundred
+parents were told.
+
+And it announces **once**, on the act. Re-publishing after a correction does not
+re-announce: `exams_announce_results` is its own call, so telling four hundred
+families a second time is a decision somebody makes rather than a side effect of
+fixing a typo.
+
+## …and a held queue is only kind while the message is worth sending
+
+Rule 10 says, as a feature, that a channel which is off keeps its queue — *"so
+connecting a provider in March sends February's reminders"*. That is right, and
+it had no end: `notify_claim_deliveries` bounded nothing by age.
+
+> A school that publishes results in September with SMS off, and connects Twilio
+> in March, texts four hundred families about last year's examination.
+
+Rule 7 drew exactly this distinction for **schedules** — *"each schedule carries
+its own `grace_minutes` because the right answer differs by kind"* — and never
+carried it to **deliveries**. One interval cannot serve an absence notice, a fee
+reminder and a set of results, so it is per event type, as data:
+
+| event | `stale_after` | why |
+|---|---|---|
+| `attendance.absent` | 2 days | it is about *today*; later it is a confusing text about a forgotten Tuesday |
+| `exam.results_published` | 14 days | by then the card has gone home |
+| `notice.published` | 30 days | the notice is still on the board; the pointer is not news |
+| everything else | **null** | a debt still owed is still worth a reminder, and a receipt is a record |
+
+Null is the conservative default (rule 12): a kind nobody has decided about
+keeps today's behaviour exactly.
+
+**Two halves**, because the sweep runs on a timer and the dispatcher does not.
+`notify_expire_stale()` marks them `expired` **with the reason on the row** —
+never deletes, because *"why did nothing go out"* must have an answer — and
+`notify_claim_deliveries` refuses a stale row directly, so switching a channel
+on at 09:00 does not send the backlog before the 09:05 tick can expire it.
+
+`in_app` is exempt and that is the point of the split: an in-app message is
+already `sent` at compose time. It sits in a list somebody opens when they open
+it, and a list is not a queue — nothing there is waiting on a provider, so
+nothing there can go stale.
+
+Probed, with three deliveries and the college restored:
+
+| | result |
+|---|---|
+| claimable before the sweep | **2 of 3** — the 40-day-old results one refused |
+| the 200-day-old **fee reminder** | still claimable, because its kind never goes stale |
+| the sweep | **1 expired**, carrying its reason |
+
+The second row is the control: this is per-kind, not a blanket age cap.
+
+## What is still not raised
+
+`message.received` is declared and raised by nothing, on purpose: there is no
+messaging feature — no table, no screen, no policy. The row is a placeholder for
+the day somebody builds one, and it is named in `NO_RAISER_ON_PURPOSE` with that
+reason rather than quietly excluded.
+
+Still unraised because their modules have no announcement decision yet: a
+homework publish, a hostel placement, a renewed bus seat, an overdue enquiry
+follow-up. Each is now one small definer function in the shape above.

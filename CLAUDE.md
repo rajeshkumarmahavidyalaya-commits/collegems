@@ -1810,6 +1810,83 @@ student inventing a message from the principal — which is why `notify_send` is
 `SECURITY DEFINER` with its own admin check. Do not "fix" this by granting
 admins INSERT. See `docs/modules/notifications.md`.
 
+### …and an event nothing raises is a catalogue entry, not a feature
+
+Everything above is machinery, and measured on the demo college it had **one
+caller**: 1 notification ever sent, 2 deliveries, 0 templates, 0 preferences.
+`reference.notification_types` declares nine events; five were written down and
+never sent, three of them the ones a family waits for — a bill, a receipt,
+results.
+
+**The reason was not neglect**, and it is the transferable part:
+
+> `notify_resolve_audience` understood `all`, `role`, `users` and `section`.
+> **None of them could say "this child's family."** A receipt is addressed to
+> one family, so it could not be expressed, so it was never raised. **Look at
+> what the audience can express before concluding a module forgot to call the
+> dispatcher.**
+
+`0219` adds `students`, taking a list — a receipt is a list of one, an exam is
+the cohort — so there is one kind rather than a singular and a plural that will
+drift, and every existing audience document keeps working.
+
+Four things:
+
+- **A narrower person needs a narrower function**, exactly as rule 6 says a
+  background job does. `notify_send` requires `current_role_code() = 'admin'`
+  and an accountant taking a payment is not an administrator, so the fee module
+  could not call it at all. `fees_announce_payment`, `fees_announce_invoice` and
+  `exams_announce_results` are definer, gated on `fees.collect` / `exams.publish`,
+  and each raises exactly one event. Probed as five seats: a teacher and a
+  **parent** are refused in a sentence, and the accountant — the case
+  `notify_send` could never serve — succeeds.
+- **A raiser writes its own words.** None takes a subject, a body or an audience
+  from its caller; that would be `notify_send` with a different name and without
+  its admin check. Figures are read back from the row, so a receipt cannot
+  announce an amount that is not in the ledger.
+- **A failed announcement is not a failed payment** — the notice board's rule at
+  the counter, where somebody is holding cash. Publishing an exam says *both*
+  facts on one toast (*"Published 42 results and told 40 families"*), because
+  saying only the first is how a school comes to believe four hundred parents
+  were told.
+- **The guard measured wrong twice before it measured right.** It read only the
+  migrations and reported `general.announcement` as an orphan — that one is
+  raised from TypeScript, by the compose screen. And its audience check anchored
+  on `lastIndexOf("function public.notify_resolve_audience")`, which finds the
+  `comment on function` *after* the body, so it failed on an `all` audience that
+  has been there since `0035`. A guard trusted at that point would have had a
+  live event deleted to satisfy it.
+
+#### …and a held queue is only kind while the message is worth sending
+
+*"A held channel keeps its queue"* is right and had no end: `notify_claim_deliveries`
+bounded nothing by age, so a college that published results in September with
+SMS off and connected Twilio in March would text four hundred families about
+last year's examination.
+
+> Rule 7 already drew this distinction for **schedules** — *"each schedule
+> carries its own `grace_minutes` because the right answer differs by kind"* —
+> and never carried it to **deliveries**.
+
+So `reference.notification_types.stale_after` is per kind and is data (rule 12):
+2 days for an absence notice, 14 for results, 30 for a notice, and **null —
+never stale — for a fee reminder and a receipt**, because a debt still owed is
+still worth a reminder. Null is also the conservative default, so a kind nobody
+has decided about keeps today's behaviour.
+
+Two halves, because the sweep runs on a timer and the dispatcher does not:
+`notify_expire_stale()` marks them `expired` **with the reason on the row**
+(never deletes — *"why did nothing go out"* must have an answer), and the claim
+refuses a stale row directly so switching a channel on at 09:00 does not send the
+backlog before the 09:05 tick. `in_app` is exempt because an in-app message is
+already `sent` at compose time: **a list is not a queue.**
+
+Probed: 2 of 3 claimable, the 40-day results delivery refused, **the 200-day fee
+reminder still claimable** — which is the control that proves this is per-kind
+rather than a blanket age cap.
+
+See `docs/modules/notifications.md`.
+
 ### A notice is not a notification
 
 The board is the module built on top of this one, and the line between them is

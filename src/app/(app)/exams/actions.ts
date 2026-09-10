@@ -569,13 +569,34 @@ export async function getResultSheet(
   }));
 }
 
-export async function publishExam(examId: string): Promise<ActionResult<{ frozen: number }>> {
+export async function publishExam(
+  examId: string,
+): Promise<ActionResult<{ frozen: number; announcedTo: number | null }>> {
   const supabase = await createClient();
   const { data, error } = await supabase.rpc("exams_publish", { p_exam_id: examId });
   if (error) return fail(error.message);
 
+  // `exam.results_published` was declared in 0082 and raised by nothing for
+  // 137 migrations. Publishing is the act it describes, so this is where it
+  // belongs — and it is non-fatal for rule 10's reason: **a failed
+  // announcement is not a failed publish.** The results are frozen either way;
+  // a school with no SMS credit must not be shown an error that reads as
+  // though the exam did not publish.
+  //
+  // Announced ONCE, on the act. Re-publishing after a correction does not
+  // re-announce: `exams_announce_results` is its own call, so telling four
+  // hundred families a second time is a decision somebody makes rather than a
+  // side effect of fixing a typo.
+  let announcedTo: number | null = null;
+  const announced = await supabase.rpc("exams_announce_results", { p_exam_id: examId });
+  if (announced.error) {
+    console.error("[exams] results were published but not announced:", announced.error.message);
+  } else {
+    announcedTo = (announced.data as { students?: number } | null)?.students ?? null;
+  }
+
   revalidatePath("/exams");
-  return { ok: true, data: { frozen: data ?? 0 } };
+  return { ok: true, data: { frozen: data ?? 0, announcedTo } };
 }
 
 export async function unpublishExam(examId: string): Promise<ActionResult<{ removed: number }>> {

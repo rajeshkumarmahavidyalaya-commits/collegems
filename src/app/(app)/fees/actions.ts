@@ -457,6 +457,42 @@ function fail(message: string): ActionResult<never> {
   return { ok: false, error: message };
 }
 
+/**
+ * Tell the family, and never let that stop the money.
+ *
+ * Rule 10's notice-board rule, arriving at the counter: **a failed
+ * announcement is not a failed payment.** The receipt is the point and the text
+ * message is a courtesy, so a family with no login, a channel switched off or a
+ * provider that is down must not turn a recorded payment into an error on a
+ * screen where somebody is holding cash.
+ *
+ * The reason is not swallowed either — it goes to the server log, which is
+ * where "we told four hundred parents" is checked when somebody doubts it.
+ * `notification_deliveries` carries the per-recipient half.
+ */
+async function announce(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  fn: "fees_announce_payment",
+  id: string,
+): Promise<void>;
+async function announce(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  fn: "fees_announce_invoice",
+  id: string,
+): Promise<void>;
+async function announce(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  fn: "fees_announce_payment" | "fees_announce_invoice",
+  id: string,
+): Promise<void> {
+  const { error } =
+    fn === "fees_announce_payment"
+      ? await supabase.rpc(fn, { p_ledger_entry_id: id })
+      : await supabase.rpc(fn, { p_invoice_id: id });
+
+  if (error) console.error(`[fees] ${fn} did not go out:`, error.message);
+}
+
 export async function recordPayment(input: unknown): Promise<ActionResult<{ receiptNumber: string | null }>> {
   const parsed = paymentSchema.safeParse(input);
   if (!parsed.success) {
@@ -475,6 +511,11 @@ export async function recordPayment(input: unknown): Promise<ActionResult<{ rece
   });
 
   if (error) return fail(error.message);
+
+  // `fees.payment_received` has been declared in the catalogue since 0035 and
+  // raised by nothing, because until 0219 no audience document could say
+  // "this child's family". Now it can.
+  if (data?.id) await announce(supabase, "fees_announce_payment", data.id as string);
 
   revalidatePath("/fees");
   revalidatePath(`/fees/students/${parsed.data.studentId}`);
@@ -565,6 +606,8 @@ export async function generateInvoice(input: unknown): Promise<ActionResult<{ in
   });
 
   if (error) return fail(error.message);
+
+  if (data?.id) await announce(supabase, "fees_announce_invoice", data.id as string);
 
   revalidatePath("/fees");
   revalidatePath(`/fees/students/${parsed.data.studentId}`);
