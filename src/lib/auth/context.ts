@@ -1,6 +1,9 @@
 import { cache } from "react";
 import { createClient } from "@/lib/supabase/server";
 
+/** The three audiences. The vocabulary lives in the CHECK on `roles.tier`. */
+export type RoleTier = "student" | "staff" | "principal";
+
 export type UserContext = {
   userId: string;
   email: string | null;
@@ -9,6 +12,16 @@ export type UserContext = {
   roleId: string;
   roleCode: string;
   roleName: string;
+  /**
+   * Which audience this login belongs to: `student`, `staff` or `principal`.
+   *
+   * For deciding what to SHOW — a landing page, a menu, how the person is
+   * described. **Never** for deciding what is allowed: that is
+   * `hasPermission()` and, underneath it, RLS. Rule 4's sentence is that the UI
+   * layer is never the gate, and this field looks enough like a gate that the
+   * warning belongs on the type rather than in a document.
+   */
+  roleTier: RoleTier;
   displayName: string;
   staffId: string | null;
   studentId: string | null;
@@ -45,7 +58,7 @@ export const getUserContext = cache(async (): Promise<UserContext | null> => {
     .from("user_profiles")
     .select(
       `tenant_id, role_id, staff_id, student_id, guardian_id,
-       roles ( code, name ),
+       roles ( code, name, tier ),
        people:person_id ( first_name, last_name ),
        tenants ( name )`,
     )
@@ -72,6 +85,10 @@ export const getUserContext = cache(async (): Promise<UserContext | null> => {
     roleId: profile.role_id,
     roleCode: role?.code ?? "",
     roleName: role?.name ?? "",
+    // A role with no tier cannot happen — the column is NOT NULL with a CHECK —
+    // but a null here would silently promote somebody, so it falls to the
+    // narrowest audience rather than the widest.
+    roleTier: (role?.tier as RoleTier | undefined) ?? "student",
     displayName: person ? `${person.first_name} ${person.last_name}` : (user.email ?? "Unknown"),
     staffId: profile.staff_id,
     studentId: profile.student_id,

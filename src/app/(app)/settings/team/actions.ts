@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { inviteSchema } from "@/lib/validations/platform";
+import type { RoleTier } from "@/lib/auth/context";
 import type { ActionResult } from "../../library/actions";
 
 export type InvitationRow = {
@@ -16,7 +17,7 @@ export type InvitationRow = {
   acceptedAt: string | null;
 };
 
-export type RoleOption = { id: string; code: string; name: string };
+export type RoleOption = { id: string; code: string; name: string; tier: RoleTier };
 
 /**
  * The pending and recent invitations for this school.
@@ -51,13 +52,26 @@ export async function listInvitations(): Promise<InvitationRow[]> {
   });
 }
 
+/**
+ * The roles somebody can be invited as, carrying the tier they belong to.
+ *
+ * The tier is here for one reason: to group the picker. "Which role?" is a list
+ * of six flat names, and "who is this login for?" is the question the person
+ * inviting is actually answering — a professor, somebody in the office, a
+ * student, or another principal.
+ *
+ * It groups the choice and nothing else. What each role may do is still
+ * `role_permissions`, editable per college, and a librarian invited here still
+ * cannot take fees.
+ */
 export async function listRoles(): Promise<RoleOption[]> {
   const supabase = await createClient();
-  const { data } = await supabase.from("roles").select("id, code, name").order("code");
+  const { data } = await supabase.from("roles").select("id, code, name, tier").order("code");
   return (data ?? []).map((r) => ({
     id: r.id as string,
     code: r.code as string,
     name: r.name as string,
+    tier: (r.tier as RoleTier | null) ?? "staff",
   }));
 }
 

@@ -449,6 +449,54 @@ And the thing it refuses, which matters more than what it builds:
 
 See `docs/modules/saas.md`.
 
+### A tier is who you are; the matrix is what you may do
+
+Six roles have existed since `0005` and they are genuinely different — measured
+on the demo college: `admin` 64 permissions, `accountant` 22, `teacher` 21,
+`parent`/`student` 10 each, `librarian` 9. What was missing is one level up:
+**which kind of person is this login for.** Every screen reasoned from
+`role_permissions` (right for *may they*) and from `roles.code` (a list of six
+rather than a shape).
+
+`roles.tier` names three audiences — `student`, `staff`, `principal` — and
+migration `0208` is careful about exactly one thing:
+
+> **A tier decides what a person is shown. It never decides what they may do.**
+
+That warning is not ceremony. A tier column beside a permission matrix looks
+*exactly* like a shortcut: `tier = 'principal'` is shorter than
+`role_has_permission('settings.manage')`, reads as though it means the same
+thing, and would replace a per-college decision — editable from `/settings` —
+with a hardcoded one. It would also be wrong invisibly, since a college can
+grant a teacher `students.manage` any Tuesday and a policy written against the
+tier would refuse them while the matrix said yes.
+
+Three things:
+
+- **Grouping is not merging.** `accountant`, `teacher` and `librarian` share the
+  `staff` tier and keep 22, 21 and 9 permissions. Merging them would hand every
+  professor the fee counter and every librarian payroll — a loss of separation
+  of duties dressed up as simplification.
+- **The code is deliberately not renamed.** `admin` became the `principal`
+  *tier* while `roles.code` stayed `admin`, because sixty RLS policies compare
+  that code and renaming it is a security-relevant rewrite to gain a nicer word.
+- **The guard runs without a database.**
+  `tests/auth/tier-is-not-a-gate.test.ts` scans every migration for the tier
+  inside a `create policy`, or compared to a value inside a function, and
+  verified by planting a policy that reads `using (tier = 'principal')` — it
+  names the file and quotes the offending line, then goes green on revert.
+
+Its one visible use so far is the invitation picker, grouped by tier because
+*"who is this login for?"* is the question somebody inviting is answering and
+six flat names do not ask it. Deliberately **not** the dashboard: rule 11
+already says there is no `if (isAdmin)` there, because `dashboard_summary()`
+gates each block on the matrix and names what it withheld, and a tier branch
+would be a second answer to a question that already has one.
+
+**A platform operator is not a tier.** It cannot be: every tier is a row in a
+tenant's own `roles` table, and somebody who works across colleges belongs to no
+tenant. That is its own schema, its own decision and its own guard.
+
 ## 4. Authorization is two layers
 
 1. **RLS** — tenant isolation *and* row ownership. Teachers see only students

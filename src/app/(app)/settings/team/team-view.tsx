@@ -20,6 +20,18 @@ import {
 import { useI18n } from "@/components/providers/i18n-provider";
 import { invite, revokeInvitation, type InvitationRow, type RoleOption } from "./actions";
 
+/**
+ * The three audiences, in the order somebody inviting thinks of them: most
+ * invitations are staff, then families, and a second principal is rare.
+ */
+const TIER_ORDER = ["staff", "student", "principal"] as const;
+
+const TIER_LABEL: Record<string, string> = {
+  staff: "Staff — professors, librarians, the office",
+  student: "Students and families",
+  principal: "College administration",
+};
+
 /** Never colour alone — the word is always beside it. */
 function statusTone(status: string): "default" | "secondary" | "outline" | "destructive" {
   if (status === "accepted") return "default";
@@ -110,10 +122,23 @@ export function TeamView({
                   onChange={(e) => setRoleId(e.target.value)}
                   className="h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                 >
-                  {roles.map((r) => (
-                    <option key={r.id} value={r.id}>
-                      {r.name}
-                    </option>
+                  {/*
+                    Grouped by tier, because "who is this login for?" is the
+                    question being answered and six flat names do not ask it.
+                    The grouping is presentation only -- what each role may do
+                    is still the permission matrix, and it stays different
+                    inside a group: a librarian cannot take fees.
+                  */}
+                  {TIER_ORDER.filter((tier) => roles.some((r) => r.tier === tier)).map((tier) => (
+                    <optgroup key={tier} label={TIER_LABEL[tier]}>
+                      {roles
+                        .filter((r) => r.tier === tier)
+                        .map((r) => (
+                          <option key={r.id} value={r.id}>
+                            {r.name}
+                          </option>
+                        ))}
+                    </optgroup>
                   ))}
                 </select>
               </div>

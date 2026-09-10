@@ -4624,6 +4624,7 @@ export type Database = {
           is_system: boolean
           name: string
           tenant_id: string
+          tier: string
         }
         Insert: {
           code: string
@@ -4632,6 +4633,7 @@ export type Database = {
           is_system?: boolean
           name: string
           tenant_id: string
+          tier?: string
         }
         Update: {
           code?: string
@@ -4640,6 +4642,7 @@ export type Database = {
           is_system?: boolean
           name?: string
           tenant_id?: string
+          tier?: string
         }
         Relationships: [
           {
@@ -6969,6 +6972,7 @@ export type Database = {
         Returns: boolean
       }
       current_role_code: { Args: never; Returns: string }
+      current_role_tier: { Args: never; Returns: string }
       current_session_id: { Args: { p_tenant_id: string }; Returns: string }
       current_tenant_id: { Args: never; Returns: string }
       dashboard_enrolment_by_grade: { Args: never; Returns: Json }
