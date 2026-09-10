@@ -232,15 +232,35 @@ export const NAV_GROUPS: NavGroup[] = [
       },
       // Transport sits with the academic group rather than with fees, because
       // the question people bring to it is "which bus does my child take", not
-      // "what does it cost". No `roles` filter on the routes screen: staff see
-      // the fleet, and a family reaching it sees only their own arrangement,
-      // which RLS decides rather than the menu.
+      // "what does it cost".
+      //
+      // This entry's comment used to claim there was no `roles` filter here --
+      // "a family reaching it sees only their own arrangement, which RLS decides
+      // rather than the menu" -- while the list below it said
+      // ["admin", "teacher", "accountant"]. The code was right and the comment
+      // was describing an intention nobody had implemented, which is worse than
+      // no comment: it is the reason nobody noticed a family had no transport
+      // screen at all. The fleet is staff-only; the family's own arrangement is
+      // the entry underneath.
       {
         title: "Transport",
         messageKey: "nav.transport",
         href: "/transport",
         icon: Bus,
         roles: ["admin", "teacher", "accountant"],
+      },
+      // The family's own arrangement, which is a different question from the
+      // fleet. Every transport and hostel screen is staff-only, so the seat a
+      // family is billed for each month was on their phone and nowhere on the
+      // web -- rule 4's "a charge with no link is a bill a family cannot check",
+      // one module along. RLS already scoped the read paths to their own
+      // children; what was missing was the door.
+      {
+        title: "Bus and boarding",
+        messageKey: "nav.arrangements",
+        href: "/arrangements",
+        icon: Bus,
+        roles: ["parent", "student"],
       },
       {
         title: "Bus assignments",

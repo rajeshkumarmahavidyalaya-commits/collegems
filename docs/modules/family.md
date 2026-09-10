@@ -159,3 +159,91 @@ six roles, so it must be named in `EVERY_ROLE_ON_PURPOSE` with the reason.**
 Payroll, Leave and Needs attention were each that mistake, and each had a
 comment above it arguing for the omission — which is why the guard is a list a
 person has to edit rather than a heuristic.
+
+
+---
+
+## The bus and the bed, on the web
+
+The fee screens were the first door a family did not have. This is the second,
+and it was hiding behind a comment that described an intention nobody had
+implemented.
+
+`nav-config.ts` said, above the Transport entry:
+
+> *"No `roles` filter on the routes screen: staff see the fleet, and a family
+> reaching it sees only their own arrangement, which RLS decides rather than
+> the menu."*
+
+The list underneath it read `["admin", "teacher", "accountant"]`. **The code was
+right and the comment was fiction** — and that is worse than no comment, because
+it is the reason nobody noticed a family had no transport screen at all. Every
+transport and hostel surface in the product is staff-only, so the arrangement a
+family is billed for every month was on their phone and nowhere on the web.
+
+Rule 4's sentence about the fee screens, one module along: **a charge with no
+link is a bill a family cannot check.**
+
+### Nothing new was needed underneath
+
+`transport_for_student` and `hostel_for_student` have been `SECURITY INVOKER`
+since their modules shipped, and RLS already scopes them to a guardian's own
+children. Probed by creating a parent login inside a rolled-back transaction —
+because **the demo school has no parent logins at all**, which is itself the
+finding: no family-facing screen in this product had ever been exercised from
+the seat it is for.
+
+| probe (as that parent) | result |
+|---|---|
+| `family_my_students()` | 1 child |
+| their child's transport | `City Centre / Sector 12` |
+| their child's hostel | `Tagore House room A-101` |
+| **another child in the same school** | **0 rows** |
+
+So `/arrangements` adds no read path and no permission. It is a door.
+
+### …and the date decides, not the status column
+
+This is the part that mattered, and it is why the screen was built carefully
+rather than quickly.
+
+Those functions return a **history**. Migration `0203` is the record of what
+happens when a reader takes the first row of it: `mobile_student_card`
+re-exported `status`, so a guardian's phone showed `"status": "active"` beside
+`"effective_ends_on": "2026-03-31"`, 162 days after the seat ended, to 88
+families.
+
+`/arrangements` is a *second reader of the same history*. Rule 12's question —
+**who else does this?** — is the whole reason the logic is a shared predicate
+rather than an inline `.find()`. Verified against the live row, as the parent:
+
+```
+today                              2026-09-10
+raw row (what status alone says)   City Centre status=active effective_ends_on=2026-03-31
+page: is it CURRENT?               City Centre -> not current
+page: PREVIOUSLY list              City Centre ended 2026-03-31
+hostel: is it CURRENT?             Tagore House -> not current (ends 2026-03-31)
+```
+
+A screen that printed `status` would have said *"on the bus"*. This one says
+*"Not on a school bus"* and, underneath, *"City Centre · Sector 12 — ended 31
+Mar 2026"*.
+
+Three decisions worth keeping:
+
+- **The rule lives in `src/lib/validations/arrangements.ts`, not in the server
+  action.** A `"use server"` module may only export async functions, so a
+  predicate defined there could never be imported by a test — and this is
+  precisely the rule that shipped wrong once already.
+  `tests/family/arrangements.test.ts` pins it with the actual production row and
+  **needs no database**, which matters because the DB-backed suites cannot run
+  in every environment.
+- **Dates are compared as strings.** ISO `YYYY-MM-DD` sorts lexicographically,
+  so no `Date` object is built and no timezone can move the boundary by a day.
+  Vercel runs in UTC and the school does not; a boundary that drifts is how a
+  family is billed for a day they were not on the bus. The inclusive last day is
+  pinned too, because `0179` measured that all 46 lapsed seats were still
+  charged on their own final day.
+- **Finished arrangements are shown, not dropped.** A family checking an old
+  invoice needs to see the seat ran until March. A screen that hides them is how
+  somebody concludes the school lost the record.

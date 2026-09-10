@@ -521,6 +521,40 @@ Two corollaries:
   menu entry and the check row were fixed together. Hiding it in the menu alone
   would have left the boundary saying the opposite.
 
+**And the second door was hidden behind a comment that described an intention
+nobody had implemented.** Above the Transport nav entry: *"No `roles` filter on
+the routes screen: staff see the fleet, and a family reaching it sees only their
+own arrangement, which RLS decides rather than the menu."* The list underneath
+read `["admin", "teacher", "accountant"]`.
+
+> **A comment that disagrees with its own code is worse than no comment**, because
+> it answers the question somebody was about to ask. That one is why nobody
+> noticed a family had no transport or hostel screen at all — the seat they are
+> billed for monthly was on their phone and nowhere on the web.
+
+`/arrangements` adds no read path and no permission: `transport_for_student` and
+`hostel_for_student` have been invoker functions since their modules shipped, and
+RLS already scoped them. Probed by creating a parent login in a rolled-back
+transaction — **because the demo school has no parent logins at all**, which is
+the sharper finding: no family-facing screen in this product had ever been
+exercised from the seat it is for. Their own child's seat and bed; **0 rows** for
+another child in the same school.
+
+And the part that needed care, because it is a *second reader of the same
+history* `0203` already got wrong once — rule 12's **who else does this?**
+Verified live: the row reads `status=active, effective_ends_on=2026-03-31` on
+2026-09-10, and the page classifies it `not current` and files it under
+*Previously*. Two things make that durable:
+
+- **The predicate is in `src/lib/validations/arrangements.ts`, not in the server
+  action.** A `"use server"` module may only export async functions, so a rule
+  defined there can never be imported by a test — and this is exactly the rule
+  that shipped wrong once. `tests/family/arrangements.test.ts` pins it with the
+  real production row and needs no database.
+- **Dates are compared as ISO strings, never as `Date` objects.** They sort
+  lexicographically, so no timezone can move the boundary by a day — the
+  `report_day_bounds` instinct, arriving in TypeScript.
+
 See `docs/modules/family.md`.
 
 The test itself now has a name — `role_has_permission(code)` — because it had

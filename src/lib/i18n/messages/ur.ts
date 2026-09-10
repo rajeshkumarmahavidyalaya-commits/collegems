@@ -373,4 +373,5 @@ export const ur: Messages = {
   "stock.movement.write_off": "ضائع شدہ",
   "nav.team": "لوگ اور دعوت نامے",
   "nav.plan": "پلان",
+  "nav.arrangements": "بس اور رہائش",
 };
