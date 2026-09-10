@@ -26,10 +26,13 @@ export function ScheduleCard({
   schedule,
   runs,
   problems,
+  canManage,
 }: {
   schedule: ScheduleRow;
   runs: RunRow[];
   problems: ScheduleProblem[];
+  /** Whether the caller holds `schedules.manage`. The switch is theirs; the register is everybody's. */
+  canManage: boolean;
 }) {
   const { formatDateTime } = useI18n();
   const router = useRouter();
@@ -81,7 +84,7 @@ export function ScheduleCard({
             <Switch
               id={`enabled-${schedule.id}`}
               checked={schedule.isEnabled}
-              disabled={pending}
+              disabled={pending || !canManage}
               onCheckedChange={toggle}
             />
           </div>

@@ -33,7 +33,7 @@ export default async function FeeSetupPage() {
       listClassLevels(),
       listSections(),
       getFeeIntegrationSettings(),
-      hasPermission("settings.manage"),
+      hasPermission("fees.manage"),
       getSchoolProfile(),
     ]);
 

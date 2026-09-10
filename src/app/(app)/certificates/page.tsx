@@ -11,6 +11,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { hasPermission } from "@/lib/auth/permissions";
 import { listCertificates } from "./actions";
 import { kindLabel } from "@/lib/validations/certificates";
 import { getT } from "@/lib/i18n/server";
@@ -25,10 +26,20 @@ export const metadata = { title: "Certificates" };
  * one claim, made where it is easiest to break. A child renamed, re-admitted or
  * promoted since still appears in the register exactly as they appeared on the
  * paper they were handed.
+ *
+ * **The register is for everybody who may read it; issuing is not.** `staff view
+ * certificates` lets a teacher, an accountant and a librarian read this list,
+ * which is right — "was a leaving certificate issued for this child" is a
+ * question the office asks. Until now the *Issue* button was drawn for all of
+ * them, and `certificates` carries an admin-only INSERT policy, so a teacher who
+ * followed it chose a child, a template, a date and two template fields and was
+ * answered `new row violates row-level security policy for table
+ * "document_sequences"`. Probed live, and the serial counter did not move — the
+ * boundary was never in doubt. The sentence was.
  */
 export default async function CertificatesPage() {
   const t = await getT();
-  const rows = await listCertificates();
+  const [rows, canIssue] = await Promise.all([listCertificates(), hasPermission("certificates.issue")]);
 
   return (
     <div className="flex flex-col gap-6">
@@ -40,12 +51,14 @@ export default async function CertificatesPage() {
             series and frozen as it was issued.
           </p>
         </div>
-        <Button asChild>
-          <Link href="/certificates/issue">
-            <Plus className="size-4" aria-hidden="true" />
-            Issue a certificate
-          </Link>
-        </Button>
+        {canIssue && (
+          <Button asChild>
+            <Link href="/certificates/issue">
+              <Plus className="size-4" aria-hidden="true" />
+              Issue a certificate
+            </Link>
+          </Button>
+        )}
       </div>
 
       <Card>
@@ -73,9 +86,11 @@ export default async function CertificatesPage() {
                   register — a cancelled certificate keeps its place and its reason.
                 </p>
               </div>
-              <Button asChild variant="outline">
-                <Link href="/certificates/issue">Issue the first one</Link>
-              </Button>
+              {canIssue && (
+                <Button asChild variant="outline">
+                  <Link href="/certificates/issue">Issue the first one</Link>
+                </Button>
+              )}
             </div>
           ) : (
             <div className="overflow-x-auto">

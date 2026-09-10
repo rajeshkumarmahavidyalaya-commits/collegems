@@ -5,6 +5,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { getCertificate } from "../actions";
 import { kindLabel } from "@/lib/validations/certificates";
+import { hasPermission } from "@/lib/auth/permissions";
 import { CancelCertificate } from "./cancel-certificate";
 import { PrintButton } from "./print-button";
 import { AuditTrail } from "@/components/audit/audit-trail";
@@ -29,6 +30,17 @@ export default async function CertificatePage({ params }: PageProps<"/certificat
 
   const snapshot = (certificate.snapshot ?? {}) as Record<string, string | null>;
   const cancelled = certificate.status === "cancelled";
+  // `certificates.issue`, because the catalogue row says so in as many words:
+  // *"Issue and cancel certificates"*. The first draft of this gated cancelling
+  // on `certificates.manage` — which reads plausibly and is wrong, because that
+  // row means *"Write and retire certificate templates"*. The catalogue was the
+  // older decision and a coherent one: whoever raises a document voids it, and
+  // voiding is not a template edit.
+  //
+  // The column grant behind this (migration 0135) already says nobody, an
+  // administrator included, may rewrite what a certificate *says*. This decides
+  // only who may strike it through.
+  const canCancel = await hasPermission("certificates.issue");
 
   return (
     <div className="flex flex-col gap-6">
@@ -54,7 +66,9 @@ export default async function CertificatePage({ params }: PageProps<"/certificat
         </div>
         <div className="flex flex-wrap gap-2">
           <PrintButton />
-          {!cancelled && <CancelCertificate certificateId={certificate.id} serialNo={certificate.serial_no} />}
+          {!cancelled && canCancel && (
+            <CancelCertificate certificateId={certificate.id} serialNo={certificate.serial_no} />
+          )}
         </div>
       </div>
 

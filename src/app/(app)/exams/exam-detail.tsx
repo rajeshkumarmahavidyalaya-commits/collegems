@@ -82,6 +82,7 @@ type Props = {
   subjects: { id: string; label: string }[];
   canManage: boolean;
   canGrade: boolean;
+  canPublish: boolean;
 };
 
 export function ExamDetail({
@@ -93,6 +94,7 @@ export function ExamDetail({
   subjects,
   canManage,
   canGrade,
+  canPublish,
 }: Props) {
   const [editing, setEditing] = useState<PaperRow | null>(null);
   const [paperOpen, setPaperOpen] = useState(false);
@@ -132,7 +134,12 @@ export function ExamDetail({
       </TabsContent>
 
       <TabsContent value="results" className="mt-4">
-        <ResultsTab exam={exam} results={results} unmarked={unmarked} canManage={canManage} />
+        <ResultsTab
+          exam={exam}
+          results={results}
+          unmarked={unmarked}
+          canPublish={canPublish}
+        />
       </TabsContent>
 
       <PaperDialog
@@ -562,12 +569,22 @@ function ResultsTab({
   exam,
   results,
   unmarked,
-  canManage,
+  canPublish,
 }: {
   exam: ExamRow;
   results: ResultRow[];
   unmarked: number;
-  canManage: boolean;
+  /**
+   * `exams.publish`, deliberately separate from `exams.manage`.
+   *
+   * Publishing is not another edit: it freezes `exam_results` with its own
+   * cohort size and rules snapshot, and from that instant `exam_remarks` cannot
+   * be touched by anybody (rule 4's composite-key device). The catalogue has
+   * said these are two abilities since migration 0082 and nothing read the
+   * distinction — so setting up an exam and sending its results home were one
+   * permission, and the college could not separate them.
+   */
+  canPublish: boolean;
 }) {
   const t = useT();
   const router = useRouter();
@@ -724,7 +741,7 @@ function ResultsTab({
             <Download className="size-4" aria-hidden="true" />
             CSV
           </Button>
-          {canManage &&
+          {canPublish &&
             (published ? (
               <Button variant="outline" size="sm" onClick={unpublish} disabled={pending}>
                 {pending ? (

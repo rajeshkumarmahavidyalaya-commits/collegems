@@ -19,7 +19,7 @@ export default async function ExamPage({ params }: { params: Promise<{ examId: s
   const { examId } = await params;
   const locale = await getLocale();
 
-  const [exam, papers, problems, results, sections, subjects, canManage, canGrade] =
+  const [exam, papers, problems, results, sections, subjects, canManage, canGrade, canPublish] =
     await Promise.all([
       getExam(examId),
       listPapers(examId),
@@ -27,8 +27,9 @@ export default async function ExamPage({ params }: { params: Promise<{ examId: s
       getResultSheet(examId),
       listSections(),
       listSubjects(),
-      hasPermission("settings.manage"),
+      hasPermission("exams.manage"),
       hasPermission("exams.grade"),
+      hasPermission("exams.publish"),
     ]);
 
   if (!exam) notFound();
@@ -88,6 +89,7 @@ export default async function ExamPage({ params }: { params: Promise<{ examId: s
         subjects={subjects.map((s) => ({ id: s.id, label: `${s.name} (${s.code})` }))}
         canManage={canManage}
         canGrade={canGrade}
+        canPublish={canPublish}
       />
     </div>
   );

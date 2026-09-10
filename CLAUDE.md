@@ -732,6 +732,57 @@ in different SQL, refusing in a sentence about the consequence rather than the
 rule. The page's `isLastWayBack()` only draws the lock, and being the copy is
 exactly why it is the half with a test.
 
+And the drift the screen exposed, in **both** directions at once. Swept
+`hasPermission("…")` across the app and joined it to `reference.permissions`:
+
+- **`settings.manage` was used twelve times, nine of them not settings** —
+  creating an exam, running a promotion, setting up fee heads, classes and
+  sections. So a college could not let its examination officer create an exam
+  without also handing them the school's address, its fee heads and its
+  invitations screen. `/academics/sessions` already gated on
+  `academics.manage`; `/academics`, one level up in the same module, did not.
+- **Five codes were referenced only in the migration that seeded them** —
+  `certificates.issue`, `certificates.manage`, `exams.publish`,
+  `schedules.manage`, `guardians.manage`. Rule 15's UI note in the
+  authorization layer: *a correct string nobody renders is not a feature.*
+
+The boundary was never in doubt, which is exactly why it lasted: `certificates`
+INSERT, `exams` ALL and `schedules` ALL each compare `current_role_code() =
+'admin'`. Probed as a teacher, whom the menu offers `/certificates` over an
+unconditional *Issue a certificate* button: the preview succeeded, and issuing
+answered **`42501 — new row violates row-level security policy for table
+"document_sequences"`** after they had chosen a child, a template, a date and
+two template fields. The counter did not move (2 → 2) and no row was written, so
+the gapless serial is unharmed — the sentence was the damage.
+
+Four things:
+
+- **A rename is only a rename if you prove it.** `0213` grants the three new
+  codes (`exams.manage`, `fees.manage`, `promotion.manage`) to exactly the roles
+  holding `settings.manage` today — not to `admin` by name, since a college may
+  have granted it to somebody else. Checked per screen, before and after: **six
+  of six identical**, so nobody gains or loses anything on the day it runs.
+- **A catalogue description is a decision somebody already made.** The first
+  draft gated cancelling a certificate on `certificates.manage`, which reads
+  plausibly; the row says *"Write and retire certificate templates"*, while
+  `certificates.issue` says *"Issue and cancel certificates"*. Read the
+  catalogue before inventing a better split.
+- **The guard asks whether a code is *consulted*, not whether it is repeated.**
+  Its first draft excluded the whole file a code was declared in and reported
+  **four false positives** — a module's migration seeds its permission and
+  registers the report gated on it a few lines apart. Cutting the *declaration*
+  rather than the file asks the question that was meant. Deliberate exceptions
+  live in `NOT_YET_A_CONTROL` with a reason, and the bar is *the feature is
+  unbuilt* (guardians are read-only everywhere; there is no template editor),
+  never *we have not got round to the gate*.
+- **And it stops where a probe would be needed.** The policies still compare
+  `current_role_code() = 'admin'`, so a college that grants `certificates.issue`
+  to its clerk is still refused by Postgres — the same raw error one step along.
+  Narrowing the *matrix* to agree with the boundary removes it for every role
+  that exists today; making the matrix load-bearing is a rewrite of sixty
+  policies, and this file already says that is a probe as several roles rather
+  than a tidy-up.
+
 See `docs/modules/permissions.md`.
 
 The test itself now has a name — `role_has_permission(code)` — because it had

@@ -27,7 +27,7 @@ export default async function FeesPage() {
     listSections(),
     getCollectionSummary(),
     hasPermission("fees.collect"),
-    hasPermission("settings.manage"),
+    hasPermission("fees.manage"),
   ]);
 
   return (

@@ -36,7 +36,7 @@ export default async function AcademicsPage() {
     listAssignments(),
     listSections(),
     listTeachers(),
-    hasPermission("settings.manage"),
+    hasPermission("academics.manage"),
   ]);
 
   return (

@@ -10,7 +10,7 @@ export default async function ExamsPage() {
     getUserContext(),
     listExams(),
     listSchemes(),
-    hasPermission("settings.manage"),
+    hasPermission("exams.manage"),
   ]);
 
   return (

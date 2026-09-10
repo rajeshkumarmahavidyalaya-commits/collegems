@@ -9,7 +9,7 @@ export const metadata = { title: "Billing periods" };
 export default async function InstalmentsPage() {
   const [ctx, canManage, canView] = await Promise.all([
     getUserContext(),
-    hasPermission("settings.manage"),
+    hasPermission("fees.manage"),
     hasPermission("fees.view"),
   ]);
 

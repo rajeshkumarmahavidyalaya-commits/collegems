@@ -12,7 +12,7 @@ import { PromotionPlanner } from "./promotion-planner";
 export const metadata = { title: "Promotion" };
 
 export default async function PromotionPage() {
-  const canManage = await hasPermission("settings.manage");
+  const canManage = await hasPermission("promotion.manage");
   if (!canManage) redirect("/");
 
   const [sessions, runs, problems, renewalRuns] = await Promise.all([

@@ -5,13 +5,18 @@ import { TeamView } from "./team-view";
 export const metadata = { title: "People and invitations" };
 
 export default async function TeamPage() {
-  // `settings.manage` decides whether the *Invite* form is drawn. It is not the
-  // gate: `invitations` carries an admin-only policy, so a non-admin who calls
-  // the action directly writes nothing. Rule 4 — the UI layer is never the gate.
+  // `users.manage` decides whether the *Invite* form is drawn — the same
+  // permission that draws /settings/permissions, because both screens answer
+  // "who may sign in to this college and as what". It used to read
+  // `settings.manage`, which also meant the school's address and its fee heads.
+  //
+  // It is not the gate: `invitations` carries an admin-only policy, so a
+  // non-admin who calls the action directly writes nothing. Rule 4 — the UI
+  // layer is never the gate.
   const [invitations, roles, canManage] = await Promise.all([
     listInvitations(),
     listRoles(),
-    hasPermission("settings.manage"),
+    hasPermission("users.manage"),
   ]);
 
   return (

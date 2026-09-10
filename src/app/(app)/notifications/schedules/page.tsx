@@ -3,6 +3,7 @@ import { AlarmClock, CircleAlert, Info, TriangleAlert } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { hasPermission } from "@/lib/auth/permissions";
 import { listRecentRuns, listScheduleProblems, listSchedules } from "./actions";
 import { ScheduleCard } from "./schedule-card";
 import { NewSchedule } from "./new-schedule";
@@ -22,12 +23,20 @@ export const metadata = { title: "Automatic messages" };
  *   - **Turning one on never backfills.** Said on the page, next to the switch,
  *     because it is the first question anybody asks and the answer is not
  *     guessable.
+ *
+ * `schedules.manage` decides whether the switch and the *New schedule* button
+ * are drawn. It is not the gate — `schedules` carries an admin-only ALL policy
+ * — but the menu offers this screen to an accountant, and until now they were
+ * shown every control and refused by Postgres on the click. Reading the
+ * register is the half that is genuinely theirs: "did the fee reminder go out
+ * on the 3rd" is a bursar's question.
  */
 export default async function SchedulesPage() {
-  const [schedules, runs, problems] = await Promise.all([
+  const [schedules, runs, problems, canManage] = await Promise.all([
     listSchedules(),
     listRecentRuns(),
     listScheduleProblems(),
+    hasPermission("schedules.manage"),
   ]);
 
   const enabled = schedules.filter((s) => s.isEnabled).length;
@@ -42,7 +51,7 @@ export default async function SchedulesPage() {
             the server&rsquo;s, and never twice for the same occurrence.
           </p>
         </div>
-        <NewSchedule />
+        {canManage && <NewSchedule />}
       </div>
 
       <Alert>
@@ -72,7 +81,7 @@ export default async function SchedulesPage() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <NewSchedule />
+            {canManage && <NewSchedule />}
           </CardContent>
         </Card>
       ) : (
@@ -83,6 +92,7 @@ export default async function SchedulesPage() {
               schedule={schedule}
               runs={runs.filter((r) => r.scheduleId === schedule.id).slice(0, 5)}
               problems={problems.filter((p) => p.scheduleId === schedule.id)}
+              canManage={canManage}
             />
           ))}
         </div>

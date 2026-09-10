@@ -22,7 +22,7 @@ export default async function RenewalRunPage({
 }: {
   params: Promise<{ runId: string }>;
 }) {
-  const canManage = await hasPermission("settings.manage");
+  const canManage = await hasPermission("promotion.manage");
   if (!canManage) redirect("/");
 
   const { runId } = await params;
