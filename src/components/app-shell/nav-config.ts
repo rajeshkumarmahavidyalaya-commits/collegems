@@ -183,12 +183,22 @@ export const NAV_GROUPS: NavGroup[] = [
         href: "/attendance/leave",
         icon: CalendarOff,
       },
+      // Not an accountant, and the reason is a disagreement rather than a
+      // preference. `attendance_records` carries a `staff roles view
+      // attendance` policy covering admin AND accountant, so an accountant can
+      // read every register row in the college — while the matrix gives them no
+      // attendance permission at all, and `attendance.summary` in the report
+      // catalogue is gated on `attendance.view`, which they do not hold.
+      //
+      // So the catalogue already said an accountant may not run this question,
+      // and this screen was handing them the same answer from the menu. Rule 4:
+      // when the menu and the matrix disagree, decide which one is wrong.
       {
         title: "Attendance report",
         messageKey: "nav.attendanceReport",
         href: "/attendance/report",
         icon: BarChart3,
-        roles: ["admin", "teacher", "accountant"],
+        roles: ["admin", "teacher"],
       },
       {
         title: "Exams",

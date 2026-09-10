@@ -785,6 +785,37 @@ Four things:
 
 See `docs/modules/permissions.md`.
 
+#### …and the sweep run the other way finds the screen that asked for nothing
+
+The two checks above ask whether a permission is used and whether it is used for
+the right thing. The third question is the one the nav-audience guard asks of
+*entries*, asked of *pages*: **is there a role in this entry's list for whom the
+page's own gate is unreachable?** Joined against the live matrix — after
+discarding a first pass whose regex read only `platform_start_school`'s grant
+lists and reported `accountant` with 5 permissions where the college's matrix
+says 22 — that is 24 entries, and 23 of them are correct: the gate draws an edit
+button and the role has a genuine read half (`students.manage` is *Add student*
+over a roll a librarian may read; `substitutions.manage` is the office's half of
+a teacher's cover list).
+
+The twenty-fourth is `/attendance/report` for an accountant, and it is the
+interesting one because the screen is not empty for them — it is **full**:
+
+> `attendance_records` carries a `staff roles view attendance` policy covering
+> admin **and accountant**. The per-student half of that screen had no gate, so
+> an accountant holding no attendance permission — and refused
+> `attendance.summary` by `report_run`, which is gated on `attendance.view` —
+> read every child's register from the menu instead.
+
+One question, two answers, and the screen's answer was the one nobody had
+decided. It is gated on `attendance.view` now, the accountant comes off the nav
+entry, and *"Take register"* is drawn only for `attendance.mark` — a button to a
+screen that will refuse you is the same defect one click along. **The policy is
+deliberately not narrowed**: whether an accountant may see attendance is a
+college's decision, and the matrix is where a college now expresses it.
+
+See `docs/modules/attendance.md`.
+
 The test itself now has a name — `role_has_permission(code)` — because it had
 been written out by hand in `report_run`, `dashboard_summary` and `checks_run`,
 and a fourth copy is where a rule quietly starts to differ from itself. The

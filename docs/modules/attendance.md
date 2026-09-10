@@ -374,3 +374,47 @@ added while passing.
   migration `0031`, one migration after this module, and are editable on
   `/academics`; what was missing was student attendance *reading* them. See
   **Coverage** above.
+
+---
+
+## The report screen asked for no permission, and RLS said yes
+
+*Guard: the sweep in `docs/modules/permissions.md`. Nav entry and page, no
+migration.*
+
+`0201` fixed the read model on this screen and moved the `attendance.gaps`
+report to `attendance.mark`. The **per-student half** of the same page was left
+with no permission check at all, and that half is the same question as
+`attendance.summary` in the report catalogue — which is gated on
+`attendance.view`.
+
+The two disagreed, and RLS let the disagreement through:
+
+> `attendance_records` carries a `staff roles view attendance` policy covering
+> **admin and accountant**. So an accountant — holding no attendance permission
+> at all, and refused `attendance.summary` by `report_run` — read every child's
+> register from the menu instead.
+
+Not a leak: the policy permits it deliberately and has since the module shipped.
+It is rule 4's *"the matrix does real work wherever RLS is deliberately
+tenant-wide"*, with the matrix's answer being ignored by the one screen that
+should have asked it.
+
+Three edits, and the shape is the one rule 4 prescribes:
+
+- **The per-student report is gated on `attendance.view`**, so the screen and
+  the catalogue now give one answer.
+- **The accountant comes off the nav entry**, because with that gate there is
+  nothing on the page for them — the coverage card was already `attendance.mark`.
+- **"Take register" is drawn only for `attendance.mark`.** A button to a screen
+  that will refuse you is the same defect one click along.
+
+And the withheld case is a sentence rather than a blank, per rule 11: *"Your role
+does not see attendance figures"*, naming the permission and where to grant it —
+because now that `/settings/permissions` exists, that advice is actionable
+rather than a shrug.
+
+**The policy is deliberately not narrowed.** Whether an accountant may see
+attendance is a real college's real decision, and the matrix is where a college
+expresses it — narrowing the policy would take the decision away from them to
+fix a screen.
