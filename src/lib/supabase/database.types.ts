@@ -8385,6 +8385,7 @@ export type Database = {
           issue_id: string
         }[]
       }
+      permission_matrix: { Args: never; Returns: Json }
       platform_am_i_an_operator: { Args: never; Returns: boolean }
       platform_colleges: {
         Args: never
@@ -8544,6 +8545,13 @@ export type Database = {
         Args: { p_params: Json }
         Returns: {
           row_data: Json
+        }[]
+      }
+      report_audience_problems: {
+        Args: never
+        Returns: {
+          message: string
+          severity: string
         }[]
       }
       report_audit_trail: {

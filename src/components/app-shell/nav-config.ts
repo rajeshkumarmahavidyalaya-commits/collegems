@@ -19,6 +19,7 @@ import {
   FileText,
   Library,
   IndianRupee,
+  KeyRound,
   LayoutDashboard,
   ListChecks,
   NotebookPen,
@@ -586,6 +587,18 @@ export const NAV_GROUPS: NavGroup[] = [
         href: "/settings/plan",
         icon: CreditCard,
         roles: ["admin", "accountant"],
+      },
+      // What each role may do. `admin` only for the same reason as the two
+      // above: `role_permissions` carries an admins-only write policy, so the
+      // menu and the boundary agree rather than the menu guessing. Every member
+      // *can* read the matrix -- `hasPermission()` has always needed that -- but
+      // a screen of sixty-four checkboxes nobody may tick is not a screen.
+      {
+        title: "What each role may do",
+        messageKey: "nav.permissions",
+        href: "/settings/permissions",
+        icon: KeyRound,
+        roles: ["admin"],
       },
       { title: "Language", messageKey: "app.language", href: "/settings/language", icon: Languages },
     ],

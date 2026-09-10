@@ -662,6 +662,78 @@ Verified live: the row reads `status=active, effective_ends_on=2026-03-31` on
 
 See `docs/modules/family.md`.
 
+#### …and the catalogue of reports was never given that treatment
+
+`0200` fixed one **check**. `reference.reports` is the older and larger
+catalogue and kept its original gates, so the same question asked of it found
+six reports a student or a guardian could run — and four of them are the
+school's, not theirs: *every payment that crossed the counter*, *who owes,
+largest first*, *pass and fail over a cohort*, *books still out with the fine*.
+
+Every one is `SECURITY INVOKER` over row-ownership RLS, so a family is answered
+with **their own rows**. Not a leak, and that is what kept it invisible:
+
+> *"Fee defaulters: 1"* — and the one is your own child.
+
+Demonstrated with the seats swapped rather than assumed: `report_fee_defaulters`
+returns **96 rows to an administrator and 0 to a teacher**, same function, same
+college, same day. Five gates moved to the permission somebody who may *act*
+holds, and the family went **6 reports → 2** — the two that are about them.
+
+Three things generalise:
+
+- **Row-scoping alone does not make a report a family's.** Both halves have to
+  hold: it must be scoped by policy **and** be the question the person is
+  asking. `attendance.summary` is; `fees.defaulters` is not, and it looked fine
+  for two hundred migrations because only the first half was checked.
+- **A gate that moves is a default, not a guarantee**, because a permission is a
+  per-college decision. So `reference.reports.audience` says who a report is
+  written for and `report_audience_problems()` compares that against *the
+  tenant's own matrix* — the fourth catalogue-as-data critic. Verified by
+  granting `fees.collect` to the Parent role: three findings naming the role and
+  the permission, silent again on revert.
+- **The empty answer is the same bug wearing the other face.**
+  `student_concessions` has no teacher policy at all, so a teacher holding
+  `concessions.view` read zero rows and the report said *"nobody in this school
+  has a discount."* That one rests on the policies, which were read — the demo
+  college has zero awards, so the seat difference is not observable there, and
+  the migration says so rather than quoting a number it did not measure.
+
+See `docs/modules/reports.md`.
+
+#### …and the matrix itself had no write path at all
+
+The sentence rule 4 keeps making — *"a school can grant a teacher
+`students.manage` any Tuesday"* — was not true of this product. `hasPermission()`
+read `role_permissions` on every page; **nothing in the application wrote it**.
+The admins-only write policy had been correct and uncalled since `0005`, which
+is rule 6's *"a correct write path nobody can call is not a fix"* arriving at
+the authorization layer.
+
+`/settings/permissions` is the caller, and `permission_matrix()` is
+`dashboard_summary()`'s shape applied to it: one jsonb document rather than
+three round trips and a join in TypeScript, bounded by construction because a
+college's roles are a handful and the catalogue is 64 rows. INVOKER, and it
+shows any member what every role may do — the matrix describes the product, not
+anybody's data — while the **write** stays the policy. Probed as a teacher: the
+same delete touches **0 rows**.
+
+And the new failure mode a screen creates:
+
+> **`users.manage` draws the screen that grants `users.manage`.** One
+> administrator, one afternoon, one cleared checkbox, and the matrix is editable
+> only from a database console the college does not have.
+
+Rule 4's usual answer — a check in the write function — cannot work here,
+because the screen writes through PostgREST and **a plain delete through
+PostgREST routes around any function** (`0205`'s lesson). So it is a `BEFORE
+DELETE OR UPDATE` trigger, covering the `allowed = false` update as the same act
+in different SQL, refusing in a sentence about the consequence rather than the
+rule. The page's `isLastWayBack()` only draws the lock, and being the copy is
+exactly why it is the half with a test.
+
+See `docs/modules/permissions.md`.
+
 The test itself now has a name — `role_has_permission(code)` — because it had
 been written out by hand in `report_run`, `dashboard_summary` and `checks_run`,
 and a fourth copy is where a rule quietly starts to differ from itself. The

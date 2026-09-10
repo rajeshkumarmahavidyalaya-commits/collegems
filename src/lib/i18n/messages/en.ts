@@ -404,6 +404,7 @@ export const en = {
   "stock.movement.write_off": "Written off",
   "nav.team": "People and invitations",
   "nav.plan": "Plan",
+  "nav.permissions": "What each role may do",
   "nav.arrangements": "Bus and boarding",
 } as const;
 

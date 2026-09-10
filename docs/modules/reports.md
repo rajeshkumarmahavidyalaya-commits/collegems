@@ -296,3 +296,96 @@ Two smaller decisions:
 A **scheduled** export still is not, and for the same reason it never was: the
 asker is not there. That remains `jobs` work whose real blocker is deciding
 whose authority a schedule runs under. See `docs/modules/schedules.md`.
+
+---
+
+## A report is addressed to somebody
+
+*Migration `0210`. Critic: `report_audience_problems()`, on `/checks`.*
+
+Migration `0200` moved the `fees.billing` **check** off `fees.view` and onto
+`fees.collect`, and wrote the rule down: *a critic is gated on the permission
+held by somebody who may act on it*. That rule was applied to
+`reference.checks` and never to `reference.reports`, which is the older and
+larger of the two catalogues.
+
+Measured on the demo college — 19 reports, and a student or a guardian could
+run **six**:
+
+| report | gated on | what it asks |
+|---|---|---|
+| `attendance.student_leave` | `leave.view` | their own requests |
+| `attendance.summary` | `attendance.view` | their own child's totals |
+| `exams.results` | `exams.view` | pass/fail over a cohort, worst first |
+| `fees.collection` | `fees.view` | **every payment that crossed the counter** |
+| `fees.defaulters` | `fees.view` | **who owes, largest first** |
+| `library.overdue` | `library.view` | **books still out, with the fine** |
+
+The first two are a family's own question. The other four are the school's,
+reached because the permission gating them is the one a family holds in order
+to read their own bill, their own result and the library catalogue.
+
+### It is not a leak, and that is what makes it quiet
+
+Read from `pg_policies`: `ledger_entries`, `exam_results` and `book_issues` all
+carry **row-ownership** policies for `parent` and `student`, and every report is
+`SECURITY INVOKER`. So a guardian opening *"Fee defaulters"* is answered with
+their own children and nobody else's.
+
+> A permission error is loud. A **school-wide question answered from a narrow
+> seat** produces a plausible number: *"Fee defaulters: 1"* — and the one is
+> your own child.
+
+Same shape as `substitution_gaps` telling a teacher *"no cover needed today"*
+and `attendance_coverage` telling one *"eleven classes at 0.0%"*. Demonstrated
+on this read model with the seats swapped, as `authenticated` with the claims
+set: `report_fee_defaulters` returns **96 rows to an administrator and 0 to a
+teacher**, same function, same college, same day.
+
+### The move
+
+| report | → | who acts on it |
+|---|---|---|
+| `fees.collection`, `fees.defaulters` | `fees.collect` | the accountant reconciling the day |
+| `exams.results` | `exams.grade` | a teacher deciding who needs help |
+| `library.overdue` | `library.issue` | the librarian chasing the book |
+| `fees.concessions` | `concessions.manage` | the bursar who awards them |
+
+Before → after, probed as each role: student **6 → 2**, parent **6 → 2**,
+teacher 11 → 9, librarian 2 → 2, accountant 8 → 8, administrator 19 → 19. The
+family keeps exactly the two reports that are about them.
+
+The last row is not a family case and was found beside the others:
+`student_concessions` has **no teacher policy at all**, so a teacher holding
+`concessions.view` read zero rows and the report said *"nobody in this school
+has a discount"*. That follows from the policies, which were read — the demo
+college has **0 concession awards**, so both seats return 0 and the difference
+is not observable there. The gate moved on the strength of the policy, and the
+migration says which half is evidence.
+
+### `audience`, and why a column was needed at all
+
+A permission is a per-college decision. Moving five gates fixes today's default
+and says nothing about the college that grants `library.view` to a role it
+invents next year — so the fix has a second half:
+
+- `reference.reports.audience` is `staff` or `family`, defaulting to `staff`
+  (rule 12's conservative reading: a report nobody has thought about is not a
+  family's).
+- `report_audience_problems()` compares that against **the tenant's own matrix**
+  and returns sentences. Registered in `reference.checks` as
+  `reports.audience`, gated on `users.manage`, pointing at
+  `/settings/permissions` — where the repair is actually made.
+
+A report is `family` when **both** halves hold: it is row-scoped by policy *and*
+it is the question the person is asking. Row-scoping alone is what made the
+other four look fine for two hundred migrations.
+
+Verified by planting the violation: granting `fees.collect` to the Parent role
+produced three findings — two reports and the `fees.billing` check — naming the
+role and the permission, and the critic went silent again on revert.
+
+The critic reads `roles.tier` to name the family audience, and that is not a
+breach of *"a tier is presentation, never a gate"*: nothing is refused, granted
+or filtered by it. It describes who a column of the matrix is **for**, which is
+the tier's whole job.
