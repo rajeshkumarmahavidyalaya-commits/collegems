@@ -289,10 +289,13 @@ month instead of being swept in silently.
   income, a different kind of document from `components`.
 - **No approval chain.** Leave is approved by an admin, full stop; a department
   head cannot approve their own team's.
-- **No staff editor.** `date_of_leaving` is a column the engine honours, but
-  there is no staff CRUD screen to set it from — staff are seeded. Staff
-  management is Phase 2.1, unbuilt; the demo seed sets one leaver so the
-  proration is visible.
+- ~~**No staff editor.**~~ **Built since.** `/staff` is the CRUD screen, and
+  `staff_exit` (migration `0177`) is the act that sets `date_of_leaving` and
+  ends the relationships that go with it. This paragraph said *"Staff
+  management is Phase 2.1, unbuilt"* for eighty migrations after it was built —
+  a doc describing an intention reads exactly like one describing what is
+  there, which is the tell this codebase already names about migration
+  comments. The demo seed still sets one leaver so the proration is visible.
 - **A salary payment is still not an accounts entry.** `payroll_payments` is a
   subsidiary record, not double-entry bookkeeping. The chart of accounts that
   turns it into one is Phase 2.2.
