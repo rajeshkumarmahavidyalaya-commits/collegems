@@ -1,4 +1,4 @@
-import { readFileSync, readdirSync } from "node:fs";
+import { readFileSync, readdirSync, statSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { createTranslator } from "@/lib/i18n/translate";
@@ -35,6 +35,15 @@ const ROOT = process.cwd();
 
 function read(p: string) {
   return readFileSync(join(ROOT, p), "utf8");
+}
+
+function tsFiles(dir: string, acc: string[] = []): string[] {
+  for (const entry of readdirSync(dir)) {
+    const p = join(dir, entry);
+    if (statSync(p).isDirectory()) tsFiles(p, acc);
+    else if (entry.endsWith(".ts") || entry.endsWith(".tsx")) acc.push(p);
+  }
+  return acc;
 }
 
 /**
@@ -97,9 +106,15 @@ describe("a card is not a certificate", () => {
   it("carries the year it is valid for", () => {
     // A document about *now* must say which now, or it is a card with no expiry
     // that a fifteen-year-old is still holding at twenty. Resolved server-side
-    // from the context, never taken from the caller (rule 2).
-    const actions = read("src/app/(app)/students/id-cards/actions.ts");
-    expect(actions).toMatch(/currentSessionName/);
+    // from the context, never taken from the caller (rule 2) — and read in one
+    // place, which is where this assertion now points after `schoolIdentity`
+    // moved out of the card module.
+    const identity = read("src/lib/school/identity.ts");
+    expect(identity).toMatch(/currentSessionName/);
+    expect(
+      /sessionName[^\n]*(searchParams|params\.|input|p_session)/i.test(identity),
+      "the session on a card is resolved server-side, never taken from the caller",
+    ).toBe(false);
     expect(read("src/lib/i18n/messages/en.ts")).toMatch(/"idCard\.validFor"/);
   });
 
@@ -374,6 +389,38 @@ describe("the issues found by reading it back", () => {
       "the set query must not re-fetch each student's enrolments: it already has " +
         "the one it is printing",
     ).toBe(false);
+  });
+});
+
+describe("one school, read once", () => {
+  it("has a single reader of school.profile", () => {
+    // Written twice within a week — the student sheet and the staff sheet each
+    // resolved the same setting into the same three fields, identical but for a
+    // comment. `formatMoney`-under-four-names again, and CLAUDE.md's sentence
+    // for it: *copies that agree cost nothing until the day one of them has to
+    // change.* That day was already scheduled — this module's own *Not built*
+    // wants a card back carrying the school's rules and an emergency number,
+    // which is a third read of the same setting.
+    //
+    // It sits at the top level rather than under either card module because
+    // `school.profile` is not an ID-card concept: the invoice document (0030)
+    // and the certificate engine (0133) already read it in SQL.
+    const roots = ["src/app", "src/components", "src/lib"];
+    const offenders: string[] = [];
+    for (const root of roots) {
+      for (const file of tsFiles(join(ROOT, root))) {
+        if (file.endsWith("src/lib/school/identity.ts")) continue;
+        const src = withoutComments(readFileSync(file, "utf8"));
+        if (/setting_value[\s\S]{0,80}school\.profile/.test(src)) {
+          offenders.push(file.replace(ROOT + "/", ""));
+        }
+      }
+    }
+    expect(
+      offenders,
+      "school.profile has one reader: @/lib/school/identity. A second copy is a " +
+        "second answer the day somebody adds a field to the card.",
+    ).toEqual([]);
   });
 });
 

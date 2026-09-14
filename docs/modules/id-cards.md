@@ -275,6 +275,32 @@ it the pair belonging to its own module — the interface is shared while the tw
 selects stay apart. Measured: `/staff/[id]` 165 → **167 kB** for the whole
 control, because the labels are props rather than a `useI18n()` call.
 
+### One school, read once
+
+`schoolIdentity()` was written **twice within a week** — the student sheet and
+the staff sheet each resolving `school.profile` into the same three fields,
+identical but for a comment. `formatMoney`-under-four-names again, and
+CLAUDE.md's sentence for it:
+
+> *copies that agree cost nothing until the day one of them has to change*
+
+That day was already on this page: the *Not built* list below wants a card back
+carrying the school's rules and an emergency number, which is a third read of
+the same setting. It lives in `src/lib/school/identity.ts` now, at the top level
+rather than under either card module, because `school.profile` is not an ID-card
+concept — the invoice document (`0030`) and the certificate engine (`0133`)
+already read it in SQL, and this is the TypeScript reader of the same thing.
+
+The guard sweeps `src/` for a second `setting_value('school.profile')` and
+names the file. The `too-many` refusal became one shared type for the same
+reason: rule 7's *"bound it and say the bound out loud"* has one shape, and two
+unions spelling the same refusal is where they start to differ.
+
+*(The 3-line bound check itself is deliberately **not** shared. It guards two
+different tables with two different queries, and extracting it would add
+indirection rather than remove duplication — which is the distinction between a
+copy and a coincidence.)*
+
 ### A plant that passed, and why that is worth recording
 
 The guard asserting the shared module knows nothing about its callers was

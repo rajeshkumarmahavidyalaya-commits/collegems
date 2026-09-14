@@ -2,50 +2,15 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { getUserContext } from "@/lib/auth/context";
+import { schoolIdentity } from "@/lib/school/identity";
 import { photoUrl, photoUrls } from "@/lib/storage/photos";
-import { MAX_CARDS_PER_RUN, type IdCard, type SchoolIdentity } from "@/lib/validations/id-card";
+import { MAX_CARDS_PER_RUN, type IdCard, type SchoolIdentity,
+  type TooMany,
+} from "@/lib/validations/id-card";
 
 export type CardSet =
   | { ok: true; cards: IdCard[]; school: SchoolIdentity }
-  | { ok: false; reason: "too-many"; count: number };
-
-type ProfileRow = {
-  address_line1?: string | null;
-  address_line2?: string | null;
-  city?: string | null;
-  state?: string | null;
-  postal_code?: string | null;
-  phone?: string | null;
-};
-
-/**
- * The school's own name and address, for the top of every card.
- *
- * `settings` is readable by every tenant member, so this needs no gate of its
- * own — and rule 12 is explicit that nothing secret may live there, which is
- * exactly why it is safe to print.
- */
-async function schoolIdentity(): Promise<SchoolIdentity> {
-  const [ctx, supabase] = await Promise.all([getUserContext(), createClient()]);
-  const { data } = await supabase.rpc("setting_value", { p_key: "school.profile" });
-  const profile = (data ?? {}) as ProfileRow;
-
-  const addressLine =
-    [profile.address_line1, profile.address_line2, profile.city, profile.state, profile.postal_code]
-      .map((p) => (p ?? "").trim())
-      .filter(Boolean)
-      .join(", ") || null;
-
-  return {
-    name: ctx?.tenantName ?? "",
-    addressLine,
-    phone: profile.phone?.trim() || null,
-    // Which year the card is valid for, resolved server-side (rule 2). A card
-    // about *now* has to carry the now it was true of, or it is a card with no
-    // expiry that a fifteen-year-old is still holding at twenty.
-    sessionName: ctx?.currentSessionName ?? null,
-  };
-}
+  | TooMany;
 
 type StudentRow = {
   id: string;

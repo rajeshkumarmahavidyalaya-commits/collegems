@@ -1,43 +1,17 @@
 "use server";
 
 import { createClient } from "@/lib/supabase/server";
-import { getUserContext } from "@/lib/auth/context";
+import { schoolIdentity } from "@/lib/school/identity";
 import { hasPermission } from "@/lib/auth/permissions";
 import { photoUrls } from "@/lib/storage/photos";
-import { MAX_CARDS_PER_RUN, type SchoolIdentity, type StaffCard } from "@/lib/validations/id-card";
+import { MAX_CARDS_PER_RUN, type SchoolIdentity, type StaffCard,
+  type TooMany,
+} from "@/lib/validations/id-card";
 
 export type StaffCardSet =
   | { ok: true; cards: StaffCard[]; departments: string[]; school: SchoolIdentity }
   | { ok: false; reason: "withheld" }
-  | { ok: false; reason: "too-many"; count: number };
-
-type ProfileRow = {
-  address_line1?: string | null;
-  address_line2?: string | null;
-  city?: string | null;
-  state?: string | null;
-  postal_code?: string | null;
-  phone?: string | null;
-};
-
-async function schoolIdentity(): Promise<SchoolIdentity> {
-  const [ctx, supabase] = await Promise.all([getUserContext(), createClient()]);
-  const { data } = await supabase.rpc("setting_value", { p_key: "school.profile" });
-  const profile = (data ?? {}) as ProfileRow;
-
-  const addressLine =
-    [profile.address_line1, profile.address_line2, profile.city, profile.state, profile.postal_code]
-      .map((p) => (p ?? "").trim())
-      .filter(Boolean)
-      .join(", ") || null;
-
-  return {
-    name: ctx?.tenantName ?? "",
-    addressLine,
-    phone: profile.phone?.trim() || null,
-    sessionName: ctx?.currentSessionName ?? null,
-  };
-}
+  | TooMany;
 
 /**
  * Cards for everybody currently employed, optionally one department.

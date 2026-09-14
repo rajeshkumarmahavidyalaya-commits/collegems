@@ -1,6 +1,7 @@
 import type { MessageKey } from "@/lib/i18n/messages/en";
 import type { Translator } from "@/lib/i18n/translate";
 import type { Locale } from "@/lib/i18n/config";
+import type { SchoolIdentity } from "@/lib/school/identity";
 
 /**
  * A student identity card.
@@ -71,12 +72,23 @@ export type PersonCard = {
   facts: { label: string; value: string }[];
 };
 
-export type SchoolIdentity = {
-  name: string;
-  addressLine: string | null;
-  phone: string | null;
-  sessionName: string | null;
-};
+/**
+ * Who the school is, re-exported from its reader.
+ *
+ * The type moved to `@/lib/school/identity` beside the single function that
+ * resolves it — `school.profile` is not an ID-card concept, and the invoice
+ * document and the certificate engine already read it in SQL. Re-exported here
+ * so a card module has one import to remember.
+ */
+export type { SchoolIdentity };
+
+/**
+ * What a bulk run refuses with, shared by both card sheets.
+ *
+ * Rule 7's *"bound it and say the bound out loud"* has one shape, and two
+ * unions spelling the same refusal is where they start to differ.
+ */
+export type TooMany = { ok: false; reason: "too-many"; count: number };
 
 /**
  * What is blank on a card, as sentences.
