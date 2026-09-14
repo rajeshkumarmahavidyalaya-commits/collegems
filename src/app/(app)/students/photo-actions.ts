@@ -125,6 +125,15 @@ export async function removeStudentPhoto(studentId: string): Promise<ActionResul
 }
 
 /**
+ * How long a photograph's URL lives.
+ *
+ * Ten minutes rather than the default hour: a card sheet is opened, checked and
+ * printed, and a URL that outlives that is a bearer token for a child's
+ * photograph sitting in somebody's browser history.
+ */
+const PHOTO_URL_TTL_SECONDS = 600;
+
+/**
  * A short-lived URL for one person's photograph, or null.
  *
  * **Called only after the row has been read back through RLS** — rule 8 says the
@@ -132,11 +141,53 @@ export async function removeStudentPhoto(studentId: string): Promise<ActionResul
  * from anywhere but a select the caller was allowed to make. Every caller here
  * passes a `photo_path` it just read from `people` through the policy.
  *
- * Ten minutes rather than the default: an ID-card sheet is opened, checked and
- * printed, and a URL that outlives that is a bearer token for a child's
- * photograph sitting in somebody's browser history.
+ * For **more than one**, use `photoUrls` below rather than mapping this.
  */
 export async function photoUrl(path: string | null | undefined): Promise<string | null> {
   if (!path) return null;
-  return signedUrlFor(BUCKETS.avatars, path, 600);
+  return signedUrlFor(BUCKETS.avatars, path, PHOTO_URL_TTL_SECONDS);
+}
+
+/**
+ * Signed URLs for a whole set, in one round trip.
+ *
+ * The first version of the ID-card sheet mapped `photoUrl` over forty children,
+ * which is **forty server clients and forty HTTP requests to Storage** to render
+ * one page. CLAUDE.md already names that mistake in SQL:
+ *
+ * > *"A scalar function that queries another table is a correlated subquery
+ * > wearing a nicer name. In a projection it runs per row... **resolve a set as
+ * > a set.**"*
+ *
+ * `audit_actor_label` cost 8.4 ms per row and 525 ms to name sixty-two rows
+ * containing two distinct people. This is the same shape in TypeScript, and
+ * `createSignedUrls` is the set version — one request for every path.
+ *
+ * Returns a map rather than an array so a caller cannot line the results up
+ * against the wrong children: Storage answers per path, and a path that failed
+ * to sign is simply absent rather than shifting everything after it by one.
+ */
+export async function photoUrls(
+  paths: (string | null | undefined)[],
+): Promise<Map<string, string>> {
+  const wanted = [...new Set(paths.filter((p): p is string => Boolean(p)))];
+  const out = new Map<string, string>();
+  if (wanted.length === 0) return out;
+
+  const supabase = await createClient();
+  const { data, error } = await supabase.storage
+    .from(BUCKETS.avatars)
+    .createSignedUrls(wanted, PHOTO_URL_TTL_SECONDS);
+
+  if (error) {
+    console.error("[storage] could not sign avatars:", error.message);
+    return out;
+  }
+
+  for (const row of data ?? []) {
+    // A per-object failure is reported on its own row rather than failing the
+    // batch, so one deleted file does not blank a whole class's cards.
+    if (row.signedUrl && row.path) out.set(row.path, row.signedUrl);
+  }
+  return out;
 }

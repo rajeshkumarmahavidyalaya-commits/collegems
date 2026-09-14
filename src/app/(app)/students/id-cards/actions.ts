@@ -2,7 +2,7 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { getUserContext } from "@/lib/auth/context";
-import { photoUrl } from "../photo-actions";
+import { photoUrl, photoUrls } from "../photo-actions";
 import { MAX_CARDS_PER_RUN, type IdCard, type SchoolIdentity } from "@/lib/validations/id-card";
 
 export type CardSet =
@@ -72,6 +72,33 @@ function one<T>(v: T | T[] | null | undefined): T | null {
 }
 
 /**
+ * Roll order, which Postgres cannot give us here.
+ *
+ * `enrolments.roll_number` is **text**, so `order by roll_number` returns
+ * 1, 10, 11, 2, 3 — and a sheet of cards handed out in roll order is exactly
+ * where that is noticed. Text is the right column type: plenty of schools use
+ * `12A` or `VI-07`.
+ *
+ * `Intl.Collator` with `numeric: true` reads the digit runs inside the string,
+ * so `2` precedes `10` and `VI-7` precedes `VI-10`. The locale is pinned to
+ * `en` **on purpose** and this is not the hardcoded-locale-tag mistake rule 15
+ * names: a roll number is an identifier, not a word, and the order a class is
+ * called in must not change depending on who printed the sheet. Same reasoning
+ * that keeps `audit.fieldLabel` untranslated.
+ *
+ * A child with no roll number sorts last rather than first — an unnumbered card
+ * at the top of the pile looks like the pile is in no order at all.
+ */
+const ROLL_COLLATOR = new Intl.Collator("en", { numeric: true, sensitivity: "base" });
+
+function byRoll(a: IdCard, b: IdCard): number {
+  if (!a.rollNumber && !b.rollNumber) return a.fullName.localeCompare(b.fullName);
+  if (!a.rollNumber) return 1;
+  if (!b.rollNumber) return -1;
+  return ROLL_COLLATOR.compare(a.rollNumber, b.rollNumber);
+}
+
+/**
  * Every card for one class, this year.
  *
  * **Session-scoped on the enrolment**, which is the whole reason this cannot be
@@ -116,14 +143,12 @@ export async function getIdCards(sectionId: string): Promise<CardSet> {
          id, admission_number,
          people:person_id ( first_name, last_name, date_of_birth, blood_group, photo_path,
                             address_line1, city ),
-         enrolments ( roll_number, sections ( name, class_levels ( name ) ) ),
          guardian_student ( is_primary,
                             guardians ( people:person_id ( first_name, last_name, phone ) ) )
        )`,
     )
     .eq("section_id", sectionId)
     .eq("status", "active")
-    .order("roll_number", { ascending: true, nullsFirst: false })
     .limit(MAX_CARDS_PER_RUN);
 
   if (sessionId) query = query.eq("session_id", sessionId);
@@ -137,18 +162,25 @@ export async function getIdCards(sectionId: string): Promise<CardSet> {
     students: StudentRow;
   }[];
 
-  const cards = await Promise.all(
-    rows.map(async (row) => toCard(row.students, row.roll_number, row.sections)),
-  );
+  // One request to Storage for every photograph, not one per child. Mapping the
+  // single-path signer over forty students meant forty server clients and forty
+  // HTTP round trips to render one page — CLAUDE.md's *"resolve a set as a set"*
+  // in TypeScript.
+  const signed = await photoUrls(rows.map((r) => one(r.students.people)?.photo_path));
+
+  const cards = rows
+    .map((row) => toCard(row.students, row.roll_number, row.sections, signed))
+    .sort(byRoll);
 
   return { ok: true, cards, school };
 }
 
-async function toCard(
+function toCard(
   student: StudentRow,
   rollNumber: string | null,
   section: { name: string; class_levels: { name: string } | null } | null,
-): Promise<IdCard> {
+  signed: Map<string, string>,
+): IdCard {
   const person = one(student.people);
   const links = student.guardian_student ?? [];
   const primary = links.find((l) => l.is_primary) ?? links[0];
@@ -168,10 +200,10 @@ async function toCard(
       : null,
     guardianPhone: guardianPerson?.phone?.trim() || null,
     address: [person?.address_line1, person?.city].filter(Boolean).join(", ") || null,
-    // Signed here, after the row came back through the policy. Rule 8: the
-    // signature is the authorization, so a URL is only ever issued for a path
-    // this caller was allowed to read.
-    photoUrl: await photoUrl(person?.photo_path),
+    // Looked up from the batch signed above, after the rows came back through
+    // the policy. Rule 8: the signature is the authorization, so a URL is only
+    // ever issued for a path this caller was allowed to read.
+    photoUrl: (person?.photo_path && signed.get(person.photo_path)) || null,
   };
 }
 
@@ -214,11 +246,17 @@ export async function getIdCard(
   const enrolment =
     (student.enrolments ?? []).find((e) => e.session_id === ctx?.currentSessionId) ?? null;
 
+  // One child, so one signature: the set version would be a batch of one.
+  const path = one(student.people)?.photo_path ?? null;
+  const url = await photoUrl(path);
+  const signed = new Map(path && url ? [[path, url]] : []);
+
   return {
-    card: await toCard(
+    card: toCard(
       { ...student, enrolments: [] },
       enrolment?.roll_number ?? null,
       enrolment?.sections ?? null,
+      signed,
     ),
     school,
   };

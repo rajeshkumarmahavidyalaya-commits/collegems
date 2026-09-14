@@ -223,6 +223,73 @@ describe("the photograph is a signed URL and stays one", () => {
   });
 });
 
+describe("the issues found by reading it back", () => {
+  it("signs a whole class in one request, not one per child", () => {
+    // The first version mapped the single-path signer over forty students:
+    // forty server clients and forty HTTP round trips to Storage to render one
+    // page. CLAUDE.md already names this in SQL — *"a scalar function that
+    // queries another table is a correlated subquery wearing a nicer name...
+    // resolve a set as a set"* — where `audit_actor_label` cost 8.4 ms per row.
+    // Same shape in TypeScript.
+    const actions = withoutComments(read("src/app/(app)/students/id-cards/actions.ts"));
+    expect(actions).toMatch(/photoUrls\(/);
+    expect(
+      /rows\.map\(async/.test(actions),
+      "the set path must not await per row — that is the per-row signer back again",
+    ).toBe(false);
+
+    // And the batch returns a map rather than an array, so a path that failed
+    // to sign is absent rather than shifting every later child by one.
+    const photo = withoutComments(read("src/app/(app)/students/photo-actions.ts"));
+    expect(photo).toMatch(/Promise<Map<string, string>>/);
+    expect(photo).toMatch(/createSignedUrls/);
+  });
+
+  it("orders the roll numerically, because the column is text", () => {
+    // `order by roll_number` on a text column returns 1, 10, 11, 2, 3 — and a
+    // sheet of cards handed out in roll order is exactly where that is noticed.
+    // Text is the right column type: `12A` and `VI-07` are both real.
+    const actions = withoutComments(read("src/app/(app)/students/id-cards/actions.ts"));
+    expect(
+      /\.order\("roll_number"/.test(actions),
+      "Postgres cannot sort a text roll number the way a register is called",
+    ).toBe(false);
+    expect(actions).toMatch(/numeric: true/);
+
+    // The comparator itself, on the shapes that break a plain sort.
+    const collator = new Intl.Collator("en", { numeric: true, sensitivity: "base" });
+    expect(["10", "2", "1"].sort((a, b) => collator.compare(a, b))).toEqual(["1", "2", "10"]);
+    expect(["VI-10", "VI-7"].sort((a, b) => collator.compare(a, b))).toEqual(["VI-7", "VI-10"]);
+    // Pinned to `en` deliberately: a roll number is an identifier, not a word,
+    // and the order a class is called in must not depend on who printed it.
+    expect(actions).toMatch(/Intl\.Collator\("en"/);
+  });
+
+  it("does not fetch a join it never reads", () => {
+    // The select carried a nested `enrolments (...)` under each student that
+    // `toCard` never touches — N x M rows for a projection that discards them.
+    // Rule 7: the projection runs for every matching row, not every row
+    // returned, so keep it cheap.
+    const actions = withoutComments(read("src/app/(app)/students/id-cards/actions.ts"));
+    // **The window has to be proved, not assumed.** The first draft ended this
+    // slice at `indexOf("async function toCard")` — and `toCard` had just
+    // stopped being async, so `indexOf` returned -1, `slice(start, -1)` ran to
+    // the end of the file, and the assertion failed on `getIdCard`'s *singular*
+    // query, which legitimately reads enrolments. A silent -1 widens a window
+    // instead of emptying it, so both ends are checked before the slice is used.
+    const from = actions.indexOf("export async function getIdCards");
+    const to = actions.indexOf("function toCard(");
+    expect(from, "getIdCards should still exist").toBeGreaterThan(-1);
+    expect(to, "toCard should still exist").toBeGreaterThan(from);
+    const setQuery = actions.slice(from, to);
+    expect(
+      /students!inner[\s\S]*?enrolments \(/.test(setQuery),
+      "the set query must not re-fetch each student's enrolments: it already has " +
+        "the one it is printing",
+    ).toBe(false);
+  });
+});
+
 describe("bounded, and the bound is said out loud", () => {
   it("refuses a class larger than it prints rather than truncating", () => {
     // Rule 13: a sheet holding the first 120 of 300 children looks complete.

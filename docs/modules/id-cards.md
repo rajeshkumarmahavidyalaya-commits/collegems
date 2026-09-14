@@ -141,6 +141,48 @@ The two new routes cost **172 kB** (`/students/id-cards`) and **139 kB**
 so the only client JavaScript in the module is the class picker and the print
 button.
 
+## Three issues found by reading it back
+
+This session has no database access, so nothing here could be run against a
+school. Everything below was found by re-reading the code afterwards, which is
+the honest half of building blind — and all three are shapes CLAUDE.md already
+names somewhere else.
+
+- **Forty round trips to sign forty photographs.** The first version mapped the
+  single-path signer over the class, which is a server client and an HTTP
+  request *per child* to render one page. The rule is already written for SQL:
+  *"a scalar function that queries another table is a correlated subquery
+  wearing a nicer name… resolve a set as a set"*, where `audit_actor_label` cost
+  8.4 ms a row and 525 ms to name sixty-two rows holding two people. Same shape
+  in TypeScript. `photoUrls()` is one `createSignedUrls` call, and it returns a
+  **map** rather than an array so a path that failed to sign is absent rather
+  than shifting every later child by one.
+- **The roll sorted as text.** `enrolments.roll_number` is `text`, so
+  `order by roll_number` gives 1, 10, 11, 2, 3 — and a sheet of cards handed out
+  in roll order is exactly where that is noticed. Text is the *right* column
+  type (`12A` and `VI-07` are both real), so the fix is `Intl.Collator` with
+  `numeric: true`, pinned to `en`. That pin is not rule 15's hardcoded-locale
+  mistake: **a roll number is an identifier, not a word**, and the order a class
+  is called in must not change with who printed the sheet — the same reasoning
+  that keeps `audit.fieldLabel` untranslated.
+- **A join nobody read.** The class query carried a nested `enrolments (…)`
+  under each student that the projection never touched: N × M rows fetched and
+  discarded. Rule 7 again — the projection runs for every *matching* row, not
+  every returned one.
+
+### And the test that caught the third one had the wrong window
+
+The assertion sliced the source from `getIdCards` to `indexOf("async function
+toCard")` — and `toCard` had just stopped being `async`, so `indexOf` returned
+**-1**, `slice(start, -1)` ran to the end of the file, and the check failed on
+the *single-card* query, which legitimately reads enrolments.
+
+> **A silent `-1` widens a window instead of emptying it.** A guard that slices
+> source has to prove both ends before it uses them, or it reports confidently
+> on code it was never pointed at.
+
+Both ends are asserted now, before the slice.
+
 ## Who may print one
 
 Gated on `students.view`, and the nav entry agrees with the page. A card carries
