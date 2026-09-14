@@ -8,8 +8,9 @@ import { Separator } from "@/components/ui/separator";
 import { hasPermission } from "@/lib/auth/permissions";
 import { getStudent } from "../actions";
 import { ExitControl } from "./exit-control";
-import { PhotoControl } from "./photo-control";
-import { photoUrl } from "../photo-actions";
+import { PhotoControl } from "@/components/people/photo-control";
+import { removeStudentPhoto, setStudentPhoto } from "../photo-actions";
+import { photoUrl } from "@/lib/storage/photos";
 import { getT } from "@/lib/i18n/server";
 import { BUCKET_LIMITS, formatBytes } from "@/lib/storage/constants";
 
@@ -99,7 +100,9 @@ export default async function StudentDetailPage({
           </CardHeader>
           <CardContent className="flex flex-col gap-5">
             <PhotoControl
-              studentId={student.id}
+              ownerId={student.id}
+              onUpload={setStudentPhoto}
+              onRemove={removeStudentPhoto}
               photoUrl={photo}
               canManage={canManage}
               // Seven resolved strings rather than the whole catalogue: this

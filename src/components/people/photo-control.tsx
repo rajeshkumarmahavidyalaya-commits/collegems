@@ -5,10 +5,18 @@ import { toast } from "sonner";
 import { Trash2, Upload, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { BUCKET_LIMITS } from "@/lib/storage/constants";
-import { removeStudentPhoto, setStudentPhoto } from "../photo-actions";
+import type { ActionResult } from "@/app/(app)/library/actions";
 
 /**
- * The upload control `people.photo_path` never had.
+ * The upload control `people.photo_path` never had — for anybody who is a person.
+ *
+ * It lived under `students/[id]/` first and moved here when staff needed the
+ * same control. The **actions are props**, not imports: a server action is a
+ * serialisable reference, so a Server Component can hand this one the pair that
+ * belongs to its own module. That is what keeps the shared half genuinely
+ * shared — the choreography and the interface are one implementation, while
+ * *"may this caller change this person's photograph"* stays two different
+ * selects against two different policies.
  *
  * The limits are stated **before** a file is chosen, which is the whole reason
  * `storage/constants.ts` exists separately from `files.ts`: that module imports
@@ -47,15 +55,20 @@ export type PhotoLabels = {
   removed: string;
 };
 export function PhotoControl({
-  studentId,
+  ownerId,
   photoUrl,
   canManage,
   labels,
+  onUpload,
+  onRemove,
 }: {
-  studentId: string;
+  /** The student or staff id the actions below take. */
+  ownerId: string;
   photoUrl: string | null;
   canManage: boolean;
   labels: PhotoLabels;
+  onUpload: (id: string, form: FormData) => Promise<ActionResult<{ path: string }>>;
+  onRemove: (id: string) => Promise<ActionResult<void>>;
 }) {
   const [pending, start] = useTransition();
   const [preview, setPreview] = useState<string | null>(photoUrl);
@@ -66,7 +79,7 @@ export function PhotoControl({
     const form = new FormData();
     form.set("photo", file);
     start(async () => {
-      const result = await setStudentPhoto(studentId, form);
+      const result = await onUpload(ownerId, form);
       if (result.ok) {
         // Show the local file immediately rather than waiting for a new signed
         // URL: the object is already uploaded, and a photograph that appears a
@@ -130,7 +143,7 @@ export function PhotoControl({
                   className="cursor-pointer text-destructive"
                   onClick={() =>
                     start(async () => {
-                      const result = await removeStudentPhoto(studentId);
+                      const result = await onRemove(ownerId);
                       if (result.ok) {
                         setPreview(null);
                         toast.success(labels.removed);

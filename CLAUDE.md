@@ -1663,6 +1663,23 @@ three things about it are load-bearing:
   costs bytes nobody sees; an orphaned row is a broken download on somebody's
   screen.
 
+**Share the choreography; keep the authorization apart.** Student and staff
+photographs are the case. The storage ordering above — object first, sign short,
+delete the old one only once the row points at the new one — is genuinely one
+implementation and belongs in `src/lib/storage/photos.ts`. The row-level question
+is not:
+
+| | the select that resolves the person | what protects it |
+|---|---|---|
+| a student's photograph | `students → person_id` | **the policy** — row-ownership, so the select returns nothing to somebody who may not see the child |
+| a colleague's | `staff → person_id` | **`staff.view`** — `staff` is role-wide, so the select proves nothing |
+
+A permission check on the first would be a second answer to a question RLS
+already answers; its absence on the second leaves a librarian one select from the
+employment record. A shared **control** is still right — it takes the two actions
+as props, because a server action is a serialisable reference — and a shared
+*action* would not be.
+
 Bucket names and limits live in `src/lib/storage/constants.ts`, which has no
 server imports, so an upload control can state the limit before a person picks a
 40 MB file. `files.ts` imports the server client — making it unimportable from a

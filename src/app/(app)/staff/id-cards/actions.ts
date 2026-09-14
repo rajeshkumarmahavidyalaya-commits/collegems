@@ -3,7 +3,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { getUserContext } from "@/lib/auth/context";
 import { hasPermission } from "@/lib/auth/permissions";
-import { photoUrls } from "../../students/photo-actions";
+import { photoUrls } from "@/lib/storage/photos";
 import { MAX_CARDS_PER_RUN, type SchoolIdentity, type StaffCard } from "@/lib/validations/id-card";
 
 export type StaffCardSet =

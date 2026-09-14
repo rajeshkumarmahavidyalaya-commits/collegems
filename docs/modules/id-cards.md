@@ -239,6 +239,54 @@ Measured: the two new routes are **139 kB** and **173 kB**, identical to the
 student pair because they are the same components, and `/staff/[id]` did not move
 — the card link is a plain `<Link>`, not a client component.
 
+## Sharing the choreography, keeping the authorization apart
+
+Staff photographs were the gap this module shipped with — every staff card
+printed the placeholder — and closing it is the case that shows where the line
+between "shared" and "copied" actually falls.
+
+**One implementation:** the storage choreography. Upload the object, sign a
+short-lived URL, delete the old object only once the row points at the new one,
+delete the new one if the row write fails. That is rule 8's ordering and there
+is nothing per-module about it, so it lives in `src/lib/storage/photos.ts`. It
+was in `students/photo-actions.ts` first, and the staff card sheet had to import
+across module boundaries to reach it — **which is the tell that it was in the
+wrong place, not that the import was clever.**
+
+**Two implementations, on purpose:** the row-level question.
+
+| | the select that resolves the person | what protects it |
+|---|---|---|
+| a student's photograph | `students → person_id` | **the policy.** `students` is row-ownership, so the select already returns nothing to somebody who may not see the child |
+| a colleague's | `staff → person_id` | **`staff.view`.** `staff` is role-wide, so the select proves nothing at all |
+
+A permission check on the student path would be a second answer to a question
+RLS already answers; its absence on the staff path would leave a librarian one
+select from the employment record. The guard asserts both — the presence *and*
+the absence — and that the shared module mentions neither module by name.
+
+The **write** is still the policy's to refuse in both cases: only an
+administrator has an UPDATE policy on `people`, so a teacher holding `staff.view`
+reaches the row and changes nothing, counted rather than caught.
+
+`PhotoControl` moved to `src/components/people/` and **takes its actions as
+props**. A server action is a serialisable reference, so a Server Component hands
+it the pair belonging to its own module — the interface is shared while the two
+selects stay apart. Measured: `/staff/[id]` 165 → **167 kB** for the whole
+control, because the labels are props rather than a `useI18n()` call.
+
+### A plant that passed, and why that is worth recording
+
+The guard asserting the shared module knows nothing about its callers was
+planted with `const forStudents = true`. **It passed.** The regex looked for
+`students` and the identifier said `Students`; the test was case-sensitive and
+the plant was not.
+
+> A guard that only catches the spelling you happened to think of is a guard you
+> will trust for the wrong reason. **When a plant does not bite, suspect the
+> plant and the guard equally** — here it was both, and only re-planting with a
+> token the guard actually looked for told them apart.
+
 ## Who may print one
 
 Gated on `students.view`, and the nav entry agrees with the page. A card carries
@@ -249,13 +297,6 @@ second gate to produce it.
 
 ## Not built
 
-- **Staff photographs have no upload control.** `setStudentPhoto` writes
-  `people.photo_path` through the student's `person_id`; a member of staff has a
-  `person_id` too and no screen that reaches it, so every staff card prints the
-  placeholder until one exists. The action generalises — the object path is
-  already namespaced under `people` rather than `students` — but the row-level
-  check is "may this person edit *this staff record*", which is a different
-  select and deserves to be written rather than parameterised in a hurry.
 - **A barcode or QR code.** A card that can be scanned is a card the library and
   the gate can use, which is a real feature and a real decision: what the code
   encodes (an admission number? a uuid?) determines whether a photograph of a

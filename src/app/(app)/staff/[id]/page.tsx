@@ -1,6 +1,9 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { BookOpen, CalendarClock, IdCard, Pencil } from "lucide-react";
+import { PhotoControl } from "@/components/people/photo-control";
+import { removeStaffPhoto, setStaffPhoto, staffPhotoUrl } from "../photo-actions";
+import { BUCKET_LIMITS, formatBytes } from "@/lib/storage/constants";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -36,6 +39,12 @@ export default async function StaffDetailPage({ params }: { params: Promise<{ id
   if (!record) notFound();
 
   const { staff, person, teaching, library } = record;
+  // Signed only after `staff_record` has already refused a caller without
+  // `staff.view` — rule 8 again, and the reason this is not read alongside the
+  // record: `staff_record` does not project `photo_path`, so it is a column it
+  // does not return rather than a second answer to a question it answers.
+  const photo = await staffPhotoUrl(staff.id);
+  const avatarLimits = BUCKET_LIMITS["avatars"];
   const hasLeft = staff.status !== "active";
   const address = [person.address_line1, person.address_line2].filter(Boolean).join(", ");
 
@@ -85,7 +94,27 @@ export default async function StaffDetailPage({ params }: { params: Promise<{ id
           <CardHeader>
             <CardTitle>Personal details</CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="flex flex-col gap-5">
+            <PhotoControl
+              ownerId={staff.id}
+              photoUrl={photo}
+              canManage={canManage}
+              onUpload={setStaffPhoto}
+              onRemove={removeStaffPhoto}
+              // Eight resolved strings rather than the whole catalogue: this
+              // route has no other client-side i18n consumer, and the students
+              // page measured that at +22 kB against +1 kB for props.
+              labels={{
+                heading: t("idCard.photo.heading"),
+                choose: t("idCard.photo.choose"),
+                replace: t("idCard.photo.replace"),
+                remove: t("idCard.photo.remove"),
+                none: t("idCard.photo.none"),
+                limit: t("idCard.photo.limit", { size: formatBytes(avatarLimits.maxBytes) }),
+                uploaded: t("idCard.photo.uploaded"),
+                removed: t("idCard.photo.removed"),
+              }}
+            />
             <dl className="grid grid-cols-2 gap-4 sm:grid-cols-3">
               <Fact label="Date of birth" value={person.date_of_birth} />
               <Fact

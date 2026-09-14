@@ -166,7 +166,7 @@ describe("the photograph is a signed URL and stays one", () => {
     // authorization; an optimiser that strips it removes the authorization.
     for (const file of [
       "src/components/id-card/id-card-sheet.tsx",
-      "src/app/(app)/students/[id]/photo-control.tsx",
+      "src/components/people/photo-control.tsx",
     ]) {
       const src = read(file);
       expect(
@@ -179,9 +179,68 @@ describe("the photograph is a signed URL and stays one", () => {
 
   it("never stores a URL, only a path", () => {
     // Rule 8: the object *path* in the database, never a public URL.
-    const actions = read("src/app/(app)/students/photo-actions.ts");
-    expect(actions).toMatch(/photo_path: uploaded\.path/);
-    expect(/photo_path:\s*(signed|url|http)/i.test(actions)).toBe(false);
+    for (const file of [
+      "src/app/(app)/students/photo-actions.ts",
+      "src/app/(app)/staff/photo-actions.ts",
+    ]) {
+      const actions = read(file);
+      expect(actions, file).toMatch(/photo_path: uploaded\.path/);
+      expect(/photo_path:\s*(signed|url|http)/i.test(actions), file).toBe(false);
+    }
+  });
+
+  it("shares the choreography and keeps the authorization apart", () => {
+    // The storage half — upload, sign, delete, in the order rule 8 requires —
+    // is genuinely one implementation and lives in `@/lib/storage/photos`.
+    // **Deciding who may write is not**, and this is the assertion that keeps
+    // the two from being collapsed by somebody tidying up:
+    //
+    //   a student's photograph   `students` is row-ownership, so the select
+    //                            that resolves the person already returns
+    //                            nothing to somebody who may not see the child
+    //   a colleague's            `staff` is role-wide, so the select proves
+    //                            nothing and `staff.view` is the only thing
+    //                            between a librarian and the employment record
+    //
+    // Rule 4's refinement, and the same reason `getStaffCards` repeats the
+    // check `staff_roster` makes.
+    const shared = withoutComments(read("src/lib/storage/photos.ts"));
+    expect(shared).toMatch(/createSignedUrls/);
+    // Case-insensitive, which the first draft was not: planted as `forStudents`
+    // it passed, because the regex looked for `students` and the identifier said
+    // `Students`. A guard that only catches the spelling you happened to think
+    // of is a guard you will trust for the wrong reason.
+    expect(
+      /hasPermission|current_role|students|staff/i.test(shared),
+      "the shared storage module must not know which module is calling it",
+    ).toBe(false);
+
+    const staffActions = withoutComments(read("src/app/(app)/staff/photo-actions.ts"));
+    expect(
+      staffActions,
+      "staff photo writes need their own gate: RLS on `staff` narrows nothing",
+    ).toMatch(/hasPermission\("staff\.view"\)/);
+
+    // The student one deliberately has none — the policy is the gate there, and
+    // adding a permission check would be a second answer to a question RLS
+    // already answers.
+    const studentActions = withoutComments(read("src/app/(app)/students/photo-actions.ts"));
+    expect(/hasPermission/.test(studentActions)).toBe(false);
+  });
+
+  it("takes its actions as props rather than importing one module's", () => {
+    // A server action is a serialisable reference, so the shared control is
+    // handed the pair belonging to whichever module rendered it. That is what
+    // keeps the interface shared while the two selects stay apart.
+    const control = withoutComments(read("src/components/people/photo-control.tsx"));
+    expect(control).toMatch(/onUpload:/);
+    expect(control).toMatch(/onRemove:/);
+    for (const moduleSpecific of ["setStudentPhoto", "setStaffPhoto"]) {
+      expect(
+        control.includes(moduleSpecific),
+        `the shared control must not import ${moduleSpecific}`,
+      ).toBe(false);
+    }
   });
 
   it("keeps the dictionary out of a route that had none", () => {
@@ -202,7 +261,7 @@ describe("the photograph is a signed URL and stays one", () => {
     // **A component that needs a handful of words does not need the
     // dictionary.** The parent is a Server Component holding `t` from
     // `getT()`; it resolves eight strings and passes them down.
-    const src = withoutComments(read("src/app/(app)/students/[id]/photo-control.tsx"));
+    const src = withoutComments(read("src/components/people/photo-control.tsx"));
     expect(
       /useI18n/.test(src),
       "PhotoControl must take its labels as props: calling useI18n() here pulls " +
@@ -268,7 +327,7 @@ describe("the issues found by reading it back", () => {
 
     // And the batch returns a map rather than an array, so a path that failed
     // to sign is absent rather than shifting every later child by one.
-    const photo = withoutComments(read("src/app/(app)/students/photo-actions.ts"));
+    const photo = withoutComments(read("src/lib/storage/photos.ts"));
     expect(photo).toMatch(/Promise<Map<string, string>>/);
     expect(photo).toMatch(/createSignedUrls/);
   });

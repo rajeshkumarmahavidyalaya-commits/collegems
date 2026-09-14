@@ -2,7 +2,7 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { getUserContext } from "@/lib/auth/context";
-import { photoUrl, photoUrls } from "../photo-actions";
+import { photoUrl, photoUrls } from "@/lib/storage/photos";
 import { MAX_CARDS_PER_RUN, type IdCard, type SchoolIdentity } from "@/lib/validations/id-card";
 
 export type CardSet =
