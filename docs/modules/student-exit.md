@@ -281,10 +281,108 @@ and nothing in the database noticed. The same sentence covers
 ### The count that was computed and discarded
 
 `staff_exit` took the membership count into a variable and then built its result
-object without it (`0192` returns it as `closed.library`). There is no staff-exit
-screen yet, which is exactly how a number goes missing quietly: nobody reads it,
-so nobody notices it is not there. The one person who wants it is the librarian
-wondering why a leaver's card stopped working.
+object without it (`0192` returns it as `closed.library`). That is exactly how a
+number goes missing quietly: nobody reads it, so nobody notices it is not there.
+The one person who wants it is the librarian wondering why a leaver's card
+stopped working.
+
+*(`0192`'s header, and this paragraph until now, said "there is no staff-exit
+screen yet". There is: `/staff/[id]` renders `staff-exit-control.tsx` and calls
+`recordStaffExit`. Migrations are immutable so `0192` keeps its sentence, but a
+doc repeating it is the `payroll.md` defect again — a line describing an
+intention reads exactly like one describing what is there, and the next person
+stops looking.)*
+
+---
+
+## The reason nobody kept
+
+`student_exit` refuses to run without a reason, in these words:
+
+> *Say why this child is leaving — it is the only thing a record five years from
+> now will have.*
+
+It then checks the length and **throws the words away.** `p_reason` occurs twice
+in the whole body: once in the signature, once in `if length(...) < 3`. The note
+handed on to `student_end_relationships` is not what anybody typed — it is
+`format('Left the school on %s', v_on)`, generated from the date.
+
+So the record five years from now has neither half. `students` carries no leaving
+date and no reason column, and the words never reach `audit_log` either: **the
+log copies rows, and this was never on one.** A parameter that is validated and
+dropped is invisible to every mechanism this codebase relies on to notice things.
+
+Measured across the 295 functions in `public`: **28 take somebody's own words,
+25 write them, three do not.** Two shapes, and the difference decides how bad
+each is:
+
+| | function | what the screen does |
+|---|---|---|
+| **asked and discarded** | `student_exit`, `staff_exit` | a required *Why* box, ≥3 characters, on `/students/[id]` and `/staff/[id]` |
+| **never asked** | `library_waive_staff_fine` | `p_note` declared and never mentioned; the app does not pass it |
+
+The first is the expensive one — a person is made to type a sentence and it goes
+nowhere, and the save succeeds, so nothing anywhere says otherwise. The second
+loses nothing today: it is a parameter the product cannot reach, which is rule
+15's *"a correct string nobody renders is not a feature"* wearing a signature.
+
+> **A refusal message is a promise.** *"It is the only thing a record five years
+> from now will have"* is a good sentence and an argument for a column. Shipping
+> the sentence without the column means the function is right about why it
+> matters and wrong about whether it happened.
+
+### The guard, and why it is green
+
+`tests/schema/a-reason-is-kept.test.ts` names all three with the repair each
+needs, and fails on a **fourth**. That is the point: the pattern is easy to
+repeat and impossible to see from the calling screen, where the box is filled in
+and the save returns ok.
+
+Three things about it worth copying:
+
+- **It resolves the *latest* definition of each function.** `student_exit` is
+  defined three times — `0174`, `0179`, `0180` — so a guard scanning every
+  definition reports whichever it meets last by filename accident, or reports one
+  function three times with three answers. Migrations are immutable and
+  `create or replace` is how they change, so *"what does this function do"* is
+  always a question about the highest-numbered file that defines it.
+- **The detector is deliberately generous** — any mention outside the signature
+  that is not a `raise` or a `length()` check counts as keeping it. A generous
+  test that flags three is a finding; a strict one that flags fifteen is a list
+  nobody reads. Each of the three was then confirmed by reading the whole body,
+  because a false negative here leaves a real defect unnamed.
+- **Verified by planting, in three directions**: a fourth discarding function
+  (named), an entry for a function that *does* keep its reason (rejected as
+  stale), and an entry naming a function that does not exist (rejected). Each
+  goes green on revert.
+
+### The fix, which needs a migration
+
+Not applied here — this session has no database access — so it is written down
+rather than half-built:
+
+```sql
+alter table public.students
+  add column left_on date,
+  add column exit_reason text;
+
+alter table public.staff
+  add column exit_reason text;          -- date_of_leaving already exists
+
+alter table public.book_issues
+  add column staff_fine_waive_note text; -- beside staff_fine_waived_at/_by
+```
+
+…then `student_exit` and `staff_exit` write `p_reason` (and `student_exit` writes
+`v_on` to `students.left_on`, which it already computes and returns but does not
+store), and `library_waive_staff_fine` either writes `p_note` and gains a box on
+the librarian's screen, or drops the parameter — because writing off money with
+no note is a decision somebody will be asked about.
+
+**And an alumni register waits on the same migration.** *"Who left, when, and
+why"* is the whole content of that screen, and two thirds of it is not recorded.
+A list of former students filtered on `status` can be built today; it could not
+say the one thing anybody opens it for.
 
 ---
 

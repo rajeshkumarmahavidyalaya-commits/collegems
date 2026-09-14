@@ -2237,6 +2237,57 @@ it:
   entirely: a quieter bug than the one being fixed. The roster learned to see a
   vacant post **first**, and only then was it safe to unassign.
 
+#### …and the reason it asks for is not a reason it keeps
+
+`student_exit` refuses without one, in these words: *"Say why this child is
+leaving — it is the only thing a record five years from now will have."* It then
+checks the length and **discards it.** `p_reason` occurs twice in the body: the
+signature, and the `if length(...) < 3`. The note passed on to
+`student_end_relationships` is `format('Left the school on %s', v_on)` —
+generated from the date, not the sentence somebody typed.
+
+> **A refusal message is a promise.** That sentence is a good argument for a
+> column, and shipping it without one leaves the function right about why it
+> matters and wrong about whether it happened.
+
+And the words reach nothing else either: `students` has no leaving date and no
+reason column, so **`audit_log` never sees them — the log copies rows, and this
+was never on one.** A parameter validated and dropped is invisible to every
+mechanism this codebase uses to notice things, which is why it survived six
+migrations of work on exactly this function.
+
+Measured over the 295 functions in `public`: **28 take somebody's own words, 25
+write them, three do not** — and the three split into two shapes that deserve
+different urgency:
+
+- **asked and discarded** — `student_exit` and `staff_exit`, each behind a
+  required *Why* box on a real screen. A person types a sentence, the save
+  succeeds, and nothing anywhere says it went nowhere.
+- **never asked** — `library_waive_staff_fine`, whose `p_note` is declared and
+  never mentioned and which the app calls without. Nothing is lost today; it is
+  rule 15's *"a correct string nobody renders"* wearing a signature.
+
+`tests/schema/a-reason-is-kept.test.ts` names all three with the repair each
+needs and fails on a fourth. Two things in it generalise to any guard that reads
+this schema:
+
+- **Resolve the *latest* definition.** `student_exit` is defined three times, in
+  `0174`, `0179` and `0180`. Migrations are immutable and `create or replace` is
+  how they change, so *"what does this function do"* is always a question about
+  the highest-numbered file that defines it — a sweep over every definition
+  answers it by filename accident.
+- **Prefer a generous detector.** Any mention outside the signature that is not a
+  `raise` or a `length()` check counts as keeping it. A generous test that flags
+  three is a finding; a strict one that flags fifteen is a list people learn to
+  ignore — and each of the three was confirmed by reading the whole body, because
+  a false negative here leaves a real defect unnamed.
+
+The repair is two columns on `students`, one on `staff` and one on `book_issues`;
+see `docs/modules/student-exit.md`, which carries the SQL. **An alumni register
+waits on it** — *"who left, when and why"* is the whole content of that screen
+and two thirds of it is not recorded, so the list could be built today and could
+not say the one thing anybody opens it for.
+
 #### …and an ending is not a door that stays shut
 
 The act ends the relationships somebody had. That is the first half, and this
