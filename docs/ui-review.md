@@ -576,3 +576,97 @@ Its key is `hr.attendance.unmarked`, outside the value namespace on purpose —
 
 The staff register is a screen an office marks forty people on every morning,
 so `/hr` pays it. **24 → 12** helpers still hardcoding English.
+
+---
+
+## Every route now has a floor under it
+
+*`src/app/(app)/{loading,error,not-found}.tsx`, `src/app/not-found.tsx`,
+`src/app/global-error.tsx`. Guard: `tests/app-shell/route-boundaries.test.ts`.*
+
+CLAUDE.md's non-negotiable checklist says *"every list has a designed empty
+state, loading skeleton, and error state — never a spinner on a blank page"*.
+The empty states were built module by module. The other two were not, and
+nothing said so. Measured:
+
+| | |
+|---|---|
+| pages | **88** |
+| `export default async function` (awaits before first paint) | **86** |
+| files using `<Suspense>` | **0** |
+| `loading.tsx` | **1** (`/notifications`) |
+| `error.tsx` | **1** (`/notifications`) |
+| `not-found.tsx` | **0** |
+| files calling `notFound()` | **21** |
+
+Three separate failures behind those numbers, and the third is the worst:
+
+- **A slow query looked like a dead click.** Without a `loading.tsx`, Next holds
+  the *previous* page on screen until the new one resolves. Nothing moves. That
+  does not read as loading — it reads as a click that did not register, and the
+  honest response to that is to click again.
+- **A failed query ejected you from the product.** One error boundary in the
+  whole app, so an error anywhere else unwound past the group to Next's default:
+  no shell, no sidebar, no theme, no retry.
+- **Twenty-one routes threw a 404 that nobody had designed.** Every dynamic route
+  ends `if (!row) notFound()`, and there was no `not-found.tsx` anywhere. A stale
+  bookmark to a transferred student produced Next's built-in black-and-white
+  page — outside the application, with no way back into it.
+
+### The 404's copy is a security decision, not a writing one
+
+This is the part worth carrying to the next person who edits that string.
+
+Every one of the twenty-one is `.eq("id", id).maybeSingle()` then `if (!row)
+notFound()`. Under RLS, **"there is no such row" and "that row is not yours" are
+the same answer** — the policy returns nothing either way, and the page could not
+distinguish them if it wanted to.
+
+> So the 404 must not claim absence. *"That student does not exist"* would be
+> wrong half the time **and** it would turn the page into an oracle: iterate over
+> ids and the message that comes back tells you which are real.
+
+The platform console already makes this argument about its own refusal — *"a
+message that distinguished them would be a way of asking which addresses are
+operator accounts"*. This is the same sentence one layer down, and
+`route-boundaries.test.ts` pins it in all three languages against a list of
+phrases that assert absence. Verified by planting *"That record does not exist"*
+into the English catalogue: the guard names the locale and the phrase.
+
+### Three things about the files themselves
+
+- **The group skeleton is the floor, and says so.** It cannot match eighty-six
+  page shapes, so it matches what they share — the heading block, a toolbar, six
+  rows. Nested boundaries win, so `/notifications` keeps its shaped one, and its
+  comment is the standard: *"the blocks match the real card sizes, so the page
+  does not jump when it lands."* A route worth shaping overrides.
+- **`global-error.tsx` is the one screen deliberately not translated.** It
+  replaces the *root layout*, so `I18nProvider`, `ThemeProvider` and
+  `QueryProvider` are not mounted and every hook from them throws — inside the
+  boundary that exists to catch a throw, which is a blank page rather than a
+  message. It carries inline hex for the same reason: `globals.css` is imported
+  by the layout that just failed. Hardcoded colour is forbidden in components and
+  this is not one; it is the page for when components do not work. The guard
+  forbids those hooks so nobody "fixes" the English.
+- **Both error boundaries render `error.digest`.** It is the only thing
+  connecting what somebody saw to a line in the server log — the difference
+  between a support conversation and a guess.
+
+### And the guard read its own prose first
+
+The `global-error` check failed on `global-error.tsx` **because that file's doc
+comment explains that `useI18n` must not be used there**, and the check matched
+the explanation. The operator-boundary guard learned the same thing from the
+other side, where a `--` disarmed it:
+
+> **A guard that reads prose reports on the prose.** Strip comments, then match —
+> in both directions, because a comment can hide a violation *and* fake one.
+
+### What it weighs
+
+`npm run build`, against the previous commit's build: **+1 kB on 39 of 90 routes,
+50 unchanged**, shared bundle 103 kB before and after. The +1 kB is
+`(app)/error.tsx` — a client component, so it enters the bundle for every route
+in the group. `loading.tsx` and both `not-found.tsx` are Server Components and
+cost the browser nothing. The number moves in the direction the change predicts,
+which is the only kind worth quoting.

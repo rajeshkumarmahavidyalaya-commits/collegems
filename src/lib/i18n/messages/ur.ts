@@ -377,6 +377,17 @@ export const ur: Messages = {
   "nav.arrangements": "بس اور رہائش",
 
   // --- the office batch ----------------------------------------------------
+  // --- the boundaries every route now has --------------------------------
+  "boundary.notFound.title": "ہم اسے کھول نہیں سکے",
+  "boundary.notFound.body":
+    "ہو سکتا ہے اسے ہٹا دیا گیا ہو، یا وہ آپ کے دیکھنے کے لیے نہ ہو۔ اگر آپ کسی لنک سے یہاں آئے ہیں، تو جس ریکارڈ کی طرف وہ اشارہ کرتا تھا وہ اب موجود نہیں ہے۔",
+  "boundary.notFound.back": "ڈیش بورڈ پر واپس",
+  "boundary.error.title": "یہ صفحہ لوڈ نہیں ہو سکا",
+  "boundary.error.body":
+    "کچھ ضائع نہیں ہوا۔ یہ صفحہ پڑھنے کا مسئلہ ہے، آپ کے اسکول کے ریکارڈ کا نہیں۔",
+  "boundary.error.reference": "حوالہ {digest}",
+  "boundary.error.retry": "دوبارہ کوشش کریں",
+  "boundary.loading": "لوڈ ہو رہا ہے",
   "academics.subjectKind.theory": "نظری",
   "academics.subjectKind.practical": "عملی",
 

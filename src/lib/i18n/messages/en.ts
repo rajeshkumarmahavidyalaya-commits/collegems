@@ -412,6 +412,23 @@ export const en = {
   // What was left is the half only staff see -- the admissions funnel, the
   // rollover, the schedule register, the audit trail -- and a school whose
   // office works in Hindi reads those every day.
+  // --- the boundaries every route now has --------------------------------
+  // `notFound()` is thrown by 21 dynamic routes, and under RLS "no such row"
+  // and "not yours to see" are the *same answer* -- so this copy is
+  // deliberately uninformative. Saying "that student does not exist" to
+  // somebody a policy refused would be both wrong and a way of asking which
+  // admission numbers are real. Same reasoning as the platform console's flat
+  // refusal.
+  "boundary.notFound.title": "We could not open that",
+  "boundary.notFound.body":
+    "It may have been removed, or it may not be yours to see. If you reached this from a link, the record it pointed at is no longer there.",
+  "boundary.notFound.back": "Back to the dashboard",
+  "boundary.error.title": "This page could not be loaded",
+  "boundary.error.body":
+    "Nothing has been lost. This is a problem reading the page, not a problem with your school's records.",
+  "boundary.error.reference": "Reference {digest}",
+  "boundary.error.retry": "Try again",
+  "boundary.loading": "Loading",
   "academics.subjectKind.theory": "Theory",
   "academics.subjectKind.practical": "Practical",
 

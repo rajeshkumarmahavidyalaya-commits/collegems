@@ -2842,6 +2842,47 @@ not translated.
    - Long names, URLs and chip groups reflow without clipping at 200% zoom.
    - Destructive actions are confirmed and, where data permits, undoable.
 
+### A boundary is part of the screen, not a fallback for it
+
+The checklist above says *"every list has a designed empty state, loading
+skeleton, and error state"*. The empty states were built module by module and
+the other two were not, and nothing anywhere said so. Measured: **88 pages, 86
+of them `export default async function`, zero using `<Suspense>`, and exactly
+one route group with a `loading.tsx` or an `error.tsx`.** No `not-found.tsx` at
+all, against **21 files calling `notFound()`**.
+
+- **Without a `loading.tsx`, Next holds the previous page.** Nothing moves until
+  the query returns, which does not read as loading — it reads as a click that
+  did not register, and the honest response to that is to click again.
+- **Without an `error.tsx` at the group, a failure unwinds past the shell.** No
+  sidebar, no theme, no retry, and the person's place in the product gone.
+- **Without a `not-found.tsx`, a stale bookmark ejects somebody from the app.**
+
+`(app)/{loading,error,not-found}.tsx` are the floor; nested boundaries win, so a
+route whose shape deserves matching keeps its own, as the inbox does.
+
+> **A 404's copy is a security decision.** Every one of the 21 callers is
+> `.eq("id", id).maybeSingle()` then `if (!row) notFound()`, and under RLS
+> *"there is no such row"* and *"that row is not yours"* are **the same answer**.
+> So the page must not claim absence: *"that student does not exist"* is wrong
+> half the time **and** turns the page into an oracle — iterate over ids and the
+> message says which are real. Rule 3's platform refusal, one layer down.
+
+Two more, and the second is a rule about guards rather than about screens:
+
+- **`global-error.tsx` is the one screen deliberately not translated.** It
+  replaces the *root layout*, so no provider is mounted and every hook throws —
+  inside the boundary that exists to catch a throw, which renders as a blank
+  page. It carries inline hex for the same reason, and that is not a violation of
+  the no-hardcoded-colour rule: it is the page for when components do not work.
+- **A guard that reads prose reports on the prose.** The check forbidding those
+  hooks failed on `global-error.tsx` itself, because that file's comment
+  *explains* that `useI18n` must not be used there. The operator-boundary guard
+  met the same thing from the other side, where a `--` disarmed it. **Strip
+  comments, then match** — a comment can hide a violation *and* fake one.
+
+See `docs/ui-review.md`.
+
 ### A conditional render is not a conditional load
 
 Next bundles what is **imported**, not what is rendered, so `{open && <Big/>}`

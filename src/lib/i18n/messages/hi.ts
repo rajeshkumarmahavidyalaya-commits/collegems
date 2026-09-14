@@ -377,6 +377,17 @@ export const hi: Messages = {
   "nav.arrangements": "बस और छात्रावास",
 
   // --- the office batch ----------------------------------------------------
+  // --- the boundaries every route now has --------------------------------
+  "boundary.notFound.title": "हम उसे नहीं खोल सके",
+  "boundary.notFound.body":
+    "हो सकता है उसे हटा दिया गया हो, या वह आपके देखने के लिए न हो। यदि आप किसी लिंक से यहाँ आए हैं, तो जिस अभिलेख की ओर वह इशारा करता था वह अब मौजूद नहीं है।",
+  "boundary.notFound.back": "डैशबोर्ड पर लौटें",
+  "boundary.error.title": "यह पृष्ठ लोड नहीं हो सका",
+  "boundary.error.body":
+    "कुछ भी खोया नहीं है। यह पृष्ठ पढ़ने में समस्या है, आपके विद्यालय के अभिलेखों में नहीं।",
+  "boundary.error.reference": "संदर्भ {digest}",
+  "boundary.error.retry": "फिर से कोशिश करें",
+  "boundary.loading": "लोड हो रहा है",
   "academics.subjectKind.theory": "सैद्धांतिक",
   "academics.subjectKind.practical": "प्रायोगिक",
 
