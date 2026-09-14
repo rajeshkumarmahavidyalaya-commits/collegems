@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { Mail, Loader2, UserPlus, X } from "lucide-react";
+import { Mail, Loader2, Send, UserPlus, X } from "lucide-react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -18,7 +18,13 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { useI18n } from "@/components/providers/i18n-provider";
-import { invite, revokeInvitation, type InvitationRow, type RoleOption } from "./actions";
+import {
+  announceInvitation,
+  invite,
+  revokeInvitation,
+  type InvitationRow,
+  type RoleOption,
+} from "./actions";
 import { SubjectPicker } from "./subject-picker";
 
 /**
@@ -73,17 +79,32 @@ export function TeamView({
         toast.error(result.error);
         return;
       }
-      // Both facts on one line: which address was invited, and who the login
-      // will act as. Saying only the first is how a school comes to believe a
-      // family was connected to their own child.
-      toast.success(
-        subjectName
-          ? `Invitation sent to ${email}, for ${subjectName}.`
-          : `Invitation sent to ${email}.`,
-      );
+      // Three facts, and the third is the one a school must not have to guess
+      // at: who it is for, and **whether the email actually went**. Saying only
+      // "invited" is how a school comes to believe four hundred families were
+      // told. A failed announcement is not a failed invitation, so this is a
+      // warning beside a success rather than an error.
+      const who = subjectName ? `${email}, for ${subjectName}` : email;
+      if (result.data.emailed) {
+        toast.success(`Invited ${who}. The email is queued.`);
+      } else {
+        toast.warning(`Invited ${who}, but no email went out: ${result.data.emailError}`);
+      }
       setEmail("");
       setSubjectId("");
       setSubjectName("");
+      router.refresh();
+    });
+  }
+
+  function onAnnounce(id: string, address: string) {
+    startTransition(async () => {
+      const result = await announceInvitation(id);
+      if (!result.ok) {
+        toast.error(result.error);
+        return;
+      }
+      toast.success(`Another email to ${address} is queued.`);
       router.refresh();
     });
   }
@@ -247,15 +268,32 @@ export function TeamView({
                       {canManage && (
                         <TableCell className="text-end">
                           {inv.status === "pending" && (
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              disabled={pending}
-                              onClick={() => onRevoke(inv.id, inv.email)}
-                            >
-                              <X className="me-1 size-4" aria-hidden="true" />
-                              Withdraw
-                            </Button>
+                            <div className="flex flex-wrap justify-end gap-1">
+                              {/*
+                                Only for a pending one: `invitation_announce`
+                                refuses an accepted or withdrawn invitation,
+                                and a button that will refuse you is the same
+                                defect one click along.
+                              */}
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                disabled={pending}
+                                onClick={() => onAnnounce(inv.id, inv.email)}
+                              >
+                                <Send className="me-1 size-4" aria-hidden="true" />
+                                Send again
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                disabled={pending}
+                                onClick={() => onRevoke(inv.id, inv.email)}
+                              >
+                                <X className="me-1 size-4" aria-hidden="true" />
+                                Withdraw
+                              </Button>
+                            </div>
                           )}
                         </TableCell>
                       )}

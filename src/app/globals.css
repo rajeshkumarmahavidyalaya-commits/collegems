@@ -295,6 +295,11 @@
 [dir="rtl"] svg.lucide-corner-down-left,
 [dir="rtl"] svg.lucide-log-out,
 [dir="rtl"] svg.lucide-move-left,
+/*
+ * A paper plane means "away from the writer", which is further along the
+ * reading direction — the same reason a breadcrumb chevron is in this list.
+ */
+[dir="rtl"] svg.lucide-send,
 [dir="rtl"] svg.lucide-move-right,
 [dir="rtl"] svg.lucide-undo-2,
 [dir="rtl"] svg.lucide-redo-2 {

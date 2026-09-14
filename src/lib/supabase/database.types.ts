@@ -2500,7 +2500,6 @@ export type Database = {
           status: string
           student_id: string | null
           tenant_id: string
-          token: string
         }
         Insert: {
           accepted_at?: string | null
@@ -2517,7 +2516,6 @@ export type Database = {
           status?: string
           student_id?: string | null
           tenant_id: string
-          token?: string
         }
         Update: {
           accepted_at?: string | null
@@ -2534,7 +2532,6 @@ export type Database = {
           status?: string
           student_id?: string | null
           tenant_id?: string
-          token?: string
         }
         Relationships: [
           {
@@ -8181,6 +8178,10 @@ export type Database = {
           schema_name: string
           table_name: string
         }[]
+      }
+      invitation_announce: {
+        Args: { p_invitation_id: string; p_signup_url: string }
+        Returns: number
       }
       invite_candidates: {
         Args: { p_query: string; p_subject: string }

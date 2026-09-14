@@ -2,7 +2,8 @@
 
 **Migrations** `0224` (`roles.subject`, the composite key, `invite_candidates`,
 the critic), `0225` (the trigger that fills the carried column), `0226` (number
-agreement). **Screen** `/settings/team`. **Permission** `users.manage`.
+agreement), `0227` (telling somebody), `0228` (the session the new writer
+forgot). **Screen** `/settings/team`. **Permission** `users.manage`.
 **Guard** `tests/settings/invitations.test.ts`.
 
 ---
@@ -235,3 +236,162 @@ thing it was extracted from.* The whole picker costs **1 kB**.
 - **`person_id` is not offered.** It is the fourth column
   `handle_new_auth_user` resolves and there is no role that stands for a bare
   person; adding one to the picker would be a fourth kind with no caller.
+
+---
+
+# Telling somebody they were invited
+
+`0224` made an invitation able to name a person. It was still a row in a table
+the named person had no way of knowing existed. Swept across `src/` and
+`supabase/functions/`: **nothing sent an invitation.** The only two mentions of
+the word outside this module are interface copy telling somebody to *ask* their
+administrator for one.
+
+An office wanting its 555 families online told 555 families by hand.
+
+## The audience could not express it, again
+
+`0219` found five declared events that were never raised, and the reason was not
+neglect — `notify_resolve_audience` could not say *"this child's family"*, so a
+receipt could not be addressed, so it was never sent. This is the same sentence
+one step further out:
+
+> `notify_resolve_audience` returns `TABLE(user_id uuid)` and every branch of it
+> reads `user_profiles`. **An invitee is, by definition, not a user.** There is
+> no `kind` that could be added to fix this, because the function answers *which
+> of our people* and an invitation is addressed to somebody who is not one yet.
+
+So the resolver was **not** widened. Widening it would mean a branch returning
+null ids through a function typed to return ids, and every existing caller
+learning to cope.
+
+## …and the delivery table was already ready
+
+Read before designing anything, and it settled the shape:
+
+| | |
+|---|---|
+| `notification_deliveries.recipient_user_id` | **nullable**, with an `address` column beside it |
+| `notify_claim_deliveries` | joins channel settings, notifications and the type catalogue — **never `user_profiles`** |
+| `notify-dispatch` | reads `delivery.address`, and already fails permanently when it is empty |
+
+A delivery to a bare address therefore drains through the existing dispatcher
+with **no change to the Edge Function at all**. That is rule 10's bargain paying
+out: one table and one dispatcher means a new *kind of recipient* is also a
+driver-free change.
+
+`invitation_announce` is `SECURITY DEFINER` for the reason rule 10 already gives
+— `notification_deliveries` has no INSERT policy at all — and is gated on
+`users.manage`, the permission that draws the screen it is called from.
+
+**`in_app` is deliberately not a default channel for this event.** The recipient
+has no account to open. A queued in-app message for somebody who cannot sign in
+is the queue-that-can-never-drain this codebase already refused once for
+WhatsApp. `stale_after` is 7 days: a week-old invitation email is not worth
+sending when a channel is finally switched on.
+
+## The URL is a fact about the deployment
+
+Postgres has no idea what this deployment's address is, and a setting would be a
+second copy of what the request already carries. It is a parameter: the server
+action reads `origin`, or the forwarded host and protocol behind a proxy, and
+**returns null rather than guessing** — an email containing `undefined/signup`
+is worse than an invitation nobody was told about. `invitation_announce` checks
+it is an `http(s)` URL rather than pasting it into an email unread.
+
+A raiser still writes its own words. Only the hostname comes from the caller.
+
+## Probed
+
+| step | result |
+|---|---|
+| a non-URL (`javascript:alert(1)`) | *"The sign-up address is not a web address"* |
+| announced | 1 delivery queued |
+| the delivery | `email -> probe.invitee@example.test`, **recipient_user_id NULL**, queued |
+| an administrator claiming deliveries | `42501` — the dispatcher's function is not theirs |
+| a revoked invitation | *"That invitation was already revoked"* |
+| as a teacher | *"Your role cannot invite people to this school."* |
+
+And the body, rendered:
+
+> Hello Yash Bansal,
+>
+> Rajesh Kumar Mahavidyalaya has invited you to create a login as Parent.
+>
+> Go to https://school.example.com/signup and sign up with this email address —
+> probe.invitee@example.test — and no other. The invitation is open until 28 Sep
+> 2026.
+>
+> If you were not expecting this, you can ignore it: nothing happens until
+> somebody signs up.
+
+**The claim returned 0 at first, and that is the channel rather than the
+delivery** — this school has email `is_enabled=false, provider_configured=false`.
+The control that proves it: switching the channel on inside the same rolled-back
+transaction, the dispatcher claims **2** — the invitation and one older queued
+message that had been waiting. *A held channel keeps its queue*, demonstrated
+rather than quoted.
+
+## A failed email is not a failed invitation
+
+The notice board's rule, at the invitation screen: the row is the mechanism and
+the email is the courtesy, so a school whose email channel is off must still be
+able to invite people and tell them by hand. The action returns
+`{ emailed, emailError }` beside the success, and the toast says **three** facts
+— who was invited, who the login is for, and whether the email went. Saying only
+the first is how a school comes to believe four hundred families were told.
+
+*Send again* is drawn only on a **pending** invitation, because
+`invitation_announce` refuses an accepted or withdrawn one and a button that
+will refuse you is the same defect one click along.
+
+## `invitations.token` is gone
+
+It had existed since `0004` and was referenced **nowhere** — not in one
+migration, not once in `src/`. `handle_new_auth_user` matches a signup to an
+invitation **by email**, so the token authorised nothing.
+
+`0220`'s rule decides it: a column recording an intention with no executable
+half is the defect, not the safeguard. And the specific danger of keeping it is
+that it is exactly the sort of thing somebody puts in a link — **a token that
+authorises nothing must never appear in a URL**, because a link that looks like
+an invitation link and is not one is worse than no link.
+
+What it would take to make it real, written into the migration so nobody re-adds
+it blindly: the signup form would pass it through `options.data`,
+`handle_new_auth_user` would prefer `raw_user_meta_data ->> 'invitation_token'`
+over the email match, and it would still have to check the email agrees — which
+is the match it already does.
+
+## Two mistakes, both caught by probing
+
+- **`0227` forgot `session_id`.** `notifications` carries it `not null` because
+  rule 2 says every transactional table does, and `notify_send_for` — the
+  table's only other writer — has supplied it since the module shipped.
+  *Rule 1's "every table carries `tenant_id`" has a rule-2 twin, and a new
+  writer inherits both.* Reading the table would have said so; reading the
+  existing writer would have said so. `0228` adds it, and `created_by` with it,
+  so the trail names the administrator rather than the definer function.
+- **The guard anchored on `lastIndexOf` of a function's name** — which finds the
+  `comment on function` that comes *after* the body, so the slice contained
+  nothing and the assertions passed on emptiness. CLAUDE.md records this exact
+  bug from the `0219` guard. Writing it again is why it is now a
+  `functionBody()` helper anchored on `create or replace function` rather than
+  an inline `indexOf` at each call site.
+
+  A second instrument bug in the same commit: a non-greedy
+  `insert into reference.notification_types[\s\S]*?;` run over *every migration
+  concatenated* started at an earlier file's insert and swallowed everything up
+  to this one, so an `in_app` assertion failed on somebody else's CHECK
+  constraint. It reads the one migration now.
+
+## Still not built
+
+- **Bulk invitation.** 555 families through one picker is not a workflow. Rule
+  13's shape applies — a preview of editable rows, apply through
+  `invitation_announce` so the preview and the send cannot disagree — and it is
+  the next thing this module needs.
+- **An SMS invitation.** All 555 guardians have a phone number as well as an
+  email, and the delivery table would take it unchanged. What stops it is that
+  the body is 340 characters and an SMS is not; that is a second message, not a
+  second channel on the same one.

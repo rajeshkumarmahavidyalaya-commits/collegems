@@ -2063,6 +2063,69 @@ rather than a blanket age cap.
 
 See `docs/modules/notifications.md`.
 
+#### …and the audience could not express an address either
+
+`0219`'s sentence — *look at what the audience can express before concluding a
+module forgot to call the dispatcher* — one step further out. Swept across
+`src/` and `supabase/functions/`: **nothing sent an invitation.** The row
+existed, `handle_new_auth_user` resolved it on signup, and the only two mentions
+of the word elsewhere were interface copy telling somebody to *ask* their
+administrator for one. An office wanting its 555 families online told 555
+families by hand.
+
+> `notify_resolve_audience` returns `TABLE(user_id uuid)` and every branch reads
+> `user_profiles`. **An invitee is, by definition, not a user.** There is no
+> `kind` that could be added, because the function answers *which of our people*
+> and an invitation is addressed to somebody who is not one yet.
+
+So the resolver was **not** widened — that would mean a branch returning null ids
+through a function typed to return ids, and every caller learning to cope. The
+delivery table was already ready instead, and reading it settled the design:
+`notification_deliveries.recipient_user_id` is **nullable** with an `address`
+beside it, `notify_claim_deliveries` never joins `user_profiles`, and
+`notify-dispatch` reads `delivery.address`. A delivery to a bare address drains
+through the dispatcher with **no change to the Edge Function at all** — rule
+10's bargain paying out, where a new *kind of recipient* is also a driver-free
+change.
+
+Four things:
+
+- **`in_app` is not a default channel for an event whose recipient has no
+  account.** A queued in-app message for somebody who cannot sign in is the
+  queue-that-can-never-drain this file already refused once for WhatsApp.
+- **A URL is a fact about the deployment, not about the school.** Postgres does
+  not know this app's address and a setting would be a second copy of what the
+  request carries, so it is a parameter — checked to be `http(s)` in SQL, and
+  the action **returns null rather than guessing**, because an email containing
+  `undefined/signup` is worse than an invitation nobody was told about.
+- **A failed email is not a failed invitation** — the notice board's rule at the
+  invitation screen. The action returns `{ emailed, emailError }` beside the
+  success and the toast says three facts: who was invited, who the login is for,
+  and whether the email went.
+- **A token that authorises nothing must never appear in a URL.**
+  `invitations.token` had existed since `0004` and was referenced nowhere — not
+  one migration, not once in `src/` — because `handle_new_auth_user` matches by
+  email. `0220`'s rule decides it: a column recording an intention with no
+  executable half is the defect, not the safeguard. Dropped, with what it would
+  take to make it real written into the migration so nobody re-adds it blindly.
+
+And the two the probe caught, both re-commits of rules already written here:
+
+- **Rule 1's "every table carries `tenant_id`" has a rule-2 twin, and a new
+  writer inherits both.** `notifications.session_id` is `not null`, and
+  `notify_send_for` — the table's only other writer — had supplied it since the
+  module shipped. Reading the *table* would have said so; reading the existing
+  *writer* would have said so. Neither was done, and `23502` was what asked.
+- **A guard anchored on `lastIndexOf` of a function's name finds the `comment on
+  function`, not the body** — so the slice was empty and the assertions passed on
+  nothing. This file already records that bug from the `0219` guard, which is
+  why it is a `functionBody()` helper anchored on `create or replace function`
+  now rather than an inline `indexOf` at each call site. A second one in the same
+  commit: a non-greedy `[\s\S]*?;` run over every migration concatenated started
+  at an earlier file's insert and swallowed everything up to this one.
+
+See `docs/modules/invitations.md`.
+
 ### A notice is not a notification
 
 The board is the module built on top of this one, and the line between them is

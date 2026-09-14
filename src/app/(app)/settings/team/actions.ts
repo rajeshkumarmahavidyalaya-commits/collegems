@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { headers } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
 import { inviteSchema, SUBJECT_PROMPT, type RoleSubject } from "@/lib/validations/platform";
 import type { RoleTier } from "@/lib/auth/context";
@@ -126,6 +127,54 @@ export async function inviteCandidates(
 }
 
 /**
+ * Where this deployment lives, for a link in an email.
+ *
+ * Postgres has no idea what this app's address is, and a setting would be a
+ * second copy of something the request already carries. `origin` is present on
+ * a Server Action POST; the forwarded pair is the fallback behind a proxy.
+ *
+ * Returning null rather than guessing is deliberate: `invitation_announce`
+ * refuses anything that is not an `http(s)` URL, and an email containing
+ * `undefined/signup` is worse than an invitation nobody was told about.
+ */
+async function signupUrl(): Promise<string | null> {
+  const h = await headers();
+  const origin = h.get("origin");
+  if (origin?.startsWith("http")) return origin;
+
+  const host = h.get("x-forwarded-host") ?? h.get("host");
+  if (!host) return null;
+  const proto = h.get("x-forwarded-proto") ?? (host.startsWith("localhost") ? "http" : "https");
+  return `${proto}://${host}`;
+}
+
+/**
+ * Tell somebody they were invited.
+ *
+ * Swept before building this: **nothing in the codebase sent an invitation.**
+ * The row existed, `handle_new_auth_user` resolved it on signup, and the only
+ * two mentions of the word elsewhere were interface copy telling a person to
+ * *ask* their administrator for one — so an office wanting its 555 families
+ * online told 555 families by hand.
+ */
+export async function announceInvitation(id: string): Promise<ActionResult<null>> {
+  const url = await signupUrl();
+  if (!url) {
+    return { ok: false, error: "Could not work out this site's web address to put in the email." };
+  }
+
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("invitation_announce", {
+    p_invitation_id: id,
+    p_signup_url: url,
+  });
+  if (error) return { ok: false, error: error.message };
+
+  revalidatePath("/settings/team");
+  return { ok: true, data: null };
+}
+
+/**
  * Invite somebody.
  *
  * The row is the whole mechanism: `handle_new_auth_user` resolves it by email
@@ -133,7 +182,9 @@ export async function inviteCandidates(
  * one row and stops — there is no account to create here, and creating one
  * would mean holding somebody else's password.
  */
-export async function invite(input: unknown): Promise<ActionResult<{ id: string }>> {
+export async function invite(
+  input: unknown,
+): Promise<ActionResult<{ id: string; emailed: boolean; emailError: string | null }>> {
   const parsed = inviteSchema.safeParse(input);
   if (!parsed.success) {
     return {
@@ -200,8 +251,18 @@ export async function invite(input: unknown): Promise<ActionResult<{ id: string 
     return { ok: false, error: error.message };
   }
 
+  // **A failed announcement is not a failed invitation** — the notice board's
+  // rule, at the invitation screen. The row is the mechanism; the email is the
+  // courtesy, and a school whose email channel is off must still be able to
+  // invite people and tell them by hand. So the reason travels back with the
+  // success rather than being thrown or swallowed.
+  const announced = await announceInvitation(data.id as string);
+
   revalidatePath("/settings/team");
-  return { ok: true, data: { id: data.id as string } };
+  return {
+    ok: true,
+    data: { id: data.id as string, emailed: announced.ok, emailError: announced.ok ? null : announced.error },
+  };
 }
 
 /**

@@ -35,6 +35,25 @@ function migrationSql(): string {
     .join("\n");
 }
 
+/**
+ * The **body** of a function's latest definition.
+ *
+ * Anchored on `create or replace function`, not on the last mention of the
+ * name: `comment on function public.invitation_announce(uuid, text)` contains
+ * the name too and comes *after* the body, so a `lastIndexOf` of the bare name
+ * returns the comment and a slice of it contains nothing. CLAUDE.md records
+ * exactly this bug from the `0219` guard — and it was written again here, which
+ * is why it is a helper now rather than an inline `indexOf`.
+ */
+function functionBody(name: string): string {
+  const sql = code(migrationSql());
+  const marker = `create or replace function public.${name}(`;
+  const start = sql.lastIndexOf(marker);
+  expect(start, `no migration defines public.${name}`).toBeGreaterThan(-1);
+  const end = sql.indexOf("$$;", start);
+  return sql.slice(start, end === -1 ? undefined : end);
+}
+
 /** Comments stripped — a guard that reads prose reports on the prose. */
 function code(source: string): string {
   return source
@@ -175,5 +194,84 @@ describe("the form", () => {
     const actions = code(readFileSync(join(TEAM, "actions.ts"), "utf8"));
     expect(actions).toContain("SUBJECT_PROMPT[subject]");
     expect(actions).toMatch(/fieldErrors: \{ subjectId:/);
+  });
+});
+
+describe("somebody is told they were invited", () => {
+  /**
+   * Swept before building it: **nothing sent an invitation.** The row existed,
+   * `handle_new_auth_user` resolved it on signup, and the only mentions of the
+   * word elsewhere in `src/` were interface copy telling a person to *ask*
+   * their administrator for one.
+   */
+  it("addresses an address, not a user", () => {
+    /**
+     * `notify_resolve_audience` returns `TABLE(user_id uuid)` and every branch
+     * reads `user_profiles`. An invitee is, by definition, not one — so this
+     * must not be a new `kind` there. `notification_deliveries.recipient_user_id`
+     * is nullable and `address` sits beside it; `notify_claim_deliveries` never
+     * joins `user_profiles`; and `notify-dispatch` reads `delivery.address`.
+     */
+    const body = functionBody("invitation_announce");
+    expect(body).toContain("insert into public.notification_deliveries");
+    expect(body, "the delivery must carry no recipient user").toMatch(/recipient_user_id/);
+    expect(body).toContain("role_has_permission('users.manage')");
+    // Definer, because notification_deliveries has no INSERT policy at all —
+    // which is what stops a student inventing a message from the principal.
+    expect(body).toMatch(/security definer/i);
+  });
+
+  it("declares the event, and does not queue an in-app message to somebody with no account", () => {
+    // Read the one migration that declares it. Matching across every migration
+    // concatenated let a non-greedy `[\s\S]*?;` run from an *earlier* file's
+    // insert all the way to this one, swallowing unrelated text — and the
+    // `in_app` assertion then failed on somebody else's CHECK constraint.
+    const file = readdirSync(MIGRATIONS).find((f) => f.includes("nobody_is_told"));
+    expect(file, "the migration that declares invitation.sent was renamed").toBeTruthy();
+    const sql = code(readFileSync(join(MIGRATIONS, file!), "utf8"));
+    const row = sql.match(/insert into reference\.notification_types[\s\S]*?;/);
+    expect(row, "invitation.sent is not in the catalogue").not.toBe(null);
+    expect(row![0]).toContain("array['email']");
+    expect(row![0], "an in-app message needs an account to open it").not.toContain("in_app");
+    // Rule 10's per-kind staleness: a week-old invitation email is not worth
+    // sending when a channel is switched on.
+    expect(row![0]).toContain("7 days");
+  });
+
+  it("refuses a link it cannot vouch for", () => {
+    // Postgres does not know this deployment's address, so it is a parameter —
+    // and a parameter pasted into an email unread is how `undefined/signup`
+    // reaches four hundred families.
+    const body = functionBody("invitation_announce");
+    expect(body).toMatch(/\^https\?:\/\//);
+
+    const actions = code(readFileSync(join(TEAM, "actions.ts"), "utf8"));
+    expect(actions, "the origin comes from the request, not a constant").toContain(
+      "x-forwarded-host",
+    );
+    expect(actions, "guessing a URL is worse than declining to send").toMatch(
+      /if \(!url\) \{/,
+    );
+  });
+
+  it("does not let a failed email fail the invitation", () => {
+    // The notice board's rule, at the invitation screen: the row is the
+    // mechanism and the email is the courtesy. The reason travels back with the
+    // success rather than being thrown or swallowed.
+    const actions = code(readFileSync(join(TEAM, "actions.ts"), "utf8"));
+    expect(actions).toMatch(/emailed: announced\.ok/);
+    const view = code(readFileSync(join(TEAM, "team-view.tsx"), "utf8"));
+    expect(view, "the screen must say whether the email went").toMatch(
+      /result\.data\.emailed/,
+    );
+    expect(view).toMatch(/toast\.warning/);
+  });
+
+  it("offers Send again only where it will work", () => {
+    // `invitation_announce` refuses an accepted or withdrawn invitation, and a
+    // button that will refuse you is the same defect one click along.
+    const view = code(readFileSync(join(TEAM, "team-view.tsx"), "utf8"));
+    const pendingBlock = view.slice(view.indexOf('inv.status === "pending"'));
+    expect(pendingBlock).toContain("onAnnounce(inv.id");
   });
 });
