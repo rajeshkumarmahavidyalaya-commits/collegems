@@ -234,6 +234,10 @@ export const ur: Messages = {
   "notices.category.examination": "امتحان",
   "notices.category.holiday": "تعطیل",
   "notices.category.urgent": "فوری",
+  "guardians.relationship.father": "والد",
+  "guardians.relationship.mother": "والدہ",
+  "guardians.relationship.guardian": "سرپرست",
+  "guardians.relationship.other": "دیگر",
 
   // --- values a family reads on a badge ------------------------------------
   "attendance.status.present": "حاضر",

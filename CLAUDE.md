@@ -1210,6 +1210,79 @@ This is what keeps alumni, re-admission, sibling linking, and
 staff-who-are-also-parents representable. Flattening "student" into "person"
 looks simpler for a week and then blocks all four.
 
+### …and one of those four had no write path at all
+
+`guardian_student` decides which family sees which child — the fee account, the
+timetable, `/arrangements`, the evening absence notice and the whole mobile
+contract resolve through it — and for two hundred migrations **nothing in the
+application could create a row in it.** `guardians` and `guardian_student`
+appeared in `src/` nowhere but the generated types; of the 295 functions in
+`public`, eleven mention the table and **all eleven are readers**. The 555 links
+on the demo college came from the seed, and `guardians.manage` sat in
+`NOT_YET_A_CONTROL` with the reason *"the permission is right and the screen is
+unbuilt"*.
+
+**The live half was worse than the missing half.** The bulk import collects a
+guardian and `import_validate_run` refuses a row for one — *"A guardian with no
+phone number cannot be contacted"* — and then `import_apply_run` called
+`admit_student` and never mentioned a guardian again. Measured, and the numbers
+meet in the middle: 3 import rows naming a guardian, 3 students with no
+guardian, **0 guardians created.** A field collected, validated, and dropped —
+`0220`'s defect in a second module, found only because that one taught what to
+look for.
+
+Four things, and the last two are about the *next* layer down each time:
+
+- **One definition, consulted by both.** `guardian_add` is the only way a
+  guardian is made and `import_apply_run` calls it, so the importer and the
+  office screen cannot disagree about what a guardian is. Rule 6's billing
+  sentence, applied to people.
+- **`is_primary` was a bare boolean**, so a child could have three primary
+  contacts and `links.find((l) => l.is_primary)` returned *the first row the
+  join happened to return* — two screens free to name different parents for one
+  child. Rule 4's second-row rule: a partial unique index. And then
+  `guardian_link` **demotes the incumbent** rather than letting the index refuse
+  the write: the constraint is the boundary, that is the manners.
+- **The preview said two of two were ready.** Probing the importer fix end to
+  end with one row saying `mother` and one saying `Grandmother`: both children
+  imported, one guardian created, and the office shown
+  `new row for relation "guardian_student" violates check constraint
+  "guardian_student_relationship_check"`. The asymmetry says it was an
+  oversight rather than a decision — **`gender` has a normaliser and a sentence;
+  the relationship column had neither**, so a spreadsheet saying `Mother`, which
+  is what a spreadsheet says, was refused by a CHECK that allows only `mother`.
+  Case is normalised because it is one value typed two ways; an unknown word is
+  *named*, because filing a grandmother as `guardian` is the office's decision.
+- **A search box is not a filter string.** The sibling picker's first draft was
+  `.or("first_name.ilike.%" + term + "%, …")`, and `term` is somebody's typing: a
+  guardian searched for as `O'Brien, R` closes the group early. Not a way into
+  another tenant's rows — RLS is unmoved — but the fix is not to escape more
+  carefully, it is to **stop building a query out of text**. `guardian_search`
+  takes a bound parameter, and is bounded and ordered besides.
+
+And the one that is a rule about lists rather than about guardians:
+
+> **`allowed_values(table, column)` reads the CHECK, so a sentence can consult
+> the constraint instead of carrying a second copy of it** — *for wording, never
+> for enforcement.* If the constraint is reshaped past what it recognises the
+> array comes back empty, the validator stops naming the problem, and the CHECK
+> still refuses the write: it degrades to the old behaviour rather than to a
+> hole. A `<Select>` cannot ask a CHECK what to draw, so one TypeScript copy
+> remains — and a guard reads the migration and fails when the two disagree,
+> which is the only thing that makes a second copy safe to keep.
+
+Two measurements worth carrying. The i18n catalogue is one 57 kB chunk pulled in
+by any route calling `useI18n()` in the browser, and `/students/[id]` had no
+client code at all: **167 kB → 217 kB with the hook in the card → 170 kB with
+the names resolved by `await getT()` and passed as props.** The `PhotoControl`
+bargain, and a guard rather than a comment because adding the hook back would
+compile, pass everything else, and cost 47 kB silently. And the comment-stripping
+lesson arrived a **third** time from a new direction: the guard forbidding `.or(`
+failed on the doc comment explaining why `.or(` was replaced — a SQL guard
+reading TypeScript needs the other comment syntax too.
+
+See `docs/modules/guardians.md`.
+
 ## 6. Money is append-only
 
 Payments, discounts, fines and refunds are **immutable ledger entries**.

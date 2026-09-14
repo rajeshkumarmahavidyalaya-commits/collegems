@@ -269,12 +269,12 @@ export type Database = {
           returned_by: string | null
           session_id: string
           staff_fine_payslip_id: string | null
+          staff_fine_waive_note: string | null
           staff_fine_waived_at: string | null
           staff_fine_waived_by: string | null
           status: string
           tenant_id: string
           updated_at: string
-          staff_fine_waive_note: string | null
         }
         Insert: {
           book_id: string
@@ -289,12 +289,12 @@ export type Database = {
           returned_by?: string | null
           session_id: string
           staff_fine_payslip_id?: string | null
+          staff_fine_waive_note?: string | null
           staff_fine_waived_at?: string | null
           staff_fine_waived_by?: string | null
           status?: string
           tenant_id: string
           updated_at?: string
-          staff_fine_waive_note?: string | null
         }
         Update: {
           book_id?: string
@@ -309,12 +309,12 @@ export type Database = {
           returned_by?: string | null
           session_id?: string
           staff_fine_payslip_id?: string | null
+          staff_fine_waive_note?: string | null
           staff_fine_waived_at?: string | null
           staff_fine_waived_by?: string | null
           status?: string
           tenant_id?: string
           updated_at?: string
-          staff_fine_waive_note?: string | null
         }
         Relationships: [
           {
@@ -5061,12 +5061,12 @@ export type Database = {
           department: string | null
           designation: string
           employee_code: string
+          exit_reason: string | null
           id: string
           person_id: string
           status: string
           tenant_id: string
           updated_at: string
-          exit_reason: string | null
         }
         Insert: {
           created_at?: string
@@ -5075,12 +5075,12 @@ export type Database = {
           department?: string | null
           designation: string
           employee_code: string
+          exit_reason?: string | null
           id?: string
           person_id: string
           status?: string
           tenant_id: string
           updated_at?: string
-          exit_reason?: string | null
         }
         Update: {
           created_at?: string
@@ -5089,12 +5089,12 @@ export type Database = {
           department?: string | null
           designation?: string
           employee_code?: string
+          exit_reason?: string | null
           id?: string
           person_id?: string
           status?: string
           tenant_id?: string
           updated_at?: string
-          exit_reason?: string | null
         }
         Relationships: [
           {
@@ -5514,37 +5514,37 @@ export type Database = {
           admission_date: string
           admission_number: string
           created_at: string
+          date_of_leaving: string | null
+          exit_reason: string | null
           id: string
           person_id: string
           status: string
           tenant_id: string
           updated_at: string
-          date_of_leaving: string | null
-          exit_reason: string | null
         }
         Insert: {
           admission_date?: string
           admission_number: string
           created_at?: string
+          date_of_leaving?: string | null
+          exit_reason?: string | null
           id?: string
           person_id: string
           status?: string
           tenant_id: string
           updated_at?: string
-          date_of_leaving?: string | null
-          exit_reason?: string | null
         }
         Update: {
           admission_date?: string
           admission_number?: string
           created_at?: string
+          date_of_leaving?: string | null
+          exit_reason?: string | null
           id?: string
           person_id?: string
           status?: string
           tenant_id?: string
           updated_at?: string
-          date_of_leaving?: string | null
-          exit_reason?: string | null
         }
         Relationships: [
           {
@@ -6852,6 +6852,8 @@ export type Database = {
           admission_date: string
           admission_number: string
           created_at: string
+          date_of_leaving: string | null
+          exit_reason: string | null
           id: string
           person_id: string
           status: string
@@ -6864,6 +6866,10 @@ export type Database = {
           isOneToOne: true
           isSetofReturn: false
         }
+      }
+      allowed_values: {
+        Args: { p_column: string; p_table: unknown }
+        Returns: string[]
       }
       attendance_calendar: {
         Args: { p_from: string; p_to: string }
@@ -7132,6 +7138,8 @@ export type Database = {
           admission_date: string
           admission_number: string
           created_at: string
+          date_of_leaving: string | null
+          exit_reason: string | null
           id: string
           person_id: string
           status: string
@@ -7811,6 +7819,84 @@ export type Database = {
           problem: string
         }[]
       }
+      guardian_add: {
+        Args: {
+          p_can_pickup?: boolean
+          p_is_primary?: boolean
+          p_occupation?: string
+          p_person: Json
+          p_relationship?: string
+          p_student_id: string
+        }
+        Returns: {
+          created_at: string
+          id: string
+          occupation: string | null
+          person_id: string
+          tenant_id: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "guardians"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      guardian_link: {
+        Args: {
+          p_can_pickup?: boolean
+          p_guardian_id: string
+          p_is_primary?: boolean
+          p_relationship?: string
+          p_student_id: string
+        }
+        Returns: {
+          can_pickup: boolean
+          created_at: string
+          guardian_id: string
+          id: string
+          is_primary: boolean
+          relationship: string
+          student_id: string
+          tenant_id: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "guardian_student"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      guardian_search: {
+        Args: { p_query: string }
+        Returns: {
+          children: number
+          full_name: string
+          id: string
+          occupation: string
+          phone: string
+        }[]
+      }
+      guardian_unlink: {
+        Args: { p_guardian_id: string; p_student_id: string }
+        Returns: number
+      }
+      guardian_update: {
+        Args: { p_guardian_id: string; p_occupation?: string; p_person: Json }
+        Returns: {
+          created_at: string
+          id: string
+          occupation: string | null
+          person_id: string
+          tenant_id: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "guardians"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       homework_for_student: {
         Args: { p_include_done?: boolean; p_student_id?: string }
         Returns: {
@@ -8097,6 +8183,7 @@ export type Database = {
           returned_by: string | null
           session_id: string
           staff_fine_payslip_id: string | null
+          staff_fine_waive_note: string | null
           staff_fine_waived_at: string | null
           staff_fine_waived_by: string | null
           status: string
@@ -8125,6 +8212,7 @@ export type Database = {
           returned_by: string | null
           session_id: string
           staff_fine_payslip_id: string | null
+          staff_fine_waive_note: string | null
           staff_fine_waived_at: string | null
           staff_fine_waived_by: string | null
           status: string
@@ -8976,6 +9064,7 @@ export type Database = {
           department: string | null
           designation: string
           employee_code: string
+          exit_reason: string | null
           id: string
           person_id: string
           status: string
@@ -9059,6 +9148,7 @@ export type Database = {
           department: string | null
           designation: string
           employee_code: string
+          exit_reason: string | null
           id: string
           person_id: string
           status: string
@@ -9620,6 +9710,8 @@ export type Database = {
           admission_date: string
           admission_number: string
           created_at: string
+          date_of_leaving: string | null
+          exit_reason: string | null
           id: string
           person_id: string
           status: string
@@ -9692,6 +9784,7 @@ export type Database = {
           visitor_name: string
         }[]
       }
+      words_or: { Args: { p_words: string[] }; Returns: string }
     }
     Enums: {
       [_ in never]: never

@@ -8,6 +8,8 @@ import { Separator } from "@/components/ui/separator";
 import { hasPermission } from "@/lib/auth/permissions";
 import { getStudent } from "../actions";
 import { ExitControl } from "./exit-control";
+import { GuardiansCard, type GuardianRow } from "./guardians-card";
+import { relationshipLabel, relationshipOptions } from "@/lib/validations/guardians";
 import { PhotoControl } from "@/components/people/photo-control";
 import { removeStudentPhoto, setStudentPhoto } from "../photo-actions";
 import { photoUrl } from "@/lib/storage/photos";
@@ -31,9 +33,10 @@ export default async function StudentDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const [student, canManage, t] = await Promise.all([
+  const [student, canManage, canManageGuardians, t] = await Promise.all([
     getStudent(id),
     hasPermission("students.manage"),
+    hasPermission("guardians.manage"),
     getT(),
   ]);
 
@@ -43,6 +46,30 @@ export default async function StudentDetailPage({
   const enrolments = Array.isArray(student.enrolments) ? student.enrolments : [];
   const enrolment = enrolments[0];
   const guardianLinks = Array.isArray(student.guardian_student) ? student.guardian_student : [];
+  // Flattened here rather than in the client component: the card is a
+  // `"use client"` module, so everything it receives crosses the boundary as
+  // JSON anyway, and shaping it on the server keeps the nested select's shape
+  // out of the bundle.
+  const guardians: GuardianRow[] = guardianLinks.map((link) => {
+    const gp = link.guardians?.people;
+    return {
+      guardianId: link.guardian_id,
+      fullName: gp ? `${gp.first_name} ${gp.last_name ?? ""}`.trim() : "—",
+      relationship: link.relationship,
+      relationshipName: relationshipLabel(link.relationship, t),
+      isPrimary: link.is_primary,
+      canPickup: link.can_pickup,
+      phone: gp?.phone ?? null,
+      email: gp?.email ?? null,
+      occupation: link.guardians?.occupation ?? null,
+      firstName: gp?.first_name ?? "",
+      middleName: gp?.middle_name ?? null,
+      lastName: gp?.last_name ?? null,
+      addressLine1: gp?.address_line1 ?? null,
+      city: gp?.city ?? null,
+      state: gp?.state ?? null,
+    };
+  });
   const memberships = Array.isArray(student.members) ? student.members : [];
   const membership = memberships[0];
   const issues = Array.isArray(membership?.book_issues) ? membership.book_issues : [];
@@ -177,40 +204,13 @@ export default async function StudentDetailPage({
         </Card>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Guardians</CardTitle>
-          <CardDescription>Who to contact, and who may collect this student</CardDescription>
-        </CardHeader>
-        <CardContent>
-          {guardianLinks.length === 0 ? (
-            <p className="text-sm text-muted-foreground">No guardians linked to this student yet.</p>
-          ) : (
-            <ul className="grid gap-4 sm:grid-cols-2">
-              {guardianLinks.map((link, i) => {
-                const gp = link.guardians?.people;
-                return (
-                  <li key={i} className="rounded-lg border p-3">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <span className="font-medium break-words">
-                        {gp ? `${gp.first_name} ${gp.last_name}` : "—"}
-                      </span>
-                      <Badge variant="secondary" className="capitalize">
-                        {link.relationship}
-                      </Badge>
-                      {link.is_primary && <Badge variant="outline">Primary contact</Badge>}
-                    </div>
-                    <dl className="mt-2 grid grid-cols-2 gap-3">
-                      <Fact label="Phone" value={gp?.phone} />
-                      <Fact label="Occupation" value={link.guardians?.occupation} />
-                    </dl>
-                  </li>
-                );
-              })}
-            </ul>
-          )}
-        </CardContent>
-      </Card>
+      <GuardiansCard
+        studentId={student.id}
+        studentName={fullName}
+        guardians={guardians}
+        relationships={relationshipOptions(t)}
+        canManage={canManageGuardians}
+      />
 
       <Card>
         <CardHeader>

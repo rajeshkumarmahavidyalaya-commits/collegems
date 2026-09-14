@@ -234,6 +234,10 @@ export const hi: Messages = {
   "notices.category.examination": "परीक्षा",
   "notices.category.holiday": "अवकाश",
   "notices.category.urgent": "अत्यावश्यक",
+  "guardians.relationship.father": "पिता",
+  "guardians.relationship.mother": "माता",
+  "guardians.relationship.guardian": "अभिभावक",
+  "guardians.relationship.other": "अन्य",
 
   // --- values a family reads on a badge ------------------------------------
   "attendance.status.present": "उपस्थित",

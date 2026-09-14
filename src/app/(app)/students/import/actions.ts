@@ -10,6 +10,7 @@ import {
   parseImportDate,
   type ParsedRow,
 } from "@/lib/validations/import";
+import { normaliseRelationship } from "@/lib/validations/guardians";
 import type { ActionResult } from "../../library/actions";
 
 function fail(message: string): ActionResult<never> {
@@ -219,7 +220,14 @@ export async function stageImport(
     roll_number: r.rollNumber ?? null,
     guardian_name: r.guardianName ?? null,
     guardian_phone: r.guardianPhone ?? null,
-    guardian_relationship: r.guardianRelationship ?? null,
+    // `Mother` is what a spreadsheet says and `mother` is what the CHECK on
+    // `guardian_student.relationship` allows. Gender has had a normaliser
+    // since this module shipped; this column was passed through verbatim, so
+    // a capitalised word was refused at apply time with a constraint name.
+    // An unrecognised word still goes through as typed — migration `0222`'s
+    // preview names it, and filing a grandmother as `guardian` is the office's
+    // decision rather than this line's.
+    guardian_relationship: normaliseRelationship(r.guardianRelationship),
     email: r.email ?? null,
     address_line1: r.addressLine1 ?? null,
     city: r.city ?? null,

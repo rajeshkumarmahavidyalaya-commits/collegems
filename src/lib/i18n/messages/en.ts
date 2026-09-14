@@ -261,6 +261,10 @@ export const en = {
   "notices.category.examination": "Examination",
   "notices.category.holiday": "Holiday",
   "notices.category.urgent": "Urgent",
+  "guardians.relationship.father": "Father",
+  "guardians.relationship.mother": "Mother",
+  "guardians.relationship.guardian": "Guardian",
+  "guardians.relationship.other": "Other",
 
   // --- values a family reads on a badge ------------------------------------
   // These mirror the `value` lists in src/lib/validations/*. The constant says

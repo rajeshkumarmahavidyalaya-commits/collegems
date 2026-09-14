@@ -72,10 +72,6 @@ function sourceFiles(dir: string, exts: string[], acc: string[] = []): string[] 
  * file was written for.
  */
 const NOT_YET_A_CONTROL: Record<string, string> = {
-  "guardians.manage":
-    "Guardians are read-only everywhere in the product: they are rendered on the " +
-    "student record and there is no create, edit or link control to gate. The " +
-    "permission is right and the screen is unbuilt.",
   "certificates.manage":
     "Its catalogue row means 'write and retire certificate templates', and the " +
     "template editor does not exist — templates are seeded by migration. " +
