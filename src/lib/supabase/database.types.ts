@@ -274,6 +274,7 @@ export type Database = {
           status: string
           tenant_id: string
           updated_at: string
+          staff_fine_waive_note: string | null
         }
         Insert: {
           book_id: string
@@ -293,6 +294,7 @@ export type Database = {
           status?: string
           tenant_id: string
           updated_at?: string
+          staff_fine_waive_note?: string | null
         }
         Update: {
           book_id?: string
@@ -312,6 +314,7 @@ export type Database = {
           status?: string
           tenant_id?: string
           updated_at?: string
+          staff_fine_waive_note?: string | null
         }
         Relationships: [
           {
@@ -5063,6 +5066,7 @@ export type Database = {
           status: string
           tenant_id: string
           updated_at: string
+          exit_reason: string | null
         }
         Insert: {
           created_at?: string
@@ -5076,6 +5080,7 @@ export type Database = {
           status?: string
           tenant_id: string
           updated_at?: string
+          exit_reason?: string | null
         }
         Update: {
           created_at?: string
@@ -5089,6 +5094,7 @@ export type Database = {
           status?: string
           tenant_id?: string
           updated_at?: string
+          exit_reason?: string | null
         }
         Relationships: [
           {
@@ -5513,6 +5519,8 @@ export type Database = {
           status: string
           tenant_id: string
           updated_at: string
+          date_of_leaving: string | null
+          exit_reason: string | null
         }
         Insert: {
           admission_date?: string
@@ -5523,6 +5531,8 @@ export type Database = {
           status?: string
           tenant_id: string
           updated_at?: string
+          date_of_leaving?: string | null
+          exit_reason?: string | null
         }
         Update: {
           admission_date?: string
@@ -5533,6 +5543,8 @@ export type Database = {
           status?: string
           tenant_id?: string
           updated_at?: string
+          date_of_leaving?: string | null
+          exit_reason?: string | null
         }
         Relationships: [
           {

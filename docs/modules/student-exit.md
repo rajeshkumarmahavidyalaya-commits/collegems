@@ -356,33 +356,89 @@ Three things about it worth copying:
   stale), and an entry naming a function that does not exist (rejected). Each
   goes green on revert.
 
-### The fix, which needs a migration
-
-Not applied here — this session has no database access — so it is written down
-rather than half-built:
+### The fix — migration `0220`, applied and probed
 
 ```sql
 alter table public.students
-  add column left_on date,
+  add column date_of_leaving date,   -- not `left_on`; see below
   add column exit_reason text;
-
-alter table public.staff
-  add column exit_reason text;          -- date_of_leaving already exists
-
-alter table public.book_issues
-  add column staff_fine_waive_note text; -- beside staff_fine_waived_at/_by
+alter table public.staff add column exit_reason text;
+alter table public.book_issues add column staff_fine_waive_note text;
 ```
 
-…then `student_exit` and `staff_exit` write `p_reason` (and `student_exit` writes
-`v_on` to `students.left_on`, which it already computes and returns but does not
-store), and `library_waive_staff_fine` either writes `p_note` and gains a box on
-the librarian's screen, or drops the parameter — because writing off money with
-no note is a decision somebody will be asked about.
+`student_end_relationships` writes the date and the reason **in the same
+statement as the status** — that statement is deliberately last (*"so a failure
+above leaves the child visibly still here rather than half-gone"*), and a status
+with no reason beside it is half-gone in a quieter way.
 
-**And an alumni register waits on the same migration.** *"Who left, when, and
-why"* is the whole content of that screen, and two thirds of it is not recorded.
-A list of former students filtered on `status` can be built today; it could not
-say the one thing anybody opens it for.
+And the change that is the actual bug is **one line** in `student_exit`: it now
+passes `p_reason` to that function instead of
+`format('Left the school on %s', v_on)`. The date was never lost — it is `v_on`,
+passed alongside as `p_on`. The generated sentence was restating an argument it
+was sent beside, and doing so **on top of the one thing a person had written**.
+
+`promotion_apply` needed no change: it already passes
+`format('Graduated from %s', v_from_name)`, which is a genuine reason for
+leaving and exactly what the column should hold for a graduate.
+
+Probed live as a signed-in administrator, each in a rolled-back transaction:
+
+| | |
+|---|---|
+| `student_exit` | `transferred`, 2026-09-14, *"Moving to Pune, father transferred"* |
+| **`audit_log`** | the same sentence in `new_data.exit_reason`, `old_data` null |
+| `staff_exit` | *"Resigned to take a post in Nagpur"* |
+| `library_waive_staff_fine` | note stored trimmed; an all-whitespace note stored as **NULL** |
+| a blank reason | still refused, with the sentence it always used |
+
+The `audit_log` row is what closes the finding. The reason was invisible to the
+trail *precisely because* **the log copies rows and this was never on one**. It
+is on one now.
+
+### Two things the written-down SQL got wrong
+
+This page carried the proposed migration for several days, and applying it
+unchanged would have been wrong twice — which is its own small lesson about
+SQL written away from the database it runs on.
+
+- **The column name.** It said `students.left_on`. `staff.date_of_leaving`
+  already exists and means precisely that, and two names for one concept across
+  two tables is the drift this codebase criticises everywhere else. It is
+  `students.date_of_leaving`. The *return document* of `student_exit` keeps its
+  `left_on` key, because the students screen reads it and renaming a published
+  shape to match a column is a breaking change for a nicer word.
+- **A grant that looked necessary and was not.**
+  `information_schema.column_privileges` lists every column of `students`,
+  `staff` and `book_issues` as granted to `authenticated` — which reads exactly
+  like the column-level `GRANT` that `certificates` genuinely has, and implies a
+  new column would *not* be writable by these `SECURITY INVOKER` functions.
+  `information_schema.table_privileges` shows the truth: a **table-level**
+  UPDATE grant, which `column_privileges` expands per column. `certificates` is
+  absent from the table-level list, which is how the two are told apart.
+
+  > **A view that expands one grant into many looks identical to many grants.**
+  > The check cost one query; adding the grant would have widened nothing while
+  > looking prudent, and would have been repeated by everybody who read this
+  > page afterwards.
+
+### The guard's allowlist is empty, and stays
+
+`DISCARDED` held all three. It is `{}` now, and the list remains: its job was
+never to hold those three but to make a **fourth** impossible to add silently.
+
+Emptying it broke the guard's own instrument check, which is worth recording:
+
+> The negative half of *"does the detector work in both directions"* was
+> `expect(keepsIt(student_exit)).toBe(false)` — **a negative control pinned to a
+> real defect, which expires the moment the defect is repaired**, and fails
+> looking exactly like a regression. It is synthetic now: two hand-written
+> function bodies, one that drops its reason and one that stores it, so it keeps
+> working whether or not the schema still contains an example.
+
+**And an alumni register is now buildable.** *"Who left, when, and why"* is the
+whole content of that screen, and all three are recorded from `0220` onward.
+Children who left *before* it have a status and nothing else — which is the
+honest state of the data and something the screen should say rather than hide.
 
 ---
 

@@ -16,6 +16,17 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { DataTable, exportRowsToCsv } from "@/components/data-table/data-table";
 import { DataTableToolbar } from "@/components/data-table/data-table-toolbar";
 
@@ -37,6 +48,8 @@ export function IssuesTable({ canManage }: { canManage: boolean }) {
   // `format()`, when `Intl` is already in the runtime.
   const { locale } = useI18n();
   const router = useRouter();
+  const [waiving, setWaiving] = useState<IssueRow | null>(null);
+  const [waiveNote, setWaiveNote] = useState("");
   const [pageIndex, setPageIndex] = useState(0);
   const [pageSize, setPageSize] = useState(25);
   const [sorting, setSorting] = useState<SortingState>([]);
@@ -91,17 +104,37 @@ export function IssuesTable({ canManage }: { canManage: boolean }) {
     queryClient.invalidateQueries({ queryKey: ["library-issues"] });
   }
 
-  async function handleWaive(row: IssueRow) {
-    if (!window.confirm(`Waive the ${formatCurrency(row.fineAmount)} fine for ${row.memberName}? This records a write-off; it does not erase that the book was late.`)) {
-      return;
-    }
+  /**
+   * Writing off money asks for a note now, because the function finally keeps
+   * one.
+   *
+   * `library_waive_staff_fine` has taken a `p_note` since migration `0066` and
+   * never stored it, and this screen never passed one — a parameter the product
+   * could not reach at either end. Migration `0220` gave it a column
+   * (`book_issues.staff_fine_waive_note`, beside the `_at` and `_by` that were
+   * always written), so there is now somewhere for the words to go.
+   *
+   * A `window.confirm` stood here, which was fine while the only question was
+   * *are you sure*. It cannot ask for a sentence, and a dialog is what the rest
+   * of this app uses for a decision somebody may be asked about later.
+   *
+   * The note is **optional**: the amount, the who and the when are the record,
+   * and refusing a write-off for want of a sentence would be a function schools
+   * route around (rule 12's certificate lesson). An empty box is stored as
+   * NULL, not as a note that says nothing.
+   */
+  async function handleWaive() {
+    const row = waiving;
+    if (!row) return;
     setWaivingId(row.id);
-    const result = await waiveStaffFine(row.id);
+    const result = await waiveStaffFine(row.id, waiveNote);
     setWaivingId(null);
     if (!result.ok) {
       toast.error(result.error);
       return;
     }
+    setWaiving(null);
+    setWaiveNote("");
     toast.success("Fine waived.");
     queryClient.invalidateQueries({ queryKey: ["library-issues"] });
   }
@@ -247,7 +280,10 @@ export function IssuesTable({ canManage }: { canManage: boolean }) {
                       size="sm"
                       variant="ghost"
                       disabled={waivingId === issue.id}
-                      onClick={() => handleWaive(issue)}
+                      onClick={() => {
+                        setWaiveNote("");
+                        setWaiving(issue);
+                      }}
                     >
                       Waive
                     </Button>
@@ -263,6 +299,7 @@ export function IssuesTable({ canManage }: { canManage: boolean }) {
   ];
 
   return (
+    <>
     <DataTable
       columns={columns}
       data={query.data?.rows ?? []}
@@ -335,5 +372,45 @@ export function IssuesTable({ canManage }: { canManage: boolean }) {
         </DataTableToolbar>
       )}
     />
+
+      <Dialog open={waiving !== null} onOpenChange={(open) => !open && setWaiving(null)}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Write off this fine?</DialogTitle>
+            <DialogDescription>
+              {waiving
+                ? `${formatCurrency(waiving.fineAmount)} owed by ${waiving.memberName}. This records a write-off — it does not erase that the book was late, and the amount stays on the issue.`
+                : null}
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="waive-note">Why (optional)</Label>
+            <Textarea
+              id="waive-note"
+              value={waiveNote}
+              onChange={(e) => setWaiveNote(e.target.value)}
+              placeholder="Book damaged in the flood, written off by the principal"
+              rows={3}
+            />
+            <p className="text-xs text-muted-foreground">
+              Stored against the issue, beside who wrote it off and when.
+            </p>
+          </div>
+
+          <DialogFooter>
+            <DialogClose asChild>
+              <Button variant="outline">Cancel</Button>
+            </DialogClose>
+            <Button
+              onClick={handleWaive}
+              disabled={waiving !== null && waivingId === waiving.id}
+            >
+              Write off
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }

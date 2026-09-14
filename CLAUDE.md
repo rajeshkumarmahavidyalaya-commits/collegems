@@ -2299,11 +2299,31 @@ this schema:
   ignore — and each of the three was confirmed by reading the whole body, because
   a false negative here leaves a real defect unnamed.
 
-The repair is two columns on `students`, one on `staff` and one on `book_issues`;
-see `docs/modules/student-exit.md`, which carries the SQL. **An alumni register
-waits on it** — *"who left, when and why"* is the whole content of that screen
-and two thirds of it is not recorded, so the list could be built today and could
-not say the one thing anybody opens it for.
+**Repaired in `0220`**, and the repair is one line plus three columns:
+`student_exit` passes `p_reason` on instead of `format('Left the school on %s',
+v_on)`, and `student_end_relationships` writes the date and the reason in the
+same statement as the status. Probed live — the sentence reaches `students`,
+`staff` *and* `audit_log`, which is what closes it: the reason was invisible to
+the trail **precisely because the log copies rows and this was never on one.**
+
+Three things generalise from doing it:
+
+- **A view that expands one grant into many looks identical to many grants.**
+  `information_schema.column_privileges` lists every column of `students` as
+  granted to `authenticated`, which reads exactly like the column-level `GRANT`
+  `certificates` genuinely has — and would mean a new column was unwritable by
+  a `SECURITY INVOKER` function. `table_privileges` shows the truth: a
+  table-level grant, expanded per column. One query; adding the unnecessary
+  grant would have widened nothing while looking prudent.
+- **A negative control pinned to a real defect expires when the defect is
+  fixed**, and fails looking exactly like a regression. The guard's
+  *"does the detector work in both directions"* check asserted `student_exit`
+  discards its reason; `0220` made that false. It is synthetic now — two
+  hand-written bodies, one that drops and one that stores.
+- **An emptied allowlist stays.** `DISCARDED` is `{}`, not deleted: its job was
+  never to hold those three but to make a fourth impossible to add silently.
+
+See `docs/modules/student-exit.md`.
 
 #### …and an ending is not a door that stays shut
 

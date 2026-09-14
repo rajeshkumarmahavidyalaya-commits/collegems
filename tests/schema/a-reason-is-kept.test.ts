@@ -109,33 +109,35 @@ function keepsIt(body: string, param: string): boolean {
 }
 
 /**
- * The three, each with what it costs and what would fix it.
+ * Empty, and that is the point of keeping it.
  *
- * The bar for adding a fourth is **not** "we have not got round to it". It is
- * that the words genuinely have nowhere to go and nobody is being asked for
- * them — and if somebody is being asked, the screen should stop asking before
- * this list grows.
+ * It held three when this guard was written — `student_exit` and `staff_exit`,
+ * each behind a required *Why* box on a real screen, and
+ * `library_waive_staff_fine`, whose `p_note` the application never passed.
+ * Migration `0220` closed all three: `students.date_of_leaving`,
+ * `students.exit_reason`, `staff.exit_reason` and
+ * `book_issues.staff_fine_waive_note`.
+ *
+ * **The list stays rather than being deleted with the last entry.** Its job was
+ * never to hold those three; it is to make a *fourth* impossible to add
+ * silently, and an empty allowlist beside a green assertion says "nothing is
+ * excused here" far more loudly than no allowlist at all.
+ *
+ * Probed live before this was emptied, as a signed-in administrator in a
+ * rolled-back transaction:
+ *
+ *   student_exit   status `transferred`, date_of_leaving 2026-09-14,
+ *                  exit_reason "Moving to Pune, father transferred"
+ *   audit_log      the same sentence in `new_data.exit_reason`, `old_data` null
+ *   staff_exit     exit_reason "Resigned to take a post in Nagpur"
+ *   waive note     stored trimmed; an all-whitespace note stored as NULL
+ *   blank reason   still refused, with the sentence it always used
+ *
+ * The audit line is the one that closes the finding: the reason was invisible
+ * to the log precisely because **the log copies rows and this was never on
+ * one**. It is on one now.
  */
-const DISCARDED: Record<string, string> = {
-  student_exit:
-    "Asked and discarded. The screen at /students/[id] has a required *Why* box " +
-    "(≥3 characters) and the words are validated and dropped; the note passed on " +
-    "to student_end_relationships is a generated sentence about the date, not the " +
-    "reason. Fix: `students` needs `left_on date` and `exit_reason text`, written " +
-    "here — the same two columns `staff` already has one of.",
-  staff_exit:
-    "Asked and discarded, identically. /staff/[id] has the same required *Why* " +
-    "box. `staff.date_of_leaving` exists and is written; the reason has no column. " +
-    "Fix: `staff.exit_reason text`, written here.",
-  library_waive_staff_fine:
-    "Never asked. `p_note` is declared in the signature and not mentioned again, " +
-    "and the app calls the function without it — so nothing is lost today. It is " +
-    "a parameter the product cannot reach. Fix either way: a " +
-    "`staff_fine_waive_note text` column beside `staff_fine_waived_at` and " +
-    "`staff_fine_waived_by`, which are written, and a box on the librarian's " +
-    "screen — or drop the parameter, because writing off money with no note is a " +
-    "decision somebody will be asked about.",
-};
+const DISCARDED: Record<string, string> = {};
 
 describe("a function that asks for a reason keeps it", () => {
   it("finds the functions at all", () => {
@@ -195,14 +197,37 @@ describe("a function that asks for a reason keeps it", () => {
   });
 
   it("does not mistake a function that writes its reason for one that drops it", () => {
-    // The instrument, checked against known-good bodies in both directions.
-    // `mobile_revoke_device` sets `revoked_reason = coalesce(...)`;
-    // `concession_revoke` writes it too. A guard whose detector is wrong reports
-    // on its own bug rather than on the schema.
+    // The instrument, checked in both directions. A guard whose detector is
+    // wrong reports on its own bug rather than on the schema.
+    //
+    // **The negative half used to be `student_exit`, and migration `0220` fixed
+    // it.** That is the trap worth naming: a negative control pinned to a real
+    // defect *expires the moment the defect is repaired*, and it fails looking
+    // exactly like a regression. The control is synthetic now, so it keeps
+    // working whether or not the schema still contains an example.
     const defs = latestDefinitions();
     for (const name of ["mobile_revoke_device", "concession_revoke", "notice_withdraw"]) {
       expect(keepsIt(defs.get(name)!.body, "p_reason"), `${name} does keep it`).toBe(true);
     }
-    expect(keepsIt(defs.get("student_exit")!.body, "p_reason")).toBe(false);
+
+    const discards = `create or replace function public.made_up(p_id uuid, p_reason text)
+      returns void language plpgsql as $$
+      begin
+        if length(trim(p_reason)) < 3 then raise exception 'say why'; end if;
+        update public.students set status = 'inactive' where id = p_id;
+      end; $$`;
+    expect(keepsIt(discards, "p_reason"), "a validated-and-dropped reason").toBe(false);
+
+    const writes = discards.replace(
+      "set status = 'inactive'",
+      "set status = 'inactive', exit_reason = p_reason",
+    );
+    expect(keepsIt(writes, "p_reason"), "the same body, storing it").toBe(true);
+  });
+
+  it("has nothing left excused", () => {
+    // The whole point, stated as an assertion rather than left implied by an
+    // empty object literal further up the file.
+    expect(Object.keys(DISCARDED)).toEqual([]);
   });
 });

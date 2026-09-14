@@ -502,9 +502,16 @@ export async function listIssuableMembers(search: string) {
  * rather than zeroing the amount, because the amount is what was owed and the
  * lateness is a fact worth keeping.
  */
-export async function waiveStaffFine(issueId: string): Promise<ActionResult> {
+export async function waiveStaffFine(issueId: string, note?: string): Promise<ActionResult> {
   const supabase = await createClient();
-  const { error } = await supabase.rpc("library_waive_staff_fine", { p_issue_id: issueId });
+  // `p_note` has been in this signature since 0066 and was never passed. It is
+  // stored now (0220), so the screen asks for it -- optional, because the
+  // amount, the who and the when are the record and refusing a write-off for
+  // want of a sentence is a function schools route around.
+  const { error } = await supabase.rpc("library_waive_staff_fine", {
+    p_issue_id: issueId,
+    p_note: note?.trim() || undefined,
+  });
   if (error) return { ok: false, error: error.message };
 
   revalidatePath("/library/issues");
