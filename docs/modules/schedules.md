@@ -266,3 +266,105 @@ Full exports and PDF rendering are also still not built.
 | `src/app/(app)/notifications/schedules/` | the screen |
 | `tests/schedules/schedule-sentences.test.ts` | those sentences, without a database |
 | `tests/schedules/schedules-db.test.ts` | reachability and the constraints, through real RLS |
+
+---
+
+# The waker (migrations `0229`, `0230`)
+
+`schedule_runs` was **empty**. Not one occurrence had ever fired, on a
+deployment that has had six schedules and this module since `0110`.
+
+Not a bug in the module. **Nothing was calling it.** Swept: no `vercel.json`,
+no `supabase/config.toml`, no cron entry anywhere in the repository, and
+`pg_cron` not installed. `schedule-tick`'s own header says its whole job is
+*"the one thing Postgres cannot do: be woken up"* — and nothing woke it.
+
+## …and the obvious waker is forbidden by rule 6
+
+`schedule-tick` refuses any caller whose token is not the service role, which is
+correct — the URL would otherwise let anybody make every school's messages go
+out early. But it means **the waker must hold the service-role key**, and rule 6
+says secrets never enter the Next.js app. A Vercel cron hitting a Next route
+with that key in its environment is the shortest path, and it is the one this
+module forbids.
+
+## Postgres cannot be woken, but it can wake itself
+
+Read what the Edge Function actually calls, rather than assuming it does work:
+
+```
+subscription_expire_trials()
+notify_expire_stale()
+schedules_tick(p_limit, p_max_recipients)
+```
+
+**Three RPCs, and all three are Postgres functions with defaults.** The function
+is a waker and nothing else — so with `pg_cron` there is nothing to wake. No
+HTTP, no service-role key, no secret anywhere, and the jobs run as `postgres`,
+which is exactly the authority those three already require: each is
+`SECURITY DEFINER` and revoked from everybody holding a JWT.
+
+| job | schedule |
+|---|---|
+| `schoolos_schedules_tick` | every 5 minutes |
+| `schoolos_expire_stale_deliveries` | every 30 minutes |
+| `schoolos_expire_trials` | daily, 00:10 UTC |
+
+The Edge Function **stays**: it is the deployment path for anywhere that is not
+Supabase, and it is the manual button. Two wakers are safe here by design rather
+than by luck — `schedule_runs` is unique on `(schedule_id, occurrence_at)` and
+the run begins with `on conflict do nothing`, so an occurrence runs once however
+many things ask for it. That was `0110`'s design and this is the first time
+anything has depended on it.
+
+**Five minutes, not the fifteen the Edge Function's comment says.** That figure
+was chosen when a wake-up cost an HTTP invocation; in-database it costs a
+function call, and a five-minute grain is what makes `grace_minutes` mean
+anything — at fifteen-minute resolution a five-minute grace can never be met.
+The cron's own timezone is irrelevant, which is the module's whole point:
+`schedules_tick` asks each tenant *"is it half past seven where you are?"*.
+
+## Probed: the module was right all along
+
+Enabling all six schedules for the demo college in a rolled-back transaction and
+ticking once:
+
+| | |
+|---|---|
+| `fees.due_reminder` | **done** — matched 7, notified 0, *"7 had no family login to send to."* |
+| `library.overdue` | **missed** — *"Not run: 286 minutes late, and this schedule is only worth sending within 120. Nothing was sent, and nothing will be sent for this occurrence."* |
+
+Both are the module reporting honestly on itself: the grace mechanism written
+down rather than skipped silently, and the reach problem named as its own
+number. It has been correct for a hundred and twenty migrations and nobody had
+ever seen it run.
+
+Live, the cron has now ticked at 18:45 and 18:50, `succeeded`, 26 ms.
+
+## Why nobody noticed
+
+The module is well instrumented and every instrument was pointed one step too
+far in. `schedule_runs` is the register of what ran; `schedule_problems()` asks
+whether anybody heard. **Both are silent when the tick never happens at all**,
+because a scheduler that is not running produces no runs to criticise and no
+deliveries to find fault with.
+
+> An empty register reads as *"nothing was due"*. It reads identically to
+> *"nothing is asking"*. That is `attendance_coverage`'s lesson — a rate cannot
+> say what was never measured — arriving at the scheduler.
+
+`scheduler_problems()` is the missing number, catalogued as `schedules.alive` so
+it is reachable from `/checks`. It reads `cron.job` and `cron.job_run_details`
+through a `SECURITY DEFINER` function, because that catalogue belongs to the
+`postgres` role — and the projection is deliberately *whether a job exists and
+when it last succeeded*, with no tenant data in it at all.
+
+**An external waker is not accused.** Where no in-database job exists the
+finding is `info` and says what would make it fine, because `schedule-tick` is a
+supported answer that leaves no trace in `cron.*`. Probed as an administrator
+(silent — it had just run) and as a parent (silent, and `scheduler_liveness()`
+itself refuses: *"Your role cannot see the scheduler."*).
+
+One limit, written down rather than implied: **the no-waker and stalled branches
+were verified by reading the body and by the guard, not by probing** — this
+connection cannot modify `cron.job`, so the branch could not be induced live.
