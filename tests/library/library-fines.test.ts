@@ -1,7 +1,7 @@
-import { beforeAll, describe, expect, it } from "vitest";
+import { beforeAll, expect, it } from "vitest";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/lib/supabase/database.types";
-import { tenantAClient } from "../helpers/client";
+import { describeDb, tenantAClient } from "../helpers/client";
 
 /**
  * Library fines now land in the fees ledger (migration 0026).
@@ -11,7 +11,7 @@ import { tenantAClient } from "../helpers/client";
  * staff member's fine does not go near the student fee ledger, and a librarian
  * gets exactly one way into `ledger_entries` -- a library fine -- and no other.
  */
-describe("library fines in the fees ledger", () => {
+describeDb("library fines in the fees ledger", () => {
   let a: SupabaseClient<Database>;
   let studentMemberId: string;
   let staffMemberId: string;

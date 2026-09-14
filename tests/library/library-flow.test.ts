@@ -1,7 +1,7 @@
-import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { afterAll, beforeAll, expect, it } from "vitest";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/lib/supabase/database.types";
-import { tenantAClient, tenantBClient } from "../helpers/client";
+import { describeDb, tenantAClient, tenantBClient } from "../helpers/client";
 
 /**
  * Integration coverage for the library module's business rules. These run
@@ -9,7 +9,7 @@ import { tenantAClient, tenantBClient } from "../helpers/client";
  * they check (availability accounting, borrowing caps, tenant scoping of the
  * RPCs) live in Postgres, not in the TypeScript layer.
  */
-describe("library issue/return flow", () => {
+describeDb("library issue/return flow", () => {
   let a: SupabaseClient<Database>;
   let b: SupabaseClient<Database>;
   let bookId: string;

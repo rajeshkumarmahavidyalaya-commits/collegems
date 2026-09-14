@@ -1,7 +1,7 @@
-import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { afterAll, beforeAll, expect, it } from "vitest";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/lib/supabase/database.types";
-import { tenantAClient, tenantBClient } from "../helpers/client";
+import { describeDb, tenantAClient, tenantBClient } from "../helpers/client";
 
 /**
  * Integration coverage for fees, against the real database through the real
@@ -14,7 +14,7 @@ import { tenantAClient, tenantBClient } from "../helpers/client";
  * a check constraint -- so testing them anywhere but here would be testing a
  * mock.
  */
-describe("fees ledger", () => {
+describeDb("fees ledger", () => {
   let a: SupabaseClient<Database>;
   let b: SupabaseClient<Database>;
   let studentId: string;

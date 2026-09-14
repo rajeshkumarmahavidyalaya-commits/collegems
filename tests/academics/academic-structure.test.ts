@@ -1,7 +1,7 @@
-import { beforeAll, describe, expect, it } from "vitest";
+import { beforeAll, expect, it } from "vitest";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/lib/supabase/database.types";
-import { tenantAClient, tenantBClient } from "../helpers/client";
+import { describeDb, tenantAClient, tenantBClient } from "../helpers/client";
 
 /**
  * The academic structure everything in Phase 1 and 3 stands on.
@@ -11,7 +11,7 @@ import { tenantAClient, tenantBClient } from "../helpers/client";
  * start, a closure cannot end before it begins, and "is the school open today"
  * has exactly one answer.
  */
-describe("academic structure", () => {
+describeDb("academic structure", () => {
   let a: SupabaseClient<Database>;
   let b: SupabaseClient<Database>;
   let tenantAId: string;

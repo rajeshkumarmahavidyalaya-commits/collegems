@@ -1,7 +1,7 @@
-import { beforeAll, describe, expect, it } from "vitest";
+import { beforeAll, expect, it } from "vitest";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/lib/supabase/database.types";
-import { tenantAClient, tenantBClient } from "../helpers/client";
+import { describeDb, tenantAClient, tenantBClient } from "../helpers/client";
 import { channelSends, channelState } from "@/lib/validations/notifications";
 
 /**
@@ -23,7 +23,7 @@ import { channelSends, channelState } from "@/lib/validations/notifications";
  *   - **A held channel keeps its queue rather than dropping it**, and the
  *     status read model says so in a sentence.
  */
-describe("the notification dispatcher", () => {
+describeDb("the notification dispatcher", () => {
   let a: SupabaseClient<Database>;
   let b: SupabaseClient<Database>;
 

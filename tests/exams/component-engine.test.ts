@@ -1,7 +1,7 @@
-import { beforeAll, describe, expect, it } from "vitest";
+import { beforeAll, expect, it } from "vitest";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/lib/supabase/database.types";
-import { tenantAClient, tenantBClient } from "../helpers/client";
+import { describeDb, tenantAClient, tenantBClient } from "../helpers/client";
 
 /**
  * A split paper against the real database.
@@ -25,7 +25,7 @@ import { tenantAClient, tenantBClient } from "../helpers/client";
  *     key's cascade, with a sentence in front of it for readability.
  *   - **Tenant isolation still holds** on the new table.
  */
-describe("exam components", () => {
+describeDb("exam components", () => {
   let a: SupabaseClient<Database>;
   let b: SupabaseClient<Database>;
   let examId: string;

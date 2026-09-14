@@ -1,7 +1,7 @@
-import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { afterAll, beforeAll, expect, it } from "vitest";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/lib/supabase/database.types";
-import { tenantAClient, tenantBClient } from "../helpers/client";
+import { describeDb, tenantAClient, tenantBClient } from "../helpers/client";
 
 /**
  * The general ledger against the real database.
@@ -19,7 +19,7 @@ import { tenantAClient, tenantBClient } from "../helpers/client";
  *   - **The subledger sync is idempotent**, by a partial unique index on the
  *     source document.
  */
-describe("the general ledger", () => {
+describeDb("the general ledger", () => {
   let a: SupabaseClient<Database>;
   let b: SupabaseClient<Database>;
   let tenantId: string;

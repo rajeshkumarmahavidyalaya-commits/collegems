@@ -1,7 +1,7 @@
-import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { afterAll, beforeAll, expect, it } from "vitest";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/lib/supabase/database.types";
-import { tenantAClient } from "../helpers/client";
+import { describeDb, tenantAClient } from "../helpers/client";
 
 /**
  * The four gaps `docs/modules/payroll.md` recorded and migrations 0065–0070
@@ -16,7 +16,7 @@ import { tenantAClient } from "../helpers/client";
  *
  * All test data is written under a far-future month and torn down.
  */
-describe("payroll gap fixes", () => {
+describeDb("payroll gap fixes", () => {
   let a: SupabaseClient<Database>;
   let structureComponents: object;
 

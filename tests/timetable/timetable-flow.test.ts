@@ -1,7 +1,7 @@
-import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { afterAll, beforeAll, expect, it } from "vitest";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/lib/supabase/database.types";
-import { tenantAClient, tenantBClient } from "../helpers/client";
+import { describeDb, tenantAClient, tenantBClient } from "../helpers/client";
 
 /**
  * The routine, through real RLS.
@@ -11,7 +11,7 @@ import { tenantAClient, tenantBClient } from "../helpers/client";
  * application code — the point of the tests is that the *database* says no, not
  * that some TypeScript remembered to ask.
  */
-describe("class routine", () => {
+describeDb("class routine", () => {
   let a: SupabaseClient<Database>;
   let b: SupabaseClient<Database>;
 

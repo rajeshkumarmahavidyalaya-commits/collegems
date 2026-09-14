@@ -1,7 +1,7 @@
-import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { afterAll, beforeAll, expect, it } from "vitest";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/lib/supabase/database.types";
-import { tenantAClient, tenantBClient } from "../helpers/client";
+import { describeDb, tenantAClient, tenantBClient } from "../helpers/client";
 
 /**
  * Homework, against a real class.
@@ -22,7 +22,7 @@ import { tenantAClient, tenantBClient } from "../helpers/client";
  * Everything created here is deleted in `afterAll`: the demo cohort is shared
  * with every other suite.
  */
-describe("homework", () => {
+describeDb("homework", () => {
   let a: SupabaseClient<Database>;
   let b: SupabaseClient<Database>;
 

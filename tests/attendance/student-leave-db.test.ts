@@ -1,7 +1,7 @@
-import { beforeAll, describe, expect, it } from "vitest";
+import { beforeAll, expect, it } from "vitest";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/lib/supabase/database.types";
-import { tenantAClient, tenantBClient } from "../helpers/client";
+import { describeDb, tenantAClient, tenantBClient } from "../helpers/client";
 
 /**
  * Student leave, through real RLS.
@@ -20,7 +20,7 @@ import { tenantAClient, tenantBClient } from "../helpers/client";
  *      observed, and an approval quietly rewriting yesterday's register is the
  *      edit an attendance record must not permit.
  */
-describe("student leave", () => {
+describeDb("student leave", () => {
   let a: SupabaseClient<Database>;
   let b: SupabaseClient<Database>;
 

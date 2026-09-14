@@ -1,7 +1,7 @@
-import { beforeAll, describe, expect, it } from "vitest";
+import { beforeAll, expect, it } from "vitest";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/lib/supabase/database.types";
-import { tenantAClient, tenantBClient } from "../helpers/client";
+import { describeDb, tenantAClient, tenantBClient } from "../helpers/client";
 
 /**
  * The reporting kernel, through real RLS.
@@ -12,7 +12,7 @@ import { tenantAClient, tenantBClient } from "../helpers/client";
  * and that is deliberate: if isolation depended on each of eight functions
  * remembering, the ninth would forget.
  */
-describe("reporting kernel", () => {
+describeDb("reporting kernel", () => {
   let a: SupabaseClient<Database>;
   let b: SupabaseClient<Database>;
 
@@ -228,7 +228,7 @@ describe("reporting kernel", () => {
  *   2. `total_count` is the whole answer whatever page you asked for;
  *   3. pages do not overlap and do not skip.
  */
-describe("reading a report in pages", () => {
+describeDb("reading a report in pages", () => {
   let a: SupabaseClient<Database>;
 
   beforeAll(async () => {

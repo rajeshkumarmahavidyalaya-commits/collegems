@@ -1,9 +1,9 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import { beforeAll, describe, expect, it } from "vitest";
+import { beforeAll, expect, it } from "vitest";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/lib/supabase/database.types";
-import { tenantAClient } from "../helpers/client";
+import { describeDb, tenantAClient } from "../helpers/client";
 
 /**
  * The class picker, which seventeen screens share.
@@ -24,7 +24,7 @@ const SECTION_READERS: [file: string, fn: string][] = [
   ["src/app/(app)/attendance/actions.ts", "listMarkableSections"],
 ];
 
-describe("the class picker knows which year it is", () => {
+describeDb("the class picker knows which year it is", () => {
   // Half one: the source. These are Server Actions — they call `cookies()` from
   // `next/headers`, so importing one into a test would throw outside a request
   // and the assertion would never run. A test that can never go green is a test
@@ -48,7 +48,7 @@ describe("the class picker knows which year it is", () => {
 // Half two: the data. The source check would still pass if somebody filtered on
 // the wrong session, and the failure a person actually meets is not "too many
 // rows" — it is *"which of these two Grade 1 A's is mine"*.
-describe("no two classes share a name in one year", () => {
+describeDb("no two classes share a name in one year", () => {
   let a: SupabaseClient<Database>;
 
   beforeAll(async () => {

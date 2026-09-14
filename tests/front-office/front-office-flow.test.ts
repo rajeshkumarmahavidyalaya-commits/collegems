@@ -1,7 +1,7 @@
-import { beforeAll, describe, expect, it } from "vitest";
+import { beforeAll, expect, it } from "vitest";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/lib/supabase/database.types";
-import { tenantAClient, tenantBClient } from "../helpers/client";
+import { describeDb, tenantAClient, tenantBClient } from "../helpers/client";
 
 /**
  * Front office against the real database.
@@ -10,7 +10,7 @@ import { tenantAClient, tenantBClient } from "../helpers/client";
  * cannot claim an admission that did not happen, a loss cannot be recorded
  * without a reason, and the call log cannot be tidied afterwards.
  */
-describe("front office", () => {
+describeDb("front office", () => {
   let a: SupabaseClient<Database>;
   let b: SupabaseClient<Database>;
 

@@ -1,7 +1,7 @@
-import { beforeAll, describe, expect, it } from "vitest";
+import { beforeAll, expect, it } from "vitest";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/lib/supabase/database.types";
-import { tenantAClient } from "../helpers/client";
+import { describeDb, tenantAClient } from "../helpers/client";
 
 /**
  * The salary engine, pinned to exact numbers.
@@ -22,7 +22,7 @@ import { tenantAClient } from "../helpers/client";
  *   4. Net = gross - deductions.
  *   5. Round, last.
  */
-describe("the salary engine", () => {
+describeDb("the salary engine", () => {
   let a: SupabaseClient<Database>;
 
   /** Basic 25,000 (overridable), DA 12%, HRA 40%, conveyance 1,600 fixed. */
@@ -195,7 +195,7 @@ describe("the salary engine", () => {
   });
 });
 
-describe("criticising a salary structure", () => {
+describeDb("criticising a salary structure", () => {
   let a: SupabaseClient<Database>;
 
   beforeAll(async () => {

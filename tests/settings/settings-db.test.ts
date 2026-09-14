@@ -1,7 +1,7 @@
-import { beforeAll, describe, expect, it } from "vitest";
+import { beforeAll, expect, it } from "vitest";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/lib/supabase/database.types";
-import { tenantAClient, tenantBClient } from "../helpers/client";
+import { describeDb, tenantAClient, tenantBClient } from "../helpers/client";
 
 /**
  * The settings catalogue, through real RLS.
@@ -17,7 +17,7 @@ import { tenantAClient, tenantBClient } from "../helpers/client";
  *      never set returns the catalogue's default rather than null.
  *   4. **Tenant isolation**, in both directions.
  */
-describe("settings", () => {
+describeDb("settings", () => {
   let a: SupabaseClient<Database>;
   let b: SupabaseClient<Database>;
 

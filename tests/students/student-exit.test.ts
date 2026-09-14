@@ -1,7 +1,7 @@
-import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { afterAll, beforeAll, expect, it } from "vitest";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/lib/supabase/database.types";
-import { tenantAClient } from "../helpers/client";
+import { describeDb, tenantAClient } from "../helpers/client";
 
 /**
  * Leaving, through real RLS.
@@ -15,7 +15,7 @@ import { tenantAClient } from "../helpers/client";
  * These assert the relationships actually end, that the exit is idempotent, and
  * that what it *cannot* end is reported rather than refused.
  */
-describe("student exit", () => {
+describeDb("student exit", () => {
   let a: SupabaseClient<Database>;
   let studentId: string;
 

@@ -1,7 +1,7 @@
-import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { afterAll, beforeAll, expect, it } from "vitest";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/lib/supabase/database.types";
-import { tenantAClient, tenantBClient } from "../helpers/client";
+import { describeDb, tenantAClient, tenantBClient } from "../helpers/client";
 
 /**
  * Promotion, against a real cohort.
@@ -17,7 +17,7 @@ import { tenantAClient, tenantBClient } from "../helpers/client";
  * `enrolments.status = 'active'` — a test that left the demo rolled over would
  * break attendance, fees and results for everybody.
  */
-describe("promotion", () => {
+describeDb("promotion", () => {
   let a: SupabaseClient<Database>;
   let b: SupabaseClient<Database>;
 

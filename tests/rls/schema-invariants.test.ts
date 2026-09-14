@@ -1,5 +1,5 @@
-import { describe, expect, it } from "vitest";
-import { tenantAClient } from "../helpers/client";
+import { expect, it } from "vitest";
+import { describeDb, tenantAClient } from "../helpers/client";
 
 /**
  * CLAUDE.md rule 1 as an executable check, in two halves.
@@ -13,7 +13,7 @@ import { tenantAClient } from "../helpers/client";
  * Reads the catalog through RPCs, because information_schema is not exposed
  * over PostgREST.
  */
-describe("schema invariants", () => {
+describeDb("schema invariants", () => {
   it("every table in public has tenant_id and RLS enabled", async () => {
     // `tenants` is the single documented exception — it IS the tenant, so it
     // has no tenant_id of its own (its RLS compares `id` instead).

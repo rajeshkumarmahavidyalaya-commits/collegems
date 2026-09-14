@@ -1,0 +1,94 @@
+name: CI
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+
+# A second push to the same branch supersedes the first: a queue of stale runs
+# is a queue nobody reads.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    env:
+      # Absent on a fork and in any repository without the secrets configured.
+      # The database-backed suites then SKIP rather than fail, and the banner in
+      # tests/global-setup.ts names what was missing — see docs/testing.md.
+      NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+      NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY }}
+      TEST_TENANT_A_EMAIL: ${{ secrets.TEST_TENANT_A_EMAIL }}
+      TEST_TENANT_A_PASSWORD: ${{ secrets.TEST_TENANT_A_PASSWORD }}
+      TEST_TENANT_B_EMAIL: ${{ secrets.TEST_TENANT_B_EMAIL }}
+      TEST_TENANT_B_PASSWORD: ${{ secrets.TEST_TENANT_B_PASSWORD }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Test
+        run: npm test
+
+      # Last, because it is the slowest and the three above localise a failure
+      # better. A build that succeeds while typecheck fails tells you nothing.
+      - name: Build
+        run: npm run build
+
+  # Named separately so the repository can require it, and so a run without
+  # credentials cannot be mistaken for one that proved isolation.
+  database-suites:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    if: ${{ github.event_name == 'push' }}
+
+    env:
+      NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+      NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY }}
+      TEST_TENANT_A_EMAIL: ${{ secrets.TEST_TENANT_A_EMAIL }}
+      TEST_TENANT_A_PASSWORD: ${{ secrets.TEST_TENANT_A_PASSWORD }}
+      TEST_TENANT_B_EMAIL: ${{ secrets.TEST_TENANT_B_EMAIL }}
+      TEST_TENANT_B_PASSWORD: ${{ secrets.TEST_TENANT_B_PASSWORD }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      # The two that make every migration safe. They run against a real project
+      # through real policies, so they cannot be faked with a local Postgres and
+      # they need two admin logins in two different tenants.
+      - name: Tenant isolation and schema invariants
+        run: npx vitest run tests/rls
+
+      - name: Everything else that touches the database
+        run: npm test
+
+      # A run that silently skipped them is worse than no run: it is a green
+      # tick claiming a proof that never happened.
+      - name: Fail if the isolation suite was skipped
+        if: ${{ env.TEST_TENANT_A_EMAIL == '' }}
+        run: |
+          echo "::error::The database secrets are not configured, so tenant isolation was never proved."
+          exit 1

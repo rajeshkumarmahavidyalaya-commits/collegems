@@ -1,7 +1,7 @@
-import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { afterAll, beforeAll, expect, it } from "vitest";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/lib/supabase/database.types";
-import { tenantAClient } from "../helpers/client";
+import { describeDb, tenantAClient } from "../helpers/client";
 
 /**
  * An ending is not a door that stays shut.
@@ -25,7 +25,7 @@ import { tenantAClient } from "../helpers/client";
  * These assert the refusals, in sentences, because a refusal nobody can read
  * is a refusal somebody works around.
  */
-describe("an ending closes the doors it opened", () => {
+describeDb("an ending closes the doors it opened", () => {
   let a: SupabaseClient<Database>;
 
   let studentId = "";
@@ -173,7 +173,7 @@ describe("an ending closes the doors it opened", () => {
  * not reversible from the app, so the test finds a leaver instead of creating
  * one, and skips when a school has none.
  */
-describe("a departed teacher cannot be put back on the roster", () => {
+describeDb("a departed teacher cannot be put back on the roster", () => {
   let a: SupabaseClient<Database>;
   let goneStaffId = "";
 

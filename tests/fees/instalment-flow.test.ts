@@ -1,7 +1,7 @@
-import { beforeAll, describe, expect, it } from "vitest";
+import { beforeAll, expect, it } from "vitest";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/lib/supabase/database.types";
-import { tenantAClient, tenantBClient } from "../helpers/client";
+import { describeDb, tenantAClient, tenantBClient } from "../helpers/client";
 
 /**
  * Billing periods against the real database.
@@ -10,7 +10,7 @@ import { tenantAClient, tenantBClient } from "../helpers/client";
  * period charges only what it collects.** Everything else here guards the way
  * that is enforced — a partial unique index rather than a due-date heuristic.
  */
-describe("billing periods", () => {
+describeDb("billing periods", () => {
   let a: SupabaseClient<Database>;
   let b: SupabaseClient<Database>;
   let opening: string;

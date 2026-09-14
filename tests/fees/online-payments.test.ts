@@ -1,7 +1,7 @@
-import { beforeAll, describe, expect, it } from "vitest";
+import { beforeAll, expect, it } from "vitest";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/lib/supabase/database.types";
-import { tenantAClient, tenantBClient } from "../helpers/client";
+import { describeDb, tenantAClient, tenantBClient } from "../helpers/client";
 
 /**
  * Online payments, against the real database.
@@ -20,7 +20,7 @@ import { tenantAClient, tenantBClient } from "../helpers/client";
  * (The HMAC check that guards the Edge Function itself is pinned separately in
  * `webhook-signature.test.ts`, which needs no database.)
  */
-describe("online payments", () => {
+describeDb("online payments", () => {
   let a: SupabaseClient<Database>;
   let b: SupabaseClient<Database>;
   let studentId: string;

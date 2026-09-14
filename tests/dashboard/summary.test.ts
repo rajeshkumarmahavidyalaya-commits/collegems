@@ -1,7 +1,7 @@
-import { beforeAll, describe, expect, it } from "vitest";
+import { beforeAll, expect, it } from "vitest";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/lib/supabase/database.types";
-import { tenantAClient, tenantBClient } from "../helpers/client";
+import { describeDb, tenantAClient, tenantBClient } from "../helpers/client";
 import { parseDashboardSummary, studentRegisterReading } from "@/lib/validations/dashboard";
 
 /**
@@ -23,7 +23,7 @@ import { parseDashboardSummary, studentRegisterReading } from "@/lib/validations
  * which tests the sentence the page builds from it. The gating itself was
  * probed by running the function under each role's JWT claims directly.
  */
-describe("the dashboard brief", () => {
+describeDb("the dashboard brief", () => {
   let a: SupabaseClient<Database>;
   let b: SupabaseClient<Database>;
 
@@ -208,7 +208,7 @@ describe("the dashboard brief", () => {
  * report, which covers "does it execute". What it cannot cover is whether the
  * numbers mean what the column headings say, which is what this does.
  */
-describe("the staff and teacher reports", () => {
+describeDb("the staff and teacher reports", () => {
   let a: SupabaseClient<Database>;
 
   beforeAll(async () => {

@@ -1,7 +1,7 @@
-import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { afterAll, beforeAll, expect, it } from "vitest";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/lib/supabase/database.types";
-import { tenantAClient, tenantBClient } from "../helpers/client";
+import { describeDb, tenantAClient, tenantBClient } from "../helpers/client";
 
 /**
  * The staff module, through real RLS.
@@ -16,7 +16,7 @@ import { tenantAClient, tenantBClient } from "../helpers/client";
  * gated on the **matrix** rather than on RLS (which is deliberately role-wide
  * on `staff`), and adding somebody writes two tables or neither.
  */
-describe("the staff roster", () => {
+describeDb("the staff roster", () => {
   let a: SupabaseClient<Database>;
   let b: SupabaseClient<Database>;
 

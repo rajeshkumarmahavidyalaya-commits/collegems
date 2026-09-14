@@ -1,7 +1,7 @@
-import { beforeAll, describe, expect, it } from "vitest";
+import { beforeAll, expect, it } from "vitest";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/lib/supabase/database.types";
-import { tenantAClient, tenantBClient } from "../helpers/client";
+import { describeDb, tenantAClient, tenantBClient } from "../helpers/client";
 
 /**
  * The scheduler, through real RLS.
@@ -23,7 +23,7 @@ import { tenantAClient, tenantBClient } from "../helpers/client";
  *      this and found four hundred parents had been texted has been badly
  *      served, however useful the feature is.
  */
-describe("schedules", () => {
+describeDb("schedules", () => {
   let a: SupabaseClient<Database>;
   let b: SupabaseClient<Database>;
 
@@ -160,7 +160,7 @@ describe("schedules", () => {
  * suite rather than the fees one, because the day somebody optimises the
  * scheduler's query is the day this should fail.
  */
-describe("the scheduler's fee arithmetic", () => {
+describeDb("the scheduler's fee arithmetic", () => {
   let a: SupabaseClient<Database>;
 
   beforeAll(async () => {

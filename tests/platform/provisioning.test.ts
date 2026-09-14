@@ -1,5 +1,5 @@
-import { describe, expect, it } from "vitest";
-import { tenantAClient } from "../helpers/client";
+import { expect, it } from "vitest";
+import { describeDb, tenantAClient } from "../helpers/client";
 import { SLUG_PATTERN, slugify } from "@/lib/validations/platform";
 
 /**
@@ -9,7 +9,7 @@ import { SLUG_PATTERN, slugify } from "@/lib/validations/platform";
  * and are asserted directly; the authorisation is a claim about what a signed-in
  * person can do to a *different* school, so it is probed as that person.
  */
-describe("a slug is a permanent public address", () => {
+describeDb("a slug is a permanent public address", () => {
   it("accepts what the SQL accepts and rejects what it rejects", () => {
     // Deliberately the same expression `platform_start_school` enforces. Two
     // copies of a rule is a thing this codebase throws out on sight -- but here
@@ -34,7 +34,7 @@ describe("a slug is a permanent public address", () => {
   });
 });
 
-describe("who may start a school", () => {
+describeDb("who may start a school", () => {
   it("refuses somebody who already belongs to one", async () => {
     // The whole authorisation is `current_tenant_id() is not null`, so this is
     // the test of it. A member of tenant A asking for a new tenant must be

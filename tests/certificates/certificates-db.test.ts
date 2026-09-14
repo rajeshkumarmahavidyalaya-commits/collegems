@@ -1,7 +1,7 @@
-import { beforeAll, describe, expect, it } from "vitest";
+import { beforeAll, expect, it } from "vitest";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/lib/supabase/database.types";
-import { tenantAClient, tenantBClient } from "../helpers/client";
+import { describeDb, tenantAClient, tenantBClient } from "../helpers/client";
 
 /**
  * Certificates, through real RLS.
@@ -23,7 +23,7 @@ import { tenantAClient, tenantBClient } from "../helpers/client";
  * after itself by cancelling -- which is the only cleanup the module permits,
  * and proving that is itself part of the point.
  */
-describe("certificates", () => {
+describeDb("certificates", () => {
   let a: SupabaseClient<Database>;
   let b: SupabaseClient<Database>;
 

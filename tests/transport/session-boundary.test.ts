@@ -1,7 +1,7 @@
-import { beforeAll, describe, expect, it } from "vitest";
+import { beforeAll, expect, it } from "vitest";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/lib/supabase/database.types";
-import { tenantAClient } from "../helpers/client";
+import { describeDb, tenantAClient } from "../helpers/client";
 
 /**
  * The boundary migrations `0178` and `0179` installed, and nothing was pinning.
@@ -26,7 +26,7 @@ import { tenantAClient } from "../helpers/client";
  *
  *   **an arrangement past its boundary is billed by nobody.**
  */
-describe("an arrangement cannot outlive the year it was made for", () => {
+describeDb("an arrangement cannot outlive the year it was made for", () => {
   let a: SupabaseClient<Database>;
 
   beforeAll(async () => {

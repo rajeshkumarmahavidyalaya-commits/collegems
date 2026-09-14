@@ -1,6 +1,6 @@
-import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { afterAll, beforeAll, expect, it } from "vitest";
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { tenantAClient, tenantBClient } from "../helpers/client";
+import { describeDb, tenantAClient, tenantBClient } from "../helpers/client";
 import type { Database } from "@/lib/supabase/database.types";
 
 /**
@@ -12,7 +12,7 @@ import type { Database } from "@/lib/supabase/database.types";
  * that are easy to get wrong — a child who is not enrolled next year must not
  * be carried, and a second live run for the same rollover must be refused.
  */
-describe("renewals", () => {
+describeDb("renewals", () => {
   let a: SupabaseClient<Database>;
   let b: SupabaseClient<Database>;
 

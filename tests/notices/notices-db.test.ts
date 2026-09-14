@@ -1,7 +1,7 @@
-import { beforeAll, describe, expect, it } from "vitest";
+import { beforeAll, expect, it } from "vitest";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/lib/supabase/database.types";
-import { tenantAClient, tenantBClient } from "../helpers/client";
+import { describeDb, tenantAClient, tenantBClient } from "../helpers/client";
 
 /**
  * The notice board, through real RLS.
@@ -22,7 +22,7 @@ import { tenantAClient, tenantBClient } from "../helpers/client";
  *      privileges, so they raise -- a school that could clear them could claim
  *      anything about who was told.
  */
-describe("the notice board", () => {
+describeDb("the notice board", () => {
   let a: SupabaseClient<Database>;
   let b: SupabaseClient<Database>;
 

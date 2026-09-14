@@ -1,7 +1,7 @@
-import { beforeAll, describe, expect, it } from "vitest";
+import { beforeAll, expect, it } from "vitest";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/lib/supabase/database.types";
-import { tenantAClient, tenantBClient } from "../helpers/client";
+import { describeDb, tenantAClient, tenantBClient } from "../helpers/client";
 import { mobileBootstrapSchema, mobileHomeSchema } from "@/lib/validations/mobile";
 
 /**
@@ -22,7 +22,7 @@ import { mobileBootstrapSchema, mobileHomeSchema } from "@/lib/validations/mobil
  *     administrator included, and `mobile_device_summary` gives counts instead.
  *   - **Tenant isolation still holds** on `devices`.
  */
-describe("the mobile API", () => {
+describeDb("the mobile API", () => {
   let a: SupabaseClient<Database>;
   let b: SupabaseClient<Database>;
 

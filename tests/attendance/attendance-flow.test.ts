@@ -1,7 +1,7 @@
-import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { afterAll, beforeAll, expect, it } from "vitest";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/lib/supabase/database.types";
-import { tenantAClient, tenantBClient } from "../helpers/client";
+import { describeDb, tenantAClient, tenantBClient } from "../helpers/client";
 
 /**
  * Integration coverage for attendance, against the real database through the
@@ -13,7 +13,7 @@ import { tenantAClient, tenantBClient } from "../helpers/client";
  * dates are refused, and a second tenant sees none of it. Testing these
  * anywhere but against the live policies would be testing a mock.
  */
-describe("attendance marking", () => {
+describeDb("attendance marking", () => {
   let a: SupabaseClient<Database>;
   let b: SupabaseClient<Database>;
   let sectionId: string;

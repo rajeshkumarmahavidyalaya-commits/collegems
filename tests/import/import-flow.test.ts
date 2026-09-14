@@ -1,7 +1,7 @@
-import { beforeAll, describe, expect, it } from "vitest";
+import { beforeAll, expect, it } from "vitest";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/lib/supabase/database.types";
-import { tenantAClient, tenantBClient } from "../helpers/client";
+import { describeDb, tenantAClient, tenantBClient } from "../helpers/client";
 
 /**
  * Bulk import against the real database.
@@ -11,7 +11,7 @@ import { tenantAClient, tenantBClient } from "../helpers/client";
  * the freeze — an imported row is a record of what was written, not a
  * scratchpad.
  */
-describe("bulk import", () => {
+describeDb("bulk import", () => {
   let a: SupabaseClient<Database>;
   let b: SupabaseClient<Database>;
   let runId: string | null = null;

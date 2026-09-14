@@ -1,7 +1,7 @@
-import { beforeAll, describe, expect, it } from "vitest";
+import { beforeAll, expect, it } from "vitest";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/lib/supabase/database.types";
-import { tenantAClient, tenantBClient } from "../helpers/client";
+import { describeDb, tenantAClient, tenantBClient } from "../helpers/client";
 
 /**
  * The school calendar and what it makes visible, through real RLS.
@@ -17,7 +17,7 @@ import { tenantAClient, tenantBClient } from "../helpers/client";
  * assertions are worth their weight: a calendar that drifts is a payslip that
  * drifts.
  */
-describe("the school calendar", () => {
+describeDb("the school calendar", () => {
   let a: SupabaseClient<Database>;
   let b: SupabaseClient<Database>;
 

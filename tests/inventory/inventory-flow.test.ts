@@ -1,7 +1,7 @@
-import { beforeAll, describe, expect, it } from "vitest";
+import { beforeAll, expect, it } from "vitest";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/lib/supabase/database.types";
-import { tenantAClient, tenantBClient } from "../helpers/client";
+import { describeDb, tenantAClient, tenantBClient } from "../helpers/client";
 
 /**
  * Inventory against the real database.
@@ -10,7 +10,7 @@ import { tenantAClient, tenantBClient } from "../helpers/client";
  * here tests a consequence of it: the ledger cannot be edited, the sum cannot
  * be driven negative by an issue, and the running balance ties to the total.
  */
-describe("inventory", () => {
+describeDb("inventory", () => {
   let a: SupabaseClient<Database>;
   let b: SupabaseClient<Database>;
   let chalk: { item_id: string; on_hand: number };

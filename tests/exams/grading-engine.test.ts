@@ -1,7 +1,7 @@
-import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { afterAll, beforeAll, expect, it } from "vitest";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/lib/supabase/database.types";
-import { tenantAClient, tenantBClient } from "../helpers/client";
+import { describeDb, tenantAClient, tenantBClient } from "../helpers/client";
 
 /**
  * The grading engine, against real marks.
@@ -17,7 +17,7 @@ import { tenantAClient, tenantBClient } from "../helpers/client";
  * The suite builds its own exam with hand-chosen marks rather than leaning on
  * the demo seed, so each expected total can be checked on paper.
  */
-describe("grading engine", () => {
+describeDb("grading engine", () => {
   let a: SupabaseClient<Database>;
   let b: SupabaseClient<Database>;
 

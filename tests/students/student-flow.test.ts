@@ -1,7 +1,7 @@
-import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { afterAll, beforeAll, expect, it } from "vitest";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/lib/supabase/database.types";
-import { tenantAClient, tenantBClient } from "../helpers/client";
+import { describeDb, tenantAClient, tenantBClient } from "../helpers/client";
 
 /**
  * Integration coverage for the students module, against the real database
@@ -10,7 +10,7 @@ import { tenantAClient, tenantBClient } from "../helpers/client";
  * invariant is a unique index, and tenant scoping is a policy -- so testing
  * them anywhere but here would be testing a mock.
  */
-describe("student admission flow", () => {
+describeDb("student admission flow", () => {
   let a: SupabaseClient<Database>;
   let b: SupabaseClient<Database>;
   let sectionId: string;

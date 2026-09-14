@@ -1,7 +1,7 @@
-import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { afterAll, beforeAll, expect, it } from "vitest";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/lib/supabase/database.types";
-import { tenantAClient, tenantBClient } from "../helpers/client";
+import { describeDb, tenantAClient, tenantBClient } from "../helpers/client";
 
 /**
  * Staff attendance, leave and payroll against the real database.
@@ -19,7 +19,7 @@ import { tenantAClient, tenantBClient } from "../helpers/client";
  *   - A working day with no register entry counts as PRESENT. A school that has
  *     not started marking must not have its first payroll dock everybody.
  */
-describe("HR and payroll", () => {
+describeDb("HR and payroll", () => {
   let a: SupabaseClient<Database>;
   let b: SupabaseClient<Database>;
 

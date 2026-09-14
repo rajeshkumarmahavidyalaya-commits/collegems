@@ -1,7 +1,7 @@
-import { beforeAll, describe, expect, it } from "vitest";
+import { beforeAll, expect, it } from "vitest";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/lib/supabase/database.types";
-import { tenantAClient, tenantBClient } from "../helpers/client";
+import { describeDb, tenantAClient, tenantBClient } from "../helpers/client";
 
 /**
  * The notification service, exercised through real RLS.
@@ -12,7 +12,7 @@ import { tenantAClient, tenantBClient } from "../helpers/client";
  * merely being recorded, that the dispatcher's queue functions are unreachable
  * from a browser, and that one school's outbox is invisible to another's.
  */
-describe("notification service", () => {
+describeDb("notification service", () => {
   let a: SupabaseClient<Database>;
   let b: SupabaseClient<Database>;
   let tenantAId: string;

@@ -1,7 +1,7 @@
-import { beforeAll, describe, expect, it } from "vitest";
+import { beforeAll, expect, it } from "vitest";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/lib/supabase/database.types";
-import { tenantAClient, tenantBClient } from "../helpers/client";
+import { describeDb, tenantAClient, tenantBClient } from "../helpers/client";
 import { parseCard, rankSentence } from "@/lib/validations/report-cards";
 
 /**
@@ -21,7 +21,7 @@ import { parseCard, rankSentence } from "@/lib/validations/report-cards";
  *   - **Attendance is frozen too.** It was not, in the first draft, and a
  *     reprint would have disagreed with the card that went home.
  */
-describe("report cards", () => {
+describeDb("report cards", () => {
   let a: SupabaseClient<Database>;
   let b: SupabaseClient<Database>;
   let examId: string;

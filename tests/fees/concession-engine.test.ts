@@ -1,7 +1,7 @@
-import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { afterAll, beforeAll, expect, it } from "vitest";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/lib/supabase/database.types";
-import { tenantAClient } from "../helpers/client";
+import { describeDb, tenantAClient } from "../helpers/client";
 
 /**
  * The concession engine, through real RLS, with **exact numbers**.
@@ -20,7 +20,7 @@ import { tenantAClient } from "../helpers/client";
  *   4. a fixed amount subtracts what the percentages left
  *   5. the total credit never exceeds the charge
  */
-describe("concession arithmetic", () => {
+describeDb("concession arithmetic", () => {
   let a: SupabaseClient<Database>;
   let tenantId: string;
   let studentId: string;

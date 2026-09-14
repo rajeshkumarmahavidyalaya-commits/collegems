@@ -1,7 +1,7 @@
-import { beforeAll, describe, expect, it } from "vitest";
+import { beforeAll, expect, it } from "vitest";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/lib/supabase/database.types";
-import { tenantAClient, tenantBClient } from "../helpers/client";
+import { describeDb, tenantAClient, tenantBClient } from "../helpers/client";
 
 /**
  * Transport against the real database.
@@ -23,7 +23,7 @@ import { tenantAClient, tenantBClient } from "../helpers/client";
  *   - **A fare keyed on a stop reaches a bill generated per class** — the point
  *     of the module: `fees_billable_lines` unions both sources.
  */
-describe("transport", () => {
+describeDb("transport", () => {
   let a: SupabaseClient<Database>;
   let b: SupabaseClient<Database>;
   let routeBoth: string;

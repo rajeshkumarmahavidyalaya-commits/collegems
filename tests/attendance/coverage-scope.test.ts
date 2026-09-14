@@ -1,7 +1,7 @@
-import { beforeAll, describe, expect, it } from "vitest";
+import { beforeAll, expect, it } from "vitest";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/lib/supabase/database.types";
-import { tenantAClient } from "../helpers/client";
+import { describeDb, tenantAClient } from "../helpers/client";
 
 /**
  * The two functions that answer *"which registers were never taken"*, and the
@@ -26,7 +26,7 @@ import { tenantAClient } from "../helpers/client";
  * Narrow one side and not the other and the first assertion fails. Widen the
  * section list back and the second does.
  */
-describe("attendance coverage is scoped the same way its evidence is", () => {
+describeDb("attendance coverage is scoped the same way its evidence is", () => {
   let a: SupabaseClient<Database>;
   const from = "2026-08-01";
   const to = "2026-09-09";

@@ -84,6 +84,8 @@ After any migration, regenerate types into
 | [docs/modules/guardians.md](./docs/modules/guardians.md) | Guardians: the write path nobody had, and the import that collected one and dropped it |
 | [docs/modules/invitations.md](./docs/modules/invitations.md) | Invitations: the form that never asked which person a login was for |
 | [docs/ui-review.md](./docs/ui-review.md) | A UI pass with the app actually running, and the three translated strings nothing rendered |
+| [docs/testing.md](./docs/testing.md) | Running the suite, the two logins it needs, and why half of it skips |
+| [docs/roadmap.md](./docs/roadmap.md) | From built to working: what has never run, and the order to fix it in |
 | [docs/performance.md](./docs/performance.md) | What was actually slow, measured before and after |
 | [docs/design/decisions.md](./docs/design/decisions.md) | Palette, type, spacing — and why |
 | `design-system/schoolos/MASTER.md` | Source of truth for all UI values |

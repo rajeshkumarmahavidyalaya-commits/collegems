@@ -1,7 +1,7 @@
-import { beforeAll, describe, expect, it } from "vitest";
+import { beforeAll, expect, it } from "vitest";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/lib/supabase/database.types";
-import { tenantAClient, tenantBClient } from "../helpers/client";
+import { describeDb, tenantAClient, tenantBClient } from "../helpers/client";
 
 /**
  * The load-bearing test for this whole architecture: tenant isolation is
@@ -9,7 +9,7 @@ import { tenantAClient, tenantBClient } from "../helpers/client";
  * hitting the real API -- not just for application code that remembers to
  * add a `where tenant_id = ...`.
  */
-describe("cross-tenant isolation", () => {
+describeDb("cross-tenant isolation", () => {
   let a: SupabaseClient<Database>;
   let b: SupabaseClient<Database>;
   let tenantAId: string;

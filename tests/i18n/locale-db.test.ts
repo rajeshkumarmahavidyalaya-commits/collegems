@@ -1,7 +1,7 @@
-import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { afterAll, beforeAll, expect, it } from "vitest";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/lib/supabase/database.types";
-import { tenantAClient } from "../helpers/client";
+import { describeDb, tenantAClient } from "../helpers/client";
 import { LOCALE_CODES } from "@/lib/i18n/config";
 
 /**
@@ -19,7 +19,7 @@ import { LOCALE_CODES } from "@/lib/i18n/config";
  *     deployment with no catalogue in the bundle would render entirely in
  *     English while claiming to be Urdu.
  */
-describe("choosing a language", () => {
+describeDb("choosing a language", () => {
   let a: SupabaseClient<Database>;
   let original: string | null = null;
 

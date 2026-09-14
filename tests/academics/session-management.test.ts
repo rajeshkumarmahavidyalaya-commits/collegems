@@ -1,7 +1,7 @@
-import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { afterAll, beforeAll, expect, it } from "vitest";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/lib/supabase/database.types";
-import { tenantAClient } from "../helpers/client";
+import { describeDb, tenantAClient } from "../helpers/client";
 
 /**
  * Academic years, through real RLS.
@@ -16,7 +16,7 @@ import { tenantAClient } from "../helpers/client";
  * The tests use a far-future year so they cannot collide with the school's
  * real ones, and remove it afterwards.
  */
-describe("academic years", () => {
+describeDb("academic years", () => {
   let a: SupabaseClient<Database>;
   const created: string[] = [];
   const FAR = { name: "2098-2099 (test)", start: "2098-04-01", end: "2099-03-31" };
