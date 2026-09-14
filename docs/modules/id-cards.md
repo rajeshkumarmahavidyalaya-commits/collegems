@@ -183,6 +183,62 @@ the *single-card* query, which legitimately reads enrolments.
 
 Both ends are asserted now, before the slice.
 
+## Staff cards, and the gate a student card does not need
+
+The same document with different facts — and **a different authorization story**,
+which is the part worth reading twice.
+
+| | RLS on the table | what narrows the rows | what the page needs |
+|---|---|---|---|
+| student card | **row-ownership** | the policy: a class teacher gets their own children | nothing beyond `students.view` |
+| staff card | **role-wide** | nothing — admin, teacher, accountant and librarian each read every row | `staff.view`, checked in the function |
+
+That is rule 4's refinement arriving in a module: *the matrix does real work
+wherever RLS is deliberately tenant-wide.* `staff_roster` already makes the same
+check **inside the function that produces the data**, and this module cannot
+simply call it — the roster returns no `photo_path`, and a card without a
+photograph is not a card — so it **repeats** the gate rather than inheriting it.
+
+> The thing to notice is that skipping it would have been **invisible**. The
+> rows come back to a librarian exactly as they come back to the principal, so
+> there is no empty screen and no error to notice. Only the matrix says no.
+
+Two smaller decisions:
+
+- **A leaver gets no card.** `status = 'active'`, and the button disappears from
+  a departed member of staff's page. A badge that still opens a door is
+  `student_exit`'s *"an ending is not a door that stays shut"*, pointed at a
+  piece of plastic.
+- **The department list is built from the rows**, not from an enumeration,
+  because `staff.department` is free text. A school that has typed "Science" and
+  "Sciences" sees two entries — the honest rendering of what is in the column,
+  and a better prompt to tidy it than a silent merge.
+
+### The face had to stop being student-shaped
+
+`IdCardFace` was built around `admissionNumber`, `className`, `rollNumber` and
+`guardianName`. Staff cards would have meant either a second component or a type
+where half the fields are always null, and **neither survives a third kind of
+card** — a visitor pass, an examiner's temporary badge.
+
+So it renders a `PersonCard`: a heading, a subtitle, and a list of
+already-labelled facts.
+
+> **Each module decides what a card says; the face decides what one looks
+> like.** Labels arrive resolved because the module building a card already
+> holds `t`, and the face is a Server Component.
+
+`studentFace()` and `staffFace()` are the two mappers. The guard asserts the face
+mentions no student-only field — and `className` is deliberately *not* in that
+list, which is the instructive omission: it is both a student field and React's
+own prop, so every `<div className=…>` matches it. **A field name that collides
+with a framework prop cannot be swept for by name.** The type covers it instead:
+`PersonCard` has no such property, so reading one would not compile.
+
+Measured: the two new routes are **139 kB** and **173 kB**, identical to the
+student pair because they are the same components, and `/staff/[id]` did not move
+— the card link is a plain `<Link>`, not a client component.
+
 ## Who may print one
 
 Gated on `students.view`, and the nav entry agrees with the page. A card carries
@@ -193,9 +249,13 @@ second gate to produce it.
 
 ## Not built
 
-- **Staff cards.** The same shape over `staff` and the same `avatars` bucket;
-  `photo-actions.ts` already namespaces the object path under `people` rather
-  than `students` so that work is an addition, not a rewrite.
+- **Staff photographs have no upload control.** `setStudentPhoto` writes
+  `people.photo_path` through the student's `person_id`; a member of staff has a
+  `person_id` too and no screen that reaches it, so every staff card prints the
+  placeholder until one exists. The action generalises — the object path is
+  already namespaced under `people` rather than `students` — but the row-level
+  check is "may this person edit *this staff record*", which is a different
+  select and deserves to be written rather than parameterised in a hurry.
 - **A barcode or QR code.** A card that can be scanned is a card the library and
   the gate can use, which is a real feature and a real decision: what the code
   encodes (an admission number? a uuid?) determines whether a photograph of a

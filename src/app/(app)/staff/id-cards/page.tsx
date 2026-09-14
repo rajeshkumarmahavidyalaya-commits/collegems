@@ -2,69 +2,52 @@ import Link from "next/link";
 import { ArrowLeft, TriangleAlert } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { hasPermission } from "@/lib/auth/permissions";
-import { getT, getLocale } from "@/lib/i18n/server";
-import { listSections } from "../actions";
-import { getIdCards } from "./actions";
+import { getT } from "@/lib/i18n/server";
+import { getStaffCards } from "./actions";
 import { IdCardSheet } from "@/components/id-card/id-card-sheet";
 import { PrintCardsButton } from "@/components/id-card/print-cards-button";
-import { ClassPicker } from "./class-picker";
+import { DepartmentPicker } from "./department-picker";
 import {
   CARDS_PER_SHEET,
   MAX_CARDS_PER_RUN,
-  cardGaps,
   setSummary,
-  studentFace,
+  staffCardGaps,
+  staffFace,
 } from "@/lib/validations/id-card";
-import { formatDate } from "@/lib/i18n/format";
 
-export const metadata = { title: "ID cards" };
+export const metadata = { title: "Staff ID cards" };
 
 /**
- * Cards for a whole class, eight to a sheet.
+ * Cards for everybody employed here.
  *
- * Gated on `students.view` rather than `students.manage`: a card carries the
- * name, class, admission number and guardian phone that `/students` already
- * shows the same roles, and RLS decides *which* children — a class teacher
- * printing "their" class gets their own, which is the right answer and needs no
- * second gate to produce it.
- *
- * The class list comes from `listSections()`, which is session-scoped, so the
- * picker cannot offer last year's "Grade 1 · A" beside this year's.
+ * The gate lives in `getStaffCards`, not on this page, and that is deliberate:
+ * RLS on `staff` is role-wide, so the rows come back to a librarian exactly as
+ * they come back to the principal, and a check drawn only in the interface
+ * would be rule 4's *"the UI layer is never the gate"* in its plainest form.
+ * The page renders what the function chose to say.
  */
-export default async function IdCardsPage({
+export default async function StaffIdCardsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ section?: string }>;
+  searchParams: Promise<{ department?: string }>;
 }) {
-  const { section } = await searchParams;
-  const [canView, sections, t, locale] = await Promise.all([
-    hasPermission("students.view"),
-    listSections(),
-    getT(),
-    getLocale(),
-  ]);
+  const { department } = await searchParams;
+  const [result, t] = await Promise.all([getStaffCards(department), getT()]);
 
-  if (!canView) {
+  if (!result.ok && result.reason === "withheld") {
     return (
       <Card>
         <CardContent className="py-14 text-center text-sm text-muted-foreground">
-          {t("state.error.title")}
+          {t("idCard.staffWithheld")}
         </CardContent>
       </Card>
     );
   }
 
-  const sectionId = section ?? sections[0]?.id ?? null;
-  const result = sectionId ? await getIdCards(sectionId) : null;
-  const cards = result?.ok ? result.cards : [];
-
-  // One sentence for the set rather than eighty for forty cards, and the gap
-  // list only for the cards that have one. A person about to press print wants
-  // "six have no photograph", not six hundred words.
-  const summary = result?.ok ? setSummary(cards, t) : null;
+  const cards = result.ok ? result.cards : [];
+  const summary = setSummary(cards, t);
   const flagged = cards
-    .map((card) => ({ card, gaps: cardGaps(card, t) }))
+    .map((card) => ({ card, gaps: staffCardGaps(card, t) }))
     .filter(({ gaps }) => gaps.length > 0);
 
   return (
@@ -72,23 +55,30 @@ export default async function IdCardsPage({
       <div data-print="hide" className="flex flex-col gap-4">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
-            <h1 className="text-2xl font-semibold">{t("idCard.title")}</h1>
-            <p className="text-sm text-muted-foreground">{t("idCard.subtitle")}</p>
+            <h1 className="text-2xl font-semibold">{t("idCard.staffTitle")}</h1>
+            <p className="text-sm text-muted-foreground">{t("idCard.staffSubtitle")}</p>
           </div>
           <Button asChild variant="outline">
-            <Link href="/students">
+            <Link href="/staff">
               <ArrowLeft className="size-4" aria-hidden="true" />
-              {t("nav.students")}
+              {t("nav.staff")}
             </Link>
           </Button>
         </div>
 
         <div className="flex flex-wrap items-end gap-3">
-          <ClassPicker sections={sections} value={sectionId} label={t("idCard.pickClass")} />
+          {result.ok && (
+            <DepartmentPicker
+              departments={result.departments}
+              value={department ?? null}
+              label={t("idCard.department")}
+              allLabel={t("idCard.allDepartments")}
+            />
+          )}
           <PrintCardsButton count={cards.length} />
         </div>
 
-        {result && !result.ok && (
+        {!result.ok && result.reason === "too-many" && (
           <p role="alert" className="flex items-start gap-2 text-sm text-destructive">
             <TriangleAlert className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
             {t("idCard.tooMany", { count: result.count, max: MAX_CARDS_PER_RUN })}
@@ -109,9 +99,9 @@ export default async function IdCardsPage({
             </summary>
             <ul className="mt-2 flex flex-col gap-1 text-sm">
               {flagged.map(({ card, gaps }) => (
-                <li key={card.studentId} className="flex flex-wrap items-baseline gap-x-2">
+                <li key={card.staffId} className="flex flex-wrap items-baseline gap-x-2">
                   <Link
-                    href={`/students/${card.studentId}`}
+                    href={`/staff/${card.staffId}`}
                     className="font-medium underline-offset-2 hover:underline"
                   >
                     {card.fullName}
@@ -126,17 +116,17 @@ export default async function IdCardsPage({
         )}
       </div>
 
-      {result?.ok && cards.length === 0 && (
+      {result.ok && cards.length === 0 && (
         <Card data-print="hide">
           <CardContent className="py-14 text-center text-sm text-muted-foreground">
-            {t("idCard.emptyClass")}
+            {t("idCard.emptyStaff")}
           </CardContent>
         </Card>
       )}
 
-      {cards.length > 0 && result?.ok && (
+      {cards.length > 0 && result.ok && (
         <IdCardSheet
-          cards={cards.map((card) => studentFace(card, t, formatDate, locale))}
+          cards={cards.map((card) => staffFace(card, t))}
           school={result.school}
           t={t}
           perSheet={CARDS_PER_SHEET}

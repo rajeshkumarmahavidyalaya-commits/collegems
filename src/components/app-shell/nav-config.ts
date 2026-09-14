@@ -317,6 +317,18 @@ export const NAV_GROUPS: NavGroup[] = [
         icon: Users,
         roles: ["admin"],
       },
+      // Mirrors the roster entry above rather than widening it. The *gate* is
+      // `staff.view`, checked inside `getStaffCards` because RLS on `staff` is
+      // role-wide and narrows nothing — so if a college grants that permission
+      // to somebody else, both of these lists move together or the menu starts
+      // disagreeing with the boundary.
+      {
+        title: "Staff ID cards",
+        messageKey: "idCard.staffTitle",
+        href: "/staff/id-cards",
+        icon: IdCard,
+        roles: ["admin"],
+      },
       {
         title: "Staff attendance",
         messageKey: "nav.staffAttendance",

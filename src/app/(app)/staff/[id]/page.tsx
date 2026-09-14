@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { BookOpen, CalendarClock, Pencil } from "lucide-react";
+import { BookOpen, CalendarClock, IdCard, Pencil } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -53,8 +53,21 @@ export default async function StaffDetailPage({ params }: { params: Promise<{ id
             {staff.department ? ` · ${staff.department}` : ""}
           </p>
         </div>
-        {canManage && (
-          <div className="flex flex-wrap items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          {/* Not behind `canManage`: this page already required `staff.view`
+              (staff_record raises without it), and printing a badge is not an
+              edit. A leaver gets no card — theirs is a door that should not
+              open, which is student_exit's lesson pointed at a badge. */}
+          {!hasLeft && (
+            <Button asChild variant="outline">
+              <Link href={`/staff/${staff.id}/id-card`}>
+                <IdCard className="size-4" aria-hidden="true" />
+                {t("idCard.printOne")}
+              </Link>
+            </Button>
+          )}
+          {canManage && (
+            <>
             <Button asChild variant="outline">
               <Link href={`/staff/${staff.id}/edit`}>
                 <Pencil className="size-4" aria-hidden="true" />
@@ -62,8 +75,9 @@ export default async function StaffDetailPage({ params }: { params: Promise<{ id
               </Link>
             </Button>
             {!hasLeft && <StaffExitControl staffId={staff.id} staffName={person.full_name} />}
-          </div>
-        )}
+            </>
+          )}
+        </div>
       </div>
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">

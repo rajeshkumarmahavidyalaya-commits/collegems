@@ -213,13 +213,41 @@ describe("the photograph is a signed URL and stays one", () => {
   });
 
   it("keeps the card face a Server Component", () => {
-    // It takes `t` and `locale` as props rather than calling a hook — rule 15's
-    // fourth shape, and the one that shipped a blank screen for every teacher
-    // opening their own week when a Server Component reached for `useI18n`.
+    // It takes `t` as a prop rather than calling a hook — rule 15's fourth
+    // shape, and the one that shipped a blank screen for every teacher opening
+    // their own week when a Server Component reached for `useI18n`.
     const src = read("src/components/id-card/id-card-sheet.tsx");
     expect(src.includes('"use client"'), "the card face ships no JavaScript").toBe(false);
     expect(src).toMatch(/t: Translator/);
-    expect(src).toMatch(/locale: Locale/);
+  });
+
+  it("keeps the face generic, so a second kind of card needs no second component", () => {
+    // The face was student-shaped first — `admissionNumber`, `className`,
+    // `rollNumber`, `guardianName` — and staff cards would have meant either a
+    // second component or a type where half the fields are always null.
+    // Neither survives a third kind of card (a visitor pass, an examiner's
+    // temporary card), so it renders a `PersonCard`: a heading, a subtitle, and
+    // a list of already-labelled facts.
+    //
+    // **Each module decides what a card says; this decides what one looks
+    // like.** The labels arrive resolved because the module building a card
+    // already holds `t`, and the face is a Server Component.
+    const src = withoutComments(read("src/components/id-card/id-card-sheet.tsx"));
+    expect(src).toMatch(/card: PersonCard/);
+    // `className` is deliberately *not* in this list, and the omission is the
+    // interesting part: it is both a student field and React's own prop, so
+    // every `<div className=…>` in the file matches it. **A field name that
+    // collides with a framework prop cannot be swept for by name** — asserting
+    // it would report on the JSX rather than on the data shape, which is this
+    // file's own lesson about prose applied to markup. `card.className` is
+    // covered by `card: PersonCard` above: the type has no such property, so
+    // reading one would not compile.
+    for (const studentOnly of ["admissionNumber", "guardianName", "rollNumber", "dateOfBirth"]) {
+      expect(
+        src.includes(studentOnly),
+        `the card face must not know about ${studentOnly}: a staff card has no such field`,
+      ).toBe(false);
+    }
   });
 });
 
@@ -287,6 +315,50 @@ describe("the issues found by reading it back", () => {
       "the set query must not re-fetch each student's enrolments: it already has " +
         "the one it is printing",
     ).toBe(false);
+  });
+});
+
+describe("a staff card carries its own gate", () => {
+  it("checks staff.view in the function, not on the page", () => {
+    // **The asymmetry, and it is the whole reason this is worth a test.**
+    //
+    // A student card needs no permission beyond the page's `students.view`,
+    // because RLS on `students` is *row-ownership*: a class teacher printing
+    // "their" class is narrowed to their own children by the policy, which is
+    // the right answer and needs nothing else to produce it.
+    //
+    // RLS on `staff` is **role-wide** — admin, teacher, accountant and
+    // librarian each read every row — so the policy narrows nothing and *"an
+    // accountant may not pull the staff roster"* is a rule only
+    // `role_permissions` expresses. Rule 4's refinement exactly.
+    //
+    // `staff_roster` already makes that check inside the function. This module
+    // cannot simply call it (the roster returns no `photo_path`, and a card
+    // without a photograph is not a card), so it **repeats** the gate. Skipping
+    // it would have been invisible: the rows come back either way.
+    const actions = withoutComments(read("src/app/(app)/staff/id-cards/actions.ts"));
+    expect(actions).toMatch(/hasPermission\("staff\.view"\)/);
+    expect(actions).toMatch(/reason: "withheld"/);
+
+    // Both entry points, not just the list: a single card is the same data.
+    const list = actions.slice(actions.indexOf("export async function getStaffCards"));
+    const single = actions.slice(actions.indexOf("export async function getStaffCard("));
+    expect(list).toMatch(/staff\.view/);
+    expect(single).toMatch(/staff\.view/);
+  });
+
+  it("prints no card for somebody who has left", () => {
+    // A departed teacher's badge is a door that should not open — the
+    // `student_exit` lesson pointed at a piece of plastic.
+    const actions = withoutComments(read("src/app/(app)/staff/id-cards/actions.ts"));
+    expect(actions).toMatch(/\.eq\("status", "active"\)/);
+    const page = withoutComments(read("src/app/(app)/staff/[id]/page.tsx"));
+    expect(page).toMatch(/!hasLeft && \(/);
+  });
+
+  it("signs staff photographs as a set too", () => {
+    const actions = withoutComments(read("src/app/(app)/staff/id-cards/actions.ts"));
+    expect(actions).toMatch(/photoUrls\(/);
   });
 });
 

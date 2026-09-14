@@ -1,5 +1,6 @@
 import type { MessageKey } from "@/lib/i18n/messages/en";
 import type { Translator } from "@/lib/i18n/translate";
+import type { Locale } from "@/lib/i18n/config";
 
 /**
  * A student identity card.
@@ -48,6 +49,28 @@ export type IdCard = {
   photoUrl: string | null;
 };
 
+/**
+ * What the card face actually renders, for anybody the school issues one to.
+ *
+ * The face was student-shaped at first — `admissionNumber`, `className`,
+ * `rollNumber`, `guardianName` — and staff cards would have meant either a
+ * second component or a type where half the fields are always null. Neither
+ * survives a third kind of card (a visitor pass, a temporary card for an
+ * examiner), so the face takes a **heading, a subtitle and a list of labelled
+ * facts** and each module decides what goes in them.
+ *
+ * The labels come in already resolved, which is deliberate: the face is a
+ * Server Component and the module that builds a card already holds `t`.
+ */
+export type PersonCard = {
+  id: string;
+  fullName: string;
+  /** The line under the name: a class and roll, or a designation and department. */
+  subtitle: string | null;
+  photoUrl: string | null;
+  facts: { label: string; value: string }[];
+};
+
 export type SchoolIdentity = {
   name: string;
   addressLine: string | null;
@@ -84,6 +107,107 @@ const GAPS: { field: keyof IdCard; key: MessageKey; blocking: boolean }[] = [
   { field: "dateOfBirth", key: "idCard.gap.dateOfBirth", blocking: false },
 ];
 
+/** A student's card, as the face renders it. */
+export function studentFace(
+  card: IdCard,
+  t: Translator,
+  formatDate: (value: string, locale: Locale) => string,
+  locale: Locale,
+): PersonCard {
+  const facts: { label: string; value: string }[] = [
+    { label: t("idCard.admissionNumber"), value: card.admissionNumber },
+  ];
+  if (card.dateOfBirth) {
+    facts.push({ label: t("idCard.dateOfBirth"), value: formatDate(card.dateOfBirth, locale) });
+  }
+  if (card.bloodGroup) facts.push({ label: t("idCard.bloodGroup"), value: card.bloodGroup });
+  if (card.guardianName) {
+    facts.push({
+      label: t("idCard.guardian"),
+      value: card.guardianPhone
+        ? `${card.guardianName} · ${card.guardianPhone}`
+        : card.guardianName,
+    });
+  }
+
+  return {
+    id: card.studentId,
+    fullName: card.fullName,
+    subtitle: card.className
+      ? card.rollNumber
+        ? `${card.className} · ${t("idCard.roll")} ${card.rollNumber}`
+        : card.className
+      : null,
+    photoUrl: card.photoUrl,
+    facts,
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Staff
+// ---------------------------------------------------------------------------
+
+/**
+ * A member of staff's card.
+ *
+ * Same document, different facts — and **a different authorization story**,
+ * which is the part worth reading twice.
+ *
+ * A student card needs no gate beyond `students.view`, because RLS on
+ * `students` is row-ownership: a class teacher printing "their" class gets
+ * their own children and the policy is what decides that. RLS on `staff` is
+ * **role-wide** — admin, teacher, accountant and librarian all read every row —
+ * so the policy narrows nothing and *"an accountant may not pull the staff
+ * roster"* is a rule only `role_permissions` expresses.
+ *
+ * That is rule 4's refinement exactly: the matrix does real work wherever RLS
+ * is deliberately tenant-wide, and `staff_roster` already checks `staff.view`
+ * *inside the function that produces the data*. This module reads `staff`
+ * directly (it needs `photo_path`, which the roster does not return), so it
+ * must make the same check itself rather than inherit it.
+ */
+export type StaffCard = {
+  staffId: string;
+  fullName: string;
+  employeeCode: string;
+  designation: string;
+  department: string | null;
+  phone: string | null;
+  bloodGroup: string | null;
+  photoUrl: string | null;
+};
+
+export function staffFace(card: StaffCard, t: Translator): PersonCard {
+  const facts: { label: string; value: string }[] = [
+    { label: t("idCard.employeeCode"), value: card.employeeCode },
+  ];
+  if (card.phone) facts.push({ label: t("idCard.phone"), value: card.phone });
+  if (card.bloodGroup) facts.push({ label: t("idCard.bloodGroup"), value: card.bloodGroup });
+
+  return {
+    id: card.staffId,
+    fullName: card.fullName,
+    subtitle: card.department ? `${card.designation} · ${card.department}` : card.designation,
+    photoUrl: card.photoUrl,
+    facts,
+  };
+}
+
+const STAFF_GAPS: { field: keyof StaffCard; key: MessageKey; blocking: boolean }[] = [
+  { field: "photoUrl", key: "idCard.gap.photo", blocking: true },
+  { field: "phone", key: "idCard.gap.phone", blocking: false },
+  { field: "department", key: "idCard.gap.department", blocking: false },
+  { field: "bloodGroup", key: "idCard.gap.bloodGroup", blocking: false },
+];
+
+export function staffCardGaps(card: StaffCard, t: Translator): CardGap[] {
+  return STAFF_GAPS.filter(({ field }) => !card[field]).map(({ field, key, blocking }) => ({
+    field,
+    message: t(key),
+    blocking,
+  }));
+}
+
 export function cardGaps(card: IdCard, t: Translator): CardGap[] {
   return GAPS.filter(({ field }) => !card[field]).map(({ field, key, blocking }) => ({
     field,
@@ -101,7 +225,7 @@ export function cardGaps(card: IdCard, t: Translator): CardGap[] {
  * both forms rather than a stem and a rule, because English plurals are not
  * derivable"*. `t.plural` does exactly that.
  */
-export function setSummary(cards: IdCard[], t: Translator): string | null {
+export function setSummary(cards: { photoUrl: string | null }[], t: Translator): string | null {
   const withoutPhoto = cards.filter((c) => !c.photoUrl).length;
   if (withoutPhoto === 0) return null;
   return t.plural("idCard.missingPhotos", withoutPhoto, { count: withoutPhoto });

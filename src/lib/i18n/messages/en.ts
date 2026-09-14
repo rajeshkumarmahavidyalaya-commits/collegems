@@ -444,6 +444,19 @@ export const en = {
   "idCard.gap.dateOfBirth": "No date of birth",
   "idCard.missingPhotos.one": "{count} card has no photograph.",
   "idCard.missingPhotos.other": "{count} cards have no photograph.",
+  "idCard.staffTitle": "Staff ID cards",
+  "idCard.staffSubtitle": "Printable cards for everybody employed here, eight to a sheet.",
+  "idCard.employeeCode": "Employee no.",
+  "idCard.phone": "Phone",
+  "idCard.department": "Department",
+  "idCard.allDepartments": "Everybody",
+  "idCard.emptyStaff": "Nobody on the roster matches that.",
+  "idCard.gap.phone": "No phone number",
+  "idCard.gap.department": "No department",
+  // A staff card needs its own gate, unlike a student card: RLS on `staff` is
+  // role-wide, so the policy narrows nothing and the matrix is the only thing
+  // that says an accountant may not pull the roster.
+  "idCard.staffWithheld": "Your role does not open the staff roster.",
   "idCard.photo.heading": "Photograph",
   "idCard.photo.choose": "Upload a photograph",
   "idCard.photo.replace": "Replace",

@@ -7,7 +7,8 @@ import { hasPermission } from "@/lib/auth/permissions";
 import { getIdCard } from "../../id-cards/actions";
 import { IdCardFace } from "@/components/id-card/id-card-sheet";
 import { PrintCardsButton } from "@/components/id-card/print-cards-button";
-import { cardGaps } from "@/lib/validations/id-card";
+import { cardGaps, studentFace } from "@/lib/validations/id-card";
+import { formatDate } from "@/lib/i18n/format";
 
 export const metadata = { title: "ID card" };
 
@@ -61,7 +62,11 @@ export default async function StudentIdCardPage({
       {/* Bounded width so a single card prints at its real size rather than
           stretched across an A4 sheet. */}
       <div className="max-w-md">
-        <IdCardFace card={result.card} school={result.school} t={t} locale={locale} />
+        <IdCardFace
+          card={studentFace(result.card, t, formatDate, locale)}
+          school={result.school}
+          t={t}
+        />
       </div>
     </div>
   );

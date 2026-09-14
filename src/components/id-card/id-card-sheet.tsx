@@ -1,15 +1,19 @@
 import { User } from "lucide-react";
-import { CARD_ASPECT, type IdCard, type SchoolIdentity } from "@/lib/validations/id-card";
-import { formatDate } from "@/lib/i18n/format";
-import type { Locale } from "@/lib/i18n/config";
+import { CARD_ASPECT, type PersonCard, type SchoolIdentity } from "@/lib/validations/id-card";
 import type { Translator } from "@/lib/i18n/translate";
 
 /**
  * One identity card, at the size a laminating pouch is cut for.
  *
- * A **Server Component**, so it takes `t` and `locale` as props rather than
- * calling a hook — rule 15's fourth shape, and the one that shipped a blank
- * screen once when a Server Component reached for `useI18n`.
+ * A **Server Component**, so it takes `t` as a prop rather than calling a hook
+ * — rule 15's fourth shape, and the one that shipped a blank screen once when a
+ * Server Component reached for `useI18n`.
+ *
+ * It renders a `PersonCard` rather than a student: a heading, a subtitle and a
+ * list of already-labelled facts. The first version was student-shaped, and
+ * staff cards would have meant either a second component or a type where half
+ * the fields are always null — neither of which survives a third kind of card.
+ * **Each module decides what a card says; this decides what one looks like.**
  *
  * The photograph is an `<img>` against a signed URL that was issued in the
  * action, after the row came back through RLS. It is deliberately **not**
@@ -22,12 +26,10 @@ export function IdCardFace({
   card,
   school,
   t,
-  locale,
 }: {
-  card: IdCard;
+  card: PersonCard;
   school: SchoolIdentity;
   t: Translator;
-  locale: Locale;
 }) {
   return (
     <div
@@ -73,28 +75,13 @@ export function IdCardFace({
 
         <div className="flex min-w-0 flex-1 flex-col justify-center gap-0.5">
           <p className="truncate text-sm font-semibold leading-tight">{card.fullName}</p>
-          {card.className && (
-            <p className="truncate text-[0.7rem] text-muted-foreground">
-              {card.className}
-              {card.rollNumber ? ` · ${t("idCard.roll")} ${card.rollNumber}` : ""}
-            </p>
+          {card.subtitle && (
+            <p className="truncate text-[0.7rem] text-muted-foreground">{card.subtitle}</p>
           )}
           <dl className="mt-1 grid grid-cols-[auto_1fr] gap-x-2 gap-y-0.5 text-[0.65rem]">
-            <Row label={t("idCard.admissionNumber")} value={card.admissionNumber} />
-            {card.dateOfBirth && (
-              <Row label={t("idCard.dateOfBirth")} value={formatDate(card.dateOfBirth, locale)} />
-            )}
-            {card.bloodGroup && <Row label={t("idCard.bloodGroup")} value={card.bloodGroup} />}
-            {card.guardianName && (
-              <Row
-                label={t("idCard.guardian")}
-                value={
-                  card.guardianPhone
-                    ? `${card.guardianName} · ${card.guardianPhone}`
-                    : card.guardianName
-                }
-              />
-            )}
+            {card.facts.map((fact) => (
+              <Row key={fact.label} label={fact.label} value={fact.value} />
+            ))}
           </dl>
         </div>
       </div>
@@ -130,16 +117,14 @@ export function IdCardSheet({
   cards,
   school,
   t,
-  locale,
   perSheet,
 }: {
-  cards: IdCard[];
+  cards: PersonCard[];
   school: SchoolIdentity;
   t: Translator;
-  locale: Locale;
   perSheet: number;
 }) {
-  const sheets: IdCard[][] = [];
+  const sheets: PersonCard[][] = [];
   for (let i = 0; i < cards.length; i += perSheet) sheets.push(cards.slice(i, i + perSheet));
 
   return (
@@ -151,13 +136,7 @@ export function IdCardSheet({
           className="grid grid-cols-1 gap-4 sm:grid-cols-2 print:grid-cols-2"
         >
           {sheet.map((card) => (
-            <IdCardFace
-              key={card.studentId}
-              card={card}
-              school={school}
-              t={t}
-              locale={locale}
-            />
+            <IdCardFace key={card.id} card={card} school={school} t={t} />
           ))}
         </div>
       ))}
