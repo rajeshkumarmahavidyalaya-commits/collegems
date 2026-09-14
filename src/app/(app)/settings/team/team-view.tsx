@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { Mail, Loader2, Send, UserPlus, X } from "lucide-react";
+import { Mail, Loader2, Send, UserPlus, Users, X } from "lucide-react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -126,7 +126,20 @@ export function TeamView({
       {canManage && (
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">Invite somebody</CardTitle>
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <CardTitle className="text-base">Invite somebody</CardTitle>
+              {/*
+                555 guardians through this form, one at a time, is not a
+                workflow — so the bulk path is offered from the screen somebody
+                is already on rather than hidden in a menu.
+              */}
+              <Button variant="outline" size="sm" asChild>
+                <a href="/settings/team/bulk">
+                  <Users className="size-4" aria-hidden="true" />
+                  Invite a whole class
+                </a>
+              </Button>
+            </div>
             <CardDescription>
               They will be able to sign up with this address and no other. The role decides what they
               can see — you can change it later from the permission matrix.

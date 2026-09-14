@@ -2713,6 +2713,43 @@ Two consequences worth copying:
 
 See `docs/modules/renewals.md`.
 
+Invitations are the fourth instance, and the one that says why a preview is not
+optional. `0224` made an invitation able to name a person and `0227` made it
+arrive, both **one at a time**, against a college with 555 guardians of 302
+children. *An office asked to do that through a search box 555 times will not do
+it* — which leaves the family half of a product unreachable in practice however
+correct each single invitation is. **A write path that does not scale to the
+size of its own data is a write path nobody can call**, which is rule 6's
+sentence with a number in it.
+
+Three things it adds:
+
+- **One row per address, not per person and not per child.** Two `distinct on`s:
+  the inner per guardian, because a mother of three is one invitation; the outer
+  per **email**, because in a great many families both parents give the school
+  one address — and an invitation is addressed to an address, so the second row
+  collides with the unique index and takes the whole preview down. Rows with no
+  address fall back to the person's own id and keep their place, because they
+  are exactly the rows the office needs to see.
+- **Every skip is a sentence and none of them is a refusal.** *No email address
+  on record*, *already has a login*, *already invited* — each a fact the office
+  would otherwise discover one at a time, 555 times, and each overridable with
+  `is_override` recording that a person decided rather than the rules.
+- **The demo data verified none of it.** All 555 addresses are distinct and
+  nobody had a login, so the happy path passed while the dedupe and all three
+  skip reasons went unexercised. Planted instead — a shared address, a missing
+  one, a pending invitation, a login — and 555 guardians became **554 rows, 552
+  invite, 2 skip**. *A probe that only runs the path your seed data happens to
+  take has tested the seed data.*
+
+And a guard lesson met twice in one file: **an assertion that a string appears
+*somewhere* guards the string, not the mechanism.** Two checks passed on plants
+that removed the behaviour from one of three branches, because the other two
+still contained the pattern. Count the occurrences, or anchor to the statement
+that matters.
+
+See `docs/modules/invitations.md`.
+
 ## 14. A client you cannot redeploy needs a versioned contract
 
 The web app ships with the server. A **phone does not** — somebody is running

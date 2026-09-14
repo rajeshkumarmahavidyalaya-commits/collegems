@@ -275,3 +275,77 @@ describe("somebody is told they were invited", () => {
     expect(pendingBlock).toContain("onAnnounce(inv.id");
   });
 });
+
+describe("inviting a school rather than a person", () => {
+  const BULK = join(TEAM, "bulk");
+
+  it("applies through the module's own write function, not an insert", () => {
+    /**
+     * Rule 13's sentence from renewals: *a renewal that inserted rows would be
+     * a second implementation of five checks.* Here the rule that would be
+     * duplicated is the supersede — a second pending invitation to one address
+     * is the same intent expressed twice — plus the subject-to-column mapping.
+     * `invitation_create` is the one definition and both callers use it.
+     */
+    const body = functionBody("invitation_apply");
+    expect(body).toContain("public.invitation_create(");
+    expect(body, "the apply must not write invitations itself").not.toMatch(
+      /insert into public\.invitations/,
+    );
+  });
+
+  it("records that a person overrode the rules", () => {
+    // is_override is the difference between "the rules decided" and "the head
+    // teacher decided", and both belong in the audit log.
+    const actions = code(readFileSync(join(BULK, "actions.ts"), "utf8"));
+    expect(actions).toMatch(/is_override: true/);
+  });
+
+  it("refuses an oversized list rather than truncating it", () => {
+    // Silently holding the first thousand of fourteen hundred looks complete,
+    // and the families left off are discovered by their absence in April.
+    const body = functionBody("invitation_preview");
+    expect(body).toMatch(/v_count > v_max/);
+    expect(body).toContain("delete from public.invitation_runs");
+    expect(body, "the refusal must carry the numbers").toMatch(/capped at %/);
+  });
+
+  it("keeps one live list at a time, and says so in words", () => {
+    const sql = code(migrationSql());
+    expect(sql).toMatch(/create unique index if not exists invitation_runs_one_live/);
+    // The index alone would refuse with 23505, which is not a sentence.
+    expect(functionBody("invitation_preview")).toContain("There is already an invitation list waiting");
+  });
+
+  it("is one row per address, not per person and not per child", () => {
+    /**
+     * Two `distinct on`s and both are load-bearing: a mother of three is one
+     * invitation, and two parents who give the school one address are one row
+     * — otherwise the second collides with the unique index and takes the
+     * whole preview down with a 23505. Probed live by planting a shared
+     * address: 555 guardians became 554 rows.
+     */
+    const body = functionBody("invitation_preview");
+    // **Once per branch**, not once anywhere. The first draft asserted the
+    // pattern appeared at all, and passed on a plant that removed it from the
+    // guardian branch — the two other branches still had it. A guard that
+    // checks for a string rather than for the mechanism guards the string.
+    const deduped = [...body.matchAll(/distinct on \(coalesce\(lower\(c0\.email\)/g)];
+    expect(deduped.length, "each of guardian, student and staff must dedupe by address").toBe(3);
+    const sql = code(migrationSql());
+    expect(sql).toContain("invitation_decisions_one_per_address");
+  });
+
+  it("says whether the emails went, not only that people were invited", () => {
+    // A failed announcement is not a failed invitation, so apply returns three
+    // counts and the screen reads all three.
+    const body = functionBody("invitation_apply");
+    // The counter being *declared* and *returned* proves nothing; the claim is
+    // that it is incremented only when an announcement succeeded.
+    expect(body).toMatch(/v_emailed := v_emailed \+ 1;/);
+    expect(body).toMatch(/perform public\.invitation_announce\([\s\S]{0,120}v_emailed := v_emailed \+ 1;/);
+    const view = code(readFileSync(join(BULK, "bulk-invite-view.tsx"), "utf8"));
+    expect(view).toMatch(/invited.*emailed/s);
+    expect(view).toMatch(/toast\.warning/);
+  });
+});

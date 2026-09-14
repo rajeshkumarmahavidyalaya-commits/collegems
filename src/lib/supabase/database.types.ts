@@ -2484,6 +2484,167 @@ export type Database = {
           },
         ]
       }
+      invitation_decisions: {
+        Row: {
+          applied_invitation_id: string | null
+          created_at: string
+          decision: string
+          email: string | null
+          error: string | null
+          full_name: string
+          guardian_id: string | null
+          id: string
+          is_override: boolean
+          reason: string | null
+          run_id: string
+          staff_id: string | null
+          student_id: string | null
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          applied_invitation_id?: string | null
+          created_at?: string
+          decision?: string
+          email?: string | null
+          error?: string | null
+          full_name: string
+          guardian_id?: string | null
+          id?: string
+          is_override?: boolean
+          reason?: string | null
+          run_id: string
+          staff_id?: string | null
+          student_id?: string | null
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          applied_invitation_id?: string | null
+          created_at?: string
+          decision?: string
+          email?: string | null
+          error?: string | null
+          full_name?: string
+          guardian_id?: string | null
+          id?: string
+          is_override?: boolean
+          reason?: string | null
+          run_id?: string
+          staff_id?: string | null
+          student_id?: string | null
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "invitation_decisions_applied_invitation_id_fkey"
+            columns: ["applied_invitation_id"]
+            isOneToOne: false
+            referencedRelation: "invitations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invitation_decisions_guardian_id_fkey"
+            columns: ["guardian_id"]
+            isOneToOne: false
+            referencedRelation: "guardians"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invitation_decisions_run_fkey"
+            columns: ["tenant_id", "run_id"]
+            isOneToOne: false
+            referencedRelation: "invitation_runs"
+            referencedColumns: ["tenant_id", "id"]
+          },
+          {
+            foreignKeyName: "invitation_decisions_staff_id_fkey"
+            columns: ["staff_id"]
+            isOneToOne: false
+            referencedRelation: "staff"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invitation_decisions_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invitation_decisions_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      invitation_runs: {
+        Row: {
+          applied_at: string | null
+          applied_by: string | null
+          created_at: string
+          created_by: string | null
+          id: string
+          role_id: string
+          role_subject: string
+          section_id: string | null
+          status: string
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          applied_at?: string | null
+          applied_by?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          role_id: string
+          role_subject?: string
+          section_id?: string | null
+          status?: string
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          applied_at?: string | null
+          applied_by?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          role_id?: string
+          role_subject?: string
+          section_id?: string | null
+          status?: string
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "invitation_runs_role_fkey"
+            columns: ["tenant_id", "role_id", "role_subject"]
+            isOneToOne: false
+            referencedRelation: "roles"
+            referencedColumns: ["tenant_id", "id", "subject"]
+          },
+          {
+            foreignKeyName: "invitation_runs_section_id_fkey"
+            columns: ["section_id"]
+            isOneToOne: false
+            referencedRelation: "sections"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invitation_runs_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       invitations: {
         Row: {
           accepted_at: string | null
@@ -8183,6 +8344,61 @@ export type Database = {
         Args: { p_invitation_id: string; p_signup_url: string }
         Returns: number
       }
+      invitation_apply: {
+        Args: { p_run_id: string; p_signup_url: string }
+        Returns: {
+          emailed: number
+          failed: number
+          invited: number
+        }[]
+      }
+      invitation_create: {
+        Args: { p_email: string; p_role_id: string; p_subject_id?: string }
+        Returns: {
+          accepted_at: string | null
+          created_at: string
+          email: string
+          expires_at: string
+          guardian_id: string | null
+          id: string
+          invited_by: string | null
+          person_id: string | null
+          role_id: string
+          role_subject: string
+          staff_id: string | null
+          status: string
+          student_id: string | null
+          tenant_id: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "invitations"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      invitation_preview: {
+        Args: { p_role_id: string; p_section_id?: string }
+        Returns: {
+          applied_at: string | null
+          applied_by: string | null
+          created_at: string
+          created_by: string | null
+          id: string
+          role_id: string
+          role_subject: string
+          section_id: string | null
+          status: string
+          tenant_id: string
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "invitation_runs"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       invite_candidates: {
         Args: { p_query: string; p_subject: string }
         Returns: {
@@ -8998,6 +9214,15 @@ export type Database = {
       schedule_student_audience: {
         Args: { p_student_id: string; p_tenant_id: string }
         Returns: Json
+      }
+      scheduler_liveness: { Args: never; Returns: Json }
+      scheduler_problems: {
+        Args: never
+        Returns: {
+          key: string
+          message: string
+          severity: string
+        }[]
       }
       schedules_due: {
         Args: { p_limit?: number }

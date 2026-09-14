@@ -3,8 +3,9 @@
 **Migrations** `0224` (`roles.subject`, the composite key, `invite_candidates`,
 the critic), `0225` (the trigger that fills the carried column), `0226` (number
 agreement), `0227` (telling somebody), `0228` (the session the new writer
-forgot). **Screen** `/settings/team`. **Permission** `users.manage`.
-**Guard** `tests/settings/invitations.test.ts`.
+forgot), `0231`–`0232` (a whole school at once).
+**Screens** `/settings/team`, `/settings/team/bulk`. **Permission**
+`users.manage`. **Guard** `tests/settings/invitations.test.ts`.
 
 ---
 
@@ -387,11 +388,122 @@ is the match it already does.
 
 ## Still not built
 
-- **Bulk invitation.** 555 families through one picker is not a workflow. Rule
-  13's shape applies — a preview of editable rows, apply through
-  `invitation_announce` so the preview and the send cannot disagree — and it is
-  the next thing this module needs.
 - **An SMS invitation.** All 555 guardians have a phone number as well as an
   email, and the delivery table would take it unchanged. What stops it is that
   the body is 340 characters and an SMS is not; that is a second message, not a
   second channel on the same one.
+
+---
+
+# Inviting a school (migrations `0231`, `0232`)
+
+`0224` made an invitation able to name a person and `0227` made it arrive. Both
+work on **one** invitation, and the demo college has 555 guardians of 302
+children. An office asked to do that through a search box 555 times will not do
+it — which leaves the family half of this product unreachable in practice,
+however correct each single invitation is.
+
+Rule 13's third instance after promotion and renewals, and all four of its
+devices transfer unchanged.
+
+## One definition of "make an invitation"
+
+The single-invitation screen supersedes any earlier pending invitation to the
+same address before inserting — *"the same intent, expressed twice, usually
+because the first mail went astray"* — and that rule lived in a server action. A
+bulk apply that inserted rows would be a second implementation of it, and the
+two would differ the first time either changed.
+
+`invitation_create` is that definition and **both callers use it**. Rule 6's
+billing sentence, applied a third time.
+
+## The preview decides nothing a person cannot see
+
+Every row arrives as `invite` or `skip` **with the reason on it**, and each of
+the three reasons is a fact the office would otherwise discover one at a time:
+
+| reason | why it matters |
+|---|---|
+| No email address on record | there is nothing to send to |
+| Already has a login | inviting again makes a second account, silently |
+| Already invited, and that invitation is still open | re-sending is the *Send again* button, not a second row |
+
+**None of them is a refusal.** A person can type an address, or decide they do
+want a second login, and `is_override` records that they did — the difference
+between *"the rules decided"* and *"the office decided"*, which is what an audit
+trail is for.
+
+## One row per address, not per person and not per child
+
+Two `distinct on`s, and both are load-bearing:
+
+- the inner one is **per guardian**, because a mother of three is one invitation
+  and not three;
+- the outer one is **per email**, because in a great many families both parents
+  give the school one address — and an invitation is addressed to an address, so
+  a second row for the same one collides with
+  `invitation_decisions_one_per_address` and takes the whole preview down with
+  a `23505`.
+
+Rows with no address fall back to the person's own id, so each keeps its place
+in the list — they are exactly the rows the office needs to see.
+
+## Probed
+
+The whole school, as an administrator, in a rolled-back transaction:
+
+| step | result |
+|---|---|
+| whole-school preview | **555 rows**, all `invite` |
+| a second live list | *"There is already an invitation list waiting. Finish or discard it first — two half-corrected lists of the same people disagree."* |
+| apply | **555 invited, 0 failed, 555 emailed** |
+| invitations afterwards | 555 pending |
+| deliveries queued | 555 |
+| run | `applied`, `applied_by` set |
+| applying twice | *"This list was already applied"* |
+
+**The demo data has 555 distinct addresses, so neither the dedupe nor any skip
+reason was exercised by it** — which would have left three quarters of this
+module unverified. Planted instead: two guardians sharing `one.family@example.test`,
+one with no address, one already invited, and one with a login.
+
+```
+rows by decision   invite 552, skip 2
+skip reasons       Already invited, and that invitation is still open × 1
+                   No email address on record × 1
+the shared address 1 row, from 2 guardians who share it
+total rows         554  (555 with no duplicates)
+```
+
+…and with a planted login, the third reason: `Already has a login × 1`.
+
+## Bounds
+
+- **Refuse, do not truncate.** Past 1,000 people the preview declines and says
+  the number, because a list that quietly held the first thousand of fourteen
+  hundred would look complete and the families left off it would be discovered
+  by their absence in April.
+- **One live list per school**, as a partial unique index — two half-corrected
+  previews of the same people disagree, and whichever is applied second silently
+  wins. The index would refuse with `23505`, so the function says it in words
+  first.
+- The apply is a few hundred short statements whose result is a screen somebody
+  argues with, which is rule 7's promotion argument unchanged.
+
+## What it deliberately does not carry
+
+A decision names a guardian, a student or a member of staff, and which is right
+depends on the *role's* subject — one table away, which is where rule 4 says to
+reach for the composite key.
+
+It does not, because **the boundary already refuses the bad row one layer
+down**: `invitations_subject_present` (`0224`) will not accept an invitation
+whose subject does not match its role, so a decision naming the wrong kind fails
+at apply with that constraint's own sentence and lands in `error` beside the
+row. Carrying `role_subject` a third time would buy a slightly earlier refusal
+and a third copy to keep in step.
+
+The run *does* carry it, by the same composite key — and by **the same trigger
+function** `0225` installed for `invitations`, which works here unchanged
+because it reads `new.tenant_id`, `new.role_id` and `new.role_subject` and this
+table has all three. Two instances of the device, one implementation.
