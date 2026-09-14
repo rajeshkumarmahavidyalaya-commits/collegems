@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
-import { inviteSchema } from "@/lib/validations/platform";
+import { inviteSchema, SUBJECT_PROMPT, type RoleSubject } from "@/lib/validations/platform";
 import type { RoleTier } from "@/lib/auth/context";
 import type { ActionResult } from "../../library/actions";
 
@@ -17,7 +17,27 @@ export type InvitationRow = {
   acceptedAt: string | null;
 };
 
-export type RoleOption = { id: string; code: string; name: string; tier: RoleTier };
+export type RoleOption = {
+  id: string;
+  code: string;
+  name: string;
+  tier: RoleTier;
+  /**
+   * Which record a login with this role stands for (migration `0224`).
+   *
+   * The tier groups the picker; the subject decides whether there is a second
+   * question to ask. They are different: `parent` and `student` are both the
+   * `student` tier and need a guardian and a student respectively.
+   */
+  subject: RoleSubject;
+};
+
+export type InviteCandidate = {
+  id: string;
+  label: string;
+  hint: string | null;
+  hasLogin: boolean;
+};
 
 /**
  * The pending and recent invitations for this school.
@@ -66,12 +86,42 @@ export async function listInvitations(): Promise<InvitationRow[]> {
  */
 export async function listRoles(): Promise<RoleOption[]> {
   const supabase = await createClient();
-  const { data } = await supabase.from("roles").select("id, code, name, tier").order("code");
+  const { data } = await supabase.from("roles").select("id, code, name, tier, subject").order("code");
   return (data ?? []).map((r) => ({
     id: r.id as string,
     code: r.code as string,
     name: r.name as string,
     tier: (r.tier as RoleTier | null) ?? "staff",
+    subject: (r.subject as RoleSubject | null) ?? "none",
+  }));
+}
+
+/**
+ * Who an invitation of this kind can be for.
+ *
+ * One RPC (`invite_candidates`, migration `0224`): INVOKER so RLS decides, and
+ * gated on `users.manage` inside besides — reading `people` is tenant-wide for
+ * every staff role, so the policy alone would let a librarian enumerate the
+ * roll through a picker. Bounded at twenty and ordered in SQL.
+ */
+export async function inviteCandidates(
+  subject: string,
+  query: string,
+): Promise<InviteCandidate[]> {
+  if (subject === "none") return [];
+
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("invite_candidates", {
+    p_subject: subject,
+    p_query: query,
+  });
+  if (error) return [];
+
+  return (data ?? []).map((c) => ({
+    id: c.id,
+    label: c.label,
+    hint: c.hint,
+    hasLogin: c.has_login,
   }));
 }
 
@@ -98,6 +148,27 @@ export async function invite(input: unknown): Promise<ActionResult<{ id: string 
   const { data: ctx } = await supabase.rpc("current_tenant_id");
   if (!ctx) return { ok: false, error: "You do not belong to a school." };
 
+  // Which record this role stands for, read from the database rather than
+  // inferred from its code — a college may have roles this product did not
+  // ship. The CHECK is still the boundary; asking first is what turns a
+  // `23514` into a sentence about the person who was not chosen.
+  const { data: role } = await supabase
+    .from("roles")
+    .select("subject, name")
+    .eq("id", parsed.data.roleId)
+    .maybeSingle();
+
+  if (!role) return { ok: false, error: "That role does not belong to this school." };
+
+  const subject = (role.subject as RoleSubject | null) ?? "none";
+  if (subject !== "none" && !parsed.data.subjectId) {
+    return {
+      ok: false,
+      error: SUBJECT_PROMPT[subject],
+      fieldErrors: { subjectId: ["Choose who this login is for"] },
+    };
+  }
+
   // A second pending invitation to the same address is not an error worth
   // showing a person — it is the same intent, expressed twice, usually because
   // the first mail went astray. Supersede rather than refuse.
@@ -113,9 +184,12 @@ export async function invite(input: unknown): Promise<ActionResult<{ id: string 
       tenant_id: ctx as string,
       email: parsed.data.email,
       role_id: parsed.data.roleId,
-      staff_id: parsed.data.staffId || null,
-      student_id: parsed.data.studentId || null,
-      guardian_id: parsed.data.guardianId || null,
+      // The role decides the column. `role_subject` is deliberately not sent:
+      // a trigger fills it from the role (migration `0225`), so no caller has
+      // to know the carried column exists.
+      staff_id: subject === "staff" ? parsed.data.subjectId : null,
+      student_id: subject === "student" ? parsed.data.subjectId : null,
+      guardian_id: subject === "guardian" ? parsed.data.subjectId : null,
     })
     .select("id")
     .single();

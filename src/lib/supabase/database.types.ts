@@ -2495,6 +2495,7 @@ export type Database = {
           invited_by: string | null
           person_id: string | null
           role_id: string
+          role_subject: string
           staff_id: string | null
           status: string
           student_id: string | null
@@ -2511,6 +2512,7 @@ export type Database = {
           invited_by?: string | null
           person_id?: string | null
           role_id: string
+          role_subject?: string
           staff_id?: string | null
           status?: string
           student_id?: string | null
@@ -2527,6 +2529,7 @@ export type Database = {
           invited_by?: string | null
           person_id?: string | null
           role_id?: string
+          role_subject?: string
           staff_id?: string | null
           status?: string
           student_id?: string | null
@@ -2549,11 +2552,11 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "invitations_role_id_fkey"
-            columns: ["role_id"]
+            foreignKeyName: "invitations_role_fkey"
+            columns: ["tenant_id", "role_id", "role_subject"]
             isOneToOne: false
             referencedRelation: "roles"
-            referencedColumns: ["id"]
+            referencedColumns: ["tenant_id", "id", "subject"]
           },
           {
             foreignKeyName: "invitations_staff_id_fkey"
@@ -4626,6 +4629,7 @@ export type Database = {
           id: string
           is_system: boolean
           name: string
+          subject: string
           tenant_id: string
           tier: string
         }
@@ -4635,6 +4639,7 @@ export type Database = {
           id?: string
           is_system?: boolean
           name: string
+          subject?: string
           tenant_id: string
           tier?: string
         }
@@ -4644,6 +4649,7 @@ export type Database = {
           id?: string
           is_system?: boolean
           name?: string
+          subject?: string
           tenant_id?: string
           tier?: string
         }
@@ -7353,6 +7359,14 @@ export type Database = {
         }[]
       }
       exams_unpublish: { Args: { p_exam_id: string }; Returns: number }
+      family_login_problems: {
+        Args: never
+        Returns: {
+          key: string
+          message: string
+          severity: string
+        }[]
+      }
       family_my_students: {
         Args: never
         Returns: {
@@ -8166,6 +8180,15 @@ export type Database = {
           index_name: string
           schema_name: string
           table_name: string
+        }[]
+      }
+      invite_candidates: {
+        Args: { p_query: string; p_subject: string }
+        Returns: {
+          has_login: boolean
+          hint: string
+          id: string
+          label: string
         }[]
       }
       library_issue_book: {

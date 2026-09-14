@@ -82,6 +82,7 @@ After any migration, regenerate types into
 | [docs/modules/academic-years.md](./docs/modules/academic-years.md) | Academic years: the flag nobody could move, and six thousand rows filed in the wrong one |
 | [docs/modules/family.md](./docs/modules/family.md) | The family's side: the menu offered a parent Payroll and withheld their own fee account |
 | [docs/modules/guardians.md](./docs/modules/guardians.md) | Guardians: the write path nobody had, and the import that collected one and dropped it |
+| [docs/modules/invitations.md](./docs/modules/invitations.md) | Invitations: the form that never asked which person a login was for |
 | [docs/ui-review.md](./docs/ui-review.md) | A UI pass with the app actually running, and the three translated strings nothing rendered |
 | [docs/performance.md](./docs/performance.md) | What was actually slow, measured before and after |
 | [docs/design/decisions.md](./docs/design/decisions.md) | Palette, type, spacing — and why |

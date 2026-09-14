@@ -50,14 +50,27 @@ export const startSchoolSchema = z.object({
 
 export type StartSchoolInput = z.infer<typeof startSchoolSchema>;
 
+// `roles.subject` and its prompts live in `invitations-display.ts`, which has
+// no imports: a client component reading a label must not drag Zod in behind
+// it. Re-exported so a caller that already imports this module has one import
+// to remember.
+export {
+  ROLE_SUBJECTS,
+  SUBJECT_PROMPT,
+  type RoleSubject,
+} from "./invitations-display";
+
 export const inviteSchema = z.object({
   email: z.string().min(1, "Enter an email").email("That does not look like an email address"),
   roleId: z.string().uuid("Choose a role"),
-  // Optional links to the person this login will act as. Rule 5's identity model:
-  // a login is not a person, it is an account that acts as one.
-  staffId: z.union([z.string().uuid(), z.literal("")]).optional(),
-  studentId: z.union([z.string().uuid(), z.literal("")]).optional(),
-  guardianId: z.union([z.string().uuid(), z.literal("")]).optional(),
+  /**
+   * **One field, not three.** The role decides which column this lands in, so
+   * the client cannot put a student's id into `guardian_id` — and there is no
+   * three-way "exactly one of these" rule in the browser to get wrong. The
+   * server resolves the role's subject and writes the right column; the
+   * composite key and `invitations_subject_present` are still the boundary.
+   */
+  subjectId: z.union([z.string().uuid(), z.literal("")]).optional(),
 });
 
 export type InviteInput = z.infer<typeof inviteSchema>;

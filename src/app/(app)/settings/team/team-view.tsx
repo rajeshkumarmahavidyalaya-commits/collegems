@@ -19,6 +19,7 @@ import {
 } from "@/components/ui/table";
 import { useI18n } from "@/components/providers/i18n-provider";
 import { invite, revokeInvitation, type InvitationRow, type RoleOption } from "./actions";
+import { SubjectPicker } from "./subject-picker";
 
 /**
  * The three audiences, in the order somebody inviting thinks of them: most
@@ -53,20 +54,36 @@ export function TeamView({
   const [pending, startTransition] = useTransition();
   const [email, setEmail] = useState("");
   const [roleId, setRoleId] = useState(roles.find((r) => r.code === "teacher")?.id ?? roles[0]?.id ?? "");
+  const [subjectId, setSubjectId] = useState("");
+  const [subjectName, setSubjectName] = useState("");
   const [fieldErrors, setFieldErrors] = useState<Record<string, string[]>>({});
+
+  // Which record this role stands for. Not the tier: `parent` and `student` are
+  // both the "students and families" tier and need a guardian and a student
+  // respectively (migration `0224`).
+  const subject = roles.find((r) => r.id === roleId)?.subject ?? "none";
 
   function onInvite(e: React.FormEvent) {
     e.preventDefault();
     setFieldErrors({});
     startTransition(async () => {
-      const result = await invite({ email, roleId });
+      const result = await invite({ email, roleId, subjectId });
       if (!result.ok) {
         setFieldErrors(result.fieldErrors ?? {});
         toast.error(result.error);
         return;
       }
-      toast.success(`Invitation sent to ${email}.`);
+      // Both facts on one line: which address was invited, and who the login
+      // will act as. Saying only the first is how a school comes to believe a
+      // family was connected to their own child.
+      toast.success(
+        subjectName
+          ? `Invitation sent to ${email}, for ${subjectName}.`
+          : `Invitation sent to ${email}.`,
+      );
       setEmail("");
+      setSubjectId("");
+      setSubjectName("");
       router.refresh();
     });
   }
@@ -95,7 +112,8 @@ export function TeamView({
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <form onSubmit={onInvite} className="flex flex-col gap-4 sm:flex-row sm:items-end" noValidate>
+            <form onSubmit={onInvite} className="grid gap-4" noValidate>
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-end">
               <div className="grid flex-1 gap-2">
                 <Label htmlFor="invite-email">Email</Label>
                 <Input
@@ -119,7 +137,14 @@ export function TeamView({
                 <select
                   id="invite-role"
                   value={roleId}
-                  onChange={(e) => setRoleId(e.target.value)}
+                  onChange={(e) => {
+                    setRoleId(e.target.value);
+                    // A guardian chosen under the Parent role is not a valid
+                    // answer to "which member of staff", so the choice goes
+                    // with the question rather than surviving it.
+                    setSubjectId("");
+                    setSubjectName("");
+                  }}
                   className="h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                 >
                   {/*
@@ -142,14 +167,36 @@ export function TeamView({
                   ))}
                 </select>
               </div>
-              <Button type="submit" disabled={pending}>
-                {pending ? (
-                  <Loader2 className="me-2 size-4 animate-spin" aria-hidden="true" />
-                ) : (
-                  <UserPlus className="me-2 size-4" aria-hidden="true" />
-                )}
-                Invite
-              </Button>
+              </div>
+
+              {/*
+                Drawn only when the role stands for somebody. An administrator
+                inviting a second principal is not asked to pick a guardian, and
+                a role a college invented that stands for nobody asks nothing —
+                `roles.subject` decides, not a `case` on the role's code.
+              */}
+              {subject !== "none" && (
+                <SubjectPicker
+                  subject={subject}
+                  value={subjectId}
+                  onChange={(id, label) => {
+                    setSubjectId(id);
+                    setSubjectName(label);
+                  }}
+                  error={fieldErrors.subjectId?.[0]}
+                />
+              )}
+
+              <div>
+                <Button type="submit" disabled={pending}>
+                  {pending ? (
+                    <Loader2 className="me-2 size-4 animate-spin" aria-hidden="true" />
+                  ) : (
+                    <UserPlus className="me-2 size-4" aria-hidden="true" />
+                  )}
+                  Invite
+                </Button>
+              </div>
             </form>
           </CardContent>
         </Card>

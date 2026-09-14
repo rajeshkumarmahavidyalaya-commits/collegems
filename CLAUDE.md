@@ -1283,6 +1283,92 @@ reading TypeScript needs the other comment syntax too.
 
 See `docs/modules/guardians.md`.
 
+### …and a guardian record is not a login
+
+`0221` made 555 guardians writable. One step along: **0 of them could sign in**,
+and neither could any student — 2 logins in total on the demo college, both
+administrators, 2 notification deliveries ever, 0 devices.
+
+The database had been ready since `0004`. `invitations` carries `person_id`,
+`student_id`, `staff_id` **and** `guardian_id`; `handle_new_auth_user` resolves
+all four onto `user_profiles`; the server action accepted all three ids and
+inserted them. `team-view.tsx` mentioned `guardianId` **zero times** — it sent an
+email address and a role.
+
+> **A profile minted without a guardian is not one.** `parents view own children`
+> is `up.guardian_id = gs.guardian_id`, `students view self` is `id =
+> up.student_id`, `teachers view own section` is `up.staff_id =
+> s.class_teacher_staff_id`. Null on either side and the policy matches nothing:
+> the family signs in, every query is correct, and every answer is nothing.
+
+And the policies say why it lasted: `admins manage students` and `staff roles
+view students` compare the **role code alone**, so an administrator works with
+nothing attached. *The only seats that broke are the ones nobody had ever signed
+into.*
+
+Four things, and the second is the device learning something about itself:
+
+- **What a role stands for is a column, not a branch.** `roles.tier` cannot
+  answer it — `parent` and `student` share the `student` tier and need different
+  records — and a `case role.code` in TypeScript is this product's six roles
+  hardcoded, which `0208` already refused for the tier. `roles.subject` carries
+  its neighbour's warning verbatim: **it decides what an invitation must name,
+  never what the holder may do.**
+- **A carried column is a copy, and a copy needs somebody to write it.** `0224`
+  gave `invitations` the composite-key device's sixth use — carrying a
+  **requirement** — and the probe meant to demonstrate it refused a *correct*
+  insert, because `role_subject` defaults to `'none'` and nothing filled it in.
+  The five earlier uses all carry either a constant the writer already knows
+  (`slot_schedulable` is always `true`) or a value it is holding anyway
+  (`marks.max_marks`); this one is a fact about the **parent row**. Every caller
+  looking it up is the second copy the device exists to avoid, and a plain
+  insert through PostgREST routes around any function — so `0225` is a trigger,
+  and the split is the point: **the trigger populates, the key and the CHECK
+  enforce.** Drop the trigger and writes fail rather than admitting a wrong
+  value, which is what keeps it inside rule 4 rather than an exception to it.
+- **The constraint applies while the row is still a promise.** `status <>
+  'pending'` in the CHECK means history is not rewritten by a decision taken
+  today, and changing what a role stands for is refused only while *pending*
+  invitations contradict it — recoverable by revoking them, rather than a
+  constraint error on a row from two years ago.
+- **One field, not three.** The form sends a single `subjectId` and the *server*
+  decides which column it lands in, so the client cannot put a student's id into
+  `guardian_id` and there is no three-way "exactly one of these" rule in the
+  browser to get wrong.
+
+Probed end to end in a rolled-back transaction — the office invites, the person
+signs up through the real `auth.users` trigger, and the product is then read as
+them. **The first parent login this codebase has ever had:** 1 child of 302,
+named, in Grade 1 A, with a real fee account (15,900.00 charged less 2,880.00 of
+concessions less 11,520.00 paid = **1,500.00 due**); 276 timetable rows;
+**0 staff rows and 0 audit rows**.
+
+Two mistakes worth carrying, both re-commits of rules already written down here:
+
+- **The critic said *"reaches those family."*** Subject agreed, verb agreed, last
+  noun did not — `0196`'s lesson, by somebody who had read the paragraph about
+  it. That is the useful part: the rule is easy to half-apply because the first
+  two agreements are the ones you are looking at while writing the `case`. And a
+  sentence with **two counts** needs two agreements — the noun follows the total,
+  the verb follows the numerator.
+- **The picker cost 27 kB and 26 of them were Zod.** `/settings/team` went 149 →
+  **176** kB because `SUBJECT_PROMPT` lived beside `inviteSchema` in a module
+  that begins `import { z }`. Split into a no-import `invitations-display.ts`:
+  **150 kB**. The `fees-display.ts` warning, in the words that now head the new
+  file — *one `import { z }` and it silently becomes the thing it was extracted
+  from.*
+
+And a third about guards, which is a genuinely new instance: **`\b` finds no
+boundary inside a word containing an underscore.** The check forbidding
+`roles.subject` in a policy passed on a planted `using (role_subject =
+'guardian')` — precisely the shortcut worth forbidding. It also first reported a
+policy *named* `"subject teachers manage marks"`, about an academic subject; a
+guard trusted at that point would have had a correct policy weakened to satisfy
+it. **Strip the name, then match the expression — and match the column as it is
+actually spelled.**
+
+See `docs/modules/invitations.md`.
+
 ## 6. Money is append-only
 
 Payments, discounts, fines and refunds are **immutable ledger entries**.
