@@ -11,7 +11,6 @@ import { Switch } from "@/components/ui/switch";
 import { setScheduleEnabled, type RunRow, type ScheduleProblem, type ScheduleRow } from "./actions";
 import { useI18n } from "@/components/providers/i18n-provider";
 import {
-  KIND_DESCRIPTION,
   graceSentence,
   kindLabel,
   runSentence,
@@ -19,7 +18,7 @@ import {
   RUN_STATUS_LABEL,
   scheduleSentence,
   type RunStatus,
-  type ScheduleKind,
+  kindDescription,
 } from "@/lib/validations/schedules";
 
 export function ScheduleCard({
@@ -34,7 +33,7 @@ export function ScheduleCard({
   /** Whether the caller holds `schedules.manage`. The switch is theirs; the register is everybody's. */
   canManage: boolean;
 }) {
-  const { formatDateTime } = useI18n();
+  const { t, formatDateTime } = useI18n();
   const router = useRouter();
   const [pending, startTransition] = useTransition();
 
@@ -63,7 +62,7 @@ export function ScheduleCard({
           <div className="min-w-0">
             <CardTitle className="flex flex-wrap items-center gap-2 text-base">
               {schedule.name}
-              <Badge variant="outline">{kindLabel(schedule.kind)}</Badge>
+              <Badge variant="outline">{kindLabel(schedule.kind, t)}</Badge>
               {!schedule.isEnabled && <Badge variant="secondary">Off</Badge>}
               {blocking.length > 0 && schedule.isEnabled && (
                 <Badge variant="warning">
@@ -73,7 +72,7 @@ export function ScheduleCard({
               )}
             </CardTitle>
             <CardDescription className="mt-1">
-              {KIND_DESCRIPTION[schedule.kind as ScheduleKind]}
+              {kindDescription(schedule.kind, t)}
             </CardDescription>
           </div>
 
@@ -99,11 +98,11 @@ export function ScheduleCard({
               run_at: schedule.runAt,
               weekdays: schedule.weekdays,
               day_of_month: schedule.dayOfMonth,
-            })}
+            }, t)}
           </span>
           <span className="inline-flex items-center gap-1.5">
             <Clock className="size-3.5" aria-hidden="true" />
-            {graceSentence(schedule.graceMinutes)}
+            {graceSentence(schedule.graceMinutes, t)}
           </span>
         </div>
 

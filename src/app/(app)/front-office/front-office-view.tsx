@@ -193,6 +193,7 @@ function Stat({
  * somebody glances at between phone calls.
  */
 function Funnel({ funnel }: { funnel: FunnelRow[] }) {
+  const { t } = useI18n();
   const total = funnel.reduce((sum, f) => sum + f.count, 0);
 
   return (
@@ -213,7 +214,7 @@ function Funnel({ funnel }: { funnel: FunnelRow[] }) {
                 className="flex min-w-28 flex-1 flex-col gap-1 rounded-md border border-border p-3"
               >
                 <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                  {stageLabel(stage.status)}
+                  {stageLabel(stage.status, t)}
                 </span>
                 <span className="font-mono text-xl font-semibold tabular-nums">{stage.count}</span>
                 <span
@@ -247,6 +248,7 @@ function EnquiryTable({
   onFollowUp: (enquiry: EnquiryRow) => void;
   onConvert: (enquiry: EnquiryRow) => void;
 }) {
+  const { t } = useI18n();
   return (
     <Card>
       <CardHeader className="flex flex-row flex-wrap items-start justify-between gap-3">
@@ -317,7 +319,7 @@ function EnquiryTable({
                         )}
                       </TableCell>
                       <TableCell className="text-muted-foreground">
-                        {sourceLabel(e.source)}
+                        {sourceLabel(e.source, t)}
                       </TableCell>
                       <TableCell>
                         {/* Text carries the meaning; the variant echoes it. */}
@@ -326,7 +328,7 @@ function EnquiryTable({
                             tone === "won" ? "default" : tone === "lost" ? "destructive" : "outline"
                           }
                         >
-                          {stageLabel(e.status)}
+                          {stageLabel(e.status, t)}
                         </Badge>
                         {e.lostReason && (
                           <span className="block max-w-40 truncate text-xs text-muted-foreground">

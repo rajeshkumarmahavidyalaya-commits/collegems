@@ -1,4 +1,6 @@
 import { z } from "zod";
+import type { Translator } from "@/lib/i18n/translate";
+import { labelFor } from "./labels";
 
 /**
  * The academic structure the rest of Phase 1 and 3 stand on: what is taught,
@@ -108,8 +110,9 @@ export const sectionSubjectSchema = z.object({
 });
 export type SectionSubjectInput = z.infer<typeof sectionSubjectSchema>;
 
-export function subjectKindLabel(value: string) {
-  return SUBJECT_KINDS.find((k) => k.value === value)?.label ?? value;
+export function subjectKindLabel(value: string, t: Translator) {
+  const kind = SUBJECT_KINDS.find((k) => k.value === value);
+  return kind ? labelFor(`academics.subjectKind.${kind.value}`, kind.label, t) : value;
 }
 
 // `weekdayLabel` stood here and had **no caller** — the second dead label found

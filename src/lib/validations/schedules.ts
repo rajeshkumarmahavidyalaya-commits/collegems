@@ -1,4 +1,8 @@
 import { z } from "zod";
+import type { Translator } from "@/lib/i18n/translate";
+import { formatWeekday } from "@/lib/i18n/format";
+import { intlTag } from "@/lib/i18n/config";
+import { labelFor } from "./labels";
 
 /**
  * Schedules — the client half.
@@ -33,24 +37,66 @@ export const KIND_DESCRIPTION: Record<ScheduleKind, string> = {
     "Tells the family of every student holding a book past its due date. Staff borrowers are settled through payroll and are not included.",
 };
 
-export function kindLabel(kind: string): string {
-  return KIND_LABEL[kind as ScheduleKind] ?? kind;
+export function kindLabel(kind: string, t: Translator): string {
+  const known = KIND_LABEL[kind as ScheduleKind];
+  return known ? labelFor(`schedules.kind.${kind}`, known, t) : kind;
+}
+
+/**
+ * What the schedule actually does, under its name on the same card.
+ *
+ * Same reasoning as every other hint in this batch: it is part of the control,
+ * not prose beside it, so it moves with the name or the card is bilingual.
+ */
+export function kindDescription(kind: string, t: Translator): string {
+  const known = KIND_DESCRIPTION[kind as ScheduleKind];
+  return known ? labelFor(`schedules.kindDescription.${kind}`, known, t) : "";
 }
 
 // ---------------------------------------------------------------------------
 // When does this run
 // ---------------------------------------------------------------------------
 
-const DAY_NAME = ["", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
+// `DAY_NAME` stood here: a **second** hardcoded weekday array, after the one
+// `formatWeekday` replaced in `academics.ts`. Rule 15 had already written the
+// sentence that condemns it — *"hardcoding the formatter's output is the same
+// mistake one step further along"* — and this copy simply was not looked for
+// when the first was deleted. **When you delete a hardcoded table, grep for the
+// second one.**
 
 /** `19:30:00` → `19:30`. Postgres sends seconds; nobody reads them. */
 export function formatRunAt(runAt: string): string {
   return runAt.slice(0, 5);
 }
 
-function ordinal(n: number): string {
-  const suffix = n % 100 >= 11 && n % 100 <= 13 ? "th" : ["th", "st", "nd", "rd"][n % 10] ?? "th";
-  return `${n}${suffix}`;
+/**
+ * "1st", "2nd", "3rd", "11th" — and nothing at all in a language without them.
+ *
+ * The old body was `["th","st","nd","rd"][n % 10]` with a hand-written 11/12/13
+ * exception, which is the whole English ordinal rule spelled out in a ternary.
+ * Rule 15's sentence about `WEEKDAYS` applies exactly: **hardcoding the output
+ * of a locale rule works for the first customer.**
+ *
+ * `Intl.PluralRules(..., { type: "ordinal" })` is the primitive that already
+ * knows. English returns `one`/`two`/`few`/`other` and gets the teens right on
+ * its own; Hindi and Urdu return `other` for every number, and their `other`
+ * key is the bare numeral — so the suffix disappears rather than being wrong,
+ * and the sentence around it does the work instead.
+ *
+ * The first draft of this dropped the ordinal entirely and rendered "On day 5
+ * of each month". That was correct in three languages and *worse in English*
+ * than what it replaced, which is not a trade worth making when `Intl` will
+ * answer the question.
+ */
+function ordinal(n: number, t: Translator): string {
+  let category = "other";
+  try {
+    category = new Intl.PluralRules(intlTag(t.locale), { type: "ordinal" }).select(n);
+  } catch {
+    // No ICU ordinal data: fall through to `other`, which is "{n}th" in English
+    // and the bare numeral everywhere else. Never a wrong suffix.
+  }
+  return t(`schedules.ordinal.${category}` as Parameters<Translator>[0], { n });
 }
 
 /**
@@ -61,33 +107,42 @@ function ordinal(n: number): string {
  * rendered it as "on no days" would describe a schedule that fires daily as one
  * that never fires.
  */
-export function scheduleSentence(schedule: {
-  run_at: string;
-  weekdays: number[] | null;
-  day_of_month: number | null;
-}): string {
-  const at = `at ${formatRunAt(schedule.run_at)}`;
+export function scheduleSentence(
+  schedule: {
+    run_at: string;
+    weekdays: number[] | null;
+    day_of_month: number | null;
+  },
+  t: Translator,
+): string {
+  const time = formatRunAt(schedule.run_at);
   const days = schedule.weekdays ?? [];
 
   if (schedule.day_of_month) {
-    return `On the ${ordinal(schedule.day_of_month)} of each month, ${at}`;
+    return t("schedules.cadence.dayOfMonth", { day: ordinal(schedule.day_of_month, t), time });
   }
-  if (days.length === 0) {
-    return `Every day, ${at}`;
-  }
-  if (days.length === 7) {
-    return `Every day, ${at}`;
-  }
+  // No weekdays and all seven mean the same thing, and the empty case is the
+  // one that matters: a schedule that says nothing fires daily, and a screen
+  // rendering that as "on no days" would describe it as one that never fires.
+  if (days.length === 0 || days.length === 7) return t("schedules.cadence.daily", { time });
 
   const sorted = [...days].sort((a, b) => a - b);
-  if (sorted.join() === "1,2,3,4,5") return `Every weekday, ${at}`;
-  if (sorted.join() === "1,2,3,4,5,6") return `Monday to Saturday, ${at}`;
-  if (sorted.join() === "6,7") return `At weekends, ${at}`;
+  if (sorted.join() === "1,2,3,4,5") return t("schedules.cadence.weekdays", { time });
+  if (sorted.join() === "1,2,3,4,5,6") return t("schedules.cadence.mondayToSaturday", { time });
+  if (sorted.join() === "6,7") return t("schedules.cadence.weekends", { time });
 
-  const names = sorted.map((d) => DAY_NAME[d]).filter(Boolean);
-  const list =
-    names.length === 1 ? names[0] : `${names.slice(0, -1).join(", ")} and ${names[names.length - 1]}`;
-  return `${list}, ${at}`;
+  // `Intl.ListFormat` joins them, so the conjunction and the separator are the
+  // reader's rather than English's — "Monday, Tuesday and Friday" against
+  // "सोमवार, मंगलवार और शुक्रवार". Hand-joining with `" and "` was the same
+  // class of mistake as the weekday array itself, one clause along.
+  const names = sorted.map((d) => formatWeekday(d, t.locale));
+  let list: string;
+  try {
+    list = new Intl.ListFormat(intlTag(t.locale), { style: "long", type: "conjunction" }).format(names);
+  } catch {
+    list = names.join(", ");
+  }
+  return t("schedules.cadence.days", { days: list, time });
 }
 
 /**
@@ -98,11 +153,16 @@ export function scheduleSentence(schedule: {
  * absence notice at midnight is worse than none, a fee reminder is not. A form
  * showing "180" teaches nobody that.
  */
-export function graceSentence(minutes: number): string {
-  if (minutes < 60) return `Skipped if more than ${minutes} minutes late`;
-  if (minutes >= 1440) return "Skipped if more than a day late";
+export function graceSentence(minutes: number, t: Translator): string {
+  if (minutes < 60) return t("schedules.grace.minutes", { minutes });
+  if (minutes >= 1440) return t("schedules.grace.day");
   const hours = Math.round((minutes / 60) * 10) / 10;
-  return `Skipped if more than ${hours} hour${hours === 1 ? "" : "s"} late`;
+  // `hour${hours === 1 ? "" : "s"}` was an English plural spelled at the call
+  // site, which is what `t.plural` exists to stop. It is a separate key rather
+  // than a plural group because `hours` can be 1.5 — and "1.5 hours" is the
+  // `other` category in English while exactly 1 is `one`, so the two really are
+  // two sentences.
+  return hours === 1 ? t("schedules.grace.oneHour") : t("schedules.grace.hours", { hours });
 }
 
 // ---------------------------------------------------------------------------

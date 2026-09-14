@@ -1,4 +1,9 @@
 import { describe, expect, it } from "vitest";
+
+import { createTranslator } from "@/lib/i18n/translate";
+
+/** English, so these assertions pin the words a reader of the source expects. */
+const t = createTranslator("en");
 import {
   DECISIONS,
   EVALUATION_ORDER,
@@ -143,7 +148,7 @@ describe("where a decision lands", () => {
 describe("vocabulary", () => {
   it("names all four outcomes", () => {
     expect(DECISIONS.map((d) => d.value)).toEqual(["promote", "repeat", "graduate", "hold"]);
-    expect(decisionLabel("hold")).toBe("Hold");
+    expect(decisionLabel("hold", t)).toBe("Hold");
   });
 
   it("states the evaluation order, which the screen renders", () => {

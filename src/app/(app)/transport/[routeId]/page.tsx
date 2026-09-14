@@ -8,7 +8,7 @@ import { directionLabel, seatsSentence } from "@/lib/validations/transport";
 import { getManifest, listRoutes, listStops } from "../actions";
 import { RouteDetail } from "./route-detail";
 import { formatCurrency } from "@/lib/i18n/format";
-import { getLocale } from "@/lib/i18n/server";
+import { getLocale, getT } from "@/lib/i18n/server";
 
 export const metadata = { title: "Route" };
 
@@ -16,11 +16,12 @@ export default async function RoutePage({ params }: { params: Promise<{ routeId:
   const locale = await getLocale();
   const { routeId } = await params;
 
-  const [routes, stops, manifest, canManage] = await Promise.all([
+  const [routes, stops, manifest, canManage, t] = await Promise.all([
     listRoutes(),
     listStops(routeId),
     getManifest(routeId),
     hasPermission("transport.manage"),
+    getT(),
   ]);
 
   const route = routes.find((r) => r.routeId === routeId);
@@ -39,7 +40,7 @@ export default async function RoutePage({ params }: { params: Promise<{ routeId:
             </Badge>
           </div>
           <p className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-muted-foreground">
-            <span>{directionLabel(route.direction)}</span>
+            <span>{directionLabel(route.direction, t)}</span>
             <span className="inline-flex items-center gap-1">
               <Users className="size-3.5" aria-hidden="true" />
               {seatsSentence(route.capacity, route.assigned)}

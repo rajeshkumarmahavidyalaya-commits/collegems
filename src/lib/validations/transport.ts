@@ -1,4 +1,6 @@
 import { z } from "zod";
+import type { Translator } from "@/lib/i18n/translate";
+import { labelFor } from "./labels";
 
 /**
  * Phase 5.2 — transport.
@@ -103,8 +105,9 @@ export type AssignmentInput = z.infer<typeof assignmentSchema>;
 // Display
 // ---------------------------------------------------------------------------
 
-export function directionLabel(value: string) {
-  return DIRECTIONS.find((d) => d.value === value)?.label ?? value;
+export function directionLabel(value: string, t: Translator) {
+  const direction = DIRECTIONS.find((d) => d.value === value);
+  return direction ? labelFor(`transport.direction.${direction.value}`, direction.label, t) : value;
 }
 
 /** `"07:05:00"` → `"07:05"`. A timetable does not need seconds. */

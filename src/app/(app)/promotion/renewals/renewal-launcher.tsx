@@ -16,8 +16,11 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
-import { RENEWAL_KINDS, renewalKindLabel, type RenewalRunRow } from "@/lib/validations/renewals";
+import { RENEWAL_KINDS, renewalKindLabel, type RenewalRunRow,
+  renewalBlurb,
+} from "@/lib/validations/renewals";
 import { rollForwardRoutes, startRenewalRun } from "./actions";
+import { useI18n } from "@/components/providers/i18n-provider";
 
 type Props = {
   sessions: { id: string; name: string; isCurrent: boolean }[];
@@ -33,6 +36,7 @@ type Props = {
  * argument as `academics_session_problems()` being read here.
  */
 export function RenewalLauncher({ sessions, runs }: Props) {
+  const { t } = useI18n();
   const router = useRouter();
   const [pending, startTransition] = useTransition();
 
@@ -156,7 +160,7 @@ export function RenewalLauncher({ sessions, runs }: Props) {
                       {kind.label}
                       {live && <Badge variant="outline">Draft open</Badge>}
                     </p>
-                    <p className="mt-1 text-sm text-muted-foreground">{kind.blurb}</p>
+                    <p className="mt-1 text-sm text-muted-foreground">{renewalBlurb(kind.value, t)}</p>
                   </div>
                   {live ? (
                     <Button asChild variant="outline" size="sm">
@@ -198,7 +202,7 @@ export function RenewalLauncher({ sessions, runs }: Props) {
                       href={`/promotion/renewals/${r.id}`}
                       className="underline-offset-4 hover:underline"
                     >
-                      {renewalKindLabel(r.kind)} · {r.fromSessionName} → {r.toSessionName} ·{" "}
+                      {renewalKindLabel(r.kind, t)} · {r.fromSessionName} → {r.toSessionName} ·{" "}
                       {r.counts.renew} carried
                       {r.failures > 0 && `, ${r.failures} refused`}
                     </Link>

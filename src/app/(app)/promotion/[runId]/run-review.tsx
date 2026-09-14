@@ -41,6 +41,7 @@ import {
   leftBehindLabel,
   needsTargetSection,
   switchableDecisions,
+  currentlySentence,
 } from "@/lib/validations/promotion";
 import { DecisionBadge } from "../promotion-planner";
 import { applyRun, discardRun, overrideDecision, type DecisionRow, type RunRow } from "../actions";
@@ -59,7 +60,7 @@ type Props = {
 };
 
 export function RunReview({ run, decisions, sections, leftBehind }: Props) {
-  const { formatCurrency } = useI18n();
+  const { t, formatCurrency } = useI18n();
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [search, setSearch] = useState("");
@@ -161,7 +162,7 @@ export function RunReview({ run, decisions, sections, leftBehind }: Props) {
         admission: d.admissionNumber,
         student: d.studentName,
         from: d.fromSectionLabel,
-        decision: decisionLabel(d.decision),
+        decision: decisionLabel(d.decision, t),
         into: d.toSectionLabel ?? "",
         reason: d.reason,
         overridden: d.isOverride ? "Yes" : "No",
@@ -203,7 +204,7 @@ export function RunReview({ run, decisions, sections, leftBehind }: Props) {
                 <Alert>
                   <AlertTriangle className="size-4" aria-hidden="true" />
                   <AlertTitle className="flex items-center gap-2">
-                    <Badge variant="warning">{leftBehindLabel(problem.kind)}</Badge>
+                    <Badge variant="warning">{leftBehindLabel(problem.kind, t)}</Badge>
                   </AlertTitle>
                   <AlertDescription>{problem.message}</AlertDescription>
                 </Alert>
@@ -407,6 +408,7 @@ function OverrideDialog({
   onClose: () => void;
   onSaved: () => void;
 }) {
+  const { t } = useI18n();
   const [pending, startTransition] = useTransition();
   const [choice, setChoice] = useState(decision.decision);
   const [sectionId, setSectionId] = useState(decision.toSectionId ?? "");
@@ -443,7 +445,7 @@ function OverrideDialog({
         <DialogHeader>
           <DialogTitle>{decision.studentName}</DialogTitle>
           <DialogDescription>
-            Currently {decisionLabel(decision.decision).toLowerCase()} —{" "}
+            {currentlySentence(decision.decision, t)} —{" "}
             {decision.reason.toLowerCase()}. Applying writes what this row says, not what the rules
             said.
           </DialogDescription>
@@ -459,7 +461,7 @@ function OverrideDialog({
               <SelectContent>
                 {options.map((value) => (
                   <SelectItem key={value} value={value}>
-                    {decisionLabel(value)}
+                    {decisionLabel(value, t)}
                   </SelectItem>
                 ))}
               </SelectContent>

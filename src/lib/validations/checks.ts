@@ -1,3 +1,5 @@
+import type { Translator } from "@/lib/i18n/translate";
+import { labelFor } from "./labels";
 /**
  * The school-health critics, browser half.
  *
@@ -86,11 +88,20 @@ export function checkTone(
   return "secondary";
 }
 
-export function checkStatusLabel(status: CheckGroup["status"]): string {
-  if (status === "error") return "Could not run";
-  if (status === "attention") return "Needs attention";
-  if (status === "ok") return "Nothing to report";
-  return "Not your role";
+/**
+ * The four states a check can be in, in the reader's language.
+ *
+ * `skipped` is the fallback branch rather than a fourth comparison, which is
+ * how it was written: anything that is not error/attention/ok is a check the
+ * caller's role does not run. Naming the key `skipped` rather than
+ * `notYourRole` keeps the catalogue keyed on the state, not on the sentence —
+ * so a college that renames the message does not rename the concept.
+ */
+export function checkStatusLabel(status: CheckGroup["status"], t: Translator): string {
+  if (status === "error") return labelFor("checks.status.error", "Could not run", t);
+  if (status === "attention") return labelFor("checks.status.attention", "Needs attention", t);
+  if (status === "ok") return labelFor("checks.status.ok", "Nothing to report", t);
+  return labelFor("checks.status.skipped", "Not your role", t);
 }
 
 /**

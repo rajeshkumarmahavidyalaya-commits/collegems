@@ -375,4 +375,100 @@ export const hi: Messages = {
   "nav.plan": "योजना",
   "nav.permissions": "हर भूमिका क्या कर सकती है",
   "nav.arrangements": "बस और छात्रावास",
+
+  // --- the office batch ----------------------------------------------------
+  "academics.subjectKind.theory": "सैद्धांतिक",
+  "academics.subjectKind.practical": "प्रायोगिक",
+
+  "audit.action.insert": "बनाया गया",
+  "audit.action.update": "बदला गया",
+  "audit.action.delete": "हटाया गया",
+
+  "checks.status.error": "चल नहीं सका",
+  "checks.status.attention": "ध्यान चाहिए",
+  "checks.status.ok": "कुछ बताने को नहीं",
+  "checks.status.skipped": "आपकी भूमिका के लिए नहीं",
+
+  "frontOffice.source.walk_in": "स्वयं आए",
+  "frontOffice.source.phone": "फ़ोन किया",
+  "frontOffice.source.website": "वेबसाइट",
+  "frontOffice.source.referral": "किसी के कहने पर",
+  "frontOffice.source.advertisement": "विज्ञापन",
+  "frontOffice.source.other": "अन्य",
+  "frontOffice.stage.new": "नया",
+  "frontOffice.stage.contacted": "संपर्क हुआ",
+  "frontOffice.stage.visited": "स्कूल देखा",
+  "frontOffice.stage.applied": "आवेदन किया",
+  "frontOffice.stage.admitted": "प्रवेश हुआ",
+  "frontOffice.stage.lost": "कहीं और गए",
+
+  "hostel.kind.boys": "बालक",
+  "hostel.kind.girls": "बालिका",
+  "hostel.kind.mixed": "मिश्रित",
+
+  "promotion.decision.promote": "अगली कक्षा",
+  "promotion.decision.repeat": "वही कक्षा",
+  "promotion.decision.graduate": "विद्यालय पूर्ण",
+  "promotion.decision.hold": "रोकें",
+  "promotion.decisionHint.promote": "आने वाले सत्र में एक कक्षा ऊपर जाते हैं।",
+  "promotion.decisionHint.repeat": "आने वाले सत्र में उसी कक्षा में रहते हैं।",
+  "promotion.decisionHint.graduate": "पूर्व छात्र के रूप में विद्यालय छोड़ते हैं। कोई नया नामांकन नहीं।",
+  "promotion.decisionHint.hold": "कुछ नहीं होता। पिछला नामांकन खुला रहता है।",
+  "promotion.onMissingResult.hold": "रोक रखें",
+  "promotion.onMissingResult.promote": "फिर भी अगली कक्षा",
+  "promotion.onMissingResult.repeat": "वही कक्षा दोहराएँ",
+  "promotion.onMissingResultHint.hold": "सुरक्षित उत्तर: किसी को देखना ही होगा।",
+  "promotion.onMissingResultHint.promote": "परिणाम न होने को उत्तीर्ण मानें।",
+  "promotion.onMissingResultHint.repeat": "परिणाम न होने को अनुत्तीर्ण मानें।",
+  "promotion.leftBehind.library": "पुस्तकालय",
+  "promotion.leftBehind.balance": "राशि",
+  "promotion.leftBehind.other": "टिप्पणी",
+  "promotion.currently": "अभी: {decision}",
+  "promotion.tally": "{count} {decision}",
+
+  "renewals.kind.transport": "बस सीटें",
+  "renewals.kind.hostel": "छात्रावास बिस्तर",
+  "renewals.blurb.transport":
+    "इस वर्ष सीट वाले हर बच्चे को, अगले वर्ष के मार्ग पर उसी ठहराव से जोड़ा गया।",
+  "renewals.blurb.hostel": "इस वर्ष बिस्तर वाले हर बच्चे के लिए, उसी कमरे का प्रस्ताव।",
+
+  "schedules.kind.attendance.absentees": "अनुपस्थिति सूचना",
+  "schedules.kind.fees.due_reminder": "शुल्क स्मरण",
+  "schedules.kind.library.overdue": "पुस्तक वापसी स्मरण",
+  "schedules.kindDescription.attendance.absentees":
+    "जिस दिन बच्चा अनुपस्थित हो, उसी दिन परिवार को बताता है। जिस दिन उपस्थिति दर्ज ही नहीं हुई, उस दिन कुछ नहीं भेजा जाता।",
+  "schedules.kindDescription.fees.due_reminder":
+    "जिन विद्यार्थियों पर राशि बकाया है, उनके परिवार को बताता है। न्यूनतम राशि तय करें ताकि दो रुपये के अंतर पर संदेश न जाए।",
+  "schedules.kindDescription.library.overdue":
+    "जिन विद्यार्थियों के पास नियत तिथि के बाद भी पुस्तक है, उनके परिवार को बताता है। कर्मचारियों का निपटारा वेतन से होता है, वे इसमें नहीं हैं।",
+  "schedules.cadence.daily": "रोज़, {time} बजे",
+  "schedules.cadence.weekdays": "हर कार्यदिवस, {time} बजे",
+  "schedules.cadence.mondayToSaturday": "सोमवार से शनिवार, {time} बजे",
+  "schedules.cadence.weekends": "सप्ताहांत पर, {time} बजे",
+  "schedules.cadence.days": "{days}, {time} बजे",
+  "schedules.cadence.dayOfMonth": "हर माह की {day} तारीख़ को, {time} बजे",
+  "schedules.grace.minutes": "{minutes} मिनट से अधिक देर होने पर छोड़ दिया जाएगा",
+  "schedules.grace.hours": "{hours} घंटे से अधिक देर होने पर छोड़ दिया जाएगा",
+  "schedules.grace.oneHour": "एक घंटे से अधिक देर होने पर छोड़ दिया जाएगा",
+  "schedules.grace.day": "एक दिन से अधिक देर होने पर छोड़ दिया जाएगा",
+
+  // Five ordinal categories, not one. `Intl.PluralRules("hi-IN", { type:
+  // "ordinal" })` carves 1 / 2,3 / 4 / 6 / the rest into one, two, few, many,
+  // other -- because Hindi ordinals are distinct *words* (पहला, दूसरा, तीसरा,
+  // चौथा, छठा), not suffixes. Every one of them needs a key here: a category
+  // with no entry falls back to the English catalogue, and the English entry is
+  // "{n}st" -- so a missing key does not print English, it prints an English
+  // *rule* applied to a Hindi sentence. That is what shipped for one test run:
+  // "हर माह की 1st तारीख़ को".
+  //
+  // The date is written as a numeral in this frame, so all five are the bare
+  // number and the sentence around it carries the meaning.
+  "schedules.ordinal.one": "{n}",
+  "schedules.ordinal.two": "{n}",
+  "schedules.ordinal.few": "{n}",
+  "schedules.ordinal.many": "{n}",
+  "schedules.ordinal.other": "{n}",
+  "transport.direction.both": "दोनों ओर",
+  "transport.direction.pickup": "केवल लाना",
+  "transport.direction.drop": "केवल छोड़ना",
 };

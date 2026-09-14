@@ -1,4 +1,9 @@
 import { describe, expect, it } from "vitest";
+
+import { createTranslator } from "@/lib/i18n/translate";
+
+/** English, so these assertions pin the words a reader of the source expects. */
+const t = createTranslator("en");
 import {
   attentionCount,
   checkStatusLabel,
@@ -48,7 +53,7 @@ describe("groupChecks", () => {
     const groups = groupChecks([row({ key: "a", status: "ok" }), row({ key: "b", status: "withheld" })]);
     expect(groups[0].status).toBe("ok");
     expect(groups[1].status).toBe("withheld");
-    expect(checkStatusLabel(groups[0].status)).not.toBe(checkStatusLabel(groups[1].status));
+    expect(checkStatusLabel(groups[0].status, t)).not.toBe(checkStatusLabel(groups[1].status, t));
   });
 
   // The one that matters. A critic that raised has not passed, and a check with

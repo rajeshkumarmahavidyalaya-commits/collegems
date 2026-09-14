@@ -406,6 +406,110 @@ export const en = {
   "nav.plan": "Plan",
   "nav.permissions": "What each role may do",
   "nav.arrangements": "Bus and boarding",
+
+  // --- the office batch: the last twelve label helpers ---------------------
+  // Everything a family reads was translated in the four batches before this.
+  // What was left is the half only staff see -- the admissions funnel, the
+  // rollover, the schedule register, the audit trail -- and a school whose
+  // office works in Hindi reads those every day.
+  "academics.subjectKind.theory": "Theory",
+  "academics.subjectKind.practical": "Practical",
+
+  "audit.action.insert": "Created",
+  "audit.action.update": "Edited",
+  "audit.action.delete": "Deleted",
+
+  "checks.status.error": "Could not run",
+  "checks.status.attention": "Needs attention",
+  "checks.status.ok": "Nothing to report",
+  "checks.status.skipped": "Not your role",
+
+  "frontOffice.source.walk_in": "Walked in",
+  "frontOffice.source.phone": "Telephoned",
+  "frontOffice.source.website": "Website",
+  "frontOffice.source.referral": "Referred",
+  "frontOffice.source.advertisement": "Advertisement",
+  "frontOffice.source.other": "Other",
+  "frontOffice.stage.new": "New",
+  "frontOffice.stage.contacted": "Contacted",
+  "frontOffice.stage.visited": "Visited",
+  "frontOffice.stage.applied": "Applied",
+  "frontOffice.stage.admitted": "Admitted",
+  "frontOffice.stage.lost": "Lost",
+
+  "hostel.kind.boys": "Boys",
+  "hostel.kind.girls": "Girls",
+  "hostel.kind.mixed": "Mixed",
+
+  "promotion.decision.promote": "Promote",
+  "promotion.decision.repeat": "Repeat",
+  "promotion.decision.graduate": "Graduate",
+  "promotion.decision.hold": "Hold",
+  // The hint renders directly under the name on the same radio, so translating
+  // one without the other puts the decision in two languages on one control.
+  "promotion.decisionHint.promote": "Moves up a class in the receiving session.",
+  "promotion.decisionHint.repeat": "Stays in the same class in the receiving session.",
+  "promotion.decisionHint.graduate": "Leaves the school as an alumnus. No new enrolment.",
+  "promotion.decisionHint.hold": "Nothing happens. The outgoing enrolment stays open.",
+  "promotion.onMissingResult.hold": "Hold them",
+  "promotion.onMissingResult.promote": "Promote anyway",
+  "promotion.onMissingResult.repeat": "Make them repeat",
+  "promotion.onMissingResultHint.hold": "The safe answer: somebody has to look at it.",
+  "promotion.onMissingResultHint.promote": "Treat a missing result as a pass.",
+  "promotion.onMissingResultHint.repeat": "Treat a missing result as a failure.",
+  "promotion.leftBehind.library": "Library",
+  "promotion.leftBehind.balance": "Money",
+  "promotion.leftBehind.other": "Note",
+  // Was `decisionLabel(d).toLowerCase()` inside an English sentence at two call
+  // sites -- an operation with no meaning in Hindi or Urdu, which have no
+  // letter case. The sentence is the unit, so it is a key with the count and
+  // the decision in it.
+  "promotion.currently": "Currently {decision}",
+  "promotion.tally": "{count} {decision}",
+
+  "renewals.kind.transport": "Bus seats",
+  "renewals.kind.hostel": "Hostel beds",
+  "renewals.blurb.transport":
+    "Every child with a seat this year, matched to the same stop on next year's route.",
+  "renewals.blurb.hostel": "Every child with a bed this year, proposed into the same room.",
+
+  "schedules.kind.attendance.absentees": "Absence notice",
+  "schedules.kind.fees.due_reminder": "Fee reminder",
+  "schedules.kind.library.overdue": "Overdue book reminder",
+  "schedules.kindDescription.attendance.absentees":
+    "Tells each absent child's family, on the day they were absent. Nothing is sent for a day nobody took the register.",
+  "schedules.kindDescription.fees.due_reminder":
+    "Tells the family of every student with money outstanding. Set a minimum so a two-rupee rounding difference does not generate a message.",
+  "schedules.kindDescription.library.overdue":
+    "Tells the family of every student holding a book past its due date. Staff borrowers are settled through payroll and are not included.",
+  // The cadence sentence. `DAY_NAME` -- a second hardcoded weekday array, after
+  // the one `formatWeekday` replaced -- is gone: the days come from `Intl` and
+  // arrive here as one already-joined `{days}`.
+  "schedules.cadence.daily": "Every day, at {time}",
+  "schedules.cadence.weekdays": "Every weekday, at {time}",
+  "schedules.cadence.mondayToSaturday": "Monday to Saturday, at {time}",
+  "schedules.cadence.weekends": "At weekends, at {time}",
+  "schedules.cadence.days": "{days}, at {time}",
+  "schedules.cadence.dayOfMonth": "On the {day} of each month, at {time}",
+  "schedules.grace.minutes": "Skipped if more than {minutes} minutes late",
+  "schedules.grace.hours": "Skipped if more than {hours} hours late",
+  "schedules.grace.oneHour": "Skipped if more than an hour late",
+  "schedules.grace.day": "Skipped if more than a day late",
+
+  "schedules.ordinal.one": "{n}st",
+  "schedules.ordinal.two": "{n}nd",
+  "schedules.ordinal.few": "{n}rd",
+  "schedules.ordinal.other": "{n}th",
+  // English never selects `many` — `Intl.PluralRules("en", { type: "ordinal" })`
+  // returns only one/two/few/other. Hindi does, for 6. It is declared here
+  // anyway because English is the *source* catalogue and every other locale is
+  // typed as a `Partial` of it: a key that exists only in a translation is a
+  // stale key by `i18n.test.ts`, and a type error besides. **A rule branch that
+  // only another language uses is still declared in English.**
+  "schedules.ordinal.many": "{n}th",
+  "transport.direction.both": "Both ways",
+  "transport.direction.pickup": "Pickup only",
+  "transport.direction.drop": "Drop only",
 } as const;
 
 export type MessageKey = keyof typeof en;

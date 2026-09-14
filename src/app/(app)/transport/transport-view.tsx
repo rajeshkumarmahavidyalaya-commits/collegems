@@ -140,7 +140,7 @@ function RoutesTab({
   onAdd: () => void;
   onEdit: (route: RouteLoadRow) => void;
 }) {
-  const { formatCurrency } = useI18n();
+  const { t, formatCurrency } = useI18n();
   return (
     <Card>
       <CardHeader className="flex flex-row flex-wrap items-start justify-between gap-3">
@@ -196,7 +196,7 @@ function RoutesTab({
                         )}
                       </TableCell>
                       <TableCell className="text-muted-foreground">
-                        {directionLabel(route.direction)}
+                        {directionLabel(route.direction, t)}
                       </TableCell>
                       <TableCell className="text-muted-foreground">
                         {route.registrationNumber ? (

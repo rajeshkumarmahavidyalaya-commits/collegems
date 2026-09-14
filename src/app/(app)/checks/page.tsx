@@ -11,11 +11,12 @@ import {
   severityTone,
 } from "@/lib/validations/checks";
 import { listChecks } from "./actions";
+import { getT } from "@/lib/i18n/server";
 
 export const metadata = { title: "Needs attention" };
 
 export default async function ChecksPage() {
-  const groups = await listChecks();
+  const [groups, t] = await Promise.all([listChecks(), getT()]);
 
   const attention = groups.filter((g) => g.status === "attention" || g.status === "error");
   const clean = groups.filter((g) => g.status === "ok");
@@ -74,7 +75,7 @@ export default async function ChecksPage() {
                     <CardTitle className="flex flex-wrap items-center gap-2 text-base">
                       {group.label}
                       <Badge variant={checkTone(group.status)}>
-                        {checkStatusLabel(group.status)}
+                        {checkStatusLabel(group.status, t)}
                       </Badge>
                       <Badge variant="outline">{group.module}</Badge>
                     </CardTitle>

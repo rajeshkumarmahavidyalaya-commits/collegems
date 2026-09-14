@@ -40,6 +40,7 @@ import {
   decisionLabel,
   decisionTone,
   type PromotionFormInput,
+  tallySentence,
 } from "@/lib/validations/promotion";
 import {
   previewPromotion,
@@ -56,7 +57,7 @@ type Props = {
 };
 
 export function PromotionPlanner({ sessions, runs }: Props) {
-  const { formatCurrency } = useI18n();
+  const { t, formatCurrency } = useI18n();
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [preview, setPreview] = useState<PreviewResult | null>(null);
@@ -513,7 +514,7 @@ export function PromotionPlanner({ sessions, runs }: Props) {
                   </Badge>
                   <span className="text-xs text-muted-foreground">
                     {Object.entries(run.counts)
-                      .map(([k, v]) => `${v} ${decisionLabel(k).toLowerCase()}`)
+                      .map(([k, v]) => tallySentence(k, v, t))
                       .join(" · ")}
                   </span>
                   {run.overrides > 0 && (
@@ -532,6 +533,7 @@ export function PromotionPlanner({ sessions, runs }: Props) {
 }
 
 export function DecisionBadge({ decision }: { decision: string }) {
+  const { t } = useI18n();
   const tone = decisionTone(decision);
   return (
     <Badge
@@ -544,7 +546,7 @@ export function DecisionBadge({ decision }: { decision: string }) {
       )}
     >
       {decision === "promote" && <CheckCircle2 className="size-3" aria-hidden="true" />}
-      {decisionLabel(decision)}
+      {decisionLabel(decision, t)}
     </Badge>
   );
 }

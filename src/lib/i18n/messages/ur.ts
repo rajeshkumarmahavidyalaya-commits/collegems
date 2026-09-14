@@ -375,4 +375,88 @@ export const ur: Messages = {
   "nav.plan": "پلان",
   "nav.permissions": "ہر کردار کیا کر سکتا ہے",
   "nav.arrangements": "بس اور رہائش",
+
+  // --- the office batch ----------------------------------------------------
+  "academics.subjectKind.theory": "نظری",
+  "academics.subjectKind.practical": "عملی",
+
+  "audit.action.insert": "بنایا گیا",
+  "audit.action.update": "تبدیل کیا گیا",
+  "audit.action.delete": "حذف کیا گیا",
+
+  "checks.status.error": "چل نہیں سکا",
+  "checks.status.attention": "توجہ درکار ہے",
+  "checks.status.ok": "بتانے کو کچھ نہیں",
+  "checks.status.skipped": "آپ کے کردار کے لیے نہیں",
+
+  "frontOffice.source.walk_in": "خود آئے",
+  "frontOffice.source.phone": "ٹیلی فون کیا",
+  "frontOffice.source.website": "ویب سائٹ",
+  "frontOffice.source.referral": "کسی کے کہنے پر",
+  "frontOffice.source.advertisement": "اشتہار",
+  "frontOffice.source.other": "دیگر",
+  "frontOffice.stage.new": "نیا",
+  "frontOffice.stage.contacted": "رابطہ ہوا",
+  "frontOffice.stage.visited": "اسکول دیکھا",
+  "frontOffice.stage.applied": "درخواست دی",
+  "frontOffice.stage.admitted": "داخلہ ہوا",
+  "frontOffice.stage.lost": "کہیں اور گئے",
+
+  "hostel.kind.boys": "لڑکے",
+  "hostel.kind.girls": "لڑکیاں",
+  "hostel.kind.mixed": "مخلوط",
+
+  "promotion.decision.promote": "اگلی جماعت",
+  "promotion.decision.repeat": "وہی جماعت",
+  "promotion.decision.graduate": "اسکول مکمل",
+  "promotion.decision.hold": "روکیں",
+  "promotion.decisionHint.promote": "آنے والے سیشن میں ایک جماعت اوپر جاتے ہیں۔",
+  "promotion.decisionHint.repeat": "آنے والے سیشن میں اسی جماعت میں رہتے ہیں۔",
+  "promotion.decisionHint.graduate": "سابق طالب علم کے طور پر اسکول چھوڑتے ہیں۔ کوئی نیا اندراج نہیں۔",
+  "promotion.decisionHint.hold": "کچھ نہیں ہوتا۔ پچھلا اندراج کھلا رہتا ہے۔",
+  "promotion.onMissingResult.hold": "روکے رکھیں",
+  "promotion.onMissingResult.promote": "پھر بھی اگلی جماعت",
+  "promotion.onMissingResult.repeat": "وہی جماعت دہرائیں",
+  "promotion.onMissingResultHint.hold": "محفوظ جواب: کسی کو دیکھنا ہی ہوگا۔",
+  "promotion.onMissingResultHint.promote": "نتیجہ نہ ہونے کو کامیابی سمجھیں۔",
+  "promotion.onMissingResultHint.repeat": "نتیجہ نہ ہونے کو ناکامی سمجھیں۔",
+  "promotion.leftBehind.library": "کتب خانہ",
+  "promotion.leftBehind.balance": "رقم",
+  "promotion.leftBehind.other": "نوٹ",
+  "promotion.currently": "ابھی: {decision}",
+  "promotion.tally": "{count} {decision}",
+
+  "renewals.kind.transport": "بس نشستیں",
+  "renewals.kind.hostel": "ہاسٹل بستر",
+  "renewals.blurb.transport":
+    "اس سال نشست رکھنے والے ہر بچے کو، اگلے سال کے راستے پر اسی اسٹاپ سے جوڑا گیا۔",
+  "renewals.blurb.hostel": "اس سال بستر رکھنے والے ہر بچے کے لیے، اسی کمرے کی تجویز۔",
+
+  "schedules.kind.attendance.absentees": "غیر حاضری کی اطلاع",
+  "schedules.kind.fees.due_reminder": "فیس یاد دہانی",
+  "schedules.kind.library.overdue": "کتاب واپسی یاد دہانی",
+  "schedules.kindDescription.attendance.absentees":
+    "جس دن بچہ غیر حاضر ہو، اسی دن گھر والوں کو بتاتا ہے۔ جس دن حاضری لی ہی نہ گئی ہو، اس دن کچھ نہیں بھیجا جاتا۔",
+  "schedules.kindDescription.fees.due_reminder":
+    "جن طلبہ پر رقم واجب الادا ہے، ان کے گھر والوں کو بتاتا ہے۔ کم سے کم رقم مقرر کریں تاکہ دو روپے کے فرق پر پیغام نہ جائے۔",
+  "schedules.kindDescription.library.overdue":
+    "جن طلبہ کے پاس مقررہ تاریخ کے بعد بھی کتاب ہے، ان کے گھر والوں کو بتاتا ہے۔ عملے کا حساب تنخواہ سے ہوتا ہے، وہ اس میں شامل نہیں۔",
+  "schedules.cadence.daily": "روزانہ، {time} بجے",
+  "schedules.cadence.weekdays": "ہر کام کے دن، {time} بجے",
+  "schedules.cadence.mondayToSaturday": "پیر سے ہفتہ، {time} بجے",
+  "schedules.cadence.weekends": "ہفتے کے آخر میں، {time} بجے",
+  "schedules.cadence.days": "{days}، {time} بجے",
+  "schedules.cadence.dayOfMonth": "ہر ماہ کی {day} تاریخ کو، {time} بجے",
+  "schedules.grace.minutes": "{minutes} منٹ سے زیادہ دیر ہونے پر چھوڑ دیا جائے گا",
+  "schedules.grace.hours": "{hours} گھنٹے سے زیادہ دیر ہونے پر چھوڑ دیا جائے گا",
+  "schedules.grace.oneHour": "ایک گھنٹے سے زیادہ دیر ہونے پر چھوڑ دیا جائے گا",
+  "schedules.grace.day": "ایک دن سے زیادہ دیر ہونے پر چھوڑ دیا جائے گا",
+
+  // Urdu returns `other` for every number, so one key covers it -- but see the
+  // note in hi.ts: that is a fact measured from `Intl`, not an assumption, and
+  // the assumption was wrong for Hindi.
+  "schedules.ordinal.other": "{n}",
+  "transport.direction.both": "دونوں طرف",
+  "transport.direction.pickup": "صرف لانا",
+  "transport.direction.drop": "صرف چھوڑنا",
 };

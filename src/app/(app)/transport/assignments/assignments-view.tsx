@@ -311,7 +311,7 @@ function AssignmentList({
   assignments: AssignmentRow[];
   canAssign: boolean;
 }) {
-  const { formatCurrency } = useI18n();
+  const { t, formatCurrency } = useI18n();
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [busy, setBusy] = useState<string | null>(null);
@@ -411,7 +411,7 @@ function AssignmentList({
                     <TableCell className="font-mono">{row.routeCode}</TableCell>
                     <TableCell>{row.stopName}</TableCell>
                     <TableCell className="text-muted-foreground">
-                      {directionLabel(row.direction)}
+                      {directionLabel(row.direction, t)}
                     </TableCell>
                     <TableCell className="text-end font-mono tabular-nums">
                       {formatCurrency(row.monthlyFare)}

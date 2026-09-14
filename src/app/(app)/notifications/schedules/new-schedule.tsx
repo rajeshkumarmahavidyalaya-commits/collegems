@@ -28,11 +28,11 @@ import {
 import { saveSchedule } from "./actions";
 import { useI18n } from "@/components/providers/i18n-provider";
 import {
-  KIND_DESCRIPTION,
   KIND_LABEL,
   SCHEDULE_KINDS,
   graceSentence,
   scheduleSentence,
+  kindDescription,
   type ScheduleKind,
 } from "@/lib/validations/schedules";
 
@@ -56,7 +56,7 @@ const DAYS = [
  * what they see later cannot say different things.
  */
 export function NewSchedule() {
-  const { formatWeekday } = useI18n();
+  const { t, formatWeekday } = useI18n();
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [pending, startTransition] = useTransition();
@@ -136,7 +136,7 @@ export function NewSchedule() {
                 ))}
               </SelectContent>
             </Select>
-            <p className="text-xs text-muted-foreground">{KIND_DESCRIPTION[kind]}</p>
+            <p className="text-xs text-muted-foreground">{kindDescription(kind, t)}</p>
           </div>
 
           <div className="flex flex-col gap-1.5">
@@ -252,7 +252,7 @@ export function NewSchedule() {
               onChange={(e) => setGraceMinutes(Number(e.target.value))}
             />
             <p className="text-xs text-muted-foreground">
-              {graceSentence(graceMinutes)}. An absence notice hours late is worse than none — the
+              {graceSentence(graceMinutes, t)}. An absence notice hours late is worse than none — the
               parent has had the child at home all evening. A fee reminder is not.
             </p>
           </div>
@@ -263,13 +263,16 @@ export function NewSchedule() {
             aria-live="polite"
           >
             <strong className="font-medium">
-              {scheduleSentence({
-                run_at: `${runAt}:00`,
-                weekdays: monthly ? [] : weekdays,
-                day_of_month: monthly ? dayOfMonth : null,
-              })}
+              {scheduleSentence(
+                {
+                  run_at: `${runAt}:00`,
+                  weekdays: monthly ? [] : weekdays,
+                  day_of_month: monthly ? dayOfMonth : null,
+                },
+                t,
+              )}
             </strong>
-            <span className="text-muted-foreground"> · {graceSentence(graceMinutes)}</span>
+            <span className="text-muted-foreground"> · {graceSentence(graceMinutes, t)}</span>
           </div>
         </div>
 

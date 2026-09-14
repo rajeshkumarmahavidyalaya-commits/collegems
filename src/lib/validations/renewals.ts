@@ -1,3 +1,5 @@
+import type { Translator } from "@/lib/i18n/translate";
+import { labelFor } from "./labels";
 /**
  * Carrying a bus seat or a hostel bed into the next academic year.
  *
@@ -23,8 +25,23 @@ export const RENEWAL_KINDS = [
 
 export type RenewalKind = (typeof RENEWAL_KINDS)[number]["value"];
 
-export function renewalKindLabel(kind: string): string {
-  return RENEWAL_KINDS.find((k) => k.value === kind)?.label ?? kind;
+export function renewalKindLabel(kind: string, t: Translator): string {
+  const found = RENEWAL_KINDS.find((k) => k.value === kind);
+  return found ? labelFor(`renewals.kind.${found.value}`, found.label, t) : kind;
+}
+
+/**
+ * The blurb under the button, which says what pressing it will look at.
+ *
+ * It has its own helper because it renders *directly beneath* the name the
+ * helper above returns, on the same card — and a card whose heading is in Urdu
+ * over a sentence in English is the "second consumer" failure this batch's
+ * predecessor wrote down: a label lives on the constant, so translating one
+ * reader of it and not the other puts one value on one screen in two languages.
+ */
+export function renewalBlurb(kind: string, t: Translator): string {
+  const found = RENEWAL_KINDS.find((k) => k.value === kind);
+  return found ? labelFor(`renewals.blurb.${found.value}`, found.blurb, t) : "";
 }
 
 /** What a row of the preview says. `toLabel` is null when there is no target. */

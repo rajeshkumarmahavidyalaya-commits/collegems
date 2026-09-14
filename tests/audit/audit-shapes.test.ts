@@ -1,4 +1,9 @@
 import { describe, expect, it } from "vitest";
+
+import { createTranslator } from "@/lib/i18n/translate";
+
+/** English, so these assertions pin the words a reader of the source expects. */
+const t = createTranslator("en");
 import {
   actionLabel,
   actionTone,
@@ -41,20 +46,20 @@ describe("what an entry says", () => {
 
 describe("actions", () => {
   it("is said from the reader's side, not the database's", () => {
-    expect(actionLabel("insert")).toBe("Created");
-    expect(actionLabel("update")).toBe("Edited");
-    expect(actionLabel("delete")).toBe("Deleted");
+    expect(actionLabel("insert", t)).toBe("Created");
+    expect(actionLabel("update", t)).toBe("Edited");
+    expect(actionLabel("delete", t)).toBe("Deleted");
   });
 
   it("never relies on colour alone", () => {
     for (const action of AUDIT_ACTIONS) {
-      expect(actionLabel(action)).not.toBe(action);
+      expect(actionLabel(action, t)).not.toBe(action);
       expect(actionTone(action)).toBeTruthy();
     }
   });
 
   it("degrades readably for an action it has never seen", () => {
-    expect(actionLabel("truncate")).toBe("truncate");
+    expect(actionLabel("truncate", t)).toBe("truncate");
     expect(actionTone("truncate")).toBe("secondary");
   });
 });

@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
 import { formatCurrency } from "@/lib/i18n/format";
+
+import { createTranslator } from "@/lib/i18n/translate";
+
+/** English, so these assertions pin the words a reader of the source expects. */
+const t = createTranslator("en");
 import {
   allowedDirections,
   assignmentSchema,
@@ -100,9 +105,9 @@ describe("formatting", () => {
   });
 
   it("labels a direction in words", () => {
-    expect(directionLabel("both")).toBe("Both ways");
-    expect(directionLabel("pickup")).toBe("Pickup only");
-    expect(directionLabel("nonsense")).toBe("nonsense");
+    expect(directionLabel("both", t)).toBe("Both ways");
+    expect(directionLabel("pickup", t)).toBe("Pickup only");
+    expect(directionLabel("nonsense", t)).toBe("nonsense");
   });
 });
 

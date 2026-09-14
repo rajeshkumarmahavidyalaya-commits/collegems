@@ -1,4 +1,9 @@
 import { describe, expect, it } from "vitest";
+
+import { createTranslator } from "@/lib/i18n/translate";
+
+/** English, so these assertions pin the words a reader of the source expects. */
+const t = createTranslator("en");
 import {
   conversionRate,
   durationPhrase,
@@ -50,7 +55,7 @@ describe("the funnel vocabulary", () => {
     expect(stageTone("admitted")).toBe("won");
     expect(stageTone("lost")).toBe("lost");
     expect(stageTone("visited")).toBe("open");
-    expect(stageLabel("walk_in")).toBe("walk_in");
+    expect(stageLabel("walk_in", t)).toBe("walk_in");
   });
 });
 

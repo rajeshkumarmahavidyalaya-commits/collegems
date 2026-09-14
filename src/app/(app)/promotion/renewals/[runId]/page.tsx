@@ -4,7 +4,7 @@ import { ArrowLeft } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { hasPermission } from "@/lib/auth/permissions";
-import { getLocale } from "@/lib/i18n/server";
+import { getLocale, getT } from "@/lib/i18n/server";
 import { formatDate, formatTime } from "@/lib/i18n/format";
 import { renewalKindLabel } from "@/lib/validations/renewals";
 import {
@@ -26,12 +26,13 @@ export default async function RenewalRunPage({
   if (!canManage) redirect("/");
 
   const { runId } = await params;
-  const [runs, decisions, stops, rooms, locale] = await Promise.all([
+  const [runs, decisions, stops, rooms, locale, t] = await Promise.all([
     listRenewalRuns(),
     getRenewalDecisions(runId),
     listTargetStops(runId),
     listTargetRooms(runId),
     getLocale(),
+    getT(),
   ]);
 
   const run = runs.find((r) => r.id === runId);
@@ -43,7 +44,7 @@ export default async function RenewalRunPage({
         <div>
           <div className="flex flex-wrap items-center gap-2">
             <h1 className="text-2xl font-semibold">
-              {renewalKindLabel(run.kind)} · {run.fromSessionName} → {run.toSessionName}
+              {renewalKindLabel(run.kind, t)} · {run.fromSessionName} → {run.toSessionName}
             </h1>
             <Badge variant={run.status === "applied" ? "default" : "outline"}>
               {run.status === "applied" ? "Applied" : "Draft"}

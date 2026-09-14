@@ -1,4 +1,9 @@
 import { describe, expect, it } from "vitest";
+
+import { createTranslator } from "@/lib/i18n/translate";
+
+/** English, so these assertions pin the words a reader of the source expects. */
+const t = createTranslator("en");
 import {
   decisionTone,
   fareChange,
@@ -61,9 +66,9 @@ describe("kinds", () => {
   });
 
   it("labels a kind in words, and leaves an unknown one alone", () => {
-    expect(renewalKindLabel("transport")).toBe("Bus seats");
-    expect(renewalKindLabel("hostel")).toBe("Hostel beds");
-    expect(renewalKindLabel("concession")).toBe("concession");
+    expect(renewalKindLabel("transport", t)).toBe("Bus seats");
+    expect(renewalKindLabel("hostel", t)).toBe("Hostel beds");
+    expect(renewalKindLabel("concession", t)).toBe("concession");
   });
 
   it("gives every kind a sentence, because the button needs one", () => {

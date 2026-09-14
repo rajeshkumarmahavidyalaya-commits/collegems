@@ -1,4 +1,6 @@
 import { z } from "zod";
+import type { Translator } from "@/lib/i18n/translate";
+import { labelFor } from "./labels";
 
 /**
  * The audit trail — the client half.
@@ -22,8 +24,9 @@ export const ACTION_LABEL: Record<AuditAction, string> = {
   delete: "Deleted",
 };
 
-export function actionLabel(action: string): string {
-  return ACTION_LABEL[action as AuditAction] ?? action;
+export function actionLabel(action: string, t: Translator): string {
+  const known = ACTION_LABEL[action as AuditAction];
+  return known ? labelFor(`audit.action.${action}`, known, t) : action;
 }
 
 /** Never colour alone — `actionLabel` always sits beside this. */
@@ -45,6 +48,20 @@ export function actionTone(action: string): "success" | "secondary" | "destructi
  * Dropping the suffix would read as "Substitute staff: 8f3c…" — a label
  * promising a name next to a value that is plainly not one. The suffix is the
  * warning that what follows is a key.
+ *
+ * **And it deliberately takes no `Translator`, unlike every other `*Label` in
+ * this codebase.** The distinction is the one `WEEKDAYS` taught from the other
+ * side: `formatWeekday` asks `Intl` because the answer already exists, and this
+ * one has no answer to ask for. Its input is an arbitrary column name from any
+ * of a hundred tables — an *identifier*, not a word this product chose — so
+ * translating it would mean cataloguing the schema, and a key would be invented
+ * for every column anybody ever adds.
+ *
+ * The `toUpperCase()` is safe for the same reason, and only for that reason: a
+ * Postgres identifier is ASCII. Rule 15 names `.toLowerCase()` on a *translated*
+ * label as an English-only operation, and that is exactly what this is not
+ * operating on. `tests/i18n/label-helpers.test.ts` names it rather than
+ * counting it.
  */
 export function fieldLabel(field: string): string {
   const spaced = field.replace(/_/g, " ").trim();

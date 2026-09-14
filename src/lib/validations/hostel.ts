@@ -1,4 +1,6 @@
 import { z } from "zod";
+import type { Translator } from "@/lib/i18n/translate";
+import { labelFor } from "./labels";
 
 /**
  * Dormitory.
@@ -82,8 +84,9 @@ export type AllocationInput = z.infer<typeof allocationSchema>;
 // Display
 // ---------------------------------------------------------------------------
 
-export function hostelKindLabel(value: string) {
-  return HOSTEL_KINDS.find((k) => k.value === value)?.label ?? value;
+export function hostelKindLabel(value: string, t: Translator) {
+  const kind = HOSTEL_KINDS.find((k) => k.value === value);
+  return kind ? labelFor(`hostel.kind.${kind.value}`, kind.label, t) : value;
 }
 
 /**

@@ -1,4 +1,6 @@
 import { z } from "zod";
+import type { Translator } from "@/lib/i18n/translate";
+import { labelFor } from "./labels";
 
 /**
  * Front office — the admissions funnel and the gate register.
@@ -124,12 +126,14 @@ export type VisitorInput = z.infer<typeof visitorSchema>;
 // Display
 // ---------------------------------------------------------------------------
 
-export function sourceLabel(value: string) {
-  return ENQUIRY_SOURCES.find((s) => s.value === value)?.label ?? value;
+export function sourceLabel(value: string, t: Translator) {
+  const source = ENQUIRY_SOURCES.find((s) => s.value === value);
+  return source ? labelFor(`frontOffice.source.${source.value}`, source.label, t) : value;
 }
 
-export function stageLabel(value: string) {
-  return ENQUIRY_STAGES.find((s) => s.value === value)?.label ?? value;
+export function stageLabel(value: string, t: Translator) {
+  const stage = ENQUIRY_STAGES.find((s) => s.value === value);
+  return stage ? labelFor(`frontOffice.stage.${stage.value}`, stage.label, t) : value;
 }
 
 /** Whether a stage is still in play. `admitted` and `lost` are not. */

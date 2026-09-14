@@ -95,6 +95,7 @@ export function RouteDetail({
  * stylesheet, which is why the chrome carries `data-print` attributes.
  */
 function Manifest({ routeLabel, rows }: { routeLabel: string; rows: ManifestRow[] }) {
+  const { t } = useI18n();
   const riders = rows.filter((r) => r.studentId !== null);
 
   return (
@@ -174,7 +175,7 @@ function Manifest({ routeLabel, rows }: { routeLabel: string; rows: ManifestRow[
                       {row.sectionLabel ?? "—"}
                     </TableCell>
                     <TableCell className="text-muted-foreground">
-                      {row.direction ? directionLabel(row.direction) : "—"}
+                      {row.direction ? directionLabel(row.direction, t) : "—"}
                     </TableCell>
                     <TableCell>
                       {row.guardianPhone ? (

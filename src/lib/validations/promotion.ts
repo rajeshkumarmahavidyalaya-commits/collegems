@@ -1,4 +1,6 @@
 import { z } from "zod";
+import type { Translator } from "@/lib/i18n/translate";
+import { labelFor } from "./labels";
 
 /**
  * Phase 1.4 — promotion, as a preview you can argue with.
@@ -133,8 +135,53 @@ export function toRules(input: PromotionFormInput): PromotionRules {
 // Display helpers
 // ---------------------------------------------------------------------------
 
-export function decisionLabel(value: string) {
-  return DECISIONS.find((d) => d.value === value)?.label ?? value;
+export function decisionLabel(value: string, t: Translator) {
+  const decision = DECISIONS.find((d) => d.value === value);
+  return decision ? labelFor(`promotion.decision.${decision.value}`, decision.label, t) : value;
+}
+
+/**
+ * The sentence under each decision on the radio group, and the one under the
+ * missing-result choice.
+ *
+ * Both render immediately beneath the name `decisionLabel` returns, so they are
+ * part of the same control rather than documentation beside it. Translating the
+ * name and leaving the explanation is how a screen comes to carry one decision
+ * in two languages — the failure the label batches before this one recorded and
+ * this is the module where it would have been most visible, because a rollover
+ * is the screen somebody argues with.
+ */
+export function decisionHint(value: string, t: Translator) {
+  const decision = DECISIONS.find((d) => d.value === value);
+  return decision ? labelFor(`promotion.decisionHint.${decision.value}`, decision.hint, t) : "";
+}
+
+export function onMissingResultHint(value: string, t: Translator) {
+  const option = ON_MISSING_RESULT.find((o) => o.value === value);
+  return option ? labelFor(`promotion.onMissingResultHint.${option.value}`, option.hint, t) : "";
+}
+
+/**
+ * *"Currently promote — …"* and *"12 promote, 3 repeat"*, as whole sentences.
+ *
+ * Both call sites wrote `decisionLabel(d).toLowerCase()` to fit the word into
+ * running text. Rule 15 already names that: **`.toLowerCase()` on a translated
+ * label is an English-only operation** — Hindi and Urdu have no letter case, so
+ * it is a no-op in every locale except the one it was written for, and in
+ * Turkish it is wrong. It survived the earlier sweep because this module's
+ * label was still English, so the call was still doing something.
+ *
+ * The fix is the one that batch also settled: **the sentence is the unit, not
+ * the word.** The lowercase form of "Promote" is a fact about the English
+ * sentence, so the English sentence carries it and the other two say it their
+ * own way.
+ */
+export function currentlySentence(value: string, t: Translator) {
+  return t("promotion.currently", { decision: decisionLabel(value, t) });
+}
+
+export function tallySentence(value: string, count: number, t: Translator) {
+  return t("promotion.tally", { count, decision: decisionLabel(value, t) });
 }
 
 export function decisionTone(value: string) {
@@ -183,8 +230,8 @@ export function severityTone(severity: string): "warning" | "secondary" {
  */
 export type LeftBehindNote = { kind: string; message: string };
 
-export function leftBehindLabel(kind: string): string {
-  if (kind === "library") return "Library";
-  if (kind === "balance") return "Money";
-  return "Note";
+export function leftBehindLabel(kind: string, t: Translator): string {
+  if (kind === "library") return labelFor("promotion.leftBehind.library", "Library", t);
+  if (kind === "balance") return labelFor("promotion.leftBehind.balance", "Money", t);
+  return labelFor("promotion.leftBehind.other", "Note", t);
 }

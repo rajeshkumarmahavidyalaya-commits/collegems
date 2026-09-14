@@ -44,7 +44,7 @@ type Props = {
 };
 
 export function RenewalReview({ run, decisions, targets }: Props) {
-  const { formatCurrency } = useI18n();
+  const { t, formatCurrency } = useI18n();
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [editing, setEditing] = useState<RenewalDecisionRow | null>(null);
@@ -179,7 +179,7 @@ export function RenewalReview({ run, decisions, targets }: Props) {
           <AlertTitle>This run has been applied</AlertTitle>
           <AlertDescription>
             The arrangements it created are live in {run.toSessionName}. Changing one now means
-            editing it in {renewalKindLabel(run.kind)} directly.
+            editing it in {renewalKindLabel(run.kind, t)} directly.
           </AlertDescription>
         </Alert>
       ) : (

@@ -1,4 +1,9 @@
 import { describe, expect, it } from "vitest";
+
+import { createTranslator } from "@/lib/i18n/translate";
+
+/** English, so these assertions pin the words a reader of the source expects. */
+const t = createTranslator("en");
 import {
   formatRunAt,
   graceSentence,
@@ -22,7 +27,7 @@ import {
 
 describe("when does this run", () => {
   const at = (run_at: string, weekdays: number[] | null, day_of_month: number | null) =>
-    scheduleSentence({ run_at, weekdays, day_of_month });
+    scheduleSentence({ run_at, weekdays, day_of_month }, t);
 
   it("reads an empty day list as every day, not as no days", () => {
     // The one that would be a real bug: no weekdays and no day-of-month means
@@ -61,10 +66,13 @@ describe("when does this run", () => {
 
 describe("how late is too late", () => {
   it("says the consequence rather than the number", () => {
-    expect(graceSentence(30)).toBe("Skipped if more than 30 minutes late");
-    expect(graceSentence(120)).toBe("Skipped if more than 2 hours late");
-    expect(graceSentence(60)).toBe("Skipped if more than 1 hour late");
-    expect(graceSentence(1440)).toBe("Skipped if more than a day late");
+    expect(graceSentence(30, t)).toBe("Skipped if more than 30 minutes late");
+    expect(graceSentence(120, t)).toBe("Skipped if more than 2 hours late");
+    // Exactly one hour is its own key rather than a plural of the "hours" one:
+// `hours` can be 1.5, which is the `other` category in English while exactly
+// 1 is `one`, so they really are two sentences.
+    expect(graceSentence(60, t)).toBe("Skipped if more than an hour late");
+    expect(graceSentence(1440, t)).toBe("Skipped if more than a day late");
   });
 });
 
@@ -147,7 +155,7 @@ describe("what the form sends", () => {
 
 describe("labels", () => {
   it("names every kind and falls back to the raw value", () => {
-    expect(kindLabel("attendance.absentees")).toBe("Absence notice");
-    expect(kindLabel("something.new")).toBe("something.new");
+    expect(kindLabel("attendance.absentees", t)).toBe("Absence notice");
+    expect(kindLabel("something.new", t)).toBe("something.new");
   });
 });

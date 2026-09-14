@@ -1,4 +1,9 @@
 import { describe, expect, it } from "vitest";
+
+import { createTranslator } from "@/lib/i18n/translate";
+
+/** English, so these assertions pin the words a reader of the source expects. */
+const t = createTranslator("en");
 import {
   allocationSchema,
   bedsSentence,
@@ -47,8 +52,8 @@ describe("genderAllowed", () => {
   });
 
   it("labels a kind in words", () => {
-    expect(hostelKindLabel("boys")).toBe("Boys");
-    expect(hostelKindLabel("nonsense")).toBe("nonsense");
+    expect(hostelKindLabel("boys", t)).toBe("Boys");
+    expect(hostelKindLabel("nonsense", t)).toBe("nonsense");
   });
 });
 

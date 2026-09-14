@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { hostelKindLabel } from "@/lib/validations/hostel";
 import { getRegister, listHostels } from "../actions";
 import { HostelRegister } from "./hostel-register";
+import { getT } from "@/lib/i18n/server";
 
 export const metadata = { title: "Hostel register" };
 
@@ -15,7 +16,11 @@ export default async function HostelRegisterPage({
   params: Promise<{ hostelId: string }>;
 }) {
   const { hostelId } = await params;
-  const [hostels, register] = await Promise.all([listHostels(), getRegister(hostelId)]);
+  const [hostels, register, t] = await Promise.all([
+    listHostels(),
+    getRegister(hostelId),
+    getT(),
+  ]);
 
   const hostel = hostels.find((h) => h.id === hostelId);
   if (!hostel) notFound();
@@ -26,7 +31,7 @@ export default async function HostelRegisterPage({
         <div>
           <div className="flex flex-wrap items-center gap-2">
             <h1 className="text-2xl font-semibold">{hostel.name}</h1>
-            <Badge variant="outline">{hostelKindLabel(hostel.kind)}</Badge>
+            <Badge variant="outline">{hostelKindLabel(hostel.kind, t)}</Badge>
             {!hostel.isActive && <Badge variant="secondary">Closed</Badge>}
           </div>
           <p className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-muted-foreground">

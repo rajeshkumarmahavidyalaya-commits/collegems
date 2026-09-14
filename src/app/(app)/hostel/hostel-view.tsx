@@ -180,7 +180,7 @@ function RoomsTab({
   onAdd: (hostelId: string) => void;
   onEdit: (room: RoomRow) => void;
 }) {
-  const { formatCurrency } = useI18n();
+  const { t, formatCurrency } = useI18n();
   return (
     <Card>
       <CardHeader className="flex flex-row flex-wrap items-start justify-between gap-3">
@@ -232,7 +232,7 @@ function RoomsTab({
                           {room.hostelName}
                         </Link>
                         <span className="block text-xs text-muted-foreground">
-                          {hostelKindLabel(room.hostelKind)}
+                          {hostelKindLabel(room.hostelKind, t)}
                         </span>
                       </TableCell>
                       <TableCell className="font-mono font-medium">{room.roomNumber}</TableCell>
@@ -295,6 +295,7 @@ function HousesTab({
   onAdd: () => void;
   onEdit: (hostel: HostelRow) => void;
 }) {
+  const { t } = useI18n();
   return (
     <Card>
       <CardHeader className="flex flex-row flex-wrap items-start justify-between gap-3">
@@ -345,7 +346,7 @@ function HousesTab({
                       </Link>
                     </TableCell>
                     <TableCell className="text-muted-foreground">
-                      {hostelKindLabel(hostel.kind)}
+                      {hostelKindLabel(hostel.kind, t)}
                     </TableCell>
                     <TableCell className="text-muted-foreground">
                       {hostel.wardenName ?? "Not recorded"}

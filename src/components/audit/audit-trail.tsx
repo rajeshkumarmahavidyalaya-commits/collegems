@@ -3,6 +3,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { createClient } from "@/lib/supabase/server";
 import { hasPermission } from "@/lib/auth/permissions";
+import { getT } from "@/lib/i18n/server";
 import {
   actionLabel,
   actionTone,
@@ -36,7 +37,7 @@ export async function AuditTrail({
 }) {
   if (!(await hasPermission("audit.view"))) return null;
 
-  const supabase = await createClient();
+  const [supabase, t] = await Promise.all([createClient(), getT()]);
   const { data } = await supabase.rpc("audit_history", {
     p_table_name: table,
     p_row_id: rowId,
@@ -70,7 +71,7 @@ export async function AuditTrail({
               return (
                 <li key={entry.id} className="border-s-2 border-border ps-3">
                   <div className="flex flex-wrap items-center gap-2">
-                    <Badge variant={actionTone(entry.action)}>{actionLabel(entry.action)}</Badge>
+                    <Badge variant={actionTone(entry.action)}>{actionLabel(entry.action, t)}</Badge>
                     <span
                       className={
                         actorIsPerson(entry.actor ?? "")
