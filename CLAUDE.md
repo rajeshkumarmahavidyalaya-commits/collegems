@@ -2697,6 +2697,51 @@ same thing from opposite directions:
   `onKeyDown` deliberately reads the raw constant, commented where somebody
   would otherwise tidy the inconsistency away.
 
+**The office batch finished the set, and the last helper is the one that stays
+English.** `STILL_ENGLISH` is 0. Eleven more helpers gained a `Translator`;
+`audit.fieldLabel` did not, and the pair of decisions is the rule:
+
+> `WEEKDAYS` was deleted because **`Intl` already knew the answer.**
+> `fieldLabel` stays because **there is no answer to ask for** — its input is an
+> arbitrary Postgres column name from any of a hundred tables, an *identifier*
+> rather than a value this product chose, so there is no finite set to
+> catalogue. Named in `NOT_A_LABEL` with the reason, never left in the count.
+
+Three things it found, and the third is a new rule rather than a new instance:
+
+- **When you delete a hardcoded table, grep for the second one.** `DAY_NAME`
+  sat in `schedules.ts` doing exactly what `WEEKDAYS.label` had been deleted
+  for one batch earlier. And hand-joining names with `" and "` is the same
+  mistake one clause along — `Intl.ListFormat` owns the conjunction too.
+- **A dead-looking fix can only be seen from the locale it is broken in.**
+  `decisionLabel(d).toLowerCase()` survived the sweep that found the other two
+  `.toLowerCase()` sites, *because this module's label was still English, so the
+  call was still doing something.*
+- **Silent fallback to English is right for a missing translation and wrong for
+  a missing rule.** `Intl.PluralRules(…, { type: "ordinal" })` returns five
+  categories for Hindi — its ordinals are distinct words, not suffixes — and
+  only `other` for Urdu. The assumption was "both are `other`"; the four missing
+  Hindi keys fell through to the English entry, which is not a word but the rule
+  `"{n}st"`, and a Hindi reader was shown **"हर माह की 1st तारीख़ को"**.
+
+  > Where a key holds a **locale rule** rather than a sentence, every branch of
+  > it must exist in every locale — and the guard asks `Intl` which branches
+  > there are rather than trusting a reading of CLDR. A branch only another
+  > language selects is still declared in English, because English is the source
+  > catalogue and a key existing only in a translation is a stale key.
+
+And the cost, with the instrument checked first because two builds of the *same*
+commit disagree by 1 kB on 3 of 90 routes: **+15.7 kB across the whole client
+build** (2,288,157 → 2,304,191 bytes) for ~80 keys × 3 languages, landing as
+**+2–3 kB on 59 of 90 routes**. Fourteen routes *report* −1 kB and that is not
+claimed as a saving — adding keys cannot shrink a route, so it is Next
+redistributing chunks. The half worth copying:
+
+> **A `Translator` reached through `await getT()` costs the browser nothing.**
+> `/checks` is 107 kB before and after; `/certificates/[id]` 143 kB. Only client
+> components pay the catalogue. Convert server-side where the screen allows it
+> and the batch is free.
+
 One more thing the same batch settled: `timetable.periodLabel` and
 `substitutions.periodLabel` are a **name collision, not a duplicate** — different
 arguments, different output — which is exactly what made a grep by name count

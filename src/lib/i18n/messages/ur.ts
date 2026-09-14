@@ -452,9 +452,18 @@ export const ur: Messages = {
   "schedules.grace.oneHour": "ایک گھنٹے سے زیادہ دیر ہونے پر چھوڑ دیا جائے گا",
   "schedules.grace.day": "ایک دن سے زیادہ دیر ہونے پر چھوڑ دیا جائے گا",
 
-  // Urdu returns `other` for every number, so one key covers it -- but see the
-  // note in hi.ts: that is a fact measured from `Intl`, not an assumption, and
-  // the assumption was wrong for Hindi.
+  // Urdu returns `other` for every number today, so in practice only the last
+  // of these is ever selected. All five are here anyway, for two reasons: a
+  // branch English declares and a translation omits is a coverage gap that is
+  // not one (it took `ur` to 99.0%), and ICU data is not frozen -- the day CLDR
+  // gives Urdu an ordinal category, the English *rule* `"{n}st"` would leak
+  // into an Urdu sentence rather than a key simply being missing. See the note
+  // in hi.ts: "both are `other`" was measured, not assumed, and was wrong for
+  // Hindi.
+  "schedules.ordinal.one": "{n}",
+  "schedules.ordinal.two": "{n}",
+  "schedules.ordinal.few": "{n}",
+  "schedules.ordinal.many": "{n}",
   "schedules.ordinal.other": "{n}",
   "transport.direction.both": "دونوں طرف",
   "transport.direction.pickup": "صرف لانا",
