@@ -419,6 +419,39 @@ export const en = {
   // somebody a policy refused would be both wrong and a way of asking which
   // admission numbers are real. Same reasoning as the platform console's flat
   // refusal.
+  // --- identity cards ------------------------------------------------------
+  "idCard.title": "ID cards",
+  "idCard.subtitle": "Printable cards for a class, eight to a sheet.",
+  "idCard.pickClass": "Class",
+  "idCard.print": "Print these cards",
+  "idCard.printOne": "Print this card",
+  "idCard.validFor": "Valid for {session}",
+  "idCard.admissionNumber": "Admission no.",
+  "idCard.roll": "Roll",
+  "idCard.dateOfBirth": "Date of birth",
+  "idCard.bloodGroup": "Blood group",
+  "idCard.guardian": "Guardian",
+  "idCard.emptyClass": "Nobody is enrolled in that class this year.",
+  "idCard.tooMany":
+    "{count} children are in that class — more than the {max} this page prints at once. Print it in two halves, or narrow the class.",
+  // The photograph is the one gap that matters: a card with an empty square
+  // where the face goes is not an identity card.
+  "idCard.gap.photo": "No photograph",
+  "idCard.gap.className": "Not enrolled in a class this year",
+  "idCard.gap.guardianPhone": "No guardian phone number",
+  "idCard.gap.guardianName": "No guardian on record",
+  "idCard.gap.bloodGroup": "No blood group",
+  "idCard.gap.dateOfBirth": "No date of birth",
+  "idCard.missingPhotos.one": "{count} card has no photograph.",
+  "idCard.missingPhotos.other": "{count} cards have no photograph.",
+  "idCard.photo.heading": "Photograph",
+  "idCard.photo.choose": "Upload a photograph",
+  "idCard.photo.replace": "Replace",
+  "idCard.photo.remove": "Remove",
+  "idCard.photo.none": "No photograph yet",
+  "idCard.photo.limit": "JPEG, PNG or WebP, up to {size}.",
+  "idCard.photo.uploaded": "Photograph saved.",
+  "idCard.photo.removed": "Photograph removed.",
   "boundary.notFound.title": "We could not open that",
   "boundary.notFound.body":
     "It may have been removed, or it may not be yours to see. If you reached this from a link, the record it pointed at is no longer there.",

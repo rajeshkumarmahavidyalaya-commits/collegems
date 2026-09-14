@@ -12,6 +12,7 @@ import {
   ClipboardCheck,
   DoorOpen,
   GraduationCap,
+  IdCard,
   BookOpenCheck,
   Boxes,
   CalendarClock,
@@ -104,6 +105,18 @@ export const NAV_GROUPS: NavGroup[] = [
         href: "/students/import",
         icon: FileUp,
         roles: ["admin"],
+      },
+      // Cards for a whole class. The same audience as the roll, deliberately:
+      // a card carries the name, class, admission number and guardian phone
+      // that `/students` already shows these roles, and RLS decides *which*
+      // children -- a class teacher printing "their" class gets their own. The
+      // page gates on `students.view` and this list agrees with it.
+      {
+        title: "ID cards",
+        messageKey: "idCard.title",
+        href: "/students/id-cards",
+        icon: IdCard,
+        roles: ["admin", "teacher", "accountant", "librarian"],
       },
       // Certificates sit with People rather than under Reports: a leaving
       // certificate is an act performed on a child's record -- it takes them

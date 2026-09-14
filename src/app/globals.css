@@ -247,6 +247,18 @@
     break-after: auto;
   }
 
+  /* An ID card is not a page. `data-print="page"` goes on a *grid of eight*
+     rather than on each card, so one sheet of paper carries eight cards --
+     copying the report-card module's per-card attribute here would waste seven
+     sheets in every eight. The cards inside carry `data-print="keep"` so one is
+     never guillotined by a page break. */
+  [data-print="keep"] img {
+    /* Photographs must survive the browser's "background graphics off"
+       default, or every card prints with an empty square. */
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+  }
+
   @page {
     margin: 14mm;
   }

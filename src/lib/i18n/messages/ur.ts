@@ -378,6 +378,37 @@ export const ur: Messages = {
 
   // --- the office batch ----------------------------------------------------
   // --- the boundaries every route now has --------------------------------
+  // --- identity cards ------------------------------------------------------
+  "idCard.title": "شناختی کارڈ",
+  "idCard.subtitle": "ایک جماعت کے لیے قابلِ طباعت کارڈ، ایک شیٹ پر آٹھ۔",
+  "idCard.pickClass": "جماعت",
+  "idCard.print": "یہ کارڈ چھاپیں",
+  "idCard.printOne": "یہ کارڈ چھاپیں",
+  "idCard.validFor": "{session} کے لیے کارآمد",
+  "idCard.admissionNumber": "داخلہ نمبر",
+  "idCard.roll": "رول نمبر",
+  "idCard.dateOfBirth": "تاریخِ پیدائش",
+  "idCard.bloodGroup": "بلڈ گروپ",
+  "idCard.guardian": "سرپرست",
+  "idCard.emptyClass": "اس سال اس جماعت میں کوئی داخل نہیں ہے۔",
+  "idCard.tooMany":
+    "اس جماعت میں {count} بچے ہیں — یہ صفحہ ایک وقت میں {max} تک چھاپتا ہے۔ دو حصوں میں چھاپیں، یا جماعت محدود کریں۔",
+  "idCard.gap.photo": "کوئی تصویر نہیں",
+  "idCard.gap.className": "اس سال کسی جماعت میں داخل نہیں",
+  "idCard.gap.guardianPhone": "سرپرست کا فون نمبر نہیں",
+  "idCard.gap.guardianName": "سرپرست درج نہیں",
+  "idCard.gap.bloodGroup": "بلڈ گروپ درج نہیں",
+  "idCard.gap.dateOfBirth": "تاریخِ پیدائش درج نہیں",
+  "idCard.missingPhotos.one": "{count} کارڈ پر تصویر نہیں ہے۔",
+  "idCard.missingPhotos.other": "{count} کارڈوں پر تصویر نہیں ہے۔",
+  "idCard.photo.heading": "تصویر",
+  "idCard.photo.choose": "تصویر اپ لوڈ کریں",
+  "idCard.photo.replace": "تبدیل کریں",
+  "idCard.photo.remove": "ہٹائیں",
+  "idCard.photo.none": "ابھی کوئی تصویر نہیں",
+  "idCard.photo.limit": "JPEG، PNG یا WebP، {size} تک۔",
+  "idCard.photo.uploaded": "تصویر محفوظ ہو گئی۔",
+  "idCard.photo.removed": "تصویر ہٹا دی گئی۔",
   "boundary.notFound.title": "ہم اسے کھول نہیں سکے",
   "boundary.notFound.body":
     "ہو سکتا ہے اسے ہٹا دیا گیا ہو، یا وہ آپ کے دیکھنے کے لیے نہ ہو۔ اگر آپ کسی لنک سے یہاں آئے ہیں، تو جس ریکارڈ کی طرف وہ اشارہ کرتا تھا وہ اب موجود نہیں ہے۔",

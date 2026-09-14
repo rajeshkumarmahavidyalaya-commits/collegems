@@ -132,7 +132,7 @@ export async function getStudent(id: string) {
       `id, admission_number, admission_date, status,
        people:person_id ( first_name, middle_name, last_name, date_of_birth, gender,
                           blood_group, email, phone, address_line1, address_line2,
-                          city, state, postal_code ),
+                          city, state, postal_code, photo_path ),
        enrolments ( roll_number, status, section_id, sections ( name, class_levels ( name ) ) ),
        guardian_student ( relationship, is_primary,
                           guardians ( occupation, people:person_id ( first_name, last_name, phone, email ) ) ),

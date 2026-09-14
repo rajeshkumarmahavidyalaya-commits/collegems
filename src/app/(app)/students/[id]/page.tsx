@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { BookOpen, Pencil, TriangleAlert } from "lucide-react";
+import { BookOpen, IdCard, Pencil, TriangleAlert } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -8,6 +8,10 @@ import { Separator } from "@/components/ui/separator";
 import { hasPermission } from "@/lib/auth/permissions";
 import { getStudent } from "../actions";
 import { ExitControl } from "./exit-control";
+import { PhotoControl } from "./photo-control";
+import { photoUrl } from "../photo-actions";
+import { getT } from "@/lib/i18n/server";
+import { BUCKET_LIMITS, formatBytes } from "@/lib/storage/constants";
 
 export const metadata = { title: "Student" };
 
@@ -26,7 +30,11 @@ export default async function StudentDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const [student, canManage] = await Promise.all([getStudent(id), hasPermission("students.manage")]);
+  const [student, canManage, t] = await Promise.all([
+    getStudent(id),
+    hasPermission("students.manage"),
+    getT(),
+  ]);
 
   if (!student) notFound();
 
@@ -41,6 +49,11 @@ export default async function StudentDetailPage({
   const today = new Date().toISOString().slice(0, 10);
 
   const fullName = person ? `${person.first_name} ${person.last_name}` : "Unknown student";
+  // Signed here rather than in `getStudent`, and only once the row is in hand:
+  // rule 8 makes the signature the authorization, so a URL is never issued for
+  // a path the policy did not just hand back.
+  const photo = await photoUrl(person?.photo_path);
+  const AVATAR_LIMITS = BUCKET_LIMITS["avatars"];
 
   return (
     <div className="flex flex-col gap-6">
@@ -54,8 +67,17 @@ export default async function StudentDetailPage({
           </div>
           <p className="mt-1 font-mono text-sm text-muted-foreground">{student.admission_number}</p>
         </div>
-        {canManage && (
-          <div className="flex flex-wrap items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          {/* Not behind `canManage`: printing a card shows what the roll already
+              shows, and the office is not always the one printing it. */}
+          <Button asChild variant="outline">
+            <Link href={`/students/${student.id}/id-card`}>
+              <IdCard className="size-4" aria-hidden="true" />
+              {t("idCard.printOne")}
+            </Link>
+          </Button>
+          {canManage && (
+            <>
             <Button asChild variant="outline">
               <Link href={`/students/${student.id}/edit`}>
                 <Pencil className="size-4" aria-hidden="true" />
@@ -65,8 +87,9 @@ export default async function StudentDetailPage({
             {student.status === "active" && (
               <ExitControl studentId={student.id} studentName={fullName} />
             )}
-          </div>
-        )}
+            </>
+          )}
+        </div>
       </div>
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
@@ -74,7 +97,25 @@ export default async function StudentDetailPage({
           <CardHeader>
             <CardTitle>Personal details</CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="flex flex-col gap-5">
+            <PhotoControl
+              studentId={student.id}
+              photoUrl={photo}
+              canManage={canManage}
+              // Seven resolved strings rather than the whole catalogue: this
+              // route had no client-side i18n consumer, and adding one cost it
+              // 22 kB. See the note in `photo-control.tsx`.
+              labels={{
+                heading: t("idCard.photo.heading"),
+                choose: t("idCard.photo.choose"),
+                replace: t("idCard.photo.replace"),
+                remove: t("idCard.photo.remove"),
+                none: t("idCard.photo.none"),
+                limit: t("idCard.photo.limit", { size: formatBytes(AVATAR_LIMITS.maxBytes) }),
+                uploaded: t("idCard.photo.uploaded"),
+                removed: t("idCard.photo.removed"),
+              }}
+            />
             <dl className="grid grid-cols-2 gap-4 sm:grid-cols-3">
               <Fact label="Date of birth" value={person?.date_of_birth} />
               <Fact

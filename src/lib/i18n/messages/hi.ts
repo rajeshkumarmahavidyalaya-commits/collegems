@@ -378,6 +378,37 @@ export const hi: Messages = {
 
   // --- the office batch ----------------------------------------------------
   // --- the boundaries every route now has --------------------------------
+  // --- identity cards ------------------------------------------------------
+  "idCard.title": "पहचान पत्र",
+  "idCard.subtitle": "एक कक्षा के लिए छापने योग्य कार्ड, एक शीट पर आठ।",
+  "idCard.pickClass": "कक्षा",
+  "idCard.print": "ये कार्ड छापें",
+  "idCard.printOne": "यह कार्ड छापें",
+  "idCard.validFor": "{session} के लिए मान्य",
+  "idCard.admissionNumber": "प्रवेश क्रमांक",
+  "idCard.roll": "अनुक्रमांक",
+  "idCard.dateOfBirth": "जन्म तिथि",
+  "idCard.bloodGroup": "रक्त समूह",
+  "idCard.guardian": "अभिभावक",
+  "idCard.emptyClass": "इस वर्ष उस कक्षा में कोई नामांकित नहीं है।",
+  "idCard.tooMany":
+    "उस कक्षा में {count} बच्चे हैं — यह पृष्ठ एक बार में {max} तक छापता है। दो भागों में छापें, या कक्षा छोटी करें।",
+  "idCard.gap.photo": "कोई फ़ोटो नहीं",
+  "idCard.gap.className": "इस वर्ष किसी कक्षा में नामांकित नहीं",
+  "idCard.gap.guardianPhone": "अभिभावक का फ़ोन नंबर नहीं",
+  "idCard.gap.guardianName": "अभिभावक दर्ज नहीं",
+  "idCard.gap.bloodGroup": "रक्त समूह दर्ज नहीं",
+  "idCard.gap.dateOfBirth": "जन्म तिथि दर्ज नहीं",
+  "idCard.missingPhotos.one": "{count} कार्ड पर फ़ोटो नहीं है।",
+  "idCard.missingPhotos.other": "{count} कार्डों पर फ़ोटो नहीं है।",
+  "idCard.photo.heading": "फ़ोटो",
+  "idCard.photo.choose": "फ़ोटो अपलोड करें",
+  "idCard.photo.replace": "बदलें",
+  "idCard.photo.remove": "हटाएँ",
+  "idCard.photo.none": "अभी कोई फ़ोटो नहीं",
+  "idCard.photo.limit": "JPEG, PNG या WebP, {size} तक।",
+  "idCard.photo.uploaded": "फ़ोटो सहेज ली गई।",
+  "idCard.photo.removed": "फ़ोटो हटा दी गई।",
   "boundary.notFound.title": "हम उसे नहीं खोल सके",
   "boundary.notFound.body":
     "हो सकता है उसे हटा दिया गया हो, या वह आपके देखने के लिए न हो। यदि आप किसी लिंक से यहाँ आए हैं, तो जिस अभिलेख की ओर वह इशारा करता था वह अब मौजूद नहीं है।",
