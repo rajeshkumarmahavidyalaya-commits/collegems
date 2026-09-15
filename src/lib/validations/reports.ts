@@ -50,6 +50,21 @@ export const columnDescriptorSchema = z.object({
   label: z.string(),
   type: z.enum(COLUMN_TYPES).catch("text"),
   align: z.enum(["left", "right"]).optional(),
+  /**
+   * Where this cell goes, as a path with `{key}` placeholders filled from the
+   * row — `/students/{student_id}`.
+   *
+   * **A list you cannot act from is a list you re-type.** `users.family_logins`
+   * names 301 children whose family cannot sign in, and the office's next move
+   * is the guardian card on each child's page; without this they copy an
+   * admission number into a search box, 301 times.
+   *
+   * The destination belongs to the report rather than to the renderer, which is
+   * why it is a catalogue column and not a `case` in the table: a fee defaulter
+   * goes to their fee account and the same child on a different report goes to
+   * their record.
+   */
+  href: z.string().optional(),
 });
 export type ColumnDescriptor = z.infer<typeof columnDescriptorSchema>;
 
@@ -178,6 +193,42 @@ export function alignFor(column: ColumnDescriptor): "left" | "right" {
   return column.type === "money" || column.type === "number" || column.type === "percent"
     ? "right"
     : "left";
+}
+
+/**
+ * Fill a column's `href` template from a row, or return null.
+ *
+ * Null rather than a broken link in three cases, and the third is the one worth
+ * stating: a placeholder the row has no value for (the report changed and the
+ * catalogue did not), a value that is empty, and **a result that is not an
+ * in-app absolute path**.
+ *
+ * Each substituted value is `encodeURIComponent`d, so a value cannot contribute
+ * a `/` or a `?` and cannot escape the segment it was put in. The template
+ * itself comes from a migration and is not a trust boundary — but asserting the
+ * shape of the result is one line, and the failure it prevents (a value
+ * beginning `//` turning a path into a protocol-relative URL to another host)
+ * is the kind that is obvious only after somebody finds it.
+ */
+export function cellHref(
+  template: string | undefined,
+  row: Record<string, unknown>,
+): string | null {
+  if (!template) return null;
+
+  let missing = false;
+  const filled = template.replace(/\{([A-Za-z0-9_]+)\}/g, (_match, key: string) => {
+    const value = row[key];
+    if (value === null || value === undefined || value === "") {
+      missing = true;
+      return "";
+    }
+    return encodeURIComponent(String(value));
+  });
+
+  if (missing) return null;
+  if (!filled.startsWith("/") || filled.startsWith("//")) return null;
+  return filled;
 }
 
 /** Today, and 30 days back, as `yyyy-mm-dd` in the viewer's own zone. */

@@ -2347,6 +2347,45 @@ returned alongside, which is why they run inline without breaking rule 7. A
 who asked — see rule 7. A PDF and a scheduled report remain `jobs` work and are
 not built. See `docs/modules/reports.md`.
 
+#### …and a list you cannot act from is a list you re-type
+
+A report that names a row and cannot reach it has moved the work rather than
+done it. **Families who cannot sign in** names 301 children and the office's
+next move is the guardian card on each one, so the afternoon was: read a name,
+copy the admission number, open the students screen, paste, open the child, fix
+the guardian, go back — three hundred and one times.
+
+> **The destination belongs to the report, not to the table.** The tempting fix
+> is `if (report.key === "users.family_logins")` in the renderer, and it is
+> wrong on its second use: a child on **Fee defaulters** opens their fee
+> *account*, the same child on the roster opens their record. Same column, same
+> name, different question. So it is `columns[].href` in the catalogue — a path
+> with `{key}` placeholders filled from the row — and the renderer learns one
+> mechanism instead of a list of reports.
+
+Three things:
+
+- **The id travels in the row and is declared in no column.** The table and the
+  CSV are both built from the descriptors, so an undeclared key reaches the
+  renderer and is dropped from the export: the office gets a link and the
+  spreadsheet does not grow a uuid column nobody asked for.
+- **Null three ways, and the third is the one to copy.** No template; a
+  placeholder the row cannot fill (the projection and the descriptor live in
+  different migrations and drift, and plain text beats a link to
+  `/students/undefined`); and **a result that is not an in-app absolute path**.
+  Every value is `encodeURIComponent`d so it cannot contribute a `/` or escape
+  its segment — and asserting the *shape of the result* is the one line that
+  stops a value beginning `//` turning a path into a protocol-relative URL to
+  another host. The template comes from a migration and is not a trust boundary;
+  checking it anyway costs nothing and fails closed.
+- **Guard the mechanism, not the link.** The renderer is checked to call
+  `cellHref(c.href, row)` **and to contain no route literal of its own** —
+  verified by planting `c.key === "student" ? "/students/" + row.student_id`,
+  which is exactly the shortcut that would pass a test asserting only that the
+  link appears.
+
+See `docs/modules/reports.md`.
+
 ### …and a critic is a third thing again
 
 Not a report — it takes no parameters and answers *"what is wrong here"* — and

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState, useTransition } from "react";
+import Link from "next/link";
 import {
   AlertTriangle,
   Download,
@@ -44,6 +45,7 @@ import {
   EXPORT_PAGE_SIZE,
   exportProgressSentence,
   planExport,
+  cellHref,
   formatCell,
   missingRequired,
   type ParamDescriptor,
@@ -443,6 +445,13 @@ export function ReportRunner({ reports, options }: Props) {
                   <TableRow key={i}>
                     {report?.columns.map((c) => {
                       const rendered = formatCell(row[c.key], c.type, locale);
+                      // The destination is the catalogue's, not the table's: a
+                      // fee defaulter goes to their fee account and the same
+                      // child on another report goes to their record. Null when
+                      // the row cannot fill the template, so a report whose
+                      // projection drifted renders plain text rather than a
+                      // link to `/students/undefined`.
+                      const href = cellHref(c.href, row);
                       return (
                         <TableCell
                           key={c.key}
@@ -455,6 +464,13 @@ export function ReportRunner({ reports, options }: Props) {
                             <Badge variant="outline" className="font-normal">
                               {rendered}
                             </Badge>
+                          ) : href && rendered !== "—" ? (
+                            <Link
+                              href={href}
+                              className="font-medium underline-offset-4 hover:underline focus-visible:underline"
+                            >
+                              {rendered}
+                            </Link>
                           ) : (
                             rendered
                           )}

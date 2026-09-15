@@ -389,3 +389,81 @@ The critic reads `roles.tier` to name the family audience, and that is not a
 breach of *"a tier is presentation, never a gate"*: nothing is refused, granted
 or filtered by it. It describes who a column of the matrix is **for**, which is
 the tier's whole job.
+
+---
+
+## A list you cannot act from is a list you re-type
+
+`0235` gave the family-login critic its list: **Families who cannot sign in**
+names every child whose family has no way into the app, worst first, with what
+is in the way on each row. `0236` stopped the importer making more of them.
+
+Neither helps with the 301 that already exist, and re-importing is not the
+repair — the guardian card on `/students/[id]` is. So the office's actual
+afternoon was: read a name off the report, copy the admission number, open the
+students screen, paste, open the child, fix the guardian, go back. **Three
+hundred and one times.**
+
+> A report that names a row and cannot reach it has moved the work rather than
+> done it.
+
+### The destination belongs to the report, not to the table
+
+The obvious fix is a branch in the renderer: *if the report is
+`users.family_logins`, link the student column to `/students/…`*. That is a
+second place to keep a fact the catalogue already holds, and it is wrong on its
+second use: a child on **Fee defaulters** should open their fee *account*, not
+their record. Same column, same name, different destination, decided by which
+question was asked.
+
+So `reference.reports.columns` gained an optional `href` — a path with `{key}`
+placeholders filled from the row:
+
+```json
+{ "key": "student", "type": "text", "label": "Student",
+  "href": "/students/{student_id}" }
+```
+
+| report | the student column opens |
+|---|---|
+| `users.family_logins` | `/students/{student_id}` — the guardian card |
+| `students.roster` | `/students/{student_id}` — the record |
+| `fees.defaulters` | `/fees/students/{student_id}` — the account |
+
+Nineteen of the twenty reports declare no `href` and render exactly as they did:
+absent means text.
+
+### The id is in the row without being a column
+
+`student_id` is added to each function's projection and to **none** of the
+descriptors. The table and the CSV are both built from `columns`, so an
+undeclared key reaches the renderer and is dropped from the export
+automatically — the office gets a link, and the spreadsheet they email to the
+fee committee does not grow a uuid column nobody asked for.
+
+### `cellHref` returns null three ways, and the third is the interesting one
+
+- **No template.** Most columns have none.
+- **A placeholder the row cannot fill.** The projection and the descriptor are
+  edited in different migrations and can drift; a report that stopped returning
+  the id renders plain text rather than a link to `/students/undefined`.
+- **A result that is not an in-app absolute path.** Every substituted value is
+  `encodeURIComponent`d, so a value cannot contribute a `/` or a `?` and cannot
+  escape its segment — `../../settings/team` becomes
+  `/students/..%2F..%2Fsettings%2Fteam`, a 404 rather than a traversal. The
+  template comes from a migration and is not a trust boundary, but asserting the
+  *shape of the result* is one line and it is what stops a value beginning `//`
+  turning a path into a protocol-relative URL to somebody else's host.
+
+Both halves are guarded: `cellHref` by unit tests (each verified by planting the
+violation), and the renderer by a source check that it calls
+`cellHref(c.href, row)` and contains **no route literal of its own** — verified
+by planting `c.key === "student" ? "/students/" + row.student_id`.
+
+### One thing measured on the way past
+
+`students.roster` has had a **Student phone** column since it was written, and
+`people.phone` for a student was written by nothing until `0236` gave the
+importer a heading for it. So that column has rendered `—` for every child in
+this college since the day it shipped. Not introduced here and not fixed here:
+`0236` gave it a source, and the rows already imported still have none.

@@ -1,6 +1,9 @@
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import {
   alignFor,
+  cellHref,
   EXPORT_MAX_ROWS,
   EXPORT_PAGE_SIZE,
   exportProgressSentence,
@@ -212,5 +215,103 @@ describe("planning a full export", () => {
   it("counts rows for a person rather than for a machine", () => {
     expect(exportProgressSentence(10000, 42318)).toBe("Fetching 10,000 of 42,318 rows…");
     expect(exportProgressSentence(100000, 342318)).toBe("Fetching 1,00,000 of 3,42,318 rows…");
+  });
+});
+
+
+/**
+ * A list you cannot act from is a list you re-type.
+ *
+ * `users.family_logins` names 301 children whose family cannot sign in, and the
+ * office's next move is the guardian card on each child's page. Without a link
+ * that is: read a name, copy an admission number, open the students screen,
+ * paste, open the child, fix the guardian, go back — three hundred and one
+ * times. Migration `0237`.
+ *
+ * The destination lives on the catalogue column rather than in the renderer,
+ * because it is wrong on its second use otherwise: a child on **Fee
+ * defaulters** opens their fee account, and the same child on the roster opens
+ * their record. Same column, same name, different question.
+ */
+describe("a cell that goes somewhere", () => {
+  it("fills the template from the row", () => {
+    expect(cellHref("/students/{student_id}", { student_id: "abc-123" })).toBe("/students/abc-123");
+    expect(cellHref("/fees/students/{student_id}", { student_id: "abc-123" })).toBe(
+      "/fees/students/abc-123",
+    );
+  });
+
+  it("is null when there is no template", () => {
+    // Nineteen of the twenty reports have none, and they must render as text
+    // rather than as a link to nowhere.
+    expect(cellHref(undefined, { student_id: "abc" })).toBe(null);
+  });
+
+  it("is null rather than a link to `undefined`", () => {
+    // The projection and the descriptor are edited in different migrations, so
+    // they can drift. A report that stopped returning the id renders plain text.
+    expect(cellHref("/students/{student_id}", {})).toBe(null);
+    expect(cellHref("/students/{student_id}", { student_id: null })).toBe(null);
+    expect(cellHref("/students/{student_id}", { student_id: "" })).toBe(null);
+  });
+
+  it("cannot be talked out of the application", () => {
+    // Each value is encodeURIComponent'd, so a value cannot contribute a path
+    // separator or a query, and the *result* must still be an in-app absolute
+    // path — which is what stops a value beginning `//` turning a path into a
+    // protocol-relative URL to somebody else's host.
+    expect(cellHref("/students/{id}", { id: "../../settings/team" })).toBe(
+      "/students/..%2F..%2Fsettings%2Fteam",
+    );
+    expect(cellHref("/students/{id}", { id: "a?b=c" })).toBe("/students/a%3Fb%3Dc");
+    expect(cellHref("{id}", { id: "/evil.example" })).toBe(null);
+    expect(cellHref("https://evil.example/{id}", { id: "x" })).toBe(null);
+    expect(cellHref("//evil.example/{id}", { id: "x" })).toBe(null);
+  });
+
+  it("keeps the id out of the spreadsheet", () => {
+    // `student_id` travels in the row and is declared in no descriptor, and
+    // both the table and the CSV are built from the descriptors — so the office
+    // gets a link and the file they email to the fee committee does not grow a
+    // uuid column nobody asked for. This pins the mechanism that makes that
+    // true: parsing a descriptor list never invents a column.
+    const columns = parseColumns([
+      { key: "student", label: "Student", type: "text", href: "/students/{student_id}" },
+    ]);
+    expect(columns.map((c) => c.key)).toEqual(["student"]);
+    expect(columns[0].href).toBe("/students/{student_id}");
+  });
+
+  it("degrades a malformed descriptor to a plain column", () => {
+    const columns = parseColumns([{ key: "student", label: "Student", type: "nonsense" }]);
+    expect(columns[0].type).toBe("text");
+    expect(columns[0].href).toBeUndefined();
+  });
+});
+
+
+describe("the renderer asks the catalogue, not itself", () => {
+  const runner = readFileSync(
+    join(process.cwd(), "src/app/(app)/reports/report-runner.tsx"),
+    "utf8",
+  )
+    .replace(/\/\*[\s\S]*?\*\//g, "")
+    .split("\n")
+    .map((line) => line.replace(/^\s*\/\/.*$/, "").replace(/\s\/\/.*$/, ""))
+    .join("\n");
+
+  it("fills the link from the column descriptor", () => {
+    // The tempting version is `if (report.key === "users.family_logins")` in
+    // the table. That is a second place to keep a fact the catalogue already
+    // holds, and it is wrong on its second use — a fee defaulter goes to their
+    // account and the same child on the roster goes to their record.
+    expect(runner).toContain("cellHref(c.href, row)");
+  });
+
+  it("hardcodes no destination of its own", () => {
+    const paths = runner.match(/href=\{?"\/[a-z]/gi) ?? [];
+    expect(paths, "a route literal in the report table is a decision in the wrong file").toEqual(
+      [],
+    );
   });
 });

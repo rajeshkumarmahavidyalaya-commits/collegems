@@ -109,7 +109,9 @@ One family proves it works; 555 families is the product.
   phone given headings that say whose they are.
   **What is still office work:** the 302 children already imported. `0235`'s
   report names them, and re-importing is not the repair — the guardian editor on
-  `/students/[id]` is.
+  `/students/[id]` is. Migration `0237` makes that report a **worklist**: the
+  student column links straight to the child, so the afternoon is 301 clicks
+  rather than 301 copy-paste round trips.
 
 | Measure | Now | Target |
 |---|---|---|

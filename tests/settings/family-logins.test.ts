@@ -128,10 +128,22 @@ describe("the list behind family_login_problems", () => {
     // Rule 11: a new report is a function plus one row, and /reports renders
     // it. A page here would be a second place to keep the question.
     const sql = code(migrationSql());
-    const row = sql.slice(sql.lastIndexOf("'users.family_logins',"));
-    expect(row, "the report is not in reference.reports").not.toBe("");
-    expect(row.slice(0, 1200)).toContain("'users.manage'");
-    expect(row.slice(0, 1200)).toContain("report_family_logins");
+
+    // Anchored on the **insert**, not on any mention of the key. The first
+    // draft sliced from `lastIndexOf("'users.family_logins',")` and went green
+    // — until migration `0237` added
+    // `where key in ('users.family_logins', 'students.roster')`, which is now
+    // the last mention, and the slice was a `where` clause. CLAUDE.md has this
+    // bug twice already, from `lastIndexOf` of a function name finding its
+    // `comment on function`; a key is no more unique than a name.
+    const inserts = [...sql.matchAll(/insert into reference\.reports\b/g)].map((m) => m.index!);
+    const row = inserts
+      .map((start) => sql.slice(start, sql.indexOf("on conflict", start)))
+      .find((block) => block.includes("'users.family_logins',"));
+
+    expect(row, "no insert into reference.reports carries this report").toBeDefined();
+    expect(row!).toContain("'users.manage'");
+    expect(row!).toContain("report_family_logins");
 
     const pages = readdirSync(join(ROOT, "src/app/(app)"), { withFileTypes: true })
       .filter((e) => e.isDirectory())
