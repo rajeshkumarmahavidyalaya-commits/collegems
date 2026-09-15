@@ -228,7 +228,16 @@ export async function stageImport(
     // preview names it, and filing a grandmother as `guardian` is the office's
     // decision rather than this line's.
     guardian_relationship: normaliseRelationship(r.guardianRelationship),
+    // Whose contact is whose, and the reason is in `IMPORT_COLUMNS`: the bare
+    // `Email` heading of a school roll is the parent's, as the bare `Phone`
+    // heading already was. `import_apply_run` passes this one to
+    // `guardian_add`, which has read the key since migration 0221 and had
+    // never been given it.
+    guardian_email: r.guardianEmail ?? null,
     email: r.email ?? null,
+    // Read by `import_apply_run` since the module shipped and written by
+    // nothing until now — there was no student-phone column to write it from.
+    phone: r.phone ?? null,
     address_line1: r.addressLine1 ?? null,
     city: r.city ?? null,
   }));

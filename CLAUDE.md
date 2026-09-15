@@ -2854,6 +2854,46 @@ Bulk import is the second instance, and adds three things worth copying:
   notices until April. Bound it, and say the bound out loud. See
   `docs/modules/import.md`.
 
+…and a fourth, which is about **whose** a value is rather than whether it is
+valid. `IMPORT_COLUMNS` matched a bare `Phone` heading to the guardian and a
+bare `Email` heading to the **student**, so one spreadsheet's two contact
+columns were filed against two different people — and the guardian, who is the
+one who will actually sign in, finished every import with a number and no
+address while a seven-year-old held the email.
+
+> **Two contact columns of one spreadsheet are one person's.** Which person a
+> bare heading means is a judgement call; that both bare headings mean the *same*
+> one is not.
+
+Three things, and the third is about the guard:
+
+- **The write path was ready and the caller never filled it in.**
+  `guardian_add` has read `p_person ->> 'email'` since `0221`; `import_apply_run`
+  built that jsonb with a name and a phone and stopped. `0224`'s shape a second
+  time, which is why *"who else writes this?"* has a twin: **who else was
+  supposed to?**
+- **A read with no writer is the same defect wearing a table.**
+  `import_rows.phone` was passed to `admit_student` as the student's own number
+  from the day the module shipped, and nothing ever filled it, because no
+  heading collected one. It gets a writer rather than a deletion here — this
+  product's first customer is a *mahavidyalaya*, whose students have their own
+  addresses and for whom a student login is the ordinary case.
+- **Asserting which column wins guards the outcome; counting claimants guards
+  the mechanism.** The first alias check passed on a planted `email` alias
+  re-added to the student column, because `find` returns the first match and the
+  guardian column happens to come first — harmless today, and flipping the day
+  somebody reorders the array. The rewritten check counts, and a second one
+  forbids two columns answering to one heading at all. *That* one failed on its
+  first run on **itself**: most columns list their own label as an alias, so
+  `first name` appeared twice for `firstName`. A guard that reports its own shape
+  as a finding is a guard nobody will keep.
+
+And the boundary, because the temptation is to make the importer demand an
+address: **it does not refuse an import for want of one.** A school whose roll
+has no emails must still be able to load its children — `0235`'s report names
+every child left without one the moment the import finishes. *The importer
+collects what the spreadsheet has; the report says who is left.*
+
 Renewals (`renewal_runs` → `renewal_decisions`) are the third instance, and the
 one that says what an apply step should *write with*:
 

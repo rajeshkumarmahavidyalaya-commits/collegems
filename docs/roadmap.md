@@ -98,12 +98,18 @@ One family proves it works; 555 families is the product.
   and the list cannot disagree. On the demo college the list is **299 not
   invited, 2 with no guardian at all, 1 able to sign in** — and the two are the
   sharper finding, because no invitation run would ever have reached them.
-- **A student's address.** Probed on the demo college: **302 active students,
-  one email between them**, against 555 of 555 guardians with an address and a
-  phone. The student branch of `invitation_preview` is built and correct and
-  would produce 301 rows saying *"No email address on record"* — so a student
-  login is reachable in code and not in data. Collecting it is office work; the
-  SMS half above is what makes the invitation deliverable either way.
+- ~~**A student's address.**~~ Partly done, migration `0236`, and the premise
+  was wrong. This was filed as office work — *302 active students, one email
+  between them, somebody has to type them in* — and reading the importer first
+  found that **a bare `Email` column landed on the child while a bare `Phone`
+  column landed on the guardian**, so one spreadsheet's two contact columns were
+  filed against two different people. The guardian, who is the one who signs in,
+  finished every import with a number and no address; `guardian_add` had read the
+  email key since `0221` and no caller ever set it. Fixed, with student email and
+  phone given headings that say whose they are.
+  **What is still office work:** the 302 children already imported. `0235`'s
+  report names them, and re-importing is not the repair — the guardian editor on
+  `/students/[id]` is.
 
 | Measure | Now | Target |
 |---|---|---|

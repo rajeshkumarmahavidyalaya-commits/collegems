@@ -33,8 +33,28 @@ export const IMPORT_COLUMNS = [
   { field: "rollNumber", label: "Roll number", required: false, aliases: ["roll number", "roll no", "rollno", "roll"] },
   { field: "guardianName", label: "Guardian", required: false, aliases: ["guardian", "guardian name", "parent", "father name", "mother name"] },
   { field: "guardianPhone", label: "Guardian phone", required: false, aliases: ["guardian phone", "parent phone", "phone", "mobile", "contact"] },
+  /**
+   * **The bare `Email` heading is the guardian's**, exactly as the bare `Phone`
+   * heading above it already is.
+   *
+   * A school roll has one contact column of each kind and they are one person's
+   * — the parent's. This one said `email` and landed on the *child*, so a
+   * single spreadsheet's two contact columns were filed against two different
+   * people, and the guardian finished every import with a phone and no address
+   * while a seven-year-old held the email. Which of the two people a bare
+   * heading means is a judgement call; that both bare headings mean the *same*
+   * one is not.
+   */
+  { field: "guardianEmail", label: "Guardian email", required: false, aliases: ["email", "e-mail", "email id", "emailid", "parent email", "father email", "mother email"] },
   { field: "guardianRelationship", label: "Relationship", required: false, aliases: ["relationship", "relation"] },
-  { field: "email", label: "Email", required: false, aliases: ["email", "e-mail"] },
+  /**
+   * The student's own, and only from a heading that says whose it is. A school
+   * child has neither; a college student has both, which is why these are
+   * collected rather than dropped — this product's first customer is a
+   * mahavidyalaya.
+   */
+  { field: "email", label: "Student email", required: false, aliases: ["student email", "student e-mail", "child email", "pupil email"] },
+  { field: "phone", label: "Student phone", required: false, aliases: ["student phone", "student mobile", "child phone", "pupil phone"] },
   { field: "addressLine1", label: "Address", required: false, aliases: ["address", "address line 1", "address1"] },
   { field: "city", label: "City", required: false, aliases: ["city", "town"] },
 ] as const;

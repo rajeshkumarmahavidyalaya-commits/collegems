@@ -174,4 +174,116 @@ describe("the column list", () => {
       "admissionNumber",
     ]);
   });
+
+  /**
+   * **One spreadsheet's two contact columns are one person's.**
+   *
+   * A school roll has one *Phone* and one *Email*, and they are the parent's.
+   * `phone` has landed on the guardian since the module shipped; `email` landed
+   * on the **child** — so the guardian finished every import with a number and
+   * no address, and a seven-year-old held the email. Which person a bare
+   * heading means is a judgement call; that both bare headings mean the same
+   * one is not. Migration `0236`.
+   */
+  it("sends both bare contact headings to the same person", () => {
+    // `claimants`, not `find`. The parser takes the **first** column whose
+    // aliases match, so asserting the winner passes while a second column
+    // quietly claims the same heading — and then reordering this array changes
+    // whose email it is, silently. CLAUDE.md's rule about guarding the
+    // mechanism rather than the string: count them.
+    const claimants = (alias: string) =>
+      IMPORT_COLUMNS.filter((c) => (c.aliases as readonly string[]).includes(alias)).map(
+        (c) => c.field,
+      );
+
+    expect(claimants("phone")).toEqual(["guardianPhone"]);
+    expect(claimants("email")).toEqual(["guardianEmail"]);
+    expect(claimants("mobile")).toEqual(["guardianPhone"]);
+    expect(claimants("e-mail")).toEqual(["guardianEmail"]);
+  });
+
+  it("lets no two columns claim one heading", () => {
+    // The general form of the check above, over every alias and every label:
+    // an ambiguous heading is decided by array order, which is not a decision
+    // anybody made.
+    // A Set per heading, because most columns list their own label as an alias
+    // too — "first name" is both, and counting it twice is the guard reporting
+    // on itself rather than on the data.
+    const seen = new Map<string, Set<string>>();
+    for (const column of IMPORT_COLUMNS) {
+      const keys = [...(column.aliases as readonly string[]), column.label.toLowerCase()];
+      for (const key of keys) {
+        if (!seen.has(key)) seen.set(key, new Set());
+        seen.get(key)!.add(column.field);
+      }
+    }
+
+    const ambiguous = [...seen.entries()]
+      .filter(([, fields]) => fields.size > 1)
+      .map(([key, fields]) => [key, [...fields]]);
+    expect(ambiguous, "two columns answer to one heading; array order decides").toEqual([]);
+  });
+
+  it("gives the student's own contact a heading that says whose it is", () => {
+    // A college student has both; a school child's row leaves them empty. The
+    // point is that nothing reaches them from an unqualified heading.
+    const student = (alias: string) =>
+      IMPORT_COLUMNS.find((c) => (c.aliases as readonly string[]).includes(alias))?.field;
+
+    expect(student("student email")).toBe("email");
+    expect(student("student phone")).toBe("phone");
+
+    for (const column of IMPORT_COLUMNS) {
+      if (column.field !== "email" && column.field !== "phone") continue;
+      for (const alias of column.aliases as readonly string[]) {
+        expect(
+          /student|child|pupil/.test(alias),
+          `"${alias}" reaches the student without saying so`,
+        ).toBe(true);
+      }
+    }
+  });
+
+  it("reads a real school roll the way a person would", () => {
+    // The header row of an actual export: one contact of each kind, both the
+    // parent's. Before 0236 the last cell went to the child.
+    const parsed = parseCsv(
+      [
+        "Name,Admission No,Class,Guardian,Phone,Email",
+        "Meera Nair,PRB-0001,Grade 1 A,Sunita Nair,+919812300001,sunita.nair@example.test",
+      ].join("\n"),
+    );
+
+    expect(parsed.ok).toBe(true);
+    if (!parsed.ok) return;
+    expect(parsed.rows[0].guardianEmail).toBe("sunita.nair@example.test");
+    expect(parsed.rows[0].guardianPhone).toBe("+919812300001");
+    expect(parsed.rows[0].email, "the child must not be given the parent's address").toBeUndefined();
+  });
+
+  it("reads a college roll, where both people have their own", () => {
+    const parsed = parseCsv(
+      [
+        "Name,Admission No,Student email,Student phone,Guardian,Guardian email",
+        "Rohit Verma,PRB-0002,rohit@example.test,+919812399999,Anil Verma,anil@example.test",
+      ].join("\n"),
+    );
+
+    expect(parsed.ok).toBe(true);
+    if (!parsed.ok) return;
+    expect(parsed.rows[0].email).toBe("rohit@example.test");
+    expect(parsed.rows[0].phone).toBe("+919812399999");
+    expect(parsed.rows[0].guardianEmail).toBe("anil@example.test");
+  });
+
+  it("has a writer for every column import_apply_run reads", () => {
+    // `import_rows.phone` was read by the apply step since the module shipped
+    // and written by nothing: there was no student-phone heading to write it
+    // from. A read with no writer is `library_waive_staff_fine`'s p_note
+    // wearing a table.
+    const fields = new Set(IMPORT_COLUMNS.map((c) => c.field));
+    for (const read of ["email", "phone", "guardianEmail", "guardianPhone"]) {
+      expect(fields.has(read as never), `${read} is read but never collected`).toBe(true);
+    }
+  });
 });

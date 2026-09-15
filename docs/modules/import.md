@@ -167,3 +167,111 @@ cleaning a spreadsheet without being the person who creates two hundred students
   captured and validated and then *not written*, because a guardian is a `people`
   row with its own linking rules — see rule 5. Recorded as a gap rather than
   guessed at.
+
+---
+
+## One spreadsheet, two contact columns, two different people
+
+The roadmap said *"302 active students, one email between them"* and filed it
+under office work — somebody has to type them in. Reading the importer first,
+because 302 of 302 students arrived through it, says otherwise.
+
+`IMPORT_COLUMNS` matches a heading against a list of aliases:
+
+```
+guardianPhone   "guardian phone", "parent phone", "phone", "mobile", "contact"
+email           "email", "e-mail"                                → the student
+```
+
+A school roll has one *Phone* column and one *Email* column and they are the same
+person's: the parent's. The importer put the number on the guardian and the
+address on the **child** — who, two columns to the left, has a date of birth in
+2018.
+
+> **Two contact columns of one spreadsheet must land on one person.** Which
+> person a bare heading means is a judgement call; that both bare headings mean
+> the *same* one is not.
+
+The consequence is the thing migrations `0227`–`0235` were built for: after an
+import the guardian has a phone and **no email**, so an email invitation cannot
+reach them — while the child holds an address no invitation will ever be sent to,
+because a student login needs the student's own invitation and nothing creates
+one.
+
+### The write path was ready and the caller never filled it in
+
+`guardian_add` has read `p_person ->> 'email'` since migration `0221`.
+`import_apply_run` built that jsonb with `first_name`, `last_name` and `phone`,
+and stopped. So this is `0224`'s shape a second time — a key the schema was
+waiting for and a caller that never passed it — rather than a missing feature.
+
+### …and a third column nothing had ever written
+
+`import_rows.phone` exists, `import_apply_run` passed it to `admit_student` as
+the student's own number, and the insert in `actions.ts` never filled it: there
+was no student-phone heading to fill it from. A read of a column with no writer —
+`library_waive_staff_fine`'s `p_note` wearing a table. It gets a writer rather
+than being deleted, because this product's first customer is a *mahavidyalaya*:
+a college, whose students have their own phones and their own addresses, and for
+whom a student login is the ordinary case rather than the exception.
+
+### What the columns say now
+
+| heading in the file | lands on |
+|---|---|
+| `Phone`, `Mobile`, `Contact`, `Guardian phone`, `Parent phone` | the guardian |
+| `Email`, `E-mail`, `Email id`, `Parent email`, `Mother email` | **the guardian** |
+| `Student email`, `Child email`, `Pupil email` | the student |
+| `Student phone`, `Student mobile`, `Child phone` | the student |
+
+Probed end to end in a rolled-back transaction, with the two shapes a real file
+takes:
+
+| row | student email | student phone | guardian email | guardian phone |
+|---|---|---|---|---|
+| a school roll (`Guardian, Phone, Email`) | — | — | `sunita.nair@…` | `+9198123…` |
+| a college roll (both named) | `rohit.verma@…` | `+9198123…` | `anil.verma@…` | `+9198123…` |
+
+Before this, the first row's address went to Meera Nair, aged seven.
+
+### The validator learned two things
+
+- **A guardian needs a way to be reached, not a phone specifically.** The old
+  rule — *"A guardian with no phone number cannot be contacted"* — was right
+  while a phone was the only thing collected. An email-only guardian is
+  contactable, and `0233` made the invitation go by both, so the refusal now
+  reads *"A guardian with no phone number and no email cannot be contacted"* and
+  a row that would have been refused is now imported.
+- **`n/a` is not an address.** `people.email` has no CHECK, so a spreadsheet
+  column full of `n/a`, `-` and `not given` was stored verbatim and every
+  invitation to it would have failed one at a time. The pattern is deliberately
+  loose — the job is to catch those three, not to adjudicate RFC 5322 — and the
+  message names the value: *`"n/a" is not an email address, so no invitation
+  could reach it`*.
+
+### What this deliberately does not do
+
+**It does not refuse an import for want of an email.** A school whose roll has
+no addresses at all must still be able to load its children. `0235`'s report
+already names every child left without one, by state, the moment the import
+finishes: *the importer collects what the spreadsheet has; the report says who is
+left.*
+
+**It does not add an inline editor for the new columns.** Rule 13's preview is
+editable where a row is *wrong*; a missing address is not wrong, and the guardian
+editor on `/students/[id]` has existed since `0221`.
+
+### And the guard found an ambiguity nobody had decided
+
+The first version of the alias check asserted which column *wins* a heading —
+and passed on a planted `email` alias re-added to the student column, because
+`IMPORT_COLUMNS.find` returns the first match and the guardian column comes
+first. Asserting the winner guards the outcome, not the mechanism: the plant was
+harmless for parsing *today* and would flip the moment somebody reordered the
+array.
+
+So the check counts claimants instead, and a second one requires that **no two
+columns answer to one heading** at all. That one failed on its first run — on
+itself: most columns list their own label as an alias too, so `first name`
+appeared twice for `firstName`. A Set per heading, and the guard reports on the
+data rather than on its own shape.
