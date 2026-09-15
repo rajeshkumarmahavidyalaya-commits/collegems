@@ -126,14 +126,34 @@ they were for — see [role-access.md](./modules/role-access.md).
 
 ## Phase 3 — The genuinely unbuilt
 
-- **The `jobs` worker and PDF rendering.** Report cards, certificates and ID
-  cards are screen-only, and a school hands parents paper. This is the last
-  named `jobs` work.
-- **Scheduled reports.** Blocked on a decision, not on code: *whose authority
-  does a schedule run under?* The recommendation is the creator's, stamped on
-  the schedule and re-checked at each run, so revoking their permission stops
-  the schedule. It has stayed unbuilt because that is a decision the module
-  should not make quietly.
+**Scheduled reports are done** (migrations `0238`–`0241`). The decision was the
+blocker and it is made: *a scheduled report runs as the person who scheduled
+it*, stamped by a trigger, immutable, and re-checked every occurrence. Building
+it turned up two facts about Postgres that shaped the whole thing — a
+`SECURITY DEFINER` frame may not `SET ROLE`, and `service_role` is not a member
+of `authenticated`, so the digest tick has exactly one waker. See
+[schedules.md](./modules/schedules.md).
+
+**And this list said something false about printing.** *"Report cards,
+certificates and ID cards are screen-only, and a school hands parents paper"* —
+checked, and there are **seven** `window.print()` entry points and a full
+`@media print` block with per-child page breaks, an eight-up ID-card sheet, and
+`print-color-adjust: exact` so photographs survive the browser's
+background-graphics default. A school can hand parents paper today.
+
+> **A roadmap entry ages into a claim nobody re-checks.** This one had been true
+> when it was written and was quietly wrong for months, in the direction that
+> costs most: it described work as missing that was done, next to work described
+> as missing that was.
+
+What is genuinely left:
+
+- **Server-side PDF.** Not the same thing as printing: a PDF *attached to an
+  email*, or one a parent downloads in the phone app, has no browser to render
+  it. That is the last named `jobs` work, and it is the only reason the worker
+  is still unbuilt.
+- **A digest that carries the rows.** `report.digest` sends a count and a link,
+  deliberately — the attachment is the PDF above, wearing a different hat.
 
 ---
 

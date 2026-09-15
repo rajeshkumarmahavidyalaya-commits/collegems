@@ -1885,16 +1885,84 @@ reasons a matched child was not written to separately — *on approved leave*
 (deliberate) and *no family login* (a gap) — because one number cannot
 distinguish them and they call for opposite responses.
 
-**Scheduled reports are the thing this deliberately stops short of**, because:
+**Scheduled reports stopped short here for a hundred migrations**, because:
 
 > A scheduled job has no user, so anything it does must be expressible without
 > one.
 
 Sending a message about a row is. Running a catalog report is not — `report_run`
 gates on `role_permissions` for `current_role_code()`, and a scheduler has no
-role. Making it work means deciding *whose authority* a schedule runs under, and
-that is a bigger decision than the module should make quietly. See
-`docs/modules/schedules.md`.
+role. The sentence was right and the answer is one line: **a scheduled report
+runs as the person who scheduled it**, stamped on `schedules.created_by` by a
+`BEFORE INSERT` trigger from `auth.uid()` (never sent by the client), immutable
+by trigger, and **re-checked every occurrence rather than remembered** — an
+administrator who left in March is not still running the fee digest in June.
+
+Building it (`0238`–`0241`) turned up two facts about the engine, and each one
+moved a design decision rather than a line of code:
+
+- **A `SECURITY DEFINER` frame may not `SET ROLE`.** `0238` built the
+  impersonating function definer, like everything else in the scheduler, and it
+  raised `42501` on its first call. So the decision was right and the mechanism
+  was impossible, which is worth keeping apart: *the feature was never blocked
+  on taste.* The impersonation has to happen outside every definer frame, so
+  `schedule_report_digest` and `schedule_digests_tick` are the two INVOKER
+  functions in a definer module, and `schedule_run` takes the answer as a
+  parameter instead of computing it.
+
+  **Both halves of an impersonation are needed and neither is optional.** The
+  JWT claims alone do nothing — `postgres` carries `BYPASSRLS`, so the report
+  answers with *every college's rows*, looking entirely ordinary. The role
+  change alone does nothing either — `current_tenant_id()` is null and the
+  answer is zero. Measured both ways rather than reasoned: **96 rows for one
+  college's principal and 0 for the other's**, same function, same day.
+
+- **`service_role` is not a member of `authenticated`.** So the `schedule-tick`
+  Edge Function cannot run a report as anybody, and the digest tick has exactly
+  one waker: pg_cron, as `postgres`. The tempting repair —
+  `grant authenticated to service_role` — edits the role graph of the platform
+  this product runs on, permanently and for everything else that key touches, to
+  save a second cron entry. **Two wakers are two places to add the next periodic
+  job**, and `tests/schedules/waker.test.ts` asserts the cron wakes everything
+  the Edge Function wakes; that direction still holds, and the reverse is now
+  deliberately false, so the guard gained the half that forbids the RPC there.
+
+Two things about the shape generalise:
+
+- **Whichever tick claims an occurrence owns it.** `schedule_runs` is unique on
+  `(schedule_id, occurrence_at)` and the run opens `on conflict do nothing`, so
+  a message tick that still picked up digest schedules would claim the work and
+  then refuse it — a race whose loser is always the one that could have done it.
+  The two ticks take disjoint kinds out of **one list**,
+  `schedule_kinds_needing_authority()`, and the filters are shaped differently on
+  purpose: the digest tick names what it *takes*, the message tick names only
+  what it *leaves*, so a kind added next year lands where an unimplemented kind
+  raises by name instead of being run by neither.
+- **A digest carries a count, never the rows** — *"Fee defaulters — 96 rows
+  today"*, to its creator and nobody else, because here the authority question
+  and the audience question are the same question. Zero rows is still sent:
+  *"found nothing today. That is the whole answer, not a message that failed to
+  arrive."*
+
+And the defect it nearly shipped, which is this file's oldest one wearing its
+fifth face: `runSentence` read `matched` as **people**, correctly, for three
+kinds — and a digest's `matched` is **rows of a report**, so the card would have
+said *"1 of 96 were told"* about a message that went to one bursar. A number
+right about arithmetic and wrong about what it counted. Beside
+`subscription_usage`'s 303 students for a college with none,
+`attendance_coverage`'s eleven classes at 0.0%, and a cost printed for an SMS
+that was never sent.
+
+What is still not built, and now named precisely: **server-side PDF**. Printing
+is not the gap — seven `window.print()` entry points and a full `@media print`
+block with per-child page breaks, an eight-up ID-card sheet and
+`print-color-adjust: exact` have been there for months, while `docs/roadmap.md`
+went on calling report cards *"screen-only"*. A roadmap entry ages into a claim
+nobody re-checks, and this one was wrong in the expensive direction. A PDF
+*attached to an email*, or one a parent downloads in the phone app, has no
+browser to render it — that is the last genuine `jobs` work.
+
+See `docs/modules/schedules.md`.
 
 ## 8. Storage
 

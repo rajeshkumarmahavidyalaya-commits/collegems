@@ -491,12 +491,15 @@ export const ur: Messages = {
   "schedules.kind.attendance.absentees": "غیر حاضری کی اطلاع",
   "schedules.kind.fees.due_reminder": "فیس یاد دہانی",
   "schedules.kind.library.overdue": "کتاب واپسی یاد دہانی",
+  "schedules.kind.report.digest": "مقررہ رپورٹ",
   "schedules.kindDescription.attendance.absentees":
     "جس دن بچہ غیر حاضر ہو، اسی دن گھر والوں کو بتاتا ہے۔ جس دن حاضری لی ہی نہ گئی ہو، اس دن کچھ نہیں بھیجا جاتا۔",
   "schedules.kindDescription.fees.due_reminder":
     "جن طلبہ پر رقم واجب الادا ہے، ان کے گھر والوں کو بتاتا ہے۔ کم سے کم رقم مقرر کریں تاکہ دو روپے کے فرق پر پیغام نہ جائے۔",
   "schedules.kindDescription.library.overdue":
     "جن طلبہ کے پاس مقررہ تاریخ کے بعد بھی کتاب ہے، ان کے گھر والوں کو بتاتا ہے۔ عملے کا حساب تنخواہ سے ہوتا ہے، وہ اس میں شامل نہیں۔",
+  "schedules.kindDescription.report.digest":
+    "ہر صبح ایک رپورٹ چلاتا ہے اور بتاتا ہے کہ اس میں کتنی سطریں ملیں۔ یہ آپ ہی کے اختیارات کے ساتھ چلتی ہے اور جواب صرف آپ کو ملتا ہے — اسی لیے اس میں گنتی ہوتی ہے، کسی کا ریکارڈ نہیں۔",
   "schedules.cadence.daily": "روزانہ، {time} بجے",
   "schedules.cadence.weekdays": "ہر کام کے دن، {time} بجے",
   "schedules.cadence.mondayToSaturday": "پیر سے ہفتہ، {time} بجے",

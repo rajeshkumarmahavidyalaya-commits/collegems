@@ -8,7 +8,13 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import { setScheduleEnabled, type RunRow, type ScheduleProblem, type ScheduleRow } from "./actions";
+import {
+  setScheduleEnabled,
+  type RunRow,
+  type SchedulableReport,
+  type ScheduleProblem,
+  type ScheduleRow,
+} from "./actions";
 import { useI18n } from "@/components/providers/i18n-provider";
 import {
   graceSentence,
@@ -16,6 +22,7 @@ import {
   runSentence,
   runStatusTone,
   RUN_STATUS_LABEL,
+  reportKeyOf,
   scheduleSentence,
   type RunStatus,
   kindDescription,
@@ -25,11 +32,14 @@ export function ScheduleCard({
   schedule,
   runs,
   problems,
+  reports,
   canManage,
 }: {
   schedule: ScheduleRow;
   runs: RunRow[];
   problems: ScheduleProblem[];
+  /** The reports this viewer may run — the key-to-name lookup, and only that. */
+  reports: SchedulableReport[];
   /** Whether the caller holds `schedules.manage`. The switch is theirs; the register is everybody's. */
   canManage: boolean;
 }) {
@@ -55,6 +65,13 @@ export function ScheduleCard({
 
   const blocking = problems.filter((p) => p.severity !== "info");
 
+  // A digest names a report. The viewer may not be able to run it — a colleague
+  // scheduled it — in which case the key is shown rather than a guess at the
+  // name: *there is no such report for me* and *this report is called something
+  // else* are different facts and one of them is not this card's to invent.
+  const reportKey = reportKeyOf(schedule);
+  const reportName = reportKey ? (reports.find((r) => r.key === reportKey)?.name ?? null) : null;
+
   return (
     <Card>
       <CardHeader className="pb-3">
@@ -74,6 +91,17 @@ export function ScheduleCard({
             <CardDescription className="mt-1">
               {kindDescription(schedule.kind, t)}
             </CardDescription>
+            {reportKey && (
+              <CardDescription className="mt-1">
+                Runs{" "}
+                {reportName ? (
+                  <strong className="font-medium text-foreground">{reportName}</strong>
+                ) : (
+                  <code className="font-mono text-xs">{reportKey}</code>
+                )}
+                .
+              </CardDescription>
+            )}
           </div>
 
           <div className="flex items-center gap-2">
@@ -126,7 +154,9 @@ export function ScheduleCard({
                 <span className="font-mono text-xs text-muted-foreground">
                   {formatDateTime(run.occurrenceAt)}
                 </span>
-                <span className="text-muted-foreground">{runSentence(run)}</span>
+                <span className="text-muted-foreground">
+                  {runSentence(run, schedule.kind)}
+                </span>
               </li>
             ))}
           </ol>

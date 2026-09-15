@@ -4,6 +4,8 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { getUserContext } from "@/lib/auth/context";
 import { paramsFor, scheduleSchema } from "@/lib/validations/schedules";
+import { isSchedulable } from "@/lib/validations/reports";
+import { listReports } from "../../reports/actions";
 
 export type ActionResult<T = void> =
   | { ok: true; data: T }
@@ -92,6 +94,26 @@ export async function listScheduleProblems(): Promise<ScheduleProblem[]> {
   }));
 }
 
+export type SchedulableReport = { key: string; name: string; description: string };
+
+/**
+ * The reports this person could put on a timer.
+ *
+ * `report_list()` already filters by the caller's own permission matrix, and a
+ * digest runs **as its creator** — so the picker and the run ask the same
+ * question of the same matrix, and a report cannot be scheduled by somebody who
+ * would be refused it at seven the next morning. One definition, consulted by
+ * both: this wraps `listReports` rather than issuing its own `report_list`.
+ *
+ * The parameter filter is the second half — see `isSchedulable`.
+ */
+export async function listSchedulableReports(): Promise<SchedulableReport[]> {
+  const reports = await listReports();
+  return reports
+    .filter((r) => isSchedulable(r.parameters))
+    .map((r) => ({ key: r.key, name: r.name, description: r.description }));
+}
+
 export async function saveSchedule(input: unknown): Promise<ActionResult<{ id: string }>> {
   const parsed = scheduleSchema.safeParse(input);
   if (!parsed.success) {
@@ -100,6 +122,23 @@ export async function saveSchedule(input: unknown): Promise<ActionResult<{ id: s
       error: "Check the highlighted fields.",
       fieldErrors: parsed.error.flatten().fieldErrors,
     };
+  }
+
+  // The gate, not the picker. The form only offers schedulable reports the
+  // caller may run; this is the same question asked at the boundary, because a
+  // Server Action takes whatever is posted to it.
+  if (parsed.data.kind === "report.digest") {
+    const allowed = await listSchedulableReports();
+    if (!allowed.some((r) => r.key === parsed.data.reportKey)) {
+      return {
+        ok: false,
+        error:
+          "That is not a report you can put on a timer. A scheduled report runs " +
+          "with your own permissions and with no parameters, so it has to be one " +
+          "you may run and one that needs nothing typed in.",
+        fieldErrors: { reportKey: ["Choose one of the listed reports"] },
+      };
+    }
   }
 
   const supabase = await createClient();

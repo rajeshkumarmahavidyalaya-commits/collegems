@@ -4,7 +4,12 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { hasPermission } from "@/lib/auth/permissions";
-import { listRecentRuns, listScheduleProblems, listSchedules } from "./actions";
+import {
+  listRecentRuns,
+  listScheduleProblems,
+  listSchedulableReports,
+  listSchedules,
+} from "./actions";
 import { ScheduleCard } from "./schedule-card";
 import { NewSchedule } from "./new-schedule";
 
@@ -32,10 +37,14 @@ export const metadata = { title: "Automatic messages" };
  * on the 3rd" is a bursar's question.
  */
 export default async function SchedulesPage() {
-  const [schedules, runs, problems, canManage] = await Promise.all([
+  const [schedules, runs, problems, reports, canManage] = await Promise.all([
     listSchedules(),
     listRecentRuns(),
     listScheduleProblems(),
+    // Resolved here, on the server, and handed down: it is the picker's options
+    // *and* the card's key-to-name lookup, and fetching it twice would be two
+    // answers to the question of what this person may run.
+    listSchedulableReports(),
     hasPermission("schedules.manage"),
   ]);
 
@@ -51,7 +60,7 @@ export default async function SchedulesPage() {
             the server&rsquo;s, and never twice for the same occurrence.
           </p>
         </div>
-        {canManage && <NewSchedule />}
+        {canManage && <NewSchedule reports={reports} />}
       </div>
 
       <Alert>
@@ -81,7 +90,7 @@ export default async function SchedulesPage() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            {canManage && <NewSchedule />}
+            {canManage && <NewSchedule reports={reports} />}
           </CardContent>
         </Card>
       ) : (
@@ -92,6 +101,7 @@ export default async function SchedulesPage() {
               schedule={schedule}
               runs={runs.filter((r) => r.scheduleId === schedule.id).slice(0, 5)}
               problems={problems.filter((p) => p.scheduleId === schedule.id)}
+              reports={reports}
               canManage={canManage}
             />
           ))}

@@ -25,14 +25,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { saveSchedule } from "./actions";
+import { saveSchedule, type SchedulableReport } from "./actions";
 import { useI18n } from "@/components/providers/i18n-provider";
 import {
-  KIND_LABEL,
   SCHEDULE_KINDS,
   graceSentence,
   scheduleSentence,
   kindDescription,
+  kindLabel,
   type ScheduleKind,
 } from "@/lib/validations/schedules";
 
@@ -55,7 +55,7 @@ const DAYS = [
  * functions render it on the card afterwards, so what somebody agreed to and
  * what they see later cannot say different things.
  */
-export function NewSchedule() {
+export function NewSchedule({ reports }: { reports: SchedulableReport[] }) {
   const { t, formatWeekday } = useI18n();
   const router = useRouter();
   const [open, setOpen] = useState(false);
@@ -70,6 +70,14 @@ export function NewSchedule() {
   const [graceMinutes, setGraceMinutes] = useState(120);
   const [minAmount, setMinAmount] = useState(1);
   const [minDaysOver, setMinDaysOver] = useState(1);
+  const [reportKey, setReportKey] = useState<string>("");
+
+  const chosen = reports.find((r) => r.key === reportKey) ?? null;
+  // A digest called "Scheduled report" three times over is a list nobody can
+  // read, so the report's own name is the better default. `kindLabel` rather
+  // than the English table: the office typed nothing, so the name they get is
+  // in the language they are working in.
+  const defaultName = chosen ? chosen.name : kindLabel(kind, t);
 
   function toggleDay(day: number) {
     setWeekdays((prev) =>
@@ -81,13 +89,14 @@ export function NewSchedule() {
     startTransition(async () => {
       const result = await saveSchedule({
         kind,
-        name: name.trim() || KIND_LABEL[kind],
+        name: name.trim() || defaultName,
         runAt,
         weekdays: monthly ? [] : weekdays,
         dayOfMonth: monthly ? dayOfMonth : null,
         graceMinutes,
         minAmount: kind === "fees.due_reminder" ? minAmount : null,
         minDaysOver: kind === "library.overdue" ? minDaysOver : null,
+        reportKey: kind === "report.digest" ? reportKey || null : null,
         // Off, always. Creating a schedule and having it start sending is the
         // one surprise this module must never spring on a school.
         isEnabled: false,
@@ -131,7 +140,7 @@ export function NewSchedule() {
               <SelectContent>
                 {SCHEDULE_KINDS.map((k) => (
                   <SelectItem key={k} value={k}>
-                    {KIND_LABEL[k]}
+                    {kindLabel(k, t)}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -139,12 +148,35 @@ export function NewSchedule() {
             <p className="text-xs text-muted-foreground">{kindDescription(kind, t)}</p>
           </div>
 
+          {kind === "report.digest" && (
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="report">Which report</Label>
+              <Select value={reportKey} onValueChange={setReportKey}>
+                <SelectTrigger id="report">
+                  <SelectValue placeholder="Choose a report" />
+                </SelectTrigger>
+                <SelectContent>
+                  {reports.map((r) => (
+                    <SelectItem key={r.key} value={r.key}>
+                      {r.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground">
+                {chosen
+                  ? chosen.description
+                  : "Only reports you can run yourself, and only ones that need nothing typed in — there is nobody at the screen at seven in the morning to choose a date range."}
+              </p>
+            </div>
+          )}
+
           <div className="flex flex-col gap-1.5">
             <Label htmlFor="name">Name</Label>
             <Input
               id="name"
               value={name}
-              placeholder={KIND_LABEL[kind]}
+              placeholder={defaultName}
               onChange={(e) => setName(e.target.value)}
             />
           </div>
@@ -273,6 +305,13 @@ export function NewSchedule() {
               )}
             </strong>
             <span className="text-muted-foreground"> · {graceSentence(graceMinutes, t)}</span>
+            {kind === "report.digest" && (
+              <p className="mt-1 text-xs text-muted-foreground">
+                It runs with your permissions and the result comes to you alone. It carries the
+                number of rows, never the rows — if you leave the school or your role loses the
+                permission, it stops and the register says which.
+              </p>
+            )}
           </div>
         </div>
 

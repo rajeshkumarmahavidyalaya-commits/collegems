@@ -9200,6 +9200,7 @@ export type Database = {
         Args: { p_components: Json }
         Returns: string[]
       }
+      schedule_digests_tick: { Args: { p_limit?: number }; Returns: Json }
       schedule_fee_defaulters: {
         Args: { p_min_amount?: number; p_tenant_id: string }
         Returns: {
@@ -9208,6 +9209,7 @@ export type Database = {
           student_id: string
         }[]
       }
+      schedule_kinds_needing_authority: { Args: never; Returns: string[] }
       schedule_problems: {
         Args: never
         Returns: {
@@ -9216,8 +9218,10 @@ export type Database = {
           severity: string
         }[]
       }
+      schedule_report_digest: { Args: { p_schedule_id: string }; Returns: Json }
       schedule_run: {
         Args: {
+          p_digest?: Json
           p_max_recipients?: number
           p_occurrence_at: string
           p_schedule_id: string
@@ -9256,7 +9260,11 @@ export type Database = {
         }[]
       }
       schedules_due: {
-        Args: { p_limit?: number }
+        Args: {
+          p_except_kinds?: string[]
+          p_limit?: number
+          p_only_kinds?: string[]
+        }
         Returns: {
           kind: string
           minutes_late: number

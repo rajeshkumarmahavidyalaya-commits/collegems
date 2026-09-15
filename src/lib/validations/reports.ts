@@ -101,6 +101,22 @@ export function cleanParams(params: Record<string, string>): Record<string, stri
 }
 
 /** Every parameter marked required has a value. Reported per field, not as one blanket error. */
+/**
+ * Whether this report can be run by a schedule.
+ *
+ * A digest runs once a morning with no parameters — there is nobody standing at
+ * the screen to type a date range into. A report with a **required** parameter
+ * therefore cannot be scheduled at all, and saying so is better than offering it
+ * and failing every morning: *a control that will refuse you is worse than no
+ * control, because it costs the person the work of trying.*
+ *
+ * Optional parameters are fine. The report applies its own defaults, which is
+ * what it does for somebody who leaves the field blank.
+ */
+export function isSchedulable(descriptors: ParamDescriptor[]): boolean {
+  return descriptors.every((d) => !d.required);
+}
+
 export function missingRequired(
   descriptors: ParamDescriptor[],
   params: Record<string, string>,

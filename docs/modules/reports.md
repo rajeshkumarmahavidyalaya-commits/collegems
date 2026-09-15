@@ -467,3 +467,28 @@ by planting `c.key === "student" ? "/students/" + row.student_id`.
 importer a heading for it. So that column has rendered `—` for every child in
 this college since the day it shipped. Not introduced here and not fixed here:
 `0236` gave it a source, and the rows already imported still have none.
+
+
+---
+
+## …and a report can now be put on a timer
+
+`report.digest` (migrations `0238`–`0241`) runs one catalogue report each
+morning **as the person who scheduled it** and tells them how many rows it
+found. Two things about it belong here rather than in the schedules module:
+
+- **The picker is `report_list()`.** It already filters by the caller's own
+  permission matrix, and a digest runs as its creator, so the form offers
+  exactly what its owner may run — the same question the run will ask, asked
+  once in advance. `listSchedulableReports` wraps `listReports` rather than
+  issuing a second `report_list`; a second implementation is a second answer.
+- **A required parameter makes a report unschedulable.** There is nobody at the
+  screen at seven in the morning to type a date range, so a digest runs with
+  `{}` and the report applies its own defaults. **16 of the 20 catalogued
+  reports qualify**; `attendance.summary`, `fees.collection`,
+  `notifications.deliveries` and `timetable.section_routine` do not, and the
+  form says so rather than offering them and failing every morning.
+
+The digest reads `total_count` only, which costs a full pass over the report
+whatever the page size — rule 7's honest ceiling, paid once a morning rather
+than designed around twice. See [schedules.md](./schedules.md).

@@ -18,6 +18,7 @@ export const SCHEDULE_KINDS = [
   "attendance.absentees",
   "fees.due_reminder",
   "library.overdue",
+  "report.digest",
 ] as const;
 export type ScheduleKind = (typeof SCHEDULE_KINDS)[number];
 
@@ -25,6 +26,7 @@ export const KIND_LABEL: Record<ScheduleKind, string> = {
   "attendance.absentees": "Absence notice",
   "fees.due_reminder": "Fee reminder",
   "library.overdue": "Overdue book reminder",
+  "report.digest": "Scheduled report",
 };
 
 /** What each one actually does, in the words somebody deciding would use. */
@@ -35,6 +37,8 @@ export const KIND_DESCRIPTION: Record<ScheduleKind, string> = {
     "Tells the family of every student with money outstanding. Set a minimum so a two-rupee rounding difference does not generate a message.",
   "library.overdue":
     "Tells the family of every student holding a book past its due date. Staff borrowers are settled through payroll and are not included.",
+  "report.digest":
+    "Runs a report each morning and tells you how many rows it found. It runs as you, with your permissions, and the answer goes to you alone — so it can carry a count without carrying anybody's record.",
 };
 
 export function kindLabel(kind: string, t: Translator): string {
@@ -200,13 +204,36 @@ export function runStatusTone(status: string): "success" | "warning" | "destruct
  * a run that matched forty children and told nobody is not a success, however
  * green its status is.
  */
-export function runSentence(run: {
-  status: string;
-  matched: number;
-  notified: number;
-  note: string | null;
-}): string {
+export function runSentence(
+  run: {
+    status: string;
+    matched: number;
+    notified: number;
+    note: string | null;
+  },
+  /**
+   * The schedule's kind, because `matched` counts different things.
+   *
+   * For the three message kinds it is people, and *"1 of 96 were told"* is the
+   * honest sentence. For a digest it is **rows of a report**, sent to exactly
+   * one person — so the same sentence would report 96 families told about a
+   * fee reminder that was never sent to anybody but the bursar. A number that
+   * is right about arithmetic and wrong about what it counted is this file's
+   * oldest recurring defect.
+   */
+  kind?: string,
+): string {
   if (run.note) return run.note;
+
+  if (kind === "report.digest") {
+    if (run.status !== "done") return RUN_STATUS_LABEL[run.status as RunStatus] ?? run.status;
+    // Both forms carried, never a stem and a rule: English plurals are not
+    // derivable, and half-agreeing a sentence reads exactly as careless.
+    return run.matched === 1
+      ? "Found 1 row, and told you."
+      : `Found ${run.matched} rows, and told you.`;
+  }
+
   if (run.status === "done" && run.matched === 0) return "Nothing matched, so nothing was sent.";
   if (run.status === "done") return `${run.notified} of ${run.matched} were told.`;
   return RUN_STATUS_LABEL[run.status as RunStatus] ?? run.status;
@@ -229,22 +256,43 @@ export const scheduleSchema = z
     graceMinutes: z.number().int().min(5).max(1440),
     minAmount: z.number().min(0).nullable().default(null),
     minDaysOver: z.number().int().min(1).nullable().default(null),
+    reportKey: z.string().trim().min(1).nullable().default(null),
     isEnabled: z.boolean().default(false),
   })
   .refine((v) => v.dayOfMonth === null || v.weekdays.length === 0, {
     message: "Choose either days of the week or a day of the month, not both",
     path: ["dayOfMonth"],
+  })
+  .refine((v) => v.kind !== "report.digest" || v.reportKey !== null, {
+    message: "Choose which report to run",
+    path: ["reportKey"],
   });
 
 export type ScheduleInput = z.infer<typeof scheduleSchema>;
 
 /** The kind's own settings, assembled for `schedules.params`. */
-export function paramsFor(input: ScheduleInput): Record<string, number> {
+export function paramsFor(input: ScheduleInput): Record<string, string | number> {
   if (input.kind === "fees.due_reminder" && input.minAmount !== null) {
     return { min_amount: input.minAmount };
   }
   if (input.kind === "library.overdue" && input.minDaysOver !== null) {
     return { min_days_over: input.minDaysOver };
   }
+  if (input.kind === "report.digest" && input.reportKey) {
+    return { report_key: input.reportKey };
+  }
   return {};
+}
+
+/**
+ * Which report a digest schedule names, for the card that has only the row.
+ *
+ * `params` is jsonb and arrives as `unknown`; a schedule of another kind has no
+ * report and says so with null rather than with an empty string, which is the
+ * distinction `attendance_coverage` draws between *nothing* and *nobody asked*.
+ */
+export function reportKeyOf(schedule: { kind: string; params: Record<string, unknown> }): string | null {
+  if (schedule.kind !== "report.digest") return null;
+  const key = schedule.params?.report_key;
+  return typeof key === "string" && key.length > 0 ? key : null;
 }

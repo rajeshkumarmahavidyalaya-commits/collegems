@@ -543,12 +543,15 @@ export const en = {
   "schedules.kind.attendance.absentees": "Absence notice",
   "schedules.kind.fees.due_reminder": "Fee reminder",
   "schedules.kind.library.overdue": "Overdue book reminder",
+  "schedules.kind.report.digest": "Scheduled report",
   "schedules.kindDescription.attendance.absentees":
     "Tells each absent child's family, on the day they were absent. Nothing is sent for a day nobody took the register.",
   "schedules.kindDescription.fees.due_reminder":
     "Tells the family of every student with money outstanding. Set a minimum so a two-rupee rounding difference does not generate a message.",
   "schedules.kindDescription.library.overdue":
     "Tells the family of every student holding a book past its due date. Staff borrowers are settled through payroll and are not included.",
+  "schedules.kindDescription.report.digest":
+    "Runs a report each morning and tells you how many rows it found. It runs as you, with your permissions, and the answer goes to you alone — so it can carry a count without carrying anybody's record.",
   // The cadence sentence. `DAY_NAME` -- a second hardcoded weekday array, after
   // the one `formatWeekday` replaced -- is gone: the days come from `Intl` and
   // arrive here as one already-joined `{days}`.

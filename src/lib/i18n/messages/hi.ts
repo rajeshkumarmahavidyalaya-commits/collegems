@@ -491,12 +491,15 @@ export const hi: Messages = {
   "schedules.kind.attendance.absentees": "अनुपस्थिति सूचना",
   "schedules.kind.fees.due_reminder": "शुल्क स्मरण",
   "schedules.kind.library.overdue": "पुस्तक वापसी स्मरण",
+  "schedules.kind.report.digest": "निर्धारित रिपोर्ट",
   "schedules.kindDescription.attendance.absentees":
     "जिस दिन बच्चा अनुपस्थित हो, उसी दिन परिवार को बताता है। जिस दिन उपस्थिति दर्ज ही नहीं हुई, उस दिन कुछ नहीं भेजा जाता।",
   "schedules.kindDescription.fees.due_reminder":
     "जिन विद्यार्थियों पर राशि बकाया है, उनके परिवार को बताता है। न्यूनतम राशि तय करें ताकि दो रुपये के अंतर पर संदेश न जाए।",
   "schedules.kindDescription.library.overdue":
     "जिन विद्यार्थियों के पास नियत तिथि के बाद भी पुस्तक है, उनके परिवार को बताता है। कर्मचारियों का निपटारा वेतन से होता है, वे इसमें नहीं हैं।",
+  "schedules.kindDescription.report.digest":
+    "हर सुबह एक रिपोर्ट चलाता है और बताता है कि उसमें कितनी पंक्तियाँ मिलीं। यह आपके ही अधिकारों के साथ चलती है और उत्तर केवल आपको मिलता है — इसीलिए इसमें गिनती होती है, किसी का विवरण नहीं।",
   "schedules.cadence.daily": "रोज़, {time} बजे",
   "schedules.cadence.weekdays": "हर कार्यदिवस, {time} बजे",
   "schedules.cadence.mondayToSaturday": "सोमवार से शनिवार, {time} बजे",

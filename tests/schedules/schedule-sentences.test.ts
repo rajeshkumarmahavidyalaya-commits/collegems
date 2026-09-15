@@ -112,6 +112,7 @@ describe("what the form sends", () => {
     graceMinutes: 120,
     minAmount: null,
     minDaysOver: null,
+    reportKey: null,
     isEnabled: false,
   };
 
@@ -150,6 +151,63 @@ describe("what the form sends", () => {
     expect(paramsFor({ ...base, kind: "library.overdue", minDaysOver: 3 })).toEqual({
       min_days_over: 3,
     });
+    expect(
+      paramsFor({ ...base, kind: "report.digest", reportKey: "fees.defaulters" }),
+    ).toEqual({ report_key: "fees.defaulters" });
+  });
+
+  /**
+   * A digest with no report is a schedule that would run every morning and
+   * refuse itself. The schema is where it stops, because the form and the
+   * server action both go through it.
+   */
+  it("refuses a digest that does not name a report", () => {
+    expect(scheduleSchema.safeParse({ ...base, kind: "report.digest" }).success).toBe(false);
+    expect(
+      scheduleSchema.safeParse({ ...base, kind: "report.digest", reportKey: "fees.defaulters" })
+        .success,
+    ).toBe(true);
+  });
+});
+
+/**
+ * `matched` counts people for three kinds and **rows of a report** for the
+ * fourth, so one sentence cannot serve both. *"1 of 96 were told"* on a digest
+ * would report ninety-six families told about a fee reminder that went to
+ * nobody but the bursar — a number right about arithmetic and wrong about what
+ * it counted, which is this codebase's oldest recurring defect.
+ */
+describe("a run's sentence knows what it counted", () => {
+  const done = { status: "done", matched: 96, notified: 1, note: null };
+
+  it("counts people for a message and rows for a digest", () => {
+    expect(runSentence(done)).toBe("1 of 96 were told.");
+    expect(runSentence(done, "report.digest")).toBe("Found 96 rows, and told you.");
+  });
+
+  it("agrees in number, with both forms carried", () => {
+    expect(runSentence({ ...done, matched: 1 }, "report.digest")).toBe("Found 1 row, and told you.");
+  });
+
+  /**
+   * Zero rows is an answer, and the digest sends it. *"Nothing matched, so
+   * nothing was sent"* — the message kinds' sentence — would be false twice.
+   */
+  it("treats an empty report as an answer that was sent", () => {
+    expect(runSentence({ ...done, matched: 0 }, "report.digest")).toBe(
+      "Found 0 rows, and told you.",
+    );
+    expect(runSentence({ ...done, matched: 0, notified: 0 })).toBe(
+      "Nothing matched, so nothing was sent.",
+    );
+  });
+
+  /** A refusal is written on the run, and the note always wins. */
+  it("prefers the register's own sentence", () => {
+    expect(
+      runSentence({ ...done, matched: 0, notified: 0, note: "Bursar may no longer run it." },
+        "report.digest"),
+    ).toBe("Bursar may no longer run it.");
   });
 });
 
