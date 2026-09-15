@@ -89,8 +89,15 @@ One family proves it works; 555 families is the product.
   by the three events that have defaulted to SMS since `0033` — so SMS here is
   deliverable outside India today and needs a driver change plus a per-tenant
   sender ID setting to be deliverable inside it.
-- **A list behind the critic.** `family_login_problems()` gives the number; the
-  office needs the names to work through.
+- ~~**A list behind the critic.**~~ Done, migration `0235`. Rule 11's shape: a
+  catalogue row, not a screen. Writing it found the critic **over-reporting to
+  any non-administrator holding `users.manage`** — 302 of 302 where the truth was
+  301, plus a severity escalation and a silently missing second finding, because
+  `user_profiles` and `invitations` are admin-only and a `not exists` cannot tell
+  absence from invisibility. Both halves now read one definer model, so the count
+  and the list cannot disagree. On the demo college the list is **299 not
+  invited, 2 with no guardian at all, 1 able to sign in** — and the two are the
+  sharper finding, because no invitation run would ever have reached them.
 - **A student's address.** Probed on the demo college: **302 active students,
   one email between them**, against 555 of 555 guardians with an address and a
   phone. The student branch of `invitation_preview` is built and correct and

@@ -7525,6 +7525,21 @@ export type Database = {
           severity: string
         }[]
       }
+      family_login_stale_invitations: { Args: never; Returns: number }
+      family_login_status: {
+        Args: { p_section_id?: string }
+        Returns: {
+          admission_number: string
+          contact_email: string
+          contact_name: string
+          contact_phone: string
+          full_name: string
+          guardian_count: number
+          section_label: string
+          state: string
+          student_id: string
+        }[]
+      }
       family_my_students: {
         Args: never
         Returns: {
@@ -9043,6 +9058,12 @@ export type Database = {
         }[]
       }
       report_exam_results: {
+        Args: { p_params: Json }
+        Returns: {
+          row_data: Json
+        }[]
+      }
+      report_family_logins: {
         Args: { p_params: Json }
         Returns: {
           row_data: Json

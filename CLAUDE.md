@@ -916,6 +916,52 @@ school gives to somebody who may *act* on it — `students.manage` — and the r
 is written on `reference.checks.required_permission` where the next person will
 add one. See `docs/modules/checks.md`.
 
+**And the third instance says where that rule runs out.** `family_login_problems`
+compares `students` — every staff role — against `user_profiles`, whose only
+policies are *admins view tenant profiles* and *self views own profile*, and
+against `invitations`, which has the admin one and nothing else. Gated on
+`users.manage`, which today only `admin` holds, so it was invisible until
+`/settings/permissions` made granting it a Tuesday decision. Granted to the
+Accountant role in a rolled-back transaction, with one guardian given a real
+login so 301 is the true answer:
+
+| seat | `family.no_login` | `family.stale_invitations` |
+|---|---|---|
+| admin | 301 of 302, `info` | 1 expired |
+| accountant + `users.manage` | **302 of 302**, `warn` | **absent** |
+
+An over-report, a **severity escalation** — `v_without = v_total` is the warn
+condition, and an invisible login makes it true — and a silent under-report, all
+from one seat.
+
+> `attendance_coverage`'s answer is to narrow the wide side to the rows the
+> caller could have seen the evidence for. **`user_profiles` is all-or-nothing
+> per role, so there is no such subset**, and the question stops being
+> answerable rather than becoming narrower. Where that happens the answer is
+> rule 4's other one: a `SECURITY DEFINER` read model that filters by tenant
+> itself, gated on the permission in its own body, projecting a **boolean and
+> not the evidence**.
+
+Four things:
+
+- **Refuse, do not return empty.** A definer that answered nothing to a caller
+  without the permission is indistinguishable from a school where every family
+  can sign in — which is the failure being removed. A teacher gets a sentence.
+- **Pin it in the isolation suite, both ways and against the caller's own
+  count.** `staff_directory()` and `family_login_status()` are now the two places
+  where rule 11's "never filter by tenant in a read model" is inverted, so both
+  sit in `tests/rls/tenant-isolation.test.ts` beside the policies. Probed live:
+  the other college's administrator sees **1** row, their own child, not 303.
+- **A number is not a list.** The critic said *"301 of 302"* and named nobody.
+  Rule 11 decides the shape — a `reference.reports` row, not a screen — and the
+  critic now counts the rows the report lists, so a school cannot be told 301 and
+  shown 287.
+- **A list is only worth opening if each row names the next action.** Five states
+  — no guardian, no address, not invited, invited, expired — because they are
+  five different jobs. Measured: **299 not invited, 2 with no guardian at all,
+  1 able to sign in**, and the two are the sharper finding, since no invitation
+  run would ever have reached them.
+
 **It happened again, in the module the rule was written next to, and the second
 time says what the fix is.** `attendance_coverage` and the `attendance.gaps`
 report both compare `sections` — tenant-wide — against `attendance_records`

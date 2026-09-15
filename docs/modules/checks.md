@@ -248,3 +248,110 @@ One row in `reference.checks`, and four questions:
    nowhere to act on it is half a critic.
 4. **Which shape does it return?** `severity_message` or `problem` — declared,
    not sniffed.
+
+---
+
+## A number is not a list — and the third `not exists` with two policies
+
+`family_login_problems()` said *"301 of 302 active students have nobody who can
+sign in"* and stopped. An office reading that has to do something about 301
+named children, and the sentence names none of them; the link underneath went to
+`/settings/team`, a form for inviting one person at a time.
+
+Rule 11 settles the shape without argument: **do not add a screen to answer a
+question.** The list is a catalogue row — `reference.reports` plus one function —
+and `/reports` renders it. Migration `0235`.
+
+### The critic was already lying to somebody
+
+Writing the list meant reading the critic, and the critic had the shape this
+codebase has now recorded three times: a `not exists` whose two sides are
+narrowed by **different policies**.
+
+| table | who can read it |
+|---|---|
+| `students` | every staff role |
+| `user_profiles` | *admins view tenant profiles*, plus *self views own profile* |
+| `invitations` | admins, and nobody else |
+
+To anybody who is not an administrator, no child's family has a login — because
+no child's family *is visible to have one*. Absence and invisibility are the same
+shape, which is `student_exit_problems` accusing a teacher's 200 children and
+`attendance_coverage` reporting eleven classes at 0.0%.
+
+It is gated on `users.manage`, which today only `admin` holds, so the defect was
+invisible — and `/settings/permissions` now lets a college grant that permission
+to its office clerk on any Tuesday. Demonstrated by doing exactly that in a
+rolled-back transaction, with one guardian given a real login so that **301** is
+the true answer:
+
+| seat | `family.no_login` | `family.stale_invitations` |
+|---|---|---|
+| admin | 301 of 302, `info` | 1 expired |
+| accountant holding `users.manage` | **302 of 302**, `warn` | **absent** |
+
+Three defects from one seat: an over-report, a **severity escalation** from
+`info` to `warn` — because `v_without = v_total` is the warn condition and an
+invisible login makes it true — and a silent under-report of the second finding.
+
+### Where the usual fix does not reach
+
+`attendance_coverage`'s rule is to narrow the wide side to the rows the caller
+could have seen the evidence for. **There is no such narrowing here.**
+`user_profiles` is all-or-nothing per role; there is no per-student subset that
+makes the question answerable to a teacher. So the answer is the other one rule 4
+already names, for `staff_directory()`:
+
+> **A definer read model must filter by tenant itself, and it is the only kind
+> that may.** Inside a definer no policy runs, so that predicate *is* the
+> isolation.
+
+`family_login_status()` is that: `SECURITY DEFINER`, tenant-filtered, gated on
+`users.manage` in its own body, and returning **no user id, no profile id and no
+role** — one row per active student saying what is in the way. The cost of a
+mistake there is a guardian's name and phone number, which every staff role can
+already read from `people`, plus one boolean. `family_login_stale_invitations()`
+is the same shape for the count that vanished.
+
+Both are pinned in `tests/rls/tenant-isolation.test.ts` beside the policies —
+in both directions **and** against the caller's own row count, because a definer
+that returned nothing would pass a one-sided check. Probed live: Northgate's
+administrator sees **1** row, their own child, and not 303.
+
+And the refusal is loud. A definer that answered an empty set to somebody without
+the permission is indistinguishable from a school where every family can sign in,
+which is the failure being removed — so a teacher gets
+*"Your role cannot see who can sign in to this school."*
+
+### One definition, consulted by both
+
+The critic now counts the rows the report lists:
+
+```sql
+select count(*), count(*) filter (where f.state <> 'ok')
+  into v_total, v_without
+from public.family_login_status(null) f;
+```
+
+so a school cannot be told 301 on *Needs attention* and shown 287 on the report.
+Verified from both seats after the fix: **301 of 302 and 301 rows, for the
+administrator and for the accountant alike**, and both see the expired
+invitation.
+
+### Five states, because five different things are in the way
+
+"301 children have no login" is the number the office already had. A list is only
+worth opening if each row names the next action:
+
+| state | what the office does |
+|---|---|
+| `no_guardian` | link a guardian — inviting cannot fix this |
+| `no_address` | get an email or a phone number |
+| `not_invited` | invite them (`/settings/team/bulk`) |
+| `invited` | wait, or send again |
+| `expired` | send again |
+
+Measured on the demo college: **299 `not_invited`, 2 `no_guardian`, 1 `ok`.** The
+two are the sharper finding — `SOS-2025-9001` and admission number `1234`, both
+in Grade 1 A, have no guardian at all, so no invitation run would ever reach
+them and the bulk preview would never have shown them.

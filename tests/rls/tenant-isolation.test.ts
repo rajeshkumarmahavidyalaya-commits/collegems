@@ -179,13 +179,14 @@ describeDb("cross-tenant isolation", () => {
   });
 
   /**
-   * `staff_directory()` is the schema's one `SECURITY DEFINER` **read model**
-   * (migration `0193`), so no policy runs inside it and its own
-   * `where tenant_id =` is the isolation rather than an optimisation on top of
-   * one. That makes it the single place where rule 11's "never filter by
-   * tenant in a read model" is inverted, and the single place where forgetting
-   * to would be a hole rather than a slow query — so it is pinned here, beside
-   * the policies, rather than in the staff module's own tests.
+   * `staff_directory()` (migration `0193`) and `family_login_status()`
+   * (migration `0235`) are the schema's `SECURITY DEFINER` **read models**: no
+   * policy runs inside them, so their own `where tenant_id =` **is** the
+   * isolation rather than an optimisation on top of one. Those are the two
+   * places where rule 11's "never filter by tenant in a read model" is
+   * inverted, and the two where forgetting would be a hole rather than a slow
+   * query — so both are pinned here, beside the policies, rather than in their
+   * modules' own tests.
    */
   it("the staff directory does not cross tenants", async () => {
     const [{ data: dirA }, { data: dirB }] = await Promise.all([
@@ -208,5 +209,46 @@ describeDb("cross-tenant isolation", () => {
     // And an administrator's directory is exactly their own staff list — a
     // definer function that returned nothing would pass the loops above.
     expect(new Set((dirA ?? []).map((r) => r.staff_id))).toEqual(idsA);
+  });
+
+  /**
+   * The second definer read model, and the one whose whole purpose is to see
+   * what no policy would show the caller: `user_profiles` is admin-only and
+   * `invitations` has no policy but the admin one, so an invoker version
+   * answers *"nobody in this school can sign in"* about every child. Inside a
+   * definer that question is answerable — and the `where tenant_id =` is the
+   * only thing standing between one college's roll and another's.
+   */
+  it("the family-login list does not cross tenants", async () => {
+    const [{ data: famA }, { data: famB }] = await Promise.all([
+      a.rpc("family_login_status"),
+      b.rpc("family_login_status"),
+    ]);
+
+    const [{ data: kidsA }, { data: kidsB }] = await Promise.all([
+      a.from("students").select("id").eq("status", "active"),
+      b.from("students").select("id").eq("status", "active"),
+    ]);
+
+    const idsA = new Set((kidsA ?? []).map((r) => r.id));
+    const idsB = new Set((kidsB ?? []).map((r) => r.id));
+
+    for (const row of famA ?? []) expect(idsB.has(row.student_id)).toBe(false);
+    for (const row of famB ?? []) expect(idsA.has(row.student_id)).toBe(false);
+
+    // Both directions, and the caller's own count — the one-sided check passes
+    // for a function that returns nothing at all.
+    expect(new Set((famA ?? []).map((r) => r.student_id))).toEqual(idsA);
+
+    // ...and the critic counts the same rows it lists, which is the whole
+    // reason both go through this function.
+    const { data: findings } = await a.rpc("family_login_problems");
+    const noLogin = (findings ?? []).find((f) => f.key === "family.no_login");
+    const expected = (famA ?? []).filter((r) => r.state !== "ok").length;
+    if (expected === 0) {
+      expect(noLogin, "nothing to report, so nothing is reported").toBeUndefined();
+    } else {
+      expect(noLogin?.message).toContain(`${expected} of ${(famA ?? []).length}`);
+    }
   });
 });

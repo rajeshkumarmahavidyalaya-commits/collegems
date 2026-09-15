@@ -634,3 +634,15 @@ DLT is a driver change plus a per-tenant sender ID setting, not a new concept.
 to the gateway to reject. Skipping it here would refuse numbers Twilio accepts
 when the sender is in the same country, and a control that refuses you wrongly is
 worse than no control.
+
+
+---
+
+## The list behind the critic
+
+`family_login_problems()` counts; the report **Families who cannot sign in**
+(`users.family_logins`, migration `0235`) names them, worst first, with what is
+in the way on each row. Both go through one definer read model, so the number and
+the list cannot disagree — and writing it found the critic over-reporting to any
+non-administrator holding `users.manage`. That story is in
+[checks.md](./checks.md#a-number-is-not-a-list--and-the-third-not-exists-with-two-policies).
