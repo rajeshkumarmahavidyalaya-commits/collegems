@@ -57,7 +57,10 @@ export type StartSchoolInput = z.infer<typeof startSchoolSchema>;
 export {
   ROLE_SUBJECTS,
   SUBJECT_PROMPT,
+  describeAnnouncement,
+  joinWords,
   type RoleSubject,
+  type AnnouncedChannel,
 } from "./invitations-display";
 
 export const inviteSchema = z.object({

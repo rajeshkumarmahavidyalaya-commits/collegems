@@ -29,3 +29,79 @@ export const SUBJECT_PROMPT: Record<Exclude<RoleSubject, "none">, string> = {
   student: "Which student is this login for?",
   guardian: "Whose parent or guardian is this login for?",
 };
+
+/**
+ * What `invitation_announce` did, per channel.
+ *
+ * One row per channel in `reference.notification_types.default_channels` for
+ * `invitation.sent`. `segments` is the SMS cost and is null for every other
+ * channel **and for a skipped SMS** — migration `0234`: a message that was not
+ * sent has no price, and zero would say it cost nothing.
+ */
+export type AnnouncedChannel = {
+  channel: string;
+  status: string;
+  reason: string | null;
+  segments: number | null;
+};
+
+/**
+ * The past tense of a channel, because a toast says what happened.
+ *
+ * Not `channelLabel` from `notifications.ts` — that one names the channel
+ * ("Email", "SMS") for a settings screen, and this one finishes the sentence
+ * *"Invited Anika Verma. Emailed and texted."* Same word, different job; rule
+ * 15's `periodLabel` collision, at a smaller scale.
+ */
+const SENT_BY: Record<string, string> = {
+  email: "emailed",
+  sms: "texted",
+  whatsapp: "messaged on WhatsApp",
+  push: "pushed",
+  in_app: "posted to their inbox",
+};
+
+/**
+ * Split an announcement into what went and what did not.
+ *
+ * Both halves are needed by both screens, and a school that reads only the
+ * first comes to believe every family was told — which is the sentence this
+ * module has now made three times, for a notice, for a payment and for an
+ * invitation.
+ */
+export function describeAnnouncement(rows: AnnouncedChannel[]): {
+  sent: string[];
+  held: { channel: string; reason: string }[];
+  parts: number;
+} {
+  const sent = rows
+    .filter((r) => r.status === "queued")
+    .map((r) => SENT_BY[r.channel] ?? r.channel);
+
+  const held = rows
+    .filter((r) => r.status === "skipped")
+    .map((r) => ({ channel: r.channel, reason: r.reason ?? "no reason recorded" }));
+
+  const parts = rows.reduce((total, r) => total + (r.segments ?? 0), 0);
+
+  return { sent, held, parts };
+}
+
+/**
+ * "emailed and texted" — `Intl.ListFormat` owns the conjunction (rule 15).
+ *
+ * Explicitly `"en"`, and that is not the hardcoded-tag bug rule 15 names. That
+ * bug is formatting *data* in a fixed locale while the reader chose another;
+ * here the words being joined are two hardcoded English past participles inside
+ * a hardcoded English toast, so joining them in the reader's locale would
+ * produce a Hindi conjunction between two English words. The debt is that this
+ * module's sentences are not translated yet — one debt, not two — and the day
+ * they are, this takes the translator's locale with them.
+ *
+ * Passing `undefined` would be worse than either: it formats in the *browser's*
+ * locale, which is the quieter tell rule 15 records for the same mistake.
+ */
+export function joinWords(words: string[]): string {
+  if (words.length === 0) return "";
+  return new Intl.ListFormat("en", { style: "long", type: "conjunction" }).format(words);
+}

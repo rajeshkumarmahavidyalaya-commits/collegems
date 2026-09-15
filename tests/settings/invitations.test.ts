@@ -254,17 +254,66 @@ describe("somebody is told they were invited", () => {
     );
   });
 
-  it("does not let a failed email fail the invitation", () => {
+  it("does not let a failed announcement fail the invitation", () => {
     // The notice board's rule, at the invitation screen: the row is the
-    // mechanism and the email is the courtesy. The reason travels back with the
-    // success rather than being thrown or swallowed.
+    // mechanism and the message is the courtesy. The reason travels back with
+    // the success rather than being thrown or swallowed.
     const actions = code(readFileSync(join(TEAM, "actions.ts"), "utf8"));
-    expect(actions).toMatch(/emailed: announced\.ok/);
+    expect(actions).toMatch(/announced: announced\.ok \? announced\.data : \[\]/);
+    expect(actions).toMatch(/announceError: announced\.ok \? null : announced\.error/);
     const view = code(readFileSync(join(TEAM, "team-view.tsx"), "utf8"));
-    expect(view, "the screen must say whether the email went").toMatch(
-      /result\.data\.emailed/,
-    );
+    expect(view, "the screen must say what went out").toMatch(/describeAnnouncement\(/);
     expect(view).toMatch(/toast\.warning/);
+  });
+
+  /**
+   * An SMS is not an email with fewer lines — migration `0233`.
+   *
+   * The email body is a letter: measured, **346 characters, and UCS-2 because
+   * of its two em dashes, which is 6 SMS segments.** Sent as-is to 555 families
+   * that is 3,330 billable parts to say something that fits in one. So the
+   * raiser composes two bodies, and the short one measured **137–147 GSM-7
+   * characters over all 555 of this college's guardians — 555 of 555 in one
+   * segment.**
+   */
+  it("writes a second body rather than sending the letter by SMS", () => {
+    const body = functionBody("invitation_announce");
+
+    // Two bodies, and the SMS one is the one chosen for the SMS channel.
+    expect(body).toMatch(/v_short\s+text;/);
+    expect(body).toMatch(/case when c\.ch = 'sms' then v_short else v_long end/);
+
+    // The short body may not contain the characters that force UCS-2. The
+    // long one is an email and keeps its em dashes — that is the difference.
+    const short = body.slice(body.indexOf("v_short := format("));
+    const shortLiteral = short.slice(0, short.indexOf(";"));
+    for (const ch of ["\u2014", "\u2013", "\u2018", "\u2019", "\u201c", "\u201d", "\u20b9"]) {
+      expect(
+        shortLiteral.includes(ch),
+        `a character outside GSM-7 halves the segment: ${JSON.stringify(ch)}`,
+      ).toBe(false);
+    }
+
+    // ...and it still carries the one fact that cannot be dropped. Signing up
+    // with a different address silently creates a tenantless login.
+    expect(shortLiteral).toContain("v_inv.email");
+  });
+
+  it("reads the channel list from the catalogue rather than a literal", () => {
+    // `0227` wrote array['email'] into reference.notification_types and then
+    // hardcoded 'email' underneath, so the catalogue row was decoration: a
+    // school editing it would have changed nothing, silently.
+    const body = functionBody("invitation_announce");
+    expect(body).toMatch(/select nt\.default_channels into v_channels/);
+    expect(body).toMatch(/unnest\(v_channels\)/);
+  });
+
+  it("does not price a message it did not send", () => {
+    // Migration `0234`. A skipped delivery keeps its body so somebody can see
+    // what would have gone; it does not keep a price. Null and not zero, for
+    // the reason a collection rate is null before anything is billed.
+    const body = functionBody("invitation_announce");
+    expect(body).toMatch(/w\.channel = 'sms' and w\.status = 'queued'/);
   });
 
   it("offers Send again only where it will work", () => {

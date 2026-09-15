@@ -2184,6 +2184,65 @@ And the two the probe caught, both re-commits of rules already written here:
 
 See `docs/modules/invitations.md`.
 
+#### …and one body is not four messages
+
+`notify_send_for` composes a single `p_body` and hands the same string to email,
+SMS, WhatsApp and push alike. That has been harmless for two hundred migrations
+because every raiser wrote a *sentence* — measured, the three events that have
+defaulted to SMS since `0033` produce **56, 58 and 94** GSM-7 characters, all one
+segment. `invitation.sent` is the first that writes a **letter**: greeting, role,
+the address to sign up with, the expiry, and a line saying it is safe to ignore.
+
+> **346 characters — and UCS-2 rather than GSM-7, because of its two em dashes,
+> which is 6 SMS segments.** To 555 families that is **3,330 billable parts** to
+> say something that fits in one. A single character outside GSM-7 halves the
+> segment and doubles the bill: an em dash, a curly quote, a rupee sign.
+
+So the raiser composes two bodies, and the short one measured **137–147
+characters across all 555 of this college's guardians — 555 of 555 in one
+segment.** Four things:
+
+- **The fix is in the raiser, not in `notify_send_for`.** A per-channel body on
+  the general sender is a second `p_body` all six of its callers must now decide
+  about, to fix one event. The measurements above are written down so the next
+  person can see that today it is one — and the day a second event grows a
+  letter is the day to generalise.
+- **`sms_segments()` is the rule's executable half**, because a comment saying
+  *"keep it short"* is not a length. `sms_segments(repeat('a', 101))` is 1; the
+  same 101 characters with an em dash on the end is 2.
+- **The short body drops the greeting and keeps the address**, because
+  `handle_new_auth_user` matches by email and signing up with a different one
+  silently mints a login with no tenant — rule 3's "correct failure mode",
+  arriving as somebody's Tuesday afternoon.
+- **`default_channels` on this event had no reader.** `0227` wrote
+  `array['email']` into the catalogue and hardcoded `'email'` underneath, so a
+  school editing the row would have changed nothing, silently — rule 12's shape
+  in the notification module. It reads the catalogue now, and a channel it
+  cannot serve is a skipped delivery naming the reason rather than a guess.
+
+And the correction one migration later, which is the same lesson wearing a price
+tag. Probed the moment `0233` applied, a **skipped** SMS came back reporting
+`segments: 1`: the skipped row keeps its body — deliberately, so an office can
+see what would have gone — and the cost was computed from it either way. Nothing
+downstream was miscounted, because `invitation_apply` totals only what it queued.
+
+> **That is what makes it worth a migration rather than a shrug: the number was
+> wrong in the one place a person reads it and right in the one place a machine
+> does.** `subscription_usage` counting 303 students for a college with none,
+> `attendance_coverage` reporting eleven classes at 0.0%, a `DO` block timing a
+> query nobody will run — each right about arithmetic and wrong about what it
+> was counting. `0234` makes it **null, not zero**: *"this cost nothing"* and
+> *"there is no cost, because there is no message"* are different facts.
+
+**And the thing this deliberately does not build: DLT.** Indian carriers accept
+transactional SMS only from a sender ID and template registered with the TRAI
+registry — the same shape as WhatsApp's approved templates, and modelled nowhere
+here, not by this work and not by the three events that have defaulted to SMS
+since `0033`. Named rather than papered over, with the honest cost:
+`notification_templates` already carries the `provider_template_name` and
+`provider_template_params` columns WhatsApp uses, so it is a driver change plus a
+per-tenant sender ID setting, not a new concept.
+
 ### A notice is not a notification
 
 The board is the module built on top of this one, and the line between them is

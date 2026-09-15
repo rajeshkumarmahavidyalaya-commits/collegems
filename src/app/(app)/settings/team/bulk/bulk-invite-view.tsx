@@ -80,10 +80,14 @@ export function BulkInviteView({
         toast.error(result.error);
         return;
       }
-      const { invited, failed, emailed } = result.data;
-      // Three facts, because "invited" and "emailed" are different ones and a
-      // school that reads only the first comes to believe every family was told.
-      const said = `${invited} invited, ${emailed} emailed`;
+      const { invited, failed, emailed, texted, smsParts } = result.data;
+      // Four facts, because "invited", "emailed" and "texted" are different
+      // ones and a school that reads only the first comes to believe every
+      // family was told. The SMS parts are the fifth, and only when they differ
+      // from the number of texts — a school is billed per part, and quoting the
+      // same number twice is noise.
+      const parts = smsParts > texted ? ` (${smsParts} SMS parts)` : "";
+      const said = `${invited} invited, ${emailed} emailed, ${texted} texted${parts}`;
       if (failed > 0) toast.warning(`${said}, ${failed} could not be invited — see the list.`);
       else toast.success(`${said}.`);
       router.refresh();

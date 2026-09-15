@@ -3,7 +3,12 @@
 import { revalidatePath } from "next/cache";
 import { headers } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
-import { inviteSchema, SUBJECT_PROMPT, type RoleSubject } from "@/lib/validations/platform";
+import {
+  inviteSchema,
+  SUBJECT_PROMPT,
+  type RoleSubject,
+  type AnnouncedChannel,
+} from "@/lib/validations/platform";
 import type { RoleTier } from "@/lib/auth/context";
 import type { ActionResult } from "../../library/actions";
 
@@ -157,21 +162,24 @@ async function signupUrl(): Promise<string | null> {
  * *ask* their administrator for one — so an office wanting its 555 families
  * online told 555 families by hand.
  */
-export async function announceInvitation(id: string): Promise<ActionResult<null>> {
+export async function announceInvitation(id: string): Promise<ActionResult<AnnouncedChannel[]>> {
   const url = await signupUrl();
   if (!url) {
-    return { ok: false, error: "Could not work out this site's web address to put in the email." };
+    return { ok: false, error: "Could not work out this site's web address to put in the message." };
   }
 
   const supabase = await createClient();
-  const { error } = await supabase.rpc("invitation_announce", {
+  const { data, error } = await supabase.rpc("invitation_announce", {
     p_invitation_id: id,
     p_signup_url: url,
   });
   if (error) return { ok: false, error: error.message };
 
   revalidatePath("/settings/team");
-  return { ok: true, data: null };
+  // One row per channel, each saying what happened to it. A channel that
+  // skipped is not a failure — "no phone number on record" is a fact the office
+  // can act on, and it only reaches them if it travels back with the success.
+  return { ok: true, data: (data ?? []) as AnnouncedChannel[] };
 }
 
 /**
@@ -184,7 +192,7 @@ export async function announceInvitation(id: string): Promise<ActionResult<null>
  */
 export async function invite(
   input: unknown,
-): Promise<ActionResult<{ id: string; emailed: boolean; emailError: string | null }>> {
+): Promise<ActionResult<{ id: string; announced: AnnouncedChannel[]; announceError: string | null }>> {
   const parsed = inviteSchema.safeParse(input);
   if (!parsed.success) {
     return {
@@ -261,7 +269,11 @@ export async function invite(
   revalidatePath("/settings/team");
   return {
     ok: true,
-    data: { id: data.id as string, emailed: announced.ok, emailError: announced.ok ? null : announced.error },
+    data: {
+      id: data.id as string,
+      announced: announced.ok ? announced.data : [],
+      announceError: announced.ok ? null : announced.error,
+    },
   };
 }
 

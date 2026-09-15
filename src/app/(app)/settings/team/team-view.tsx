@@ -25,6 +25,10 @@ import {
   type InvitationRow,
   type RoleOption,
 } from "./actions";
+// Straight from `invitations-display`, never through `platform.ts`: that module
+// begins `import { z }`, and importing a label from it cost this route 27 kB
+// once already.
+import { describeAnnouncement, joinWords } from "@/lib/validations/invitations-display";
 import { SubjectPicker } from "./subject-picker";
 
 /**
@@ -80,15 +84,21 @@ export function TeamView({
         return;
       }
       // Three facts, and the third is the one a school must not have to guess
-      // at: who it is for, and **whether the email actually went**. Saying only
+      // at: who it is for, and **what actually went out**. Saying only
       // "invited" is how a school comes to believe four hundred families were
       // told. A failed announcement is not a failed invitation, so this is a
-      // warning beside a success rather than an error.
+      // warning beside a success rather than an error — and since 0233 there
+      // are two channels, so "the email is queued" would be true and no longer
+      // the whole truth.
       const who = subjectName ? `${email}, for ${subjectName}` : email;
-      if (result.data.emailed) {
-        toast.success(`Invited ${who}. The email is queued.`);
+      const { sent, held } = describeAnnouncement(result.data.announced);
+      if (result.data.announceError) {
+        toast.warning(`Invited ${who}, but nothing went out: ${result.data.announceError}`);
+      } else if (held.length > 0) {
+        const wentOut = sent.length > 0 ? `${joinWords(sent)}` : "nothing sent";
+        toast.warning(`Invited ${who}. ${wentOut} — ${held[0].reason}.`);
       } else {
-        toast.warning(`Invited ${who}, but no email went out: ${result.data.emailError}`);
+        toast.success(`Invited ${who}. ${joinWords(sent)}.`);
       }
       setEmail("");
       setSubjectId("");
@@ -104,7 +114,14 @@ export function TeamView({
         toast.error(result.error);
         return;
       }
-      toast.success(`Another email to ${address} is queued.`);
+      const { sent, held } = describeAnnouncement(result.data);
+      if (held.length > 0) {
+        toast.warning(
+          `${sent.length > 0 ? joinWords(sent) : "Nothing sent"} to ${address} — ${held[0].reason}.`,
+        );
+      } else {
+        toast.success(`${joinWords(sent)} ${address} again.`);
+      }
       router.refresh();
     });
   }

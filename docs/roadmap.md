@@ -78,10 +78,17 @@ One family proves it works; 555 families is the product.
 - **Bulk invitation.** Rule 13's shape: a preview of editable rows, applied
   through `invitation_announce` so the preview and the send cannot disagree.
   Skip rows with no address; name the ones who already have a login.
-- **SMS invitation.** All 555 guardians have a phone as well as an email, and
-  email deliverability to Indian parents is poor. The delivery table takes it
-  unchanged; the body needs a second, short message, because an SMS is not 340
-  characters.
+- ~~**SMS invitation.**~~ Done, migrations `0233`–`0234`. The delivery table
+  took it unchanged, as predicted; the body needed the second message, as
+  predicted. What was not predicted: the email body is **UCS-2 because of two em
+  dashes, so sending it as-is would have been 6 segments — 3,330 billable parts
+  for 555 families.** The short one measures 137–147 GSM-7 characters, 555 of
+  555 in one segment. `sms_segments()` is the executable half.
+  **Still open underneath it: DLT.** Indian carriers accept transactional SMS
+  only from a registered sender ID and template. Not modelled — by this work or
+  by the three events that have defaulted to SMS since `0033` — so SMS here is
+  deliverable outside India today and needs a driver change plus a per-tenant
+  sender ID setting to be deliverable inside it.
 - **A list behind the critic.** `family_login_problems()` gives the number; the
   office needs the names to work through.
 - **A student's address.** Probed on the demo college: **302 active students,

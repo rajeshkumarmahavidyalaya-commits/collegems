@@ -8342,7 +8342,12 @@ export type Database = {
       }
       invitation_announce: {
         Args: { p_invitation_id: string; p_signup_url: string }
-        Returns: number
+        Returns: {
+          channel: string
+          reason: string
+          segments: number
+          status: string
+        }[]
       }
       invitation_apply: {
         Args: { p_run_id: string; p_signup_url: string }
@@ -8350,6 +8355,8 @@ export type Database = {
           emailed: number
           failed: number
           invited: number
+          sms_parts: number
+          texted: number
         }[]
       }
       invitation_create: {
@@ -9297,6 +9304,7 @@ export type Database = {
           severity: string
         }[]
       }
+      sms_segments: { Args: { p_text: string }; Returns: number }
       staff_admit: {
         Args: {
           p_date_of_joining?: string

@@ -507,3 +507,130 @@ The run *does* carry it, by the same composite key — and by **the same trigger
 function** `0225` installed for `invitations`, which works here unchanged
 because it reads `new.tenant_id`, `new.role_id` and `new.role_subject` and this
 table has all three. Two instances of the device, one implementation.
+
+
+---
+
+## A second channel, and the body that does not fit in it
+
+`0227` gave an invitation a way to arrive. `0233` gave it a second one, and the
+reason is a fact about the customer rather than about the code: **all 555
+guardians of this college have a phone number as well as an email** — 571 people
+carry one, every one already in E.164 — and email deliverability to Indian
+parents is poor enough that an office sending 555 invitations by email alone
+will chase most of them by hand anyway.
+
+The channel itself was almost no work. `notification_deliveries` already has a
+nullable `recipient_user_id` beside an `address`, the Twilio driver has existed
+since the dispatcher shipped, and `notify_claim_deliveries` already refuses a
+channel the school has not switched on and whose provider is not configured. So
+an SMS invitation queues today and drains the day somebody sets
+`TWILIO_ACCOUNT_SID`; if nobody ever does, `stale_after = '7 days'` expires it
+**with the reason on the row**.
+
+Two things were actual work.
+
+### One body, four channels
+
+`notify_send_for` composes a single `p_body` and hands the same string to email,
+SMS, WhatsApp and push alike. That has been harmless because every raiser so far
+wrote a sentence — measured, the three events that already default to SMS
+produce **56, 58 and 94** GSM-7 characters, all one segment:
+
+| event | body | segments |
+|---|---|---|
+| `attendance.absent` | *"Aarav Sharma was marked absent at school on 15 Sep 2026."* | 1 |
+| `fees.due_reminder` | *"Aarav Sharma has 1500.00 outstanding on their fee account."* | 1 |
+| `exam.results_published` | *"Results for … have been published. The report card is on the exams page."* | 1 |
+
+`invitation.sent` is the first that does not. Its email body is a letter —
+greeting, role, the address to sign up with, the expiry, and a line saying it is
+safe to ignore:
+
+> **346 characters, and UCS-2 rather than GSM-7 because of its two em dashes,
+> which is 6 SMS segments.** To 555 families that is **3,330 billable parts** to
+> say something that fits in one.
+
+So the raiser composes two bodies. Measured over all 555 guardians with this
+college's name and their real addresses, the short one is **137 to 147 GSM-7
+characters — 555 of 555 in one segment.**
+
+> **A single character outside GSM-7 halves the segment and doubles the bill.**
+> An em dash, a curly quote, a rupee sign. `sms_segments()` is that rule's
+> executable half, because a comment saying *"keep it short"* is not a length:
+> `sms_segments(repeat('a', 101))` is **1** and the same 101 characters with an
+> em dash on the end is **2**.
+
+The fix is deliberately in the raiser and not in `notify_send_for`. A per-channel
+body on the general sender would be a second `p_body` that all six of its callers
+must now decide about, to fix one event. If a second event grows a letter for a
+body, that is the moment to generalise — and the numbers above are written down
+so the next person can see that today it is one.
+
+What the short body keeps is the part that cannot be dropped: **which address to
+sign up with.** `handle_new_auth_user` matches an invitation by email, so signing
+up with a different one silently creates a login with no tenant — which RLS then
+refuses everything, correctly and unhelpfully.
+
+### `default_channels` had no reader
+
+`0227` wrote `array['email']` into `reference.notification_types` and then
+hardcoded `'email'` in the insert underneath. Every other raiser goes through
+`notify_send_for`, which reads `coalesce(p_channels, nt.default_channels)` — this
+one did not, so the catalogue row was decoration and a school editing it would
+have changed nothing, silently. It reads the catalogue now, and a channel it
+cannot serve is written down as a skipped delivery naming the reason rather than
+guessed at.
+
+### What the office is told
+
+`invitation_announce` returns one row per channel — `channel`, `status`,
+`reason`, `segments` — so both screens say what actually happened rather than
+asserting that an email went:
+
+```
+guardian with a phone     email  queued   segments null
+guardian with a phone     sms    queued   segments 1
+guardian with no phone    email  queued   segments null
+guardian with no phone    sms    skipped  "No phone number on record for this person"
+```
+
+`invitation_apply` aggregates that into `invited, failed, emailed, texted,
+sms_parts`. **`sms_parts` is beside `texted` rather than inferred from it** —
+a school is billed per part, and 555 texts is 555 parts only while every one of
+them fits in a segment, which is a fact about this college's names and addresses
+rather than a guarantee. The same instinct as `attendance_coverage` beside a
+rate: one number cannot say both.
+
+### The correction, one migration later
+
+`0233` was probed the moment it was applied, and the fourth row of that table
+read `skipped … segments 1`. The skipped delivery keeps its body — deliberately,
+so an office can see what would have gone — and `sms_segments()` was computed
+from it regardless of whether anything was sent.
+
+Nothing downstream was miscounted: `invitation_apply` adds to `sms_parts` only
+where `status = 'queued'`. **That is what makes it worth a migration rather than
+a shrug** — the number was wrong in the one place a person reads it and right in
+the one place a machine does, which is the shape this codebase keeps recording:
+`subscription_usage` counting 303 students for a college with none,
+`attendance_coverage` reporting eleven classes at 0.0%, a `DO` block timing a
+query nobody will run. Each was right about arithmetic and wrong about what it
+was counting. `0234` makes it null — not zero, because *"this cost nothing"* and
+*"there is no cost, because there is no message"* are different facts.
+
+### What this does not do
+
+**DLT.** Indian carriers accept transactional SMS only from a sender ID and a
+template registered with the TRAI DLT registry — the same shape as WhatsApp's
+approved templates, and not modelled anywhere in this codebase: not by `0233`,
+and not by the three events that have defaulted to SMS since `0033`. It is a
+pre-existing gap in the module, named here rather than papered over. The honest
+description of what would close it: `notification_templates` already carries the
+`provider_template_name` and `provider_template_params` columns WhatsApp uses, so
+DLT is a driver change plus a per-tenant sender ID setting, not a new concept.
+
+**Refusing a long number.** A phone that is not in international format is left
+to the gateway to reject. Skipping it here would refuse numbers Twilio accepts
+when the sender is in the same country, and a control that refuses you wrongly is
+worse than no control.

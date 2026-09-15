@@ -176,12 +176,21 @@ async function signupUrl(): Promise<string | null> {
   return `${proto}://${host}`;
 }
 
-export async function applyList(
-  id: string,
-): Promise<ActionResult<{ invited: number; failed: number; emailed: number }>> {
+export type ApplyResult = {
+  invited: number;
+  failed: number;
+  emailed: number;
+  texted: number;
+  smsParts: number;
+};
+
+export async function applyList(id: string): Promise<ActionResult<ApplyResult>> {
   const url = await signupUrl();
   if (!url) {
-    return { ok: false, error: "Could not work out this site's web address to put in the emails." };
+    return {
+      ok: false,
+      error: "Could not work out this site's web address to put in the messages.",
+    };
   }
 
   const supabase = await createClient();
@@ -191,10 +200,26 @@ export async function applyList(
   });
   if (error) return { ok: false, error: error.message };
 
-  const row = (data as { invited: number; failed: number; emailed: number }[])[0] ?? {
-    invited: 0,
-    failed: 0,
-    emailed: 0,
+  const raw = (
+    data as {
+      invited: number;
+      failed: number;
+      emailed: number;
+      texted: number;
+      sms_parts: number;
+    }[]
+  )[0];
+  // `sms_parts` beside `texted` rather than inferred from it: a school is
+  // billed per part, and 555 texts is 555 parts only while every one of them
+  // fits in a segment. Migration 0233 measured that it does, today, for every
+  // one of this college's 555 guardians — which is a fact about their names
+  // and addresses, not a guarantee.
+  const row: ApplyResult = {
+    invited: raw?.invited ?? 0,
+    failed: raw?.failed ?? 0,
+    emailed: raw?.emailed ?? 0,
+    texted: raw?.texted ?? 0,
+    smsParts: raw?.sms_parts ?? 0,
   };
 
   revalidatePath("/settings/team/bulk");
