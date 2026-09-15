@@ -1778,10 +1778,10 @@ particular kind:
   because that is where the provider secrets are, not because the work is
   unbounded.
 
-So: bound it and say what the bound is, or queue it. What is still genuinely
-`jobs` work and is **not built**: PDF rendering, and scheduled reports. Scheduled
-*notifications* are built — see below — and **full exports turned out not to be
-queued work at all**.
+So: bound it and say what the bound is, or queue it. Scheduled notifications,
+scheduled reports and the queue itself are all built now, and **full exports and
+PDF both turned out not to be queued work at all** — each is its own section
+below.
 
 #### …and the cap is on the response, not on the work
 
@@ -1970,8 +1970,8 @@ So rule 7's own test decides it, exactly as it decided exports. The line falls
 between two numbers, not at the word *PDF*: one document is an ordinary request
 answered as the person who asked — RLS the whole gate, **no service identity
 invented** — and a whole class is queued work that is still unbuilt. The `jobs`
-table has had 0 rows since `0007`, and a class of report cards is finally the
-first thing that genuinely needs it.
+table had had 0 rows since `0007`, and a class of report cards is the first
+thing that genuinely needs it. That is what the next section acts on.
 
 Four things came out of building it, and three are about the font:
 
@@ -2026,6 +2026,64 @@ limitation is stated rather than hidden: a Hindi or Urdu reader asking for a
 file gets the refusal, because `formatDate` returns Devanagari month names.
 
 See `docs/modules/pdf.md`.
+
+### …and the queue itself, which had 0 rows for 235 migrations
+
+Everything above is rule 7 deciding what *not* to queue. `public.jobs` was
+created in `0007` and the honest question before writing a worker was why
+nothing had ever put a row in it.
+
+**It was not neglect. Every module obeyed rule 7's other half** — `import_apply_run`
+at 500 rows, `invitation_preview` at 1,000 people, `accounts_sync` at 200
+documents a page, `report_run` at 1,000, `checks_run` at 200, `notify-dispatch`
+at 200 deliveries or 40 seconds. Every one is correct and none of them changed.
+Read their messages together, though:
+
+> **A bound that fits a request is not a bound that fits the work.** Each module
+> capped its run, and the cap became the office's job: press again, narrow it
+> again, split the spreadsheet again. A college loading five thousand historical
+> receipts pressed *Sync* **twenty-five times**.
+
+So a queue is not a way to do bigger work in one go. **It is the thing that
+presses the button again** — which is why `accounts.sync` is the first kind
+rather than the most impressive one: it already returned `(created, remaining)`,
+and that second number had no reader except a person's patience.
+
+Five things, and the first is the one rule 7's own text got wrong:
+
+- **"Edge Functions use the service role, so they must filter by `tenant_id`"
+  was written before `0240`.** Taken literally it means rewriting six correct
+  `SECURITY INVOKER` functions as definers with hand-written tenant filters —
+  **reimplementing RLS six times in order to avoid using it**, and losing row
+  ownership on every one. The worker is `schedule_digests_tick`'s mechanism
+  instead: pg_cron as `postgres`, `SET ROLE` with the creator's claims, outside
+  every definer frame, calling the module's own function unchanged.
+- **The authority is re-checked every attempt, never remembered** — the
+  scheduled-report rule, which has more bite here because a job spans ticks.
+  Probed by revoking `accounts.manage` between two ticks of a live job: it stops
+  with *"Administrator may no longer post receipts to the ledger… That role lost
+  accounts.manage."* And `refused` is deliberately not `failed`, so the refusal
+  branch does not touch `attempts`: there is nothing about it a retry fixes.
+- **`max_attempts = 1` is right for anything that sends.** An invitation list
+  retried from the start writes to some families twice, so that kind runs once,
+  reports one outcome, and is not paged.
+- **A lease, or a worker that dies holds a job for ever.** `processing` with
+  nothing to expire it is the classic queue bug — the row sits there and nothing
+  on earth moves it. `jobs_reap()` is the half people leave out.
+- **A job is somebody's request; a schedule is not.** The tick runs every minute
+  where both schedule ticks run every five, because a bursar watching nothing
+  happen for five minutes presses the button again and is then refused by
+  `jobs_one_live_per_kind` — correct, and reading as a second failure.
+
+And the guard lesson, which this file has now recorded three times and which
+cost two rewrites anyway: **an assertion that a string appears somewhere guards
+the string, not the mechanism.** `toContain("'refused'")` passed on a body that
+read the flag and wrote `'failed'`, because `p_outcome ->> 'refused'` still
+contained the word; `toContain("request.jwt.claims")` passed on a body that set
+a different setting, because the saved copy and its two restores still mentioned
+it. Twenty-five plants found both. Anchor to the statement.
+
+See `docs/modules/jobs.md`.
 
 ## 8. Storage
 
@@ -2475,8 +2533,8 @@ Three rules for writing one:
 Reports are bounded (1,000 rows by default, 5,000 at most) with the true total
 returned alongside, which is why they run inline without breaking rule 7. A
 **full export** is that same call walked in pages by the browser, as the person
-who asked — see rule 7. A PDF and a scheduled report remain `jobs` work and are
-not built. See `docs/modules/reports.md`.
+who asked — see rule 7, where a PDF and a scheduled report are each settled on
+their own terms rather than by the word *report*. See `docs/modules/reports.md`.
 
 #### …and a list you cannot act from is a list you re-type
 

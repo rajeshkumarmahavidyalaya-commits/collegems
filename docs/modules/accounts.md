@@ -104,6 +104,14 @@ reversed salary payment. It is:
 - **Bounded per rule 7.** It posts at most `p_limit` documents and returns how
   many remain, so a first-run backlog drains in pages rather than one unbounded
   transaction.
+
+  That second number had no reader but a person's patience until `0242`: the
+  *Sync* button used to come back with *"`${remaining}` still to go — run it
+  again."*, so a college loading a year of history pressed it twenty-five times.
+  It queues an `accounts.sync` job now and the database presses the button
+  again. The function itself is unchanged — and stays `SECURITY INVOKER`, which
+  is exactly why the queue impersonates rather than using the service role. See
+  [jobs.md](./jobs.md).
 - **Built as draft-then-post**, not by inserting posted rows directly. That
   keeps it `SECURITY INVOKER` and RLS-respecting, and routes every auto-posted
   voucher through the same balance check as a hand-written one.

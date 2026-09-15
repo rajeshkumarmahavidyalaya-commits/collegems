@@ -42,9 +42,9 @@ import { ErrorSummary } from "@/components/forms/error-summary";
 import { SelectField, TextField, TextareaField } from "@/components/forms/form-fields";
 import { accountSchema, accountTypeLabel, accountTypeOptions, formatBalance, formatColumn, type AccountInput } from "@/lib/validations/accounts";
 import { useI18n } from "@/components/providers/i18n-provider";
+import { startJob } from "../settings/jobs/actions";
 import {
   saveAccount,
-  syncSubledgers,
   type ChartRow,
   type PostingRuleRow,
   type TrialBalanceRow,
@@ -255,21 +255,27 @@ function SyncBanner({ unposted }: { unposted: number }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
 
+  /**
+   * Queue it rather than run it.
+   *
+   * This used to call `syncSubledgers(200)` and, when the page came back with
+   * work left over, say: **"${remaining} still to go — run it again."** That
+   * sentence is the defect the queue was built for, written in the product's
+   * own words — every module here caps its run correctly, and the cap became
+   * the office's job. A college loading a year of history read that message
+   * twenty-five times.
+   *
+   * `accounts_sync` is unchanged: same function, same 200-document page, same
+   * `remaining`. What changed is who reads the second number.
+   */
   function sync() {
     startTransition(async () => {
-      const result = await syncSubledgers(200);
+      const result = await startJob("accounts.sync");
       if (!result.ok) {
         toast.error(result.error);
         return;
       }
-      const { created, remaining } = result.data;
-      toast.success(
-        created === 0
-          ? "Everything is already posted."
-          : `Posted ${created} ${created === 1 ? "voucher" : "vouchers"}.${
-              remaining > 0 ? ` ${remaining} still to go — run it again.` : ""
-            }`,
-      );
+      toast.success("Posting to the ledger. It keeps going on its own until it is done.");
       router.refresh();
     });
   }
@@ -291,14 +297,20 @@ function SyncBanner({ unposted }: { unposted: number }) {
           <span className="font-medium">
             {unposted} {unposted === 1 ? "document is" : "documents are"} not in the ledger yet.
           </span>{" "}
-          Fee receipts and salary payments post through the rules below. It is safe to run more than
-          once — each document posts exactly once.
+          Fee receipts and salary payments post through the rules below. It runs in the
+          background, two hundred at a time, and carries on by itself until there are none
+          left — each document posts exactly once, so it is safe whatever happens.
         </span>
       </p>
-      <Button size="sm" disabled={pending} onClick={sync}>
-        <RefreshCw className="size-4" aria-hidden="true" />
-        {pending ? "Posting…" : "Post to the ledger"}
-      </Button>
+      <div className="flex flex-wrap items-center gap-2">
+        <Button size="sm" disabled={pending} onClick={sync}>
+          <RefreshCw className="size-4" aria-hidden="true" />
+          {pending ? "Starting…" : "Post to the ledger"}
+        </Button>
+        <Button asChild variant="ghost" size="sm">
+          <Link href="/settings/jobs">Watch it</Link>
+        </Button>
+      </div>
     </div>
   );
 }

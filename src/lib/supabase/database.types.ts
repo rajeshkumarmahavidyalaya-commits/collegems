@@ -2924,43 +2924,61 @@ export type Database = {
       }
       jobs: {
         Row: {
+          attempts: number
           completed_at: string | null
           created_at: string
           created_by: string | null
           error: string | null
           id: string
           job_type: string
+          lease_until: string | null
+          not_before: string
           payload: Json
+          progress_done: number
+          progress_note: string | null
           result: Json | null
           started_at: string | null
           status: string
           tenant_id: string
+          worker: string | null
         }
         Insert: {
+          attempts?: number
           completed_at?: string | null
           created_at?: string
           created_by?: string | null
           error?: string | null
           id?: string
           job_type: string
+          lease_until?: string | null
+          not_before?: string
           payload?: Json
+          progress_done?: number
+          progress_note?: string | null
           result?: Json | null
           started_at?: string | null
           status?: string
           tenant_id: string
+          worker?: string | null
         }
         Update: {
+          attempts?: number
           completed_at?: string | null
           created_at?: string
           created_by?: string | null
           error?: string | null
           id?: string
           job_type?: string
+          lease_until?: string | null
+          not_before?: string
           payload?: Json
+          progress_done?: number
+          progress_note?: string | null
           result?: Json | null
           started_at?: string | null
           status?: string
           tenant_id?: string
+          worker?: string | null
         }
         Relationships: [
           {
@@ -7735,17 +7753,23 @@ export type Database = {
       fees_queue_invoice_email: {
         Args: { p_invoice_id: string }
         Returns: {
+          attempts: number
           completed_at: string | null
           created_at: string
           created_by: string | null
           error: string | null
           id: string
           job_type: string
+          lease_until: string | null
+          not_before: string
           payload: Json
+          progress_done: number
+          progress_note: string | null
           result: Json | null
           started_at: string | null
           status: string
           tenant_id: string
+          worker: string | null
         }
         SetofOptions: {
           from: "*"
@@ -8432,6 +8456,156 @@ export type Database = {
           id: string
           label: string
         }[]
+      }
+      job_cancel: {
+        Args: { p_job_id: string }
+        Returns: {
+          attempts: number
+          completed_at: string | null
+          created_at: string
+          created_by: string | null
+          error: string | null
+          id: string
+          job_type: string
+          lease_until: string | null
+          not_before: string
+          payload: Json
+          progress_done: number
+          progress_note: string | null
+          result: Json | null
+          started_at: string | null
+          status: string
+          tenant_id: string
+          worker: string | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "jobs"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      job_enqueue: {
+        Args: { p_kind: string; p_payload?: Json }
+        Returns: {
+          attempts: number
+          completed_at: string | null
+          created_at: string
+          created_by: string | null
+          error: string | null
+          id: string
+          job_type: string
+          lease_until: string | null
+          not_before: string
+          payload: Json
+          progress_done: number
+          progress_note: string | null
+          result: Json | null
+          started_at: string | null
+          status: string
+          tenant_id: string
+          worker: string | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "jobs"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      job_kind_labels: {
+        Args: never
+        Returns: {
+          key: string
+          label: string
+        }[]
+      }
+      job_kinds_available: {
+        Args: never
+        Returns: {
+          description: string
+          key: string
+          label: string
+          page_size: number
+          required_permission: string
+        }[]
+      }
+      job_problems: {
+        Args: never
+        Returns: {
+          key: string
+          message: string
+          severity: string
+        }[]
+      }
+      job_record: {
+        Args: { p_job_id: string; p_outcome: Json }
+        Returns: {
+          attempts: number
+          completed_at: string | null
+          created_at: string
+          created_by: string | null
+          error: string | null
+          id: string
+          job_type: string
+          lease_until: string | null
+          not_before: string
+          payload: Json
+          progress_done: number
+          progress_note: string | null
+          result: Json | null
+          started_at: string | null
+          status: string
+          tenant_id: string
+          worker: string | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "jobs"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      job_run_as_creator: { Args: { p_job_id: string }; Returns: Json }
+      job_run_one: {
+        Args: {
+          p_job: Database["public"]["Tables"]["jobs"]["Row"]
+          p_page: number
+        }
+        Returns: Json
+      }
+      jobs_due: {
+        Args: { p_limit?: number }
+        Returns: {
+          attempts: number
+          completed_at: string | null
+          created_at: string
+          created_by: string | null
+          error: string | null
+          id: string
+          job_type: string
+          lease_until: string | null
+          not_before: string
+          payload: Json
+          progress_done: number
+          progress_note: string | null
+          result: Json | null
+          started_at: string | null
+          status: string
+          tenant_id: string
+          worker: string | null
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "jobs"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
+      jobs_reap: { Args: never; Returns: number }
+      jobs_tick: {
+        Args: { p_budget_seconds?: number; p_limit?: number }
+        Returns: Json
       }
       library_issue_book: {
         Args: { p_book_id: string; p_due_at?: string; p_member_id: string }

@@ -321,25 +321,19 @@ export async function reverseVoucher(id: string, narration?: string): Promise<Ac
 // ---------------------------------------------------------------------------
 
 /**
- * Post every fee receipt and salary payment that has no voucher yet. Idempotent
- * on the source document, and bounded per rule 7: it does at most `limit`
- * documents and reports what remains, so a first-run backlog drains in pages.
+ * `syncSubledgers()` stood here and is deleted rather than kept.
+ *
+ * It called `accounts_sync(200)` inline and handed the page a `remaining` that
+ * only a person could act on — the screen's own words were *"N still to go —
+ * run it again."* That is now `job_enqueue('accounts.sync')`, and the database
+ * presses the button again (migration `0242`).
+ *
+ * Deleted, not left beside the new path: **an exported action with no caller is
+ * a second way in that nobody maintains**, and this one would quietly bypass
+ * the queue's one-live-job rule, so two of them could race for the same
+ * unposted rows. `accounts_sync` itself is untouched and still `SECURITY
+ * INVOKER` — the job runs it as the person who queued it.
  */
-export async function syncSubledgers(
-  limit = 200,
-): Promise<ActionResult<{ created: number; remaining: number }>> {
-  const supabase = await createClient();
-  const { data, error } = await supabase.rpc("accounts_sync", { p_limit: limit });
-  if (error) return fail(error.message);
-
-  const row = (data ?? [])[0];
-  revalidatePath("/accounts");
-  revalidatePath("/accounts/vouchers");
-  return {
-    ok: true,
-    data: { created: Number(row?.created ?? 0), remaining: Number(row?.remaining ?? 0) },
-  };
-}
 
 export async function countUnposted(): Promise<number> {
   const supabase = await createClient();

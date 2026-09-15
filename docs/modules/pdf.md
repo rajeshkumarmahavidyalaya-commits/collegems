@@ -247,9 +247,13 @@ the declaration of intent beside it.
   change to carry an attachment on a delivery. Two modules' surface, named
   rather than half-built.
 - **A whole class at once.** 302 report cards is **10.4 s** by the measurement
-  above, which is exactly what rule 7 says to queue. `jobs` has existed since
-  `0007` and has **0 rows** and no worker; this is the first thing that would
-  genuinely need one.
+  above, which is exactly what rule 7 says to queue. This measurement is what
+  made the queue worth building — `0242`–`0244`, see
+  [jobs.md](./jobs.md) — and `report_cards.render` is still not one of its
+  kinds, for a reason that is real rather than effort: the renderer is Node
+  (pdf-lib, an embedded font) and a job runs inside Postgres, so it needs a
+  worker process that is neither, plus the Storage item above to put the files
+  somewhere.
 - **Report cards and ID cards.** Both are documents a person keeps and both
   should come through `Sheet`. The report card is the harder one and worth doing
   carefully: it must render `exam_results`' frozen numbers and its

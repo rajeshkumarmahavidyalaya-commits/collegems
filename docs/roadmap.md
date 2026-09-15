@@ -157,11 +157,29 @@ query, not a job. Certificates and fee invoices download as files today; see
 > 302 of them is 10.4 seconds. Rule 7's test is boundedness, and *PDF* was never
 > the thing that made it unbounded.
 
+**And the `jobs` worker is done** (migrations `0242`–`0244`). The honest
+question before writing it was why `jobs` had 0 rows two hundred and thirty-five
+migrations after it was created, and the answer was not neglect: **every module
+obeyed rule 7's other half and capped its own run.**
+
+> **A bound that fits a request is not a bound that fits the work.** Six modules
+> cap correctly and every one of them made the cap the office's job — press
+> again, narrow it again, split the spreadsheet again. A college loading five
+> thousand historical receipts pressed *Sync* twenty-five times.
+
+So the queue is not a way to do bigger work in one go; it is the thing that
+presses the button again. `0240`'s impersonation made it possible without
+rewriting six correct `SECURITY INVOKER` functions as definers with hand-written
+tenant filters. Two kinds today — posting receipts to the ledger, and sending an
+invitation list — and a screen at `/settings/jobs`. See [jobs.md](./modules/jobs.md).
+
 What is genuinely left:
 
-- **The `jobs` worker.** Still zero rows since `0007`, and now there is finally
-  something that needs one: a whole class of report cards is 10.4 s, which is
-  exactly what rule 7 says to queue.
+- **The `report_cards.render` kind.** A whole class is the 10.4 s that made the
+  queue necessary, and it is the one thing the queue cannot yet take: the
+  renderer is Node (pdf-lib, an embedded font) and a job runs inside Postgres,
+  so it needs a worker process that is neither — plus the item below, to put the
+  files somewhere.
 - **Storage, and therefore attachment.** The PDF routes stream bytes; nothing is
   written to the `documents` bucket. A file *attached to an email* has to exist
   before the dispatcher runs — rule 8's choreography plus a rule 10 change to
