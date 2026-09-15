@@ -84,10 +84,21 @@ One family proves it works; 555 families is the product.
   characters.
 - **A list behind the critic.** `family_login_problems()` gives the number; the
   office needs the names to work through.
+- **A student's address.** Probed on the demo college: **302 active students,
+  one email between them**, against 555 of 555 guardians with an address and a
+  phone. The student branch of `invitation_preview` is built and correct and
+  would produce 301 rows saying *"No email address on record"* — so a student
+  login is reachable in code and not in data. Collecting it is office work; the
+  SMS half above is what makes the invitation deliverable either way.
 
 | Measure | Now | Target |
 |---|---|---|
 | students whose family can sign in | 0 of 302 | > 80% |
+| students with an address of their own | 1 of 302 | the college's call |
+
+**Done in this phase, beyond the list above:** every seat probed once. Five of
+the six roles had never been signed into, and two screens were wrong about who
+they were for — see [role-access.md](./modules/role-access.md).
 
 ---
 

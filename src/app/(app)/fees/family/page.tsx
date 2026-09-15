@@ -32,7 +32,12 @@ export default async function FamilyFeesPage() {
   // relationship, and a member of staff gets `[]` from it whatever they may
   // read. This is so the empty screen says the right sentence: a bursar landing
   // here has not run out of children, they are on the wrong screen.
-  const isFamily = ctx?.roleCode === "parent" || ctx?.roleCode === "student";
+  // The tier, not two role codes. Which of the two audiences somebody belongs
+  // to is what `roles.tier` records (migration `0208`), and writing the answer
+  // out as a list of role codes is how `/homework` came to show an accountant
+  // and a librarian a family's screen — the same sentence, checked against two
+  // of the six roles.
+  const isFamily = ctx?.roleTier === "student";
 
   return (
     <div className="flex flex-col gap-6">

@@ -662,6 +662,64 @@ Verified live: the row reads `status=active, effective_ends_on=2026-03-31` on
 
 See `docs/modules/family.md`.
 
+#### …and a reason written down is not a reason that was checked
+
+The guard above is on the **omission**: a nav entry with no `roles` list must be
+named in `EVERY_ROLE_ON_PURPOSE` *with its reason*. That is the right shape and
+it has a ceiling — it can ask whether somebody decided, never whether they were
+right. Two entries were named there, with reasons, and both reasons had been
+checked against the roles the author had in mind and against no others:
+
+- **`/homework`** — *"One address, two screens: set it, or do it."* Two screens
+  names two audiences and the entry named none, so an accountant and a librarian
+  were offered it, and the page then chose its screen with `roleCode === "admin"
+  || roleCode === "teacher"` — **two of the four** staff roles. Both fell through
+  to the *family* screen. `homework` has no SELECT policy for either role:
+  probed as each, **0 rows** and `family_my_students()` **0**. A screen that
+  greeted them as a family and had nothing on it.
+- **`/attendance/leave`** — *"the family applies, the school decides — both
+  parties on one screen."* `student_leave_requests` has SELECT policies for an
+  administrator, a class teacher, a student and a guardian, and **none** for an
+  accountant or a librarian. Probed as each: **0 rows**.
+
+> **The roles a reason forgets are the roles nobody signs into.** This product
+> had two logins, both administrators, so every claim about the other five seats
+> was a claim nobody could contradict. Probing is the only instrument there is,
+> and it has to be run as *each* of them — a sentence that is true of four roles
+> reads exactly like a sentence that is true.
+
+And the page half, which would have been wrong even with the menu right, because
+a URL is a URL and rule 4's first sentence is that the menu is never the gate:
+
+> **A tier written out as role codes is a copy, and `roles.tier` already holds
+> the original.** Which of the two screens is `roleTier === "student"`; whose
+> record to resolve is `roleSubject === "guardian"` — the tier cannot answer the
+> second, since `parent` and `student` share it, which is the whole reason `0224`
+> added a second column rather than overloading the first. Neither is a gate:
+> what the person may *do* is still `hasPermission("homework.manage")`.
+
+Three things:
+
+- **One comparison is a mirror of one policy; two is a claim about an audience.**
+  `/notices/[id]` tests `["admin", "teacher"]` and **keeps** it, because
+  `notice_reads` carries exactly that policy — widening it to the staff tier
+  would show an accountant a read rate computed from their own single receipt,
+  *"1 of 400 have read this"*, which is the invoker-over-row-ownership lie two
+  sections down wearing a percentage. So the guard forbids the disjunction and
+  names the mirror, rather than forbidding the word.
+- **An allowlist read in one direction rots.** `/report-card` sat in
+  `EVERY_ROLE_ON_PURPOSE` long after it was given `roles: ["parent", "student"]`
+  — a line explaining a decision nobody was making. Both guards now read both
+  ways. The same reading found `/reports`' reason quoting *"a family runs eight
+  of nineteen"* where it now runs **two**, so the reasons name the mechanism and
+  never a count: a number in a comment goes stale silently.
+- **Two negative controls, both synthetic.** `tests/app-shell/role-branches.test.ts`
+  was verified by planting a page carrying `/homework`'s original branch, and
+  goes green on revert; pinning the control to the real defect would have made
+  it expire the moment the defect was fixed, failing like a regression.
+
+See `docs/modules/role-access.md`, which is the six seats side by side.
+
 #### …and the catalogue of reports was never given that treatment
 
 `0200` fixed one **check**. `reference.reports` is the older and larger

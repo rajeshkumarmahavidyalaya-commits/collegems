@@ -187,14 +187,21 @@ export const NAV_GROUPS: NavGroup[] = [
         icon: ClipboardCheck,
         roles: ["admin", "teacher"],
       },
-      // No `roles`: a family asks for leave and a teacher decides it, so every
-      // role has business here. RLS narrows what each of them sees to their own
-      // children, their own section, or the school.
+      // A family asks for leave and a teacher decides it. That sentence stood
+      // here with no `roles` list under it, ending "RLS narrows what each of
+      // them sees" -- which is true of the four roles it was checked against
+      // and false of the other two. `student_leave_requests` has SELECT
+      // policies for an administrator, a class teacher, a student and a
+      // guardian, and **none for an accountant or a librarian**. Measured as
+      // each of them on the live college: 0 rows. Two seats were offered a
+      // board headed "A family tells the school a child will be away" and
+      // shown nothing on it, for ever.
       {
         title: "Student leave",
         messageKey: "nav.studentLeave",
         href: "/attendance/leave",
         icon: CalendarOff,
+        roles: ["admin", "teacher", "parent", "student"],
       },
       // Not an accountant, and the reason is a disagreement rather than a
       // preference. `attendance_records` carries a `staff roles view
@@ -227,15 +234,25 @@ export const NAV_GROUPS: NavGroup[] = [
         icon: ArrowUpNarrowWide,
         roles: ["admin"],
       },
-      // No `roles` filter on either: `/homework` is two screens behind one
-      // address -- a teacher's list of what they set, a family's list of what
-      // they have to do -- and telling a parent to visit a different URL from
-      // their child is exactly the kind of thing that gets a product ignored.
+      // Two screens behind one address -- a teacher's list of what they set, a
+      // family's list of what they have to do -- because telling a parent to
+      // visit a different URL from their child is exactly the kind of thing
+      // that gets a product ignored. That is still the design; what was wrong
+      // was the audience.
+      //
+      // "Two screens" names two of the six roles and the entry named none, so
+      // an accountant and a librarian were offered it and fell through to the
+      // family screen. `homework` has no SELECT policy for either of them --
+      // measured as each on the live college, **0 rows** and **0 children** --
+      // so the screen greeted them as a family and had nothing to show. The
+      // page now chooses by `roles.tier` rather than by two role codes, and
+      // this list says who the address is for.
       {
         title: "Homework",
         messageKey: "nav.homework",
         href: "/homework",
         icon: NotebookPen,
+        roles: ["admin", "teacher", "parent", "student"],
       },
       {
         title: "Study material",

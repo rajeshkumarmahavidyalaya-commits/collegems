@@ -1,5 +1,6 @@
 import { cache } from "react";
 import { createClient } from "@/lib/supabase/server";
+import type { RoleSubject } from "@/lib/validations/invitations-display";
 
 /** The three audiences. The vocabulary lives in the CHECK on `roles.tier`. */
 export type RoleTier = "student" | "staff" | "principal";
@@ -22,6 +23,20 @@ export type UserContext = {
    * warning belongs on the type rather than in a document.
    */
   roleTier: RoleTier;
+  /**
+   * What kind of record this login stands for: `staff`, `student`, `guardian`
+   * or `none` — `roles.subject`, migration `0224`.
+   *
+   * The tier says which audience somebody belongs to; the subject says **whose
+   * record they are**, and the two are genuinely different questions. `parent`
+   * and `student` share the `student` tier and need a guardian and a student
+   * respectively, which is exactly why `0224` added a second column rather than
+   * overloading the first.
+   *
+   * Carries its neighbour's warning verbatim: for deciding what to SHOW and
+   * which record to resolve. **Never** for deciding what is allowed.
+   */
+  roleSubject: RoleSubject;
   displayName: string;
   staffId: string | null;
   studentId: string | null;
@@ -58,7 +73,7 @@ export const getUserContext = cache(async (): Promise<UserContext | null> => {
     .from("user_profiles")
     .select(
       `tenant_id, role_id, staff_id, student_id, guardian_id,
-       roles ( code, name, tier ),
+       roles ( code, name, tier, subject ),
        people:person_id ( first_name, last_name ),
        tenants ( name )`,
     )
@@ -89,6 +104,10 @@ export const getUserContext = cache(async (): Promise<UserContext | null> => {
     // but a null here would silently promote somebody, so it falls to the
     // narrowest audience rather than the widest.
     roleTier: (role?.tier as RoleTier | undefined) ?? "student",
+    // Same reasoning as the tier above: the column is NOT NULL with a CHECK, so
+    // a null cannot happen — and if one did, `none` resolves no record at all,
+    // which shows an empty screen rather than somebody else's.
+    roleSubject: (role?.subject as RoleSubject | undefined) ?? "none",
     displayName: person ? `${person.first_name} ${person.last_name}` : (user.email ?? "Unknown"),
     staffId: profile.staff_id,
     studentId: profile.student_id,

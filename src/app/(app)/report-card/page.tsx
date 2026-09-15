@@ -23,7 +23,10 @@ export default async function FamilyReportCardsPage() {
   const locale = await getLocale();
   const children = await listMyChildren();
 
-  if (!ctx || (ctx.roleCode !== "parent" && ctx.roleCode !== "student")) {
+  // The audience column, for the reason `/homework` records: a hand-written
+  // list of role codes is a tier somebody re-derived, and it goes stale the
+  // moment a college adds a role.
+  if (!ctx || ctx.roleTier !== "student") {
     return (
       <div className="flex flex-col gap-6">
         <div>

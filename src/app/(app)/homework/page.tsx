@@ -18,6 +18,21 @@ export const metadata = { title: "Homework" };
  * set; a family's is a list of things they have to do. They are the same noun
  * and completely different questions, and giving each its own URL would mean
  * telling a parent to visit a different address from their child.
+ *
+ * **Which screen is a question about the audience, so it is answered by the
+ * audience column.** This read `roleCode === "admin" || roleCode === "teacher"`
+ * — two of the four staff roles written out by hand — so an accountant and a
+ * librarian, both of whom the menu offered this entry, fell through to the
+ * *family* screen. Measured as each of them against the live college:
+ * `homework` **0 rows** and `family_my_students()` **0**, because neither role
+ * has a SELECT policy on `homework` at all. Two seats were shown a family's
+ * screen, addressed to them as a family, with nothing on it.
+ *
+ * `roleTier` is the column that says which of the three audiences somebody
+ * belongs to (migration `0208`), and this is exactly what it is for: it decides
+ * what a person is **shown**, never what they may do. What they may do is
+ * `hasPermission("homework.manage")` further down, and underneath that the
+ * policies.
  */
 export default async function HomeworkPage({
   searchParams,
@@ -25,9 +40,12 @@ export default async function HomeworkPage({
   searchParams: Promise<{ student?: string }>;
 }) {
   const ctx = await getUserContext();
-  const isStaff = ctx?.roleCode === "admin" || ctx?.roleCode === "teacher";
 
-  return isStaff ? <StaffView /> : <FamilyView searchParams={searchParams} ctx={ctx} />;
+  return ctx?.roleTier === "student" ? (
+    <FamilyView searchParams={searchParams} ctx={ctx} />
+  ) : (
+    <StaffView />
+  );
 }
 
 async function StaffView() {
@@ -71,12 +89,18 @@ async function FamilyView({
   const params = await searchParams;
   const children = await listMyChildren();
 
-  // A student passes nothing and the RPC resolves their own record. A parent
+  // A student passes nothing and the RPC resolves their own record. A guardian
   // names a child, and the enrolment join under RLS is what decides whether
   // that was one of theirs — the `?student=` in the URL is a convenience, not
   // a key.
+  //
+  // `roleSubject` and not `roleCode`, for the reason the tier is used above:
+  // **whose record this login stands for** is a property of the role, written
+  // down on `roles.subject` by migration `0224`, and a college that adds a
+  // second guardian-facing role gets the same behaviour without this line being
+  // edited. The tier cannot answer it — `parent` and `student` share one.
   const studentId =
-    ctx?.roleCode === "parent" ? (params.student ?? children[0]?.studentId) : undefined;
+    ctx?.roleSubject === "guardian" ? (params.student ?? children[0]?.studentId) : undefined;
 
   const rows = await getStudentHomework(studentId);
   const filesFor = await listFilesByOwner(
@@ -102,7 +126,7 @@ async function FamilyView({
         filesFor={filesFor}
         children_={children}
         selectedChildId={studentId}
-        canSubmit={ctx?.roleCode === "student"}
+        canSubmit={ctx?.roleSubject === "student"}
       />
     </div>
   );

@@ -345,7 +345,10 @@ describe("inviting a school rather than a person", () => {
     expect(body).toMatch(/v_emailed := v_emailed \+ 1;/);
     expect(body).toMatch(/perform public\.invitation_announce\([\s\S]{0,120}v_emailed := v_emailed \+ 1;/);
     const view = code(readFileSync(join(BULK, "bulk-invite-view.tsx"), "utf8"));
-    expect(view).toMatch(/invited.*emailed/s);
+    // `[\s\S]*` rather than `/s`: tsconfig targets ES2017 and the dotAll flag
+    // is ES2018, so the flag compiles under vitest's esbuild and fails
+    // `tsc --noEmit` — green in the runner, red in CI's typecheck.
+    expect(view).toMatch(/invited[\s\S]*emailed/);
     expect(view).toMatch(/toast\.warning/);
   });
 });

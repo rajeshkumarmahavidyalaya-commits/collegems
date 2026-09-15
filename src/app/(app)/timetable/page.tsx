@@ -37,7 +37,12 @@ export default async function TimetablePage() {
   // narrowing the list narrows the default with it. `listMyChildren()` is the
   // relationship — a member of staff gets `[]` from it and keeps the whole
   // school, which is what they came for.
-  const isFamily = ctx?.roleCode === "parent" || ctx?.roleCode === "student";
+  // The tier, not two role codes. Which of the two audiences somebody belongs
+  // to is what `roles.tier` records (migration `0208`), and writing the answer
+  // out as a list of role codes is how `/homework` came to show an accountant
+  // and a librarian a family's screen — the same sentence, checked against two
+  // of the six roles.
+  const isFamily = ctx?.roleTier === "student";
   const children = isFamily ? await listMyChildren() : [];
   const familySections = children
     .filter((child) => child.sectionId && child.sectionLabel)

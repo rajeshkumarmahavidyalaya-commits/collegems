@@ -83,6 +83,7 @@ After any migration, regenerate types into
 | [docs/modules/family.md](./docs/modules/family.md) | The family's side: the menu offered a parent Payroll and withheld their own fee account |
 | [docs/modules/guardians.md](./docs/modules/guardians.md) | Guardians: the write path nobody had, and the import that collected one and dropped it |
 | [docs/modules/invitations.md](./docs/modules/invitations.md) | Invitations: the form that never asked which person a login was for |
+| [docs/modules/role-access.md](./docs/modules/role-access.md) | What each role gets after signing in, measured from five seats nobody had used |
 | [docs/ui-review.md](./docs/ui-review.md) | A UI pass with the app actually running, and the three translated strings nothing rendered |
 | [docs/testing.md](./docs/testing.md) | Running the suite, the two logins it needs, and why half of it skips |
 | [docs/roadmap.md](./docs/roadmap.md) | From built to working: what has never run, and the order to fix it in |
