@@ -146,14 +146,31 @@ background-graphics default. A school can hand parents paper today.
 > costs most: it described work as missing that was done, next to work described
 > as missing that was.
 
+**Server-side PDF is done too**, and it turned out not to be `jobs` work at all.
+The entry had inherited its mechanism rather than measured it: *render the page
+to PDF* needs a headless browser, which is heavy, which is queued. Building the
+document from the row that already holds it is **5,360 bytes and 57 ms** — a
+query, not a job. Certificates and fee invoices download as files today; see
+[pdf.md](./modules/pdf.md).
+
+> **The line falls between two numbers, not at a word.** One document is 57 ms;
+> 302 of them is 10.4 seconds. Rule 7's test is boundedness, and *PDF* was never
+> the thing that made it unbounded.
+
 What is genuinely left:
 
-- **Server-side PDF.** Not the same thing as printing: a PDF *attached to an
-  email*, or one a parent downloads in the phone app, has no browser to render
-  it. That is the last named `jobs` work, and it is the only reason the worker
-  is still unbuilt.
+- **The `jobs` worker.** Still zero rows since `0007`, and now there is finally
+  something that needs one: a whole class of report cards is 10.4 s, which is
+  exactly what rule 7 says to queue.
+- **Storage, and therefore attachment.** The PDF routes stream bytes; nothing is
+  written to the `documents` bucket. A file *attached to an email* has to exist
+  before the dispatcher runs — rule 8's choreography plus a rule 10 change to
+  carry an attachment on a delivery.
 - **A digest that carries the rows.** `report.digest` sends a count and a link,
-  deliberately — the attachment is the PDF above, wearing a different hat.
+  deliberately — the attachment is the item above, wearing a different hat.
+- **Report cards and ID cards as files.** Both belong in `Sheet`; the report card
+  must render `exam_results`' frozen numbers and `rules_snapshot` rather than
+  recompute a rank whose cohort has changed.
 
 ---
 

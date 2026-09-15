@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowLeft, Ban, Printer } from "lucide-react";
+import { ArrowLeft, Ban, Download, Printer } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -51,6 +51,15 @@ export function InvoiceSheet({ doc }: { doc: InvoiceDocument }) {
               <Link href={`/fees/students/${student.id}`}>Fee account</Link>
             </Button>
           )}
+          {/* A link, not an action: the bytes come from a route handler, so
+              there is nothing to do but follow it. `download` names the file
+              even where a browser previews the PDF inline. */}
+          <Button asChild variant="outline" size="sm">
+            <a href={`/fees/invoices/${invoice.id}/pdf`} download>
+              <Download className="size-4" aria-hidden="true" />
+              PDF
+            </a>
+          </Button>
           <Button size="sm" onClick={() => window.print()}>
             <Printer className="size-4" aria-hidden="true" />
             Print

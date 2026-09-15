@@ -540,6 +540,22 @@ export const en = {
     "Every child with a seat this year, matched to the same stop on next year's route.",
   "renewals.blurb.hostel": "Every child with a bed this year, proposed into the same room.",
 
+  // The fee bill as a **file** — `src/lib/pdf/invoice.ts`. English only, and
+  // deliberately: the document font is Latin-script, so a Hindi or Urdu
+  // rendering is refused before it is drawn (see `src/lib/pdf/font.ts`).
+  // Translating a label the renderer cannot draw is *a correct string nobody
+  // renders*; the day the font gains Devanagari is the day to translate these.
+  "pdf.invoice.heading": "Fee invoice",
+  "pdf.invoice.billedTo": "Billed to",
+  "pdf.invoice.charges": "Charges",
+  "pdf.invoice.payments": "Payments received against this invoice",
+  "pdf.invoice.total": "Total charged",
+  "pdf.invoice.paid": "Paid",
+  "pdf.invoice.outstanding": "Outstanding",
+  "pdf.invoice.noPayments": "No payment has been credited against this invoice.",
+  "pdf.invoice.cancelled": "This invoice has been cancelled",
+  "pdf.invoice.producedOn": "Produced",
+
   "schedules.kind.attendance.absentees": "Absence notice",
   "schedules.kind.fees.due_reminder": "Fee reminder",
   "schedules.kind.library.overdue": "Overdue book reminder",

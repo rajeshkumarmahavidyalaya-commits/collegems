@@ -66,6 +66,7 @@ After any migration, regenerate types into
 | [docs/modules/dashboard.md](./docs/modules/dashboard.md) | The home page: one round trip, and naming what a role may not see |
 | [docs/modules/certificates.md](./docs/modules/certificates.md) | Certificates: preview computes, issue freezes, and the wording is data |
 | [docs/modules/schedules.md](./docs/modules/schedules.md) | Work on a timer: a wall clock per tenant, and a run that is not a send |
+| [docs/modules/pdf.md](./docs/modules/pdf.md) | Documents as files: why PDF was never `jobs` work, and the glyph that draws nothing |
 | [docs/modules/notices.md](./docs/modules/notices.md) | The notice board: a notice is a document, a notification is an event |
 | [docs/modules/student-leave.md](./docs/modules/student-leave.md) | Student leave: why approving it must not write the register |
 | [docs/modules/substitutions.md](./docs/modules/substitutions.md) | Cover: the roster a teacher sees, and the invoker function that lied quietly |

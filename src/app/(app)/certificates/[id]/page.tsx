@@ -1,8 +1,9 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowLeft, Ban } from "lucide-react";
+import { ArrowLeft, Ban, Download } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { getCertificate } from "../actions";
 import { kindLabel } from "@/lib/validations/certificates";
 import { hasPermission } from "@/lib/auth/permissions";
@@ -65,6 +66,17 @@ export default async function CertificatePage({ params }: PageProps<"/certificat
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
+          {/* A plain link, not a client component: the bytes come from a route
+              handler, so there is nothing for the browser to do but follow it —
+              and a button that needed `"use client"` would charge this
+              Server-Component-only route the whole i18n catalogue to draw one
+              word. `download` names the file even when a viewer previews it. */}
+          <Button asChild variant="outline">
+            <a href={`/certificates/${certificate.id}/pdf`} download>
+              <Download className="size-4" aria-hidden="true" />
+              Download PDF
+            </a>
+          </Button>
           <PrintButton />
           {!cancelled && canCancel && (
             <CancelCertificate certificateId={certificate.id} serialNo={certificate.serial_no} />

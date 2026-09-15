@@ -1953,16 +1953,79 @@ right about arithmetic and wrong about what it counted. Beside
 `attendance_coverage`'s eleven classes at 0.0%, and a cost printed for an SMS
 that was never sent.
 
-What is still not built, and now named precisely: **server-side PDF**. Printing
-is not the gap — seven `window.print()` entry points and a full `@media print`
-block with per-child page breaks, an eight-up ID-card sheet and
-`print-color-adjust: exact` have been there for months, while `docs/roadmap.md`
-went on calling report cards *"screen-only"*. A roadmap entry ages into a claim
-nobody re-checks, and this one was wrong in the expensive direction. A PDF
-*attached to an email*, or one a parent downloads in the phone app, has no
-browser to render it — that is the last genuine `jobs` work.
-
 See `docs/modules/schedules.md`.
+
+### …and PDF was never `jobs` work either
+
+The sentence above this rule — *"what is still genuinely `jobs` work and is not
+built: PDF rendering"* — stood for two hundred migrations and had never been
+measured. It had inherited its mechanism rather than checked it: *render the
+page to PDF* needs a headless browser, which is heavy, which is queued.
+
+> **Building the document from the row that already holds it is not that.**
+> Measured warm, six runs, on the live certificate: **5,360 bytes and 57 ms**
+> for one, **10.4 s** for 302.
+
+So rule 7's own test decides it, exactly as it decided exports. The line falls
+between two numbers, not at the word *PDF*: one document is an ordinary request
+answered as the person who asked — RLS the whole gate, **no service identity
+invented** — and a whole class is queued work that is still unbuilt. The `jobs`
+table has had 0 rows since `0007`, and a class of report cards is finally the
+first thing that genuinely needs it.
+
+Four things came out of building it, and three are about the font:
+
+- **A built-in PDF font cannot print a bill.** The fourteen standard fonts are
+  WinAnsi and `drawText("₹")` throws `WinAnsi cannot encode "₹" (0x20b9)`, so
+  every money document in this product is impossible without an embedded font —
+  before any question about Hindi arises. The four typographic characters the
+  English catalogue *does* contain (`–` `—` `’` `…`) are all inside WinAnsi:
+  worth measuring rather than assuming, because the reason to embed is the
+  rupee and not the dashes.
+- **A missing glyph is silent, which is worse than a crash.** `drawText` does
+  not fail on a character the font lacks — it maps it to `.notdef` and draws
+  nothing. Measured: `हर माह` is 6 glyphs, **5 of them `.notdef`**, in a valid
+  PDF with no warning. That is this file's oldest recurring defect — *a
+  plausible result rather than an error* — arriving in a document a family
+  keeps, so the renderer asks the font what it can draw **before** drawing and
+  refuses with the characters named, as a `422` rather than a `500`.
+- **The combination that works is the one nobody would pick.**
+  `@pdf-lib/fontkit` — the companion package pdf-lib's own docs tell you to
+  install — throws `ReferenceError: regeneratorRuntime is not defined` from
+  inside its Indic shaper, a Babel-transpiled generator with no polyfill that
+  Latin text never reaches. Upstream `fontkit` shapes `हिन्दी` correctly (6
+  codepoints → 5 glyphs) and then pdf-lib's embedder calls a subsetting API it
+  no longer has. `registerFontkit(upstream)` with **`subset: false`** works:
+  69,639 bytes, 486 ms, correctly shaped. Written down in `src/lib/pdf/font.ts`
+  so the next person does not re-derive it.
+- **A web-font subset is cut for a browser, which can load two files and fall
+  back between them. A PDF embeds one font and has no fallback.**
+  `@fontsource/fira-sans`'s `latin` slice has the em dash and no rupee; its
+  `latin-ext` slice has the rupee and no em dash. Neither renders *"Fee reminder
+  — ₹1,234.00"*. So the shipped file is a complete font, not a slice.
+
+And two about writing it down, both re-commits of rules already here:
+
+- **A comment that answers the question somebody was about to ask is worse than
+  no comment when it answers a slightly different one.** `print-button.tsx` said
+  *"there is no PDF to render and no job to queue. That is deliberate."* — a
+  claim about **printing** standing in for a claim about **sending**. They fail
+  in opposite directions and both are kept: printing uses the reader's own
+  system fonts and prints scripts this renderer cannot, and produces nothing
+  anybody can attach to an email.
+- **Write down what was actually checked.** `next.config.ts` gained an
+  `outputFileTracingIncludes` entry under a confident comment saying the font
+  would otherwise be missing from the bundle and every request would 500 in
+  production. Built with those lines deleted: **the tracer finds it unaided.**
+  The comment was wrong and now says so; the entry stays for the narrow reason
+  that the tracer can follow a string literal and not a computed path, and the
+  *executable* half is a guard on the literal.
+
+Printing remains the answer for a script the font cannot draw, and the honest
+limitation is stated rather than hidden: a Hindi or Urdu reader asking for a
+file gets the refusal, because `formatDate` returns Devanagari month names.
+
+See `docs/modules/pdf.md`.
 
 ## 8. Storage
 
