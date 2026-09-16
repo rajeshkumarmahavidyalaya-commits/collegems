@@ -394,6 +394,7 @@ export const hi: Messages = {
   // --- the office batch ----------------------------------------------------
   // --- the boundaries every route now has --------------------------------
   // --- identity cards ------------------------------------------------------
+  "idCard.downloadPdf": "PDF डाउनलोड करें",
   "idCard.title": "पहचान पत्र",
   "idCard.subtitle": "एक कक्षा के लिए छापने योग्य कार्ड, एक शीट पर आठ।",
   "idCard.pickClass": "कक्षा",

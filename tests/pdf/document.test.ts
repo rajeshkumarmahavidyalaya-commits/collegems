@@ -15,6 +15,16 @@ import {
   reportCardFooter,
 } from "@/lib/pdf/report-card";
 import { parseCard, type ReportCard } from "@/lib/validations/report-cards";
+import {
+  CR80,
+  UnfinishedCard,
+  idCardFileName,
+  renderIdCard,
+  renderIdCards,
+  type CardDocument,
+} from "@/lib/pdf/card";
+import { cardGaps, isPrintable, type IdCard } from "@/lib/validations/id-card";
+import { createTranslator } from "@/lib/i18n/translate";
 
 /**
  * The PDF renderer, pinned without a database.
@@ -778,6 +788,211 @@ describe("what the report card renderer is not allowed to do", () => {
     for (const path of [
       "src/app/(app)/report-card/[studentId]/[examId]/pdf/route.ts",
       "src/app/(app)/exams/[examId]/report-cards/pdf/route.ts",
+    ]) {
+      const body = codeOf(path).slice(codeOf(path).indexOf("export async function GET"));
+      expect(body, path).toContain("status: 404");
+      expect(body, path).not.toMatch(/not found|does not exist|no such/i);
+    }
+  });
+});
+
+// ---------------------------------------------------------------------------
+// The identity card
+// ---------------------------------------------------------------------------
+
+/**
+ * A 2 × 2 grey PNG, inline.
+ *
+ * Inline rather than a fixture on disk because the thing being tested is that
+ * *some* image embeds and the wrong kind is refused, not what the picture is —
+ * and a test that needs a file somebody has to keep is a test that rots. The
+ * demo college has **0 objects in Storage**, so there is no real photograph to
+ * pin to anyway; that is the honest state of the college, not a gap in the
+ * suite.
+ */
+const PNG_2x2 = Buffer.from(
+  "iVBORw0KGgoAAAANSUhEUgAAAAIAAAACCAIAAAD91JpzAAAADklEQVR42mOoAAMGCAUAJ24Foe4ZwwcAAAAASUVORK5CYII=",
+  "base64",
+);
+
+function idCard(overrides: Partial<CardDocument> = {}): CardDocument {
+  return {
+    fullName: "Aryan Pandey",
+    subtitle: "Grade 4 A \u00b7 Roll 16",
+    facts: [
+      { label: "Admission number", value: "SOS-2025-0187" },
+      { label: "Blood group", value: "O+" },
+      { label: "Guardian", value: "Sunita Pandey \u00b7 +91 98765 43210" },
+    ],
+    schoolName: "Rajesh Kumar Mahavidyalaya",
+    sessionName: "2025-2026",
+    photo: { bytes: new Uint8Array(PNG_2x2), contentType: "image/png" },
+    ...overrides,
+  };
+}
+
+describe("a rendered identity card", () => {
+  /**
+   * CR80, the bank-card rectangle a school's laminating pouches are cut for.
+   * Printing at any other ratio produces cards that do not fit the holders a
+   * school already owns, which nobody discovers until four hundred are cut.
+   */
+  it("is a card, not a sheet of paper", async () => {
+    const doc = await PDFDocument.load(await renderIdCard(idCard()));
+    expect(doc.getPageCount()).toBe(1);
+    const { width, height } = doc.getPage(0).getSize();
+    expect(width).toBeCloseTo(CR80.width, 1);
+    expect(height).toBeCloseTo(CR80.height, 1);
+    // A4 is 595 × 842; this must be nowhere near it.
+    expect(width).toBeLessThan(300);
+  });
+
+  /**
+   * The `avatars` bucket admits webp and pdf-lib cannot embed one. Said out
+   * loud, because the alternative is a card with a blank square where the face
+   * goes — which is the defect this whole renderer exists to refuse.
+   */
+  it("refuses a photograph it cannot embed instead of drawing a blank square", async () => {
+    await expect(
+      renderIdCard(idCard({ photo: { bytes: new Uint8Array(PNG_2x2), contentType: "image/webp" } })),
+    ).rejects.toBeInstanceOf(UnfinishedCard);
+  });
+
+  /** The font check reaches a card too, not only a document. */
+  it("refuses a script it cannot draw", async () => {
+    await expect(renderIdCard(idCard({ fullName: "\u0939\u0930 \u092e\u093e\u0939" }))).rejects.toBeInstanceOf(
+      UnrenderableDocument,
+    );
+  });
+
+  /** A card with no subtitle and no facts is still a card. */
+  it("renders a card with nothing but a name on it", async () => {
+    const bytes = await renderIdCard(idCard({ subtitle: null, facts: [], sessionName: null }));
+    expect((await PDFDocument.load(bytes)).getPageCount()).toBe(1);
+  });
+
+  it("gives every person their own card", async () => {
+    const doc = await PDFDocument.load(await renderIdCards([idCard(), idCard(), idCard()]));
+    expect(doc.getPageCount()).toBe(3);
+  });
+
+  it("names the file after the person", () => {
+    expect(idCardFileName("Aryan Pandey")).toBe("Aryan-Pandey-id-card.pdf");
+    expect(idCardFileName("Grade 4 A", true)).toBe("Grade-4-A-id-cards.pdf");
+  });
+});
+
+describe("a card with no photograph is not an identity card", () => {
+  const t = createTranslator("en");
+
+  const student: IdCard = {
+    studentId: "s1",
+    fullName: "Aryan Pandey",
+    admissionNumber: "SOS-2025-0187",
+    className: "Grade 4 A",
+    rollNumber: "16",
+    dateOfBirth: "2016-03-14",
+    bloodGroup: "O+",
+    guardianName: "Sunita Pandey",
+    guardianPhone: "+91 98765 43210",
+    address: null,
+    photoUrl: "https://example.test/signed",
+    photoPath: "people/s1/face.png",
+  };
+
+  /**
+   * `blocking: true` has been on the photograph gap since the module shipped,
+   * under a comment saying a card without one *"is a piece of paper with a name
+   * on it"* — and it decided a **CSS class**. `isPrintable` is that sentence
+   * made executable.
+   */
+  it("says so, rather than colouring a list item red", () => {
+    expect(isPrintable(cardGaps(student, t))).toBe(true);
+    expect(isPrintable(cardGaps({ ...student, photoUrl: null }, t))).toBe(false);
+    // …and a merely missing blood group does not stop anything.
+    expect(isPrintable(cardGaps({ ...student, bloodGroup: null }, t))).toBe(true);
+  });
+
+  /** One predicate, consulted by the route and by the page, so they agree. */
+  it("is the same predicate in the route and on the page", () => {
+    for (const path of [
+      "src/app/(app)/students/[id]/id-card/pdf/route.ts",
+      "src/app/(app)/students/[id]/id-card/page.tsx",
+      "src/app/(app)/staff/[id]/id-card/pdf/route.ts",
+      "src/app/(app)/staff/[id]/id-card/page.tsx",
+    ]) {
+      expect(codeOf(path), path).toContain("isPrintable");
+    }
+  });
+
+  /**
+   * Printing is deliberately **not** gated. It is the school's own paper in the
+   * school's own tray, and a half-finished card can be looked at and thrown
+   * away; a file goes to a print shop and comes back as plastic.
+   */
+  it("still lets the school print a half-finished card", () => {
+    for (const path of [
+      "src/app/(app)/students/[id]/id-card/page.tsx",
+      "src/app/(app)/staff/[id]/id-card/page.tsx",
+    ]) {
+      const page = codeOf(path);
+      const printButton = page.indexOf("<PrintCardsButton");
+      expect(printButton, path).toBeGreaterThan(-1);
+      // The print button is not inside the printable branch: the branch closes
+      // before it.
+      expect(page.slice(page.lastIndexOf("}", printButton), printButton), path).not.toContain(
+        "isPrintable",
+      );
+    }
+  });
+});
+
+describe("what the card renderer is not allowed to do", () => {
+  const code = codeOf("src/lib/pdf/card.ts");
+
+  it("reads the card it is given and nothing else", () => {
+    for (const forbidden of ["createClient", "supabase", "from(", "rpc(", "current_"]) {
+      expect(code, `the card renderer must not reach for ${forbidden}`).not.toContain(forbidden);
+    }
+  });
+
+  /**
+   * **A URL is for a browser; a PDF embeds the image.** Minting a signed URL to
+   * fetch bytes the server can read directly is signing something nobody asked
+   * for — rule 8's "never render a signed link into a page" one step along — so
+   * the routes call `photoBytes` and never `photoUrl`.
+   */
+  it("fetches the photograph rather than signing a link to it", () => {
+    for (const path of [
+      "src/app/(app)/students/[id]/id-card/pdf/route.ts",
+      "src/app/(app)/staff/[id]/id-card/pdf/route.ts",
+    ]) {
+      const route = codeOf(path);
+      expect(route, path).toContain("photoBytes");
+      expect(route, path).not.toContain("photoUrl(");
+    }
+  });
+
+  /**
+   * The student route checks `students.view` and the staff route checks
+   * nothing, and that asymmetry is the point: RLS on `students` is
+   * row-ownership so the read proves who may see the child, while RLS on
+   * `staff` is role-wide — so `getStaffCard` carries the check *inside the
+   * function that produces the data*, and a copy in the caller is where a rule
+   * starts to differ from itself.
+   */
+  it("checks the student's permission here and the staff one where the data is", () => {
+    expect(codeOf("src/app/(app)/students/[id]/id-card/pdf/route.ts")).toContain(
+      'hasPermission("students.view")',
+    );
+    expect(codeOf("src/app/(app)/staff/[id]/id-card/pdf/route.ts")).not.toContain("hasPermission");
+    expect(codeOf("src/app/(app)/staff/id-cards/actions.ts")).toContain('hasPermission("staff.view")');
+  });
+
+  it("does not tell a stranger whether a card exists", () => {
+    for (const path of [
+      "src/app/(app)/students/[id]/id-card/pdf/route.ts",
+      "src/app/(app)/staff/[id]/id-card/pdf/route.ts",
     ]) {
       const body = codeOf(path).slice(codeOf(path).indexOf("export async function GET"));
       expect(body, path).toContain("status: 404");

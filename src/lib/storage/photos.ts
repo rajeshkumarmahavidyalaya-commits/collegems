@@ -97,3 +97,36 @@ export async function deletePhotoObject(path: string): Promise<void> {
 }
 
 export { buildObjectPath };
+
+/**
+ * The **bytes** of one photograph, for a renderer that has to embed it.
+ *
+ * A URL is for a browser. A PDF has no browser: it embeds the image, so it needs
+ * the object itself — and minting a signed URL in order to fetch bytes the
+ * server could read directly is signing something nobody asked for, which is
+ * exactly what rule 8's *"never render a signed link into a page"* is about one
+ * step along. It is also a round trip through the CDN to reach an object this
+ * process can open.
+ *
+ * **Call this only after the row has been read back through RLS**, on the same
+ * terms as `photoUrl`: the path is addressing, and the select is the
+ * authorization.
+ *
+ * Returns null rather than throwing on a missing object, because a photograph
+ * that has gone missing is a card that cannot be printed — a sentence for the
+ * office — and not a server error.
+ */
+export async function photoBytes(
+  path: string | null | undefined,
+): Promise<{ bytes: Uint8Array; contentType: string } | null> {
+  if (!path) return null;
+  const supabase = await createClient();
+  const { data, error } = await supabase.storage.from(BUCKETS.avatars).download(path);
+  if (error || !data) return null;
+  return {
+    bytes: new Uint8Array(await data.arrayBuffer()),
+    // Supabase returns the stored object's own type; the `avatars` bucket only
+    // admits jpeg, png and webp, and the renderer refuses the third by name.
+    contentType: data.type || "application/octet-stream",
+  };
+}

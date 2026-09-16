@@ -1,13 +1,13 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { getT, getLocale } from "@/lib/i18n/server";
 import { hasPermission } from "@/lib/auth/permissions";
 import { getIdCard } from "../../id-cards/actions";
 import { IdCardFace } from "@/components/id-card/id-card-sheet";
 import { PrintCardsButton } from "@/components/id-card/print-cards-button";
-import { cardGaps, studentFace } from "@/lib/validations/id-card";
+import { cardGaps, isPrintable, studentFace } from "@/lib/validations/id-card";
 import { formatDate } from "@/lib/i18n/format";
 
 export const metadata = { title: "ID card" };
@@ -36,6 +36,7 @@ export default async function StudentIdCardPage({
   if (!canView || !result) notFound();
 
   const gaps = cardGaps(result.card, t);
+  const printable = isPrintable(gaps);
 
   return (
     <div className="flex flex-col gap-6">
@@ -46,7 +47,27 @@ export default async function StudentIdCardPage({
             {result.card.fullName}
           </Link>
         </Button>
-        <PrintCardsButton count={1} />
+        <div className="flex flex-wrap gap-2">
+          {/* Offered only when the card can actually be produced. `blocking`
+              has said "no photograph, no identity card" since this module
+              shipped and decided nothing but a text colour; `isPrintable` is
+              that sentence made executable, and the route refuses on the same
+              predicate. A control that will refuse you is worse than no
+              control, because it costs the person the work of trying.
+
+              Printing is *not* gated: that is the school's own paper in the
+              school's own tray, and a half-finished card can be looked at. A
+              file is what leaves the building. */}
+          {printable && (
+            <Button asChild variant="outline">
+              <a href={`/students/${id}/id-card/pdf`} download>
+                <Download className="size-4" aria-hidden="true" />
+                Download PDF
+              </a>
+            </Button>
+          )}
+          <PrintCardsButton count={1} />
+        </div>
       </div>
 
       {gaps.length > 0 && (

@@ -169,6 +169,7 @@ function toCard(
     // the policy. Rule 8: the signature is the authorization, so a URL is only
     // ever issued for a path this caller was allowed to read.
     photoUrl: (person?.photo_path && signed.get(person.photo_path)) || null,
+    photoPath: person?.photo_path ?? null,
   };
 }
 

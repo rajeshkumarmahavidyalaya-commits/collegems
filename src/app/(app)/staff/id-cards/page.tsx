@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowLeft, TriangleAlert } from "lucide-react";
+import { ArrowLeft, Download, TriangleAlert } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { getT } from "@/lib/i18n/server";
@@ -10,6 +10,7 @@ import { DepartmentPicker } from "./department-picker";
 import {
   CARDS_PER_SHEET,
   MAX_CARDS_PER_RUN,
+  isPrintable,
   setSummary,
   staffCardGaps,
   staffFace,
@@ -74,6 +75,19 @@ export default async function StaffIdCardsPage({
               label={t("idCard.department")}
               allLabel={t("idCard.allDepartments")}
             />
+          )}
+          {/* See the student sheet: offered only when every card in the set can
+              be produced, because a set is all-or-nothing. */}
+          {cards.length > 0 && cards.every((card) => isPrintable(staffCardGaps(card, t))) && (
+            <Button asChild variant="outline">
+              <a
+                href={`/staff/id-cards/pdf${department ? `?department=${encodeURIComponent(department)}` : ""}`}
+                download
+              >
+                <Download className="size-4" aria-hidden="true" />
+                {t("idCard.downloadPdf")}
+              </a>
+            </Button>
           )}
           <PrintCardsButton count={cards.length} />
         </div>

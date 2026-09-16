@@ -48,6 +48,16 @@ export type IdCard = {
   address: string | null;
   /** A signed URL, issued at render and short-lived. Never a stored URL (rule 8). */
   photoUrl: string | null;
+  /**
+   * The object path, for a renderer that needs the **bytes** rather than a link.
+   *
+   * A URL is for a browser; a PDF embeds the image and has none. Minting a
+   * signed URL in order to fetch bytes the server could read directly is
+   * signing something nobody asked for — rule 8's *"never render a signed link
+   * into a page"* one step along — so the card carries both and each consumer
+   * takes the one it can use.
+   */
+  photoPath: string | null;
 };
 
 /**
@@ -69,6 +79,8 @@ export type PersonCard = {
   /** The line under the name: a class and roll, or a designation and department. */
   subtitle: string | null;
   photoUrl: string | null;
+  /** See `IdCard.photoPath`: the face draws the URL, the renderer needs bytes. */
+  photoPath: string | null;
   facts: { label: string; value: string }[];
 };
 
@@ -151,6 +163,7 @@ export function studentFace(
         : card.className
       : null,
     photoUrl: card.photoUrl,
+    photoPath: card.photoPath,
     facts,
   };
 }
@@ -187,6 +200,7 @@ export type StaffCard = {
   phone: string | null;
   bloodGroup: string | null;
   photoUrl: string | null;
+  photoPath: string | null;
 };
 
 export function staffFace(card: StaffCard, t: Translator): PersonCard {
@@ -201,6 +215,7 @@ export function staffFace(card: StaffCard, t: Translator): PersonCard {
     fullName: card.fullName,
     subtitle: card.department ? `${card.designation} · ${card.department}` : card.designation,
     photoUrl: card.photoUrl,
+    photoPath: card.photoPath,
     facts,
   };
 }
@@ -218,6 +233,29 @@ export function staffCardGaps(card: StaffCard, t: Translator): CardGap[] {
     message: t(key),
     blocking,
   }));
+}
+
+/**
+ * Whether a card can be produced at all.
+ *
+ * `blocking` has been on the photograph gap since ID cards shipped, under a
+ * comment saying *"a card with an empty square where the face goes is not an
+ * identity card, it is a piece of paper with a name on it"*. **Nothing enforced
+ * it**: `blocking` decided a CSS class and nothing else, so the screen drew a
+ * dashed placeholder and printed anyway. That is this codebase's own recurring
+ * defect — a column recording an intention with no executable half.
+ *
+ * One predicate, consulted by both halves, so they cannot disagree: the PDF
+ * route refuses, and the pages do not offer a download that would refuse. *A
+ * control that will refuse you is worse than no control*, because it costs the
+ * person the work of trying.
+ *
+ * It deliberately does **not** stop the screen printing. Printing is the
+ * school's own paper in the school's own tray and a half-finished card can be
+ * looked at; a file is what leaves the building.
+ */
+export function isPrintable(gaps: CardGap[]): boolean {
+  return !gaps.some((gap) => gap.blocking);
 }
 
 export function cardGaps(card: IdCard, t: Translator): CardGap[] {

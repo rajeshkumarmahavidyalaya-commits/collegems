@@ -435,6 +435,7 @@ export const en = {
   // admission numbers are real. Same reasoning as the platform console's flat
   // refusal.
   // --- identity cards ------------------------------------------------------
+  "idCard.downloadPdf": "Download PDF",
   "idCard.title": "ID cards",
   "idCard.subtitle": "Printable cards for a class, eight to a sheet.",
   "idCard.pickClass": "Class",

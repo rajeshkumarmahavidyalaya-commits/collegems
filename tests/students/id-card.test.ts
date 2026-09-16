@@ -75,6 +75,7 @@ const CARD: IdCard = {
   guardianPhone: "+91 98765 43210",
   address: "12 Nehru Road, Pune",
   photoUrl: "https://example.test/signed",
+  photoPath: "people/s1/face.jpg",
 };
 
 describe("a card is not a certificate", () => {

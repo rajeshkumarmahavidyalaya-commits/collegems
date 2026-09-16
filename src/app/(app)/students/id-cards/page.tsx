@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowLeft, TriangleAlert } from "lucide-react";
+import { ArrowLeft, Download, TriangleAlert } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { hasPermission } from "@/lib/auth/permissions";
@@ -13,6 +13,7 @@ import {
   CARDS_PER_SHEET,
   MAX_CARDS_PER_RUN,
   cardGaps,
+  isPrintable,
   setSummary,
   studentFace,
 } from "@/lib/validations/id-card";
@@ -85,6 +86,19 @@ export default async function IdCardsPage({
 
         <div className="flex flex-wrap items-end gap-3">
           <ClassPicker sections={sections} value={sectionId} label={t("idCard.pickClass")} />
+          {/* Offered only when **every** card in the set can be produced. A set
+              is all-or-nothing — one file for the class, refusing by name on
+              the first child with no photograph — so a link that would answer
+              422 is a link nobody should be given. The `summary` above already
+              says how many are missing one. */}
+          {cards.length > 0 && cards.every((card) => isPrintable(cardGaps(card, t))) && (
+            <Button asChild variant="outline">
+              <a href={`/students/id-cards/pdf?section=${sectionId}`} download>
+                <Download className="size-4" aria-hidden="true" />
+                {t("idCard.downloadPdf")}
+              </a>
+            </Button>
+          )}
           <PrintCardsButton count={cards.length} />
         </div>
 

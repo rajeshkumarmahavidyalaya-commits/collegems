@@ -99,6 +99,7 @@ export async function getStaffCards(department?: string): Promise<StaffCardSet> 
       phone: row.people?.phone?.trim() || null,
       bloodGroup: row.people?.blood_group?.trim() || null,
       photoUrl: (row.people?.photo_path && signed.get(row.people.photo_path)) || null,
+      photoPath: row.people?.photo_path ?? null,
     }))
     // Employee codes are text for the same reason roll numbers are, so the same
     // numeric-aware comparator applies. Pinned to `en`: a code is an identifier,
@@ -162,6 +163,7 @@ export async function getStaffCard(
       phone: row.people?.phone?.trim() || null,
       bloodGroup: row.people?.blood_group?.trim() || null,
       photoUrl: (row.people?.photo_path && signed.get(row.people.photo_path)) || null,
+      photoPath: row.people?.photo_path ?? null,
     },
     school,
   };

@@ -186,12 +186,14 @@ What is genuinely left:
   carry an attachment on a delivery.
 - **A digest that carries the rows.** `report.digest` sends a count and a link,
   deliberately — the attachment is the item above, wearing a different hat.
-- **ID cards as files.** The report card is done — one child, or a class in one
-  file, one child to a sheet, rendered from `exam_results`' frozen row. See
-  [pdf.md](./modules/pdf.md). The ID card is the one left, and it is a different
-  shape: not frozen (rule 12's *"a statement about now"*), a CR80 page rather
-  than A4, and an embedded photograph — against a college with **0 objects in
-  Storage**, so there is nothing to embed yet.
+- **A real measurement of a class of ID cards.** Report cards and ID cards are
+  both done — see [pdf.md](./modules/pdf.md) — and the ID card turned up the
+  sharper finding: `cardGaps()` has marked a missing photograph `blocking: true`
+  since the module shipped, and `blocking` decided a **text colour**. It is
+  executable now, and the PDF refuses where printing still goes ahead. What is
+  unmeasured is the size of a real class: this college has **0 objects in
+  Storage**, so the byte ceiling on a set is a written-down guess rather than a
+  number.
 
 ---
 

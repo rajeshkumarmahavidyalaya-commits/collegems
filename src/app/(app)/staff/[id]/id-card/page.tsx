@@ -1,12 +1,12 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { getT } from "@/lib/i18n/server";
 import { getStaffCard } from "../../id-cards/actions";
 import { IdCardFace } from "@/components/id-card/id-card-sheet";
 import { PrintCardsButton } from "@/components/id-card/print-cards-button";
-import { staffCardGaps, staffFace } from "@/lib/validations/id-card";
+import { isPrintable, staffCardGaps, staffFace } from "@/lib/validations/id-card";
 
 export const metadata = { title: "Staff ID card" };
 
@@ -35,7 +35,19 @@ export default async function StaffIdCardPage({ params }: { params: Promise<{ id
             {result.card.fullName}
           </Link>
         </Button>
-        <PrintCardsButton count={1} />
+        <div className="flex flex-wrap gap-2">
+          {/* See the student card's page: offered only when the card can be
+              produced, on the same predicate the route refuses with. */}
+          {isPrintable(gaps) && (
+            <Button asChild variant="outline">
+              <a href={`/staff/${id}/id-card/pdf`} download>
+                <Download className="size-4" aria-hidden="true" />
+                Download PDF
+              </a>
+            </Button>
+          )}
+          <PrintCardsButton count={1} />
+        </div>
       </div>
 
       {gaps.length > 0 && (

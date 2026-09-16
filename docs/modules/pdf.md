@@ -121,16 +121,24 @@ every PDF carries to save one heading a few grams of ink.
 
 ---
 
-## Three documents, because one is a decision and three are a pattern
+## Four documents, and the fourth is not a document at all
 
 They are deliberately unalike, and the difference is the interesting part.
 
-| | certificate | invoice | report card |
-|---|---|---|---|
-| shape | a page of prose | a table that has to add up | a table about a term that ended |
-| source | `certificates.body`, **frozen at issue** | `getInvoiceDocument()`, **live** | `exam_results`, **frozen at publish** |
-| identical in 2034? | yes, and must be | no, and must not be | yes, once published |
-| cache header | `private, must-revalidate` | `no-store` | `must-revalidate`, or `no-store` while it is a draft |
+| | certificate | invoice | report card | ID card |
+|---|---|---|---|---|
+| shape | a page of prose | a table that has to add up | a table about a term that ended | a rectangle with a face on it |
+| page | A4 | A4 | A4 | **CR80** |
+| source | `certificates.body`, **frozen at issue** | `getInvoiceDocument()`, **live** | `exam_results`, **frozen at publish** | the roll, **live** |
+| identical in 2034? | yes, and must be | no, and must not be | yes, once published | no — it says which year it is for |
+| cache header | `private, must-revalidate` | `no-store` | `must-revalidate`, or `no-store` while a draft | `no-store` |
+
+The last column is why the heading says *the fourth is not a document at all*.
+Three of these are statements about something that has happened and are printed
+on paper you file; an identity card is a statement about **now**, printed on
+plastic somebody carries — rule 12's *"a statement about now, not about a day
+that has passed"*, which is why it has no serial, no issued-on date and no row
+of its own.
 
 ### The certificate renders the row and nothing else
 
@@ -270,6 +278,107 @@ weakness and had simply not been triggered.
 
 ---
 
+### The identity card, which is not `Sheet`
+
+`Sheet` is a document: A4, a measure, a cursor that flows and turns the page. A
+card has none of those — it is a fixed rectangle with things placed on it — so
+forcing one through `Sheet` would mean parameterising `measure`, `wrap`, `turn`,
+`signature` and `finish` to all do nothing. `src/lib/pdf/card.ts` is its own
+primitive; what the two genuinely share is the font and the coverage check, and
+both already live in `font.ts`.
+
+**CR80, 85.60 × 53.98 mm**, the bank-card rectangle a school's laminating
+pouches and badge holders are cut for. The screen's eight-up A4 sheet is kept:
+
+> A sheet of eight is for a school with a guillotine and a laser printer. A file
+> of CR80 pages is for a card printer, or the print shop down the road — which
+> is what a school with four hundred children actually uses.
+
+And the layout was measured rather than reasoned. The first draft put a 52 × 66
+box on the left and left the bottom third of the card empty; rendered at 300 dpi
+and looked at, it read as a card that had not finished printing. **On an
+identity card the face is the document** and the text beside it is the caption,
+so the photograph runs nearly the full height below the header rule.
+
+#### `blocking: true` was a CSS class
+
+`cardGaps()` has marked a missing photograph `blocking: true` since ID cards
+shipped, under a comment that could not be clearer:
+
+> *"a card with an empty square where the face goes is not an identity card, it
+> is a piece of paper with a name on it"*
+
+Its only consumer, in both card pages, was
+`className={gap.blocking ? "text-destructive" : undefined}`. **It decided a text
+colour.** The screen drew a dashed placeholder and printed anyway — a column
+recording an intention with no executable half, which is this codebase's oldest
+recurring shape, arriving in the interface.
+
+A file is where that stops being a style, and the split is the rule:
+
+| | gated on a photograph? | why |
+|---|---|---|
+| printing | **no**, deliberately | the school's own paper in the school's own tray; a half-finished card can be looked at and thrown away |
+| the PDF | **yes**, 422 with the sentence | it goes to a card printer or a print shop and comes back as a stack of plastic |
+
+`isPrintable(gaps)` is the one predicate, consulted by the routes *and* by the
+pages — which do not draw a download button that would answer 422. *A control
+that will refuse you is worse than no control, because it costs the person the
+work of trying.*
+
+#### The photograph is fetched, not linked
+
+`photoBytes(path)` downloads the object. `photoUrl` is never called by a PDF
+route, and a guard says so.
+
+> **A URL is for a browser; a PDF embeds the image and has none.** Minting a
+> signed URL in order to fetch bytes this process can read directly is signing
+> something nobody asked for — rule 8's *"never render a signed link into a
+> page"* one step along — and a round trip through the CDN to reach an object
+> the server can open.
+
+So `IdCard` and `StaffCard` carry **both** a `photoUrl` and a `photoPath`, and
+each consumer takes the one it can use.
+
+A webp photograph is refused by name rather than drawn as a blank square: the
+`avatars` bucket admits webp and pdf-lib cannot embed one. Same instinct as the
+font's coverage check, one media type along.
+
+#### A bound on rows is not a bound on bytes
+
+`MAX_CARDS_PER_RUN` is 120, and it sees nothing at all about size — the
+`avatars` bucket admits 5 MB objects, so a hundred and twenty of them is 600 MB
+that no count would notice. `cardDocuments()` carries the second bound and
+refuses with the number.
+
+**24 MB is a guess and is written down as one.** This college has **0 objects in
+Storage**, so there is no real photograph to size; the refusal names the figure
+so the first school to meet it tells us what the right one is.
+
+A set is also **all-or-nothing**: the first person with no photograph stops the
+whole file, by name. A set that quietly dropped them would hand an office a
+stack of thirty-eight where they asked for forty — rule 13's *refuse an
+oversized input rather than truncating it*, because nobody notices until April.
+
+#### …and the two routes check different things, on purpose
+
+`students.view` is checked **in the student route**; the staff route checks
+nothing. That is not an oversight and it is the clearest instance of rule 4's
+refinement in the codebase:
+
+- RLS on `students` is row-ownership, so `getIdCard` returning a row already
+  proves the caller may see that child — but the *screen* gates on
+  `students.view`, and a file version of a screen that gated differently would
+  be the menu and the boundary disagreeing.
+- RLS on `staff` is **role-wide**: admin, teacher, accountant and librarian all
+  read every row, so the policy narrows nothing and the matrix is the only thing
+  that expresses *"a librarian may not pull the employment record"*.
+  `getStaffCards` and `getStaffCard` therefore check `staff.view` **inside the
+  function that produces the data**, and a copy in each caller is where a rule
+  starts to differ from itself.
+
+---
+
 ## The locale is the reader's, and that is a decision
 
 Rule 15: the locale is a property of a person. So a file is produced in the
@@ -316,13 +425,17 @@ Both are kept, because they fail in opposite directions:
 
 ## Weight, and the boundary that keeps it there
 
-Built after: all **four** PDF routes are **151 B / 103 kB** — the shared
+Built after: all **eight** PDF routes are **151–162 B / 103 kB** — the shared
 baseline and nothing else. pdf-lib (~400 kB) stays entirely server-side, and the
 download controls are plain `<a href … download>` links rather than client
 components, so a Server-Component-only route is not charged the i18n catalogue
-to draw one word. The two pages that gained a link are 118 kB
-(`/report-card/[studentId]/[examId]`) and 152 kB
-(`/exams/[examId]/report-cards`), both already client routes for other reasons.
+to draw one word.
+
+The pages that gained a link cost a lucide icon and nothing else: the two ID
+card sheets are **174 kB before and after**, and a single card page moved
+**140 → 141 kB**. `/report-card/[studentId]/[examId]` is 118 kB and
+`/exams/[examId]/report-cards` 152 kB, both already client routes for other
+reasons.
 
 One `"use client"` file importing `pdfFileName` for its filename helper would
 quietly end that — `fees-display.ts`'s lesson one library along — so the guard
@@ -361,10 +474,12 @@ the declaration of intent beside it.
   (pdf-lib, an embedded font) and a job runs inside Postgres, so it needs a
   worker process that is neither, plus the Storage item above to put the files
   somewhere.
-- **ID cards.** The other document a school hands out, and the one that is not
-  frozen: rule 12's *"a statement about now, not about a day that has passed"*.
-  It needs a CR80 page rather than A4 and an embedded photograph, and this
-  college has **0 objects in Storage**, so there is nothing to embed yet.
+- **A measurement of a real class of cards.** The renderer is pinned against a
+  2 × 2 PNG inline in the test, and 40 cards with that photograph is 607 ms and
+  131 kB — which says the *drawing* is cheap and nothing at all about the
+  download. This college has **0 objects in Storage**, so the numbers that
+  matter (a real portrait's size, forty sequential Storage reads) are unmeasured
+  and the byte ceiling above is a guess.
 - **A school's letterhead.** The header is the school's name and address as
   text. An uploaded logo is a Storage read and an image embed — small, and not
   attempted here because no school has uploaded one.

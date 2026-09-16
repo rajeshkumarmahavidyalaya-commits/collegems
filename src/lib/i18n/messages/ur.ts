@@ -394,6 +394,7 @@ export const ur: Messages = {
   // --- the office batch ----------------------------------------------------
   // --- the boundaries every route now has --------------------------------
   // --- identity cards ------------------------------------------------------
+  "idCard.downloadPdf": "پی ڈی ایف ڈاؤن لوڈ کریں",
   "idCard.title": "شناختی کارڈ",
   "idCard.subtitle": "ایک جماعت کے لیے قابلِ طباعت کارڈ، ایک شیٹ پر آٹھ۔",
   "idCard.pickClass": "جماعت",
