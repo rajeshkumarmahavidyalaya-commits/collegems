@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowLeft, FileText, MessageSquare } from "lucide-react";
+import { ArrowLeft, Download, FileText, MessageSquare } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { hasPermission } from "@/lib/auth/permissions";
 import { listSections } from "../../../students/actions";
@@ -82,7 +82,22 @@ export default async function ReportCardsPage({
         className="flex flex-wrap items-end justify-between gap-3 rounded-lg border border-border bg-card p-4"
       >
         <SectionPicker examId={examId} sections={sections} value={chosen} />
-        {cards.length > 0 ? <PrintButton count={cards.length} /> : null}
+        {cards.length > 0 ? (
+          <div className="flex flex-wrap gap-2">
+            {/* One file for the class, not one per child: a school prints a
+                class in a single pass, and twenty-five downloads is
+                twenty-five chances to miss one. A plain link, so this
+                Server-Component-only route is not charged the i18n catalogue
+                to draw one word. */}
+            <Button asChild variant="outline">
+              <a href={`/exams/${examId}/report-cards/pdf?section=${chosen}`} download>
+                <Download className="size-4" aria-hidden="true" />
+                Download {cards.length} card{cards.length === 1 ? "" : "s"}
+              </a>
+            </Button>
+            <PrintButton count={cards.length} />
+          </div>
+        ) : null}
       </div>
 
       {unreadable > 0 ? (

@@ -186,9 +186,12 @@ What is genuinely left:
   carry an attachment on a delivery.
 - **A digest that carries the rows.** `report.digest` sends a count and a link,
   deliberately — the attachment is the item above, wearing a different hat.
-- **Report cards and ID cards as files.** Both belong in `Sheet`; the report card
-  must render `exam_results`' frozen numbers and `rules_snapshot` rather than
-  recompute a rank whose cohort has changed.
+- **ID cards as files.** The report card is done — one child, or a class in one
+  file, one child to a sheet, rendered from `exam_results`' frozen row. See
+  [pdf.md](./modules/pdf.md). The ID card is the one left, and it is a different
+  shape: not frozen (rule 12's *"a statement about now"*), a CR80 page rather
+  than A4, and an embedded photograph — against a college with **0 objects in
+  Storage**, so there is nothing to embed yet.
 
 ---
 

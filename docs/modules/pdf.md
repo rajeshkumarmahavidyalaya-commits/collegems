@@ -121,16 +121,16 @@ every PDF carries to save one heading a few grams of ink.
 
 ---
 
-## Two documents, because one is a decision and two are a pattern
+## Three documents, because one is a decision and three are a pattern
 
 They are deliberately unalike, and the difference is the interesting part.
 
-| | certificate | invoice |
-|---|---|---|
-| shape | a page of prose | a table that has to add up |
-| source | `certificates.body`, **frozen at issue** | `getInvoiceDocument()`, **live** |
-| identical in 2034? | yes, and must be | no, and must not be |
-| cache header | `private, must-revalidate` | `no-store` |
+| | certificate | invoice | report card |
+|---|---|---|---|
+| shape | a page of prose | a table that has to add up | a table about a term that ended |
+| source | `certificates.body`, **frozen at issue** | `getInvoiceDocument()`, **live** | `exam_results`, **frozen at publish** |
+| identical in 2034? | yes, and must be | no, and must not be | yes, once published |
+| cache header | `private, must-revalidate` | `no-store` | `must-revalidate`, or `no-store` while it is a draft |
 
 ### The certificate renders the row and nothing else
 
@@ -162,6 +162,111 @@ cannot be reconciled against the receipt somebody is holding.
 
 An account moves, so the footer says when the file was produced. A certificate
 needs no such line and deliberately does not have one.
+
+---
+
+### The report card renders the frozen row, and so does the class
+
+A published card is read out of `exam_results` — the marks, the rank, the
+cohort size it was taken over, the `rules_snapshot` that chose the scope, and
+the attendance. Nothing in the renderer recomputes any of it, and nothing may:
+rule 12's argument is that a rank cannot be worked out again later *because the
+cohort has changed*, so recomputing produces a plausible card that is not the
+one the family was given.
+
+That was checked rather than assumed, and the check was worth running.
+Migration `0078` originally computed the attendance line with a lateral call at
+read time — which is precisely the defect rule 12 describes, *"a reprint in
+December disagreed with the card handed out in March"* — and `0080` is the
+migration that froze it onto the row. `0080` is the **latest** definition of
+`exams_report_cards`, so the read path this renders is the fixed one.
+
+#### …and the warning has to move onto the document
+
+A draft card renders too. A class teacher checking marks before publication
+wants them on paper, and refusing would send them to a screenshot. But the
+screen's banner — *"Do not hand this to a parent"* — is addressed to **the
+person looking at the screen**, and a file has a different reader: whoever it
+reaches, in a folder, a week later.
+
+> **The chrome is not the document.** A warning that lives in the interface
+> around a file does not travel with it.
+
+So a provisional card says so at the top *and* in the footer of every page —
+which is only possible because `Sheet.finish` stamps the footer after the last
+page is written. And one piece of chrome **does** travel, which the first cut
+missed:
+
+> **The filename is chrome that travels.** Without the suffix, a draft checked
+> in August and the published card land in a folder under identical names.
+
+#### A class is one file, and the per-card cost is not what it looks like
+
+A school prints a class in one pass, so `renderReportCards` writes one PDF with
+one child to a sheet. Measured warm, the live card repeated:
+
+| cards | bytes | total | each |
+|---|---|---|---|
+| 1 | 8,305 | 75 ms | 75.5 ms |
+| 25 (a class) | 67,935 | **572 ms** | 22.9 ms |
+| 40 | 105,001 | 750 ms | 18.7 ms |
+| 301 (the school) | 753,606 | **5,450 ms** | 18.1 ms |
+
+> **The per-card cost falls by four times, and that is the finding.** The font
+> is embedded **once per document**, not once per card. A first draft of the
+> comment above this function said *"66 ms each, so a class is about a second
+> and a half"* — extrapolated from the single-card number and **three times too
+> pessimistic**. A number you extrapolated is not a number you measured.
+
+It also re-prices the school-wide case: the **10.4 s for 302 certificates** at
+the top of this page was 302 *separate documents*, each embedding the font. In
+one file it is 5.5 s. Still far past a request, so it stays queued work — but
+for a different reason than the one written down.
+
+#### Two routes, two different questions
+
+| | who may have it | why |
+|---|---|---|
+| `/report-card/[studentId]/[examId]/pdf` | **nobody checks** | `exams_report_card` is row-scoped and refuses in two directions of its own. A second answer to a question Postgres answers is a second place to get it wrong. |
+| `/exams/[examId]/report-cards/pdf?section=` | `exams.view` | *"May I pull a whole class"* is not *"may I see this child"* — the `staff_record` / `staff_roster` distinction — and the screen this is the file version of already answers it. |
+
+Both 404s are flat. *Not published yet* and *not yours* must not be
+distinguishable, or iterating over student ids says which children are in which
+class.
+
+#### The guard that took three attempts to measure the right thing
+
+`renderReportCards` turns the page between children. Deleting that line gives
+**exactly the same page count** — 1, 2, 3 and 7 cards all produce 1, 2, 3 and 7
+pages either way — because `Sheet.signature` sinks to the foot of the sheet and
+the next card's opening lines then fall off the bottom and turn the page by
+themselves. What breaks is the **layout**: the second child's school name and
+exam line are stranded at the bottom of the first child's sheet, under their
+signature.
+
+A check on *where each page starts* could not see it either, because every page
+still begins at the top; the strandings are at the bottom. The property that
+can is **one card opens per page**, and the school's name at 17pt is the only
+thing on a card drawn that large:
+
+```
+cardOpeningsPerPage(doc) -> [1, 1, 1, 1, 1, 1, 1]
+```
+
+The rendered *text* cannot be read back at all — the font is embedded as a
+subset, so `drawText` writes glyph ids — but the **font-size operators and
+coordinates are plain numbers** in the (Flate-compressed) content stream, which
+is what makes a structural assertion possible.
+
+> Two planted violations passed before this one failed. A count is the easiest
+> thing to assert about a document and it is usually measuring something else.
+
+And the comment-stripping bug arrived for the **fourth** time in this
+repository, from a new direction: the bulk route's comment *explains* that "no
+such section" and "no permission" must be indistinguishable, and the guard
+forbidding that wording failed on the explanation. `codeOf()` strips first now,
+and the certificate's two guards were moved onto it — they had the same latent
+weakness and had simply not been triggered.
 
 ---
 
@@ -211,11 +316,13 @@ Both are kept, because they fail in opposite directions:
 
 ## Weight, and the boundary that keeps it there
 
-Built before and after: both PDF routes are **145 B / 103 kB** — the shared
+Built after: all **four** PDF routes are **151 B / 103 kB** — the shared
 baseline and nothing else. pdf-lib (~400 kB) stays entirely server-side, and the
 download controls are plain `<a href … download>` links rather than client
 components, so a Server-Component-only route is not charged the i18n catalogue
-to draw one word.
+to draw one word. The two pages that gained a link are 118 kB
+(`/report-card/[studentId]/[examId]`) and 152 kB
+(`/exams/[examId]/report-cards`), both already client routes for other reasons.
 
 One `"use client"` file importing `pdfFileName` for its filename helper would
 quietly end that — `fees-display.ts`'s lesson one library along — so the guard
@@ -254,10 +361,10 @@ the declaration of intent beside it.
   (pdf-lib, an embedded font) and a job runs inside Postgres, so it needs a
   worker process that is neither, plus the Storage item above to put the files
   somewhere.
-- **Report cards and ID cards.** Both are documents a person keeps and both
-  should come through `Sheet`. The report card is the harder one and worth doing
-  carefully: it must render `exam_results`' frozen numbers and its
-  `rules_snapshot`, never recompute a rank whose cohort has changed.
+- **ID cards.** The other document a school hands out, and the one that is not
+  frozen: rule 12's *"a statement about now, not about a day that has passed"*.
+  It needs a CR80 page rather than A4 and an embedded photograph, and this
+  college has **0 objects in Storage**, so there is nothing to embed yet.
 - **A school's letterhead.** The header is the school's name and address as
   text. An uploaded logo is a Storage read and an image embed — small, and not
   attempted here because no school has uploaded one.

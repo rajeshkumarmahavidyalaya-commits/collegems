@@ -1,12 +1,20 @@
 import { readFileSync, readdirSync, statSync } from "node:fs";
 import { join } from "node:path";
-import { PDFDocument } from "pdf-lib";
+import { inflateSync } from "node:zlib";
+import { PDFArray, PDFDocument, PDFRawStream } from "pdf-lib";
 import { describe, expect, it } from "vitest";
 
 import { documentFont, unrenderable, unrenderableMessage } from "@/lib/pdf/font";
 import { Sheet, UnrenderableDocument, pdfFileName } from "@/lib/pdf/document";
 import { certificateFileName, renderCertificate } from "@/lib/pdf/certificate";
 import { invoiceFileName, renderInvoice, type InvoiceStrings } from "@/lib/pdf/invoice";
+import {
+  renderReportCard,
+  renderReportCards,
+  reportCardFileName,
+  reportCardFooter,
+} from "@/lib/pdf/report-card";
+import { parseCard, type ReportCard } from "@/lib/validations/report-cards";
 
 /**
  * The PDF renderer, pinned without a database.
@@ -25,6 +33,64 @@ import { invoiceFileName, renderInvoice, type InvoiceStrings } from "@/lib/pdf/i
  */
 
 const ROOT = process.cwd();
+
+/**
+ * The y-coordinate of every text run on each page, top first.
+ *
+ * The rendered *text* cannot be read back — the font is embedded as a subset,
+ * so `drawText` writes glyph ids — but the **positions** are plain numbers in
+ * the content stream, and they are what the interesting property is about.
+ * Flate-compressed by `doc.save()`, hence the inflate.
+ */
+function pageStreams(doc: PDFDocument): string[] {
+  return doc.getPages().map((page) => {
+    const contents = page.node.Contents();
+    const streams = contents instanceof PDFArray ? contents.asArray() : [contents];
+    let raw = "";
+    for (const ref of streams) {
+      const stream = page.node.context.lookup(ref);
+      if (stream instanceof PDFRawStream) {
+        const body = Buffer.from(stream.getContents());
+        raw += (() => {
+          try {
+            return inflateSync(body).toString("latin1");
+          } catch {
+            return body.toString("latin1");
+          }
+        })();
+      }
+    }
+    return raw;
+  });
+}
+
+/**
+ * How many times a page opens a card.
+ *
+ * The school's name is the only thing drawn at 17pt — everything else on a
+ * report card is 12 or under — so `Tf` at that size is *"a card starts here"*,
+ * and it survives the font being subset in a way the text itself does not.
+ */
+function cardOpeningsPerPage(doc: PDFDocument): number[] {
+  return pageStreams(doc).map((raw) => [...raw.matchAll(/\s17 Tf/g)].length);
+}
+
+/**
+ * Source with its comments removed.
+ *
+ * A guard that reads prose reports on the prose — this codebase's oldest
+ * recurring test bug, met here for the fourth time: the bulk route's comment
+ * explains that "no such section" and "no permission" must be indistinguishable,
+ * and the check forbidding that wording failed on the explanation. Strip first,
+ * then match.
+ */
+function codeOf(path: string): string {
+  return readFileSync(join(ROOT, path), "utf8")
+    .replace(/\/\*[\s\S]*?\*\//g, "")
+    .split("\n")
+    .map((line) => line.replace(/\/\/.*$/, ""))
+    .join("\n");
+}
 
 /** The live row from the demo college, verbatim. */
 const LIVE_BODY = `This is to certify that Vivaan Verma, son/daughter of Arjun Verma, Admission Number SOS-2025-0001, is a bona fide student of Rajesh Kumar Mahavidyalaya and is studying in Class Grade 1 A during the academic session 2025-2026.
@@ -202,12 +268,7 @@ describe("the filename", () => {
 });
 
 describe("what the renderer is not allowed to do", () => {
-  const renderer = readFileSync(join(ROOT, "src/lib/pdf/certificate.ts"), "utf8");
-  const code = renderer
-    .replace(/\/\*[\s\S]*?\*\//g, "")
-    .split("\n")
-    .map((l) => l.replace(/\/\/.*$/, ""))
-    .join("\n");
+  const code = codeOf("src/lib/pdf/certificate.ts");
 
   /**
    * Rule 12: *preview computes; issue freezes.* The page that shows a
@@ -232,10 +293,7 @@ describe("what the renderer is not allowed to do", () => {
    * turns the route into an oracle for which serials exist.
    */
   it("does not tell a stranger whether a certificate exists", () => {
-    const route = readFileSync(
-      join(ROOT, "src/app/(app)/certificates/[id]/pdf/route.ts"),
-      "utf8",
-    );
+    const route = codeOf("src/app/(app)/certificates/[id]/pdf/route.ts");
     const body = route.slice(route.indexOf("export async function GET"));
     expect(body).toContain("status: 404");
     expect(body).not.toMatch(/not found|does not exist|no such/i);
@@ -460,5 +518,270 @@ describe("the renderer stays on the server", () => {
       }
     }
     expect(offenders, "pdf-lib is ~400 kB and must never reach a browser").toEqual([]);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// The report card
+// ---------------------------------------------------------------------------
+
+/**
+ * The live card from the demo college, as `exams_report_card` returned it to
+ * that college's administrator — the top of Grade 4 A in the Half-Yearly
+ * Examination. Verbatim, because the point of pinning it is that the renderer
+ * and the read model cannot drift apart: a card that stops parsing here is a
+ * `jsonb` shape that changed.
+ */
+const LIVE_CARD = {
+  exam: {
+    id: "4b498d4b-82e4-464c-afea-b64d3e542410",
+    kind: "half_yearly",
+    name: "Half-Yearly Examination",
+    status: "published",
+    ends_on: "2026-08-03",
+    starts_on: "2026-07-24",
+    published_at: "2026-09-03T20:40:45.678201+00:00",
+  },
+  rank: { scope: "section", position: 1, cohort_size: 25 },
+  papers: [
+    { max: 100, code: "MATH", note: null, pass: 33, grace: 0, absent: false, passed: true, counted: true, percent: 88, subject: "Mathematics", obtained: 88, optional: false, effective: 88 },
+    { max: 100, code: "SCI", note: null, pass: 33, grace: 0, absent: false, passed: true, counted: true, percent: 40, subject: "Science", obtained: 40, optional: false, effective: 40 },
+    { max: 100, code: "ART", note: null, pass: 33, grace: 0, absent: false, passed: true, counted: false, percent: 85, subject: "Art & Craft", obtained: 85, optional: true, effective: 85 },
+  ],
+  remark: null,
+  school: { name: "Rajesh Kumar Mahavidyalaya" },
+  totals: { max: 700, grade: "B2", result: "pass", obtained: 495, percentage: 70.714, grade_point: 7, subjects_failed: 0, subjects_counted: 7 },
+  session: { id: "9a710508-446b-4040-b358-ea8cd8a687e6", name: "2025-2026" },
+  student: {
+    id: "3f06cd1d-2a3c-4ebd-9858-05ee020d1d51",
+    name: "Aryan Pandey",
+    section: "Grade 4 A",
+    roll_number: "16",
+    class_teacher: "Riya Rathore",
+    admission_number: "SOS-2025-0187",
+  },
+  attendance: { late: 3, upto: "2026-09-03", absent: 0, marked: 20, excused: 0, present: 17 },
+  provisional: false,
+};
+
+function liveCard(mutate: (card: ReportCard) => void = () => {}): ReportCard {
+  const card = parseCard(structuredClone(LIVE_CARD));
+  expect(card, "the live card no longer matches reportCardSchema").not.toBeNull();
+  mutate(card!);
+  return card!;
+}
+
+function cardDoc(card: ReportCard) {
+  return {
+    card,
+    resultLabel: card.totals.result === "pass" ? "Pass" : "Fail",
+    publishedOn: card.provisional ? null : "3 Sep 2026",
+  };
+}
+
+describe("a rendered report card", () => {
+  it("is a PDF that parses back, from the live card", async () => {
+    const bytes = await renderReportCard(cardDoc(liveCard()));
+    const parsed = await PDFDocument.load(bytes);
+    expect(parsed.getPageCount()).toBeGreaterThanOrEqual(1);
+    expect(bytes.byteLength).toBeGreaterThan(1000);
+  });
+
+  /**
+   * The screen's banner is addressed to the person looking at the screen. A
+   * file has a different reader — whoever it reaches, in a folder, a week later
+   * — so the warning has to be **on the document**, on every page.
+   *
+   * Read through `reportCardFooter` rather than out of the bytes: the font is
+   * embedded as a subset, so `drawText` writes glyph ids and the rendered PDF
+   * cannot be searched for the word. `Sheet.finish` stamping that string on
+   * every page is already pinned one describe block up.
+   */
+  it("says it is provisional in the footer of every page", () => {
+    const draft = cardDoc(liveCard((c) => {
+      c.provisional = true;
+      c.rank = null;
+    }));
+    expect(reportCardFooter(draft, true)).toContain("PROVISIONAL");
+    expect(reportCardFooter(cardDoc(liveCard()), true)).not.toContain("PROVISIONAL");
+  });
+
+  /** A multi-page card is one document, so the warning reaches its second sheet. */
+  it("turns the page when a remark runs long, and keeps one footer", async () => {
+    const long = cardDoc(liveCard((c) => {
+      c.provisional = true;
+      c.remark = { text: "x ".repeat(3000), updated_at: null };
+    }));
+    const parsed = await PDFDocument.load(await renderReportCard(long));
+    expect(parsed.getPageCount()).toBeGreaterThan(1);
+  });
+
+  /**
+   * …and in the filename, which is the one piece of chrome that travels with
+   * the file. Without it a draft checked in August and the published card land
+   * in a folder under identical names.
+   */
+  it("names a provisional file so a folder can tell the two apart", () => {
+    const published = reportCardFileName(liveCard());
+    const draft = reportCardFileName(liveCard((c) => {
+      c.provisional = true;
+    }));
+    expect(published).toBe("Aryan-Pandey-Half-Yearly-Examination.pdf");
+    expect(draft).not.toBe(published);
+    expect(draft).toContain("provisional");
+  });
+
+  /**
+   * The branches the demo college's data does not take.
+   *
+   * All 301 of its results are plain marks — no components, no notes, no
+   * absences, no remark, no failure. *A probe that only runs the path your seed
+   * data happens to take has tested the seed data*, so these are planted: a
+   * paper marked in parts, an absent paper, a failed one, a note, a long remark
+   * and a subject name too wide for its column.
+   */
+  it("renders the parts of a card the demo data has none of", async () => {
+    const bytes = await renderReportCard(cardDoc(liveCard((c) => {
+      c.papers![0].components = [
+        { id: "a", code: "TH", name: "Theory", max: 70, pass: 23, obtained: 55, absent: false },
+        { id: "b", code: "PR", name: "Practical", max: 30, pass: 10, obtained: 13, absent: false },
+      ];
+      c.papers![0].passed = false;
+      c.papers![0].note = "Failed the practical component";
+      c.papers![1].absent = true;
+      c.papers![1].obtained = null;
+      c.papers![1].passed = false;
+      c.papers![2].subject = "A subject with a deliberately very long name indeed";
+      c.remark = { text: "Works steadily and reads well beyond her year.", updated_at: null };
+      c.totals.result = "fail";
+    })));
+    expect((await PDFDocument.load(bytes)).getPageCount()).toBeGreaterThanOrEqual(1);
+    expect(bytes.byteLength).toBeGreaterThan(1000);
+  });
+
+  /** A card with no papers at all is a sentence, not a crash. */
+  it("renders a card with nothing on it", async () => {
+    const bytes = await renderReportCard(cardDoc(liveCard((c) => {
+      c.papers = [];
+      c.rank = null;
+      c.attendance = null;
+    })));
+    expect((await PDFDocument.load(bytes)).getPageCount()).toBe(1);
+  });
+
+  it("refuses a script it cannot draw instead of shipping a blank card", async () => {
+    await expect(
+      renderReportCard(cardDoc(liveCard((c) => {
+        c.student.name = "हर माह";
+      }))),
+    ).rejects.toBeInstanceOf(UnrenderableDocument);
+  });
+});
+
+describe("a class of report cards in one file", () => {
+  /**
+   * One PDF, one child to a sheet. A school prints a class in a single pass,
+   * and twenty-five downloads is twenty-five chances to miss one.
+   */
+  it("gives every child their own page", async () => {
+    const docs = Array.from({ length: 7 }, () =>
+      cardDoc(liveCard((c) => {
+        c.papers = [];
+        c.rank = null;
+        c.attendance = null;
+      })),
+    );
+    const bytes = await renderReportCards(docs);
+    const parsed = await PDFDocument.load(bytes);
+    expect(parsed.getPageCount()).toBe(7);
+
+    /*
+     * **And the page count is not the test.** It took two planted violations to
+     * find that out. Deleting the page turn between children gives *exactly the
+     * same count* — 1, 2, 3 and 7 cards all come to 1, 2, 3 and 7 pages either
+     * way — because `Sheet.signature` sinks to the foot of the sheet, so the
+     * next card's opening lines are pushed over the edge and turn the page by
+     * themselves.
+     *
+     * What actually breaks is the **layout**: the second child's school name
+     * and exam line are stranded at the bottom of the first child's sheet,
+     * under their signature. A check on where each page *starts* could not see
+     * that either — the strandings are at the bottom, and every page still
+     * begins at the top.
+     *
+     * So the property is *one card opens per page*, and the school's name at
+     * 17pt is what opens one.
+     */
+    for (const [i, openings] of cardOpeningsPerPage(parsed).entries()) {
+      expect(openings, `page ${i + 1} holds ${openings} cards, not one`).toBe(1);
+    }
+  });
+
+  /**
+   * And the set's footer names the **exam**, never the first child — a footer
+   * reading "Aryan Pandey" on twenty-four other children's sheets is worse than
+   * no name at all.
+   */
+  it("does not stamp the first child's name on everybody else's sheet", () => {
+    const first = cardDoc(liveCard());
+    expect(reportCardFooter(first, true)).toContain("Aryan Pandey");
+    expect(reportCardFooter(first, false)).not.toContain("Aryan Pandey");
+    expect(reportCardFooter(first, false)).toContain("Half-Yearly Examination");
+  });
+
+  /**
+   * The per-card cost falls because the font is embedded once per *document*,
+   * not once per card — which is why a class is a request and the school is
+   * still a job. Loose, because a CI runner that fails this teaches people to
+   * ignore it; what is guarded is the order of magnitude.
+   */
+  it("renders a class in the time a query takes", async () => {
+    const docs = Array.from({ length: 25 }, () => cardDoc(liveCard()));
+    await renderReportCards([docs[0]]); // warm
+    const started = Date.now();
+    await renderReportCards(docs);
+    expect(Date.now() - started).toBeLessThan(6000);
+  });
+});
+
+describe("what the report card renderer is not allowed to do", () => {
+  const code = codeOf("src/lib/pdf/report-card.ts");
+
+  /**
+   * The certificate's rule, and it bites harder here: a rank is a fact about a
+   * cohort that has since changed, so recomputing one produces a **plausible**
+   * card that is not the card the family was given.
+   */
+  it("reads the frozen card and nothing else", () => {
+    for (const forbidden of ["createClient", "supabase", "from(", "rpc(", "current_"]) {
+      expect(code, `the report card renderer must not reach for ${forbidden}`).not.toContain(
+        forbidden,
+      );
+    }
+  });
+
+  /**
+   * "May I see this child's card" is answered by RLS, so the single-card route
+   * deliberately adds no permission check. **"May I pull a whole class" is a
+   * different question** — the `staff_record` / `staff_roster` distinction — and
+   * the screen this route is the file version of already answers it.
+   */
+  it("gates the class on the permission and the single card on the policy", () => {
+    const bulk = codeOf("src/app/(app)/exams/[examId]/report-cards/pdf/route.ts");
+    const single = codeOf("src/app/(app)/report-card/[studentId]/[examId]/pdf/route.ts");
+    expect(bulk).toContain('hasPermission("exams.view")');
+    expect(single, "a second answer to a question RLS answers").not.toContain("hasPermission");
+  });
+
+  /** Neither route says whether the row exists — the same answer, either way. */
+  it("does not tell a stranger whether a card exists", () => {
+    for (const path of [
+      "src/app/(app)/report-card/[studentId]/[examId]/pdf/route.ts",
+      "src/app/(app)/exams/[examId]/report-cards/pdf/route.ts",
+    ]) {
+      const body = codeOf(path).slice(codeOf(path).indexOf("export async function GET"));
+      expect(body, path).toContain("status: 404");
+      expect(body, path).not.toMatch(/not found|does not exist|no such/i);
+    }
   });
 });

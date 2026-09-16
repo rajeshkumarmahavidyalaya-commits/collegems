@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ReportCardSheet } from "@/components/report-card/report-card-sheet";
 import { getStudentCard } from "../../../exams/report-card-actions";
@@ -26,7 +26,24 @@ export default async function FamilyReportCardPage({
             All report cards
           </Link>
         </Button>
-        {card ? <PrintButton count={1} /> : null}
+        {card ? (
+          <div className="flex flex-wrap gap-2">
+            {/* A plain link, not a client component: the bytes come from a
+                route handler, so there is nothing for the browser to do but
+                follow it — and a button needing `"use client"` would charge
+                this Server-Component-only route the whole i18n catalogue to
+                draw one word. Printing is kept beside it deliberately: it uses
+                the reader's own system fonts, so a family reading in Hindi can
+                print the card this renderer would refuse to draw. */}
+            <Button asChild variant="outline">
+              <a href={`/report-card/${studentId}/${examId}/pdf`} download>
+                <Download className="size-4" aria-hidden="true" />
+                Download PDF
+              </a>
+            </Button>
+            <PrintButton count={1} />
+          </div>
+        ) : null}
       </div>
 
       {card ? (

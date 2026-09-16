@@ -167,6 +167,19 @@ export class Sheet {
     return lines;
   }
 
+  /**
+   * Start a new page and put the cursor at the top of it.
+   *
+   * Public because one file may hold several documents — a class of report
+   * cards is one PDF a school prints, not twenty-five a teacher downloads one
+   * at a time — and *"one child per sheet"* is a property of the document
+   * rather than of the wrapping. Callers that only write one document never
+   * touch it; `text` and `row` turn the page themselves.
+   */
+  newPage(): void {
+    this.turn();
+  }
+
   /** Start a new page and put the cursor at the top of it. */
   private turn(): void {
     this.page = this.doc.addPage([A4.width, A4.height]);
