@@ -41,7 +41,7 @@ export const metadata: Metadata = {
  * it: the alternative is rendering the whole page in English and turning it
  * around after hydration, which is a visible flip on every load.
  */
-export default async function RootLayout({ children }: LayoutProps<"/">) {
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
   const locale = await getLocale();
 
   return (

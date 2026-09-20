@@ -32,7 +32,7 @@ export const metadata = { title: "Notice" };
  * idempotent on `(notice_id, user_id)` and never moves an existing `read_at`,
  * so a page refreshed thirty times is one receipt with its original timestamp.
  */
-export default async function NoticePage({ params }: PageProps<"/notices/[id]">) {
+export default async function NoticePage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
 
   const [notice, ctx, locale, t] = await Promise.all([

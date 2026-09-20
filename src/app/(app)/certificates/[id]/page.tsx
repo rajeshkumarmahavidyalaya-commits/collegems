@@ -23,7 +23,11 @@ export const metadata = { title: "Certificate" };
  * the same document as the original, and that is only true because this page
  * refuses to be clever.
  */
-export default async function CertificatePage({ params }: PageProps<"/certificates/[id]">) {
+export default async function CertificatePage({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
   const t = await getT();
   const { id } = await params;
   const certificate = await getCertificate(id);

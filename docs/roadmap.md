@@ -1,21 +1,39 @@
 # Roadmap — from built to working
 
-Written on 14 September 2026, against measurements rather than impressions.
-Every number here came from the live project or the repository on that day; if
-you are reading this later, re-measure before trusting it.
+Written on 14 September 2026 and **re-measured on 20 September 2026**, against
+measurements rather than impressions. Every number came from the live project or
+the repository on the day it is dated; if you are reading this later, re-measure
+before trusting it.
 
 ---
 
 ## The governing fact
 
-| built | exercised |
+Six days on, the left-hand column moved and the right-hand one did not. That is
+the finding, not the individual numbers.
+
+| built (14 Sep → 20 Sep) | exercised (20 Sep) |
 |---|---|
-| 229 migrations | **0** scheduled runs ever fired |
-| 100 tables, 493 functions, 251 policies | **1** message ever sent, and it was in-app |
-| 92 routes, 47 server-action modules | **1 of 5** channels enabled and configured |
+| 229 → **245** migrations | **0** scheduled runs ever fired |
+| 100 → **102** tables, 493 → **518** functions, 251 → **248** policies | **1** notification ever composed; its only `sent` delivery is in-app |
+| 92 → **94** page routes, and **9** route handlers | **0 of 5** channels configured — `in_app` is on, and it needs no provider |
 | 6 Edge Functions | **0** devices registered |
-| 67 permissions, 19 reports, 12 critics | **0** payment intents, **0** promotion runs |
-| 45 module docs | **2** logins, both administrators |
+| 67 permissions, 19 → **20** reports, 12 → **14** critics | **0** payment intents, **0** promotion runs, **0** jobs |
+| 45 → **48** module docs | **3** logins, **all three** administrators |
+| 5 cron entries, all active | **0** objects in Storage |
+
+Two things did move on the right, and both are worth naming:
+
+- **Somebody used the invitation screen.** There is one real `email` delivery
+  addressed to a live mailbox, sitting at `queued`. It is not stuck — it is the
+  held-queue rule working exactly as written: email is `is_enabled = false` and
+  `provider_configured = false`, so the dispatcher will not claim it, and it
+  will go out on the day a key is set rather than being dropped.
+- **The scheduler has its waker.** Five pg_cron entries are live and firing
+  (`schedules_tick`, `schedule_digests_tick`, `jobs_tick`,
+  `expire_stale_deliveries`, `expire_trials`). `schedule_runs` is still 0
+  because all six schedules are `is_enabled = false` — which is the *"anything
+  seeded arrives switched off"* rule, not a broken tick.
 
 The office-facing product is broadly complete and the isolation boundary is the
 strongest part of the system. What has never happened is **traffic**. Every
@@ -39,11 +57,41 @@ Worse than not running: **they fail rather than skip.** Without
 is indistinguishable from a missing password. That is this codebase's own rule
 about a check nobody can get green, turned on its own suite.
 
-| Do | Acceptance |
-|---|---|
-| The database suites skip *loudly* when unconfigured | `npm test` green on a clean checkout, with a named skip count |
-| CI on every push: typecheck, lint, build, tests | A migration that breaks isolation fails before merge |
-| Document how to create the two test tenants | Somebody new can run the full suite in under ten minutes |
+| Do | Acceptance | 20 Sep |
+|---|---|---|
+| The database suites skip *loudly* when unconfigured | `npm test` green on a clean checkout, with a named skip count | **done** — verified by moving `.env.local` aside: `56 passed \| 48 skipped`, 776 passed, 510 skipped, **0 failures** |
+| CI on every push: typecheck, lint, build, tests | A migration that breaks isolation fails before merge | **built and running** — and red on all 13 runs; see below |
+| Document how to create the two test tenants | Somebody new can run the full suite in under ten minutes | `docs/testing.md` |
+
+### …and CI was red for two different reasons, one of them mine
+
+Thirteen runs, every one a failure, and the two jobs fail for reasons that
+should not be confused:
+
+- **`database-suites` fails on purpose.** The six repository secrets are unset,
+  so the isolation suite skipped, and the job then runs
+  `echo "::error::The database secrets are not configured, so tenant isolation
+  was never proved." && exit 1`. That is Phase 0's own rule — *skipping is not
+  passing* — working exactly as designed. It goes green the moment the secrets
+  exist, and **only the repository owner can set them.**
+
+- **`check` failed on a real defect, and it was invisible locally.**
+
+  > `PageProps<…>` and `LayoutProps<…>` are not imports. They are **globals Next
+  > generates into `.next/types` during a build**, so `tsc --noEmit` resolves
+  > them on a machine that has built recently and fails on one that has not.
+
+  Three files used them — `certificates/[id]/page.tsx`, `notices/[id]/page.tsx`
+  and `layout.tsx` — and **five commits were pushed reporting "typecheck clean"
+  while CI failed on every one.** Each of those reports was true of a working
+  tree and false of a clean checkout, which is this codebase's own rule about a
+  check that passes for the wrong reason, turned on its own toolchain.
+
+  The fix is not to run `next build` before `typecheck` in CI — that makes a
+  type check depend on a build and hides the next instance. The three files now
+  write their props out, as every other page already did, and
+  `tests/app-shell/typecheck-without-a-build.test.ts` fails on a reappearance.
+  Verified by moving `.next` aside: clean typecheck, lint and build all pass.
 
 ---
 
