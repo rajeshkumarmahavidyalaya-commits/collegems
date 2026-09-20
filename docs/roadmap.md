@@ -245,6 +245,43 @@ What is genuinely left:
 
 ---
 
+## Phase 3b — What a competitor's docs named that this did not have
+
+`pro.eskooly.com/docs` is blocked by this environment's egress proxy, so the
+list below came from search results describing eSkooly's feature set rather than
+from the documentation itself. Each gap was then checked against **this**
+codebase, which is the half that is certain.
+
+**Closed:** *certificates for students **and employees***. `certificates.student_id`
+was `not null`, so the whole frozen-document engine was structurally
+student-only and `staff_exit` handed a departing lecturer nothing. Migrations
+`0245`–`0248`; see [certificates.md](./modules/certificates.md). The sharp part
+was not the schema but the policy — `staff view certificates` was tenant-wide,
+and would have handed every teacher their colleagues' experience certificates
+the day this shipped.
+
+**Still open, measured as zero occurrences in `src/` and the migrations:**
+
+| | notes |
+|---|---|
+| Online exam / quiz | a whole LMS; eSkooly sells it as an add-on |
+| Live virtual classes (Zoom, BigBlueButton, Jitsi, Meet) | four third-party integrations, none testable here |
+| Biometric attendance | needs hardware |
+| QR / barcode on ID cards | the card renderer exists; a code with **no reader** would be a string nobody scans, so it is only worth building with the thing that reads it |
+| Exam seat plan | self-contained and genuinely missing |
+| Online parent/student registration | **structurally absent**: every route is behind the login wall, and `/signup` needs an invitation to get a tenant. `enquiry` is staff-entered |
+| Syllabus as its own object | `study-material` is adjacent, not the same |
+| Inventory selling | `stock_movements.kind` is `adjustment \| issue \| receipt`; a sale also crosses into the fee ledger |
+
+And the counter-direction, stated because absence of evidence is not evidence:
+the double-entry general ledger, the append-only money ledger with gapless
+receipts, RLS isolation with four executable schema guards, the audit log's read
+path, catalogue-as-data reports and checks, i18n with RTL, and scheduled reports
+that run as the person who scheduled them were not visible in what search
+returned — but the docs could not be read, so that is not a claim about eSkooly.
+
+---
+
 ## Phase 4 — Performance, measured at real size
 
 Not urgent, and the reason is specific: 302 students is a small college and

@@ -17,11 +17,21 @@ export type ActionResult<T = void> =
 export type TemplateRow = {
   id: string;
   kind: string;
+  /**
+   * `student` or `staff`. It decides which picker the issue form draws and
+   * which snapshot fills the template — and it is read from the template
+   * rather than chosen by the person, because the wording already says who it
+   * is for. See migration `0245`.
+   */
+  subject: string;
   name: string;
   body: string;
   fields: unknown;
   isDefault: boolean;
 };
+
+/** Somebody a certificate can be about, whichever kind they are. */
+export type SubjectRow = { id: string; name: string; reference: string; status: string };
 
 export type CertificateRow = {
   id: string;
@@ -29,9 +39,14 @@ export type CertificateRow = {
   issuedOn: string;
   kind: string;
   templateName: string;
-  student: string;
-  admissionNumber: string;
-  classAtIssue: string | null;
+  /** `student` or `staff`, from the row rather than guessed from the snapshot. */
+  subject: string;
+  /** Whoever it is about. The register is one register. */
+  person: string;
+  /** Admission number or employee code, depending. */
+  reference: string;
+  /** The class at issue, or the designation. Null when the snapshot has neither. */
+  context: string | null;
   status: string;
   cancelReason: string | null;
 };
@@ -40,7 +55,7 @@ export async function listTemplates(): Promise<TemplateRow[]> {
   const supabase = await createClient();
   const { data } = await supabase
     .from("certificate_templates")
-    .select("id, kind, name, body, fields, is_default")
+    .select("id, kind, subject, name, body, fields, is_default")
     .eq("is_active", true)
     .order("kind")
     .order("name");
@@ -48,6 +63,7 @@ export async function listTemplates(): Promise<TemplateRow[]> {
   return (data ?? []).map((t) => ({
     id: t.id,
     kind: t.kind,
+    subject: t.subject,
     name: t.name,
     body: t.body,
     fields: t.fields,
@@ -67,7 +83,7 @@ export async function listCertificates(limit = 50): Promise<CertificateRow[]> {
   const supabase = await createClient();
   const { data } = await supabase
     .from("certificates")
-    .select("id, serial_no, issued_on, kind, template_name, snapshot, status, cancel_reason")
+    .select("id, serial_no, issued_on, kind, subject, template_name, snapshot, status, cancel_reason")
     .order("issued_on", { ascending: false })
     .order("serial_no", { ascending: false })
     .limit(limit);
@@ -80,9 +96,18 @@ export async function listCertificates(limit = 50): Promise<CertificateRow[]> {
       issuedOn: c.issued_on,
       kind: c.kind,
       templateName: c.template_name,
-      student: snapshot["student.name"] ?? "—",
-      admissionNumber: snapshot["student.admission_number"] ?? "—",
-      classAtIssue: snapshot["class.label"] ?? null,
+      subject: c.subject,
+      // **Read the subject, not the snapshot's shape.** A staff certificate's
+      // frozen snapshot has no `student.name`, so the first cut of this showed
+      // a dash where a name belongs — no crash, no error, just the register
+      // quietly failing to name the person a document was issued to.
+      person: (c.subject === "staff" ? snapshot["staff.name"] : snapshot["student.name"]) ?? "—",
+      reference:
+        (c.subject === "staff"
+          ? snapshot["staff.employee_code"]
+          : snapshot["student.admission_number"]) ?? "—",
+      context:
+        (c.subject === "staff" ? snapshot["staff.designation"] : snapshot["class.label"]) ?? null,
       status: c.status,
       cancelReason: c.cancel_reason,
     };
@@ -115,6 +140,35 @@ export async function searchStudents(term: string) {
 }
 
 /**
+ * Everybody the college employs, for the staff half of the issue form.
+ *
+ * **No search term, deliberately.** A college's staff is bounded by the size of
+ * a college, so the whole list fits in a `<Select>` — and a term would mean
+ * another `.or("… .ilike.%" + term + "%")`, which is the filter-string defect
+ * this codebase already fixed once in the sibling picker. Nothing to escape if
+ * nothing is interpolated.
+ *
+ * Leavers are included and say so: an experience certificate is issued to
+ * somebody who has **left**, so a list of active staff would hide exactly the
+ * people this exists for.
+ */
+export async function listStaffSubjects(): Promise<SubjectRow[]> {
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("staff")
+    .select("id, employee_code, status, people:person_id ( first_name, last_name )")
+    .order("employee_code")
+    .limit(200);
+
+  return (data ?? []).map((row) => ({
+    id: row.id,
+    reference: row.employee_code,
+    status: row.status,
+    name: `${row.people?.first_name ?? ""} ${row.people?.last_name ?? ""}`.trim(),
+  }));
+}
+
+/**
  * Preview. Computes and stores nothing — see `docs/modules/certificates.md`.
  *
  * This is called on every keystroke's worth of settled input, which is
@@ -123,18 +177,18 @@ export async function searchStudents(term: string) {
  * server-side, so a screen that lied about `can_issue` changes nothing.
  */
 export async function previewCertificate(input: {
-  studentId: string;
+  subjectId: string;
   templateId: string;
   issuedOn?: string;
   extra?: Record<string, string>;
 }): Promise<ActionResult<CertificatePreview>> {
-  if (!input.studentId || !input.templateId) {
-    return { ok: false, error: "Choose a student and a certificate." };
+  if (!input.subjectId || !input.templateId) {
+    return { ok: false, error: "Choose who the certificate is for, and which one." };
   }
 
   const supabase = await createClient();
   const { data, error } = await supabase.rpc("certificate_preview", {
-    p_student_id: input.studentId,
+    p_subject_id: input.subjectId,
     p_template_id: input.templateId,
     p_issued_on: input.issuedOn || undefined,
     p_extra: cleanExtra(input.extra ?? {}),
@@ -161,7 +215,7 @@ export async function issueCertificate(input: unknown): Promise<ActionResult<{ i
 
   const supabase = await createClient();
   const { data, error } = await supabase.rpc("certificate_issue", {
-    p_student_id: parsed.data.studentId,
+    p_subject_id: parsed.data.subjectId,
     p_template_id: parsed.data.templateId,
     p_issued_on: parsed.data.issuedOn,
     p_extra: cleanExtra(parsed.data.extra),

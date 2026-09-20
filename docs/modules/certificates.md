@@ -165,6 +165,146 @@ it happens.
 
 ---
 
+## …and a certificate for somebody the college employs
+
+Everything above was structurally student-only. `certificates.student_id` was
+`not null` for a hundred and thirteen migrations, so the gapless serial, the
+freeze, the column grant and the PDF renderer served children and nobody else.
+Measured: **zero** mentions of an experience, relieving, service or salary
+certificate anywhere in `src/` or the migrations. `staff_exit` writes a leaving
+date and a reason and hands the person nothing — and a lecturer leaving a
+college in India needs an experience certificate to be hired anywhere else.
+
+Migrations `0245`–`0248`.
+
+### One table, not two
+
+`staff_certificates` would have been a second gapless counter, a second
+immutability grant, a second cancel path and a second PDF route — four copies of
+a document engine to serve a second kind of person. So it is the `invitations`
+shape from `0224`: **one row, a nullable column per kind of subject, and a
+discriminator** saying which is filled.
+
+| | |
+|---|---|
+| `certificate_templates.subject` | who a template is written for |
+| `certificates.subject` | carried from it, held equal by a composite key |
+| `certificates_one_subject` | a CHECK making that key unsatisfiable unless the matching id is the filled one |
+| `certificates_stamp_subject` | a `BEFORE INSERT` trigger that populates it |
+
+`0225`'s split, verbatim: **the trigger populates, the key and the CHECK
+enforce.** Drop the trigger and writes fail rather than admitting a wrong value.
+
+> **No `on update cascade`, which is the opposite of every other use of this
+> device here.** Rule 4's second boundary: a certificate is *a record of a day*,
+> not a child kept in step with its parent. Cascading a template's subject from
+> `student` to `staff` would rewrite documents already handed over. Without it
+> the template edit is refused while certificates exist against it — the correct
+> answer, and recoverable by retiring the template.
+
+### The policy is the part that would have leaked
+
+`staff view certificates` read, in full:
+
+```sql
+current_role_code() = any (array['admin','teacher','accountant','librarian'])
+```
+
+Tenant-wide, no row ownership. Defensible for a child's bonafide certificate and
+**wrong the instant a staff certificate exists**: it would have handed every
+teacher, accountant and librarian their colleagues' experience certificates —
+which name why somebody left.
+
+> This codebase had already learned this on the same table's neighbour. `0009`'s
+> *"staff directory is not sensitive HR data"* was a claim about three columns
+> made by a policy that grants whole rows.
+
+So the policy was narrowed to `subject = 'student'` **before there was anything
+to leak**, and staff certificates got row ownership. Probed from three seats on
+the live college, inside a transaction that was then rolled back:
+
+| seat | staff certificates visible | student certificates |
+|---|---|---|
+| administrator | all | all |
+| teacher, no staff record attached | **0** | 1 |
+| the member of staff it is about | **1** | — |
+
+The guardian and student policies needed no change, and the reason is worth
+pinning: both filter on `student_id`, which is null on a staff certificate, and
+`null in (...)` is null rather than true.
+
+### The split between the two templates falls out of nullability
+
+Rule 12: *a seeded default may only use values the database is guaranteed to
+have.* Only four `staff` columns are `not null` — `employee_code`,
+`designation`, `date_of_joining`, `status`.
+
+| | prints | for |
+|---|---|---|
+| **Service Certificate** | `{{service.from}}`, `{{service.length}}` | somebody still in post |
+| **Experience Certificate** | those **and `{{service.to}}`** | somebody who has left |
+
+`{{service.to}}` is null while a person is employed, so an experience
+certificate asked for too early leaves the placeholder standing, the preview
+names it, and issuing refuses — **the engine's existing mechanism, not a new
+rule.** A second, plainer sentence says why and points at the other template.
+
+Probed live, 20 September 2026:
+
+```
+service     can_issue = true
+            "Rajesh Kumar, Employee Number EMP-001, has been serving at Rajesh
+             Kumar Mahavidyalaya as Principal / System Administrator since
+             1 Jun 2015, a period of 11 years, 3 months…"
+
+experience  can_issue = false
+            error   Nothing filled {{service.to}}.
+            warning This person is still employed here… A service certificate
+                    is the one for somebody still in post.
+```
+
+### One field in, and the server decides where it lands
+
+`certificate_preview` and `certificate_issue` were **dropped and recreated**
+rather than replaced: the first parameter changed meaning from `p_student_id` to
+`p_subject_id`, `create or replace` cannot rename a parameter, and keeping both
+is where the preview's checks quietly stop being updated in one of them —
+`report_run`'s rule from `0154`.
+
+The *template* decides which snapshot fills it, so there is no "which kind of
+person is this" field anywhere. `0224`'s invitation lesson: the client cannot
+put a child's id in `staff_id`, and there is no three-way rule in the browser to
+get wrong. The issue form follows suit — one picker, and the chosen template
+decides whose list it shows.
+
+### Two quieter things the work turned up
+
+- **The critic's known-key list had to split, not merge.** A student template
+  printing `{{staff.designation}}` renders **empty**, leaves no placeholder
+  standing, and therefore *issues* — a certificate with a hole in the middle of
+  a sentence. Merging the two lists would have allowed exactly that. The message
+  splits too: *"nothing fills {{student.name}}"* on a staff template reads like
+  an engine bug; *"this template is written for a member of staff"* reads like
+  the thing to fix.
+- **The register read `snapshot["student.name"]`.** A staff certificate's frozen
+  snapshot has no such key, so the first cut showed a dash where the name
+  belongs — no crash, no error, the register quietly failing to name the person
+  a document was issued to. It reads the row's `subject` now.
+
+### The copy deliberately left in place
+
+`certificate_school_values()` is the one definition of the seven `school.*` keys
+and the staff snapshot calls it. **`certificate_snapshot` still builds its own
+block.** Rewriting a function that renders documents families keep is a probe of
+it, not a tidy-up, and the database suites could not run in the session that did
+this work — so the two are *compared* rather than merged:
+`certificate_school_values_problems()` is catalogued as
+`certificates.school_values` and reports a finding the day they disagree. The
+next migration that has to touch `certificate_snapshot` for its own reasons
+should collapse them and delete the check.
+
+---
+
 ## What is deliberately not built
 
 - **No PDF.** Certificates print through the same `data-print` CSS the report

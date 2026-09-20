@@ -100,9 +100,9 @@ export default async function CertificatesPage() {
                     <TableHead>No.</TableHead>
                     <TableHead>Issued</TableHead>
                     <TableHead>Kind</TableHead>
-                    <TableHead>Student</TableHead>
+                    <TableHead>Issued to</TableHead>
                     <TableHead>Adm. no.</TableHead>
-                    <TableHead>Class at issue</TableHead>
+                    <TableHead>Class or role</TableHead>
                     <TableHead>Status</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -119,9 +119,9 @@ export default async function CertificatesPage() {
                       </TableCell>
                       <TableCell className="whitespace-nowrap">{row.issuedOn}</TableCell>
                       <TableCell>{kindLabel(row.kind, t)}</TableCell>
-                      <TableCell className="font-medium">{row.student}</TableCell>
-                      <TableCell className="font-mono text-xs">{row.admissionNumber}</TableCell>
-                      <TableCell>{row.classAtIssue ?? "—"}</TableCell>
+                      <TableCell className="font-medium">{row.person}</TableCell>
+                      <TableCell className="font-mono text-xs">{row.reference}</TableCell>
+                      <TableCell>{row.context ?? "—"}</TableCell>
                       <TableCell>
                         {/* Never colour alone: the word is the status. */}
                         <Badge variant={row.status === "cancelled" ? "destructive" : "success"}>

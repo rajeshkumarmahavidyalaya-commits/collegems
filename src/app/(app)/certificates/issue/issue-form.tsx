@@ -18,7 +18,12 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
-import { issueCertificate, previewCertificate, type TemplateRow } from "../actions";
+import {
+  issueCertificate,
+  previewCertificate,
+  type SubjectRow,
+  type TemplateRow,
+} from "../actions";
 import { useT } from "@/components/providers/i18n-provider";
 import {
   KIND_CONSEQUENCE,
@@ -30,7 +35,8 @@ import {
   type CertificatePreview,
 } from "@/lib/validations/certificates";
 
-type StudentOption = { id: string; name: string; admissionNumber: string; status: string };
+// `SubjectRow` comes from the action: id, name, reference, status — the same
+// four facts whether the reference is an admission number or an employee code.
 
 /**
  * Why this form does not use the `react-hook-form` primitives the rest of the
@@ -48,14 +54,17 @@ type StudentOption = { id: string; name: string; admissionNumber: string; status
  */
 export function IssueCertificateForm({
   templates,
-  initialStudents,
+  students,
+  staff,
 }: {
   templates: TemplateRow[];
-  initialStudents: StudentOption[];
+  students: SubjectRow[];
+  /** Staff are listed whole: a college's payroll fits in a Select (see the action). */
+  staff: SubjectRow[];
 }) {
   const t = useT();
   const router = useRouter();
-  const [studentId, setStudentId] = useState("");
+  const [subjectId, setSubjectId] = useState("");
   const [templateId, setTemplateId] = useState(
     templates.find((t) => t.isDefault)?.id ?? templates[0]?.id ?? "",
   );
@@ -71,6 +80,10 @@ export function IssueCertificateForm({
   const consequence = template ? KIND_CONSEQUENCE[template.kind as CertificateKind] : undefined;
   const missing = missingRequiredFields(fields, extra);
 
+  // Which list the picker shows, read off the template rather than chosen.
+  const forStaff = template?.subject === "staff";
+  const subjects = forStaff ? staff : students;
+
   // The template's boxes are its own. Switching template keeps nothing, because
   // a "reason for leaving" typed against a transfer certificate is not an
   // answer to a bonafide's "purpose".
@@ -78,8 +91,16 @@ export function IssueCertificateForm({
     setExtra({});
   }, [templateId]);
 
+  // Switching between a student template and a staff one clears who was chosen.
+  // Keeping a child selected under an experience certificate is not a leak —
+  // the engine answers "No such member of staff" — but it is the picker and the
+  // template disagreeing, and the person would have to work out why.
   useEffect(() => {
-    if (!studentId || !templateId) {
+    setSubjectId("");
+  }, [forStaff]);
+
+  useEffect(() => {
+    if (!subjectId || !templateId) {
       setPreview(null);
       setPreviewError(null);
       return;
@@ -91,7 +112,7 @@ export function IssueCertificateForm({
     // Settle first. Every keystroke in "reason for leaving" would otherwise be
     // a round trip, and the answer only matters once somebody stops typing.
     const timer = setTimeout(async () => {
-      const result = await previewCertificate({ studentId, templateId, issuedOn, extra });
+      const result = await previewCertificate({ subjectId, templateId, issuedOn, extra });
       if (cancelled) return;
       setLoadingPreview(false);
       if (result.ok) {
@@ -108,11 +129,11 @@ export function IssueCertificateForm({
       clearTimeout(timer);
       setLoadingPreview(false);
     };
-  }, [studentId, templateId, issuedOn, extra]);
+  }, [subjectId, templateId, issuedOn, extra]);
 
   function onIssue() {
     startTransition(async () => {
-      const result = await issueCertificate({ studentId, templateId, issuedOn, extra });
+      const result = await issueCertificate({ subjectId, templateId, issuedOn, extra });
       if (result.ok) {
         toast.success(`Certificate ${result.data.serialNo} issued`);
         router.push(`/certificates/${result.data.id}`);
@@ -135,16 +156,25 @@ export function IssueCertificateForm({
           </CardDescription>
         </CardHeader>
         <CardContent className="flex flex-col gap-4">
+          {/*
+            One picker, and the **template** decides whose list it shows. The
+            person issuing has already said what kind of document this is by
+            choosing the wording; asking them a second time which kind of person
+            it is for would be a second answer to a question already answered —
+            and a way to get the two out of step.
+          */}
           <div className="flex flex-col gap-1.5">
-            <Label htmlFor="student">Student</Label>
-            <Select value={studentId} onValueChange={setStudentId}>
-              <SelectTrigger id="student">
-                <SelectValue placeholder="Choose a student" />
+            <Label htmlFor="subject">{forStaff ? "Member of staff" : "Student"}</Label>
+            <Select value={subjectId} onValueChange={setSubjectId}>
+              <SelectTrigger id="subject">
+                <SelectValue
+                  placeholder={forStaff ? "Choose a member of staff" : "Choose a student"}
+                />
               </SelectTrigger>
               <SelectContent>
-                {initialStudents.map((s) => (
+                {subjects.map((s) => (
                   <SelectItem key={s.id} value={s.id}>
-                    {s.name} · {s.admissionNumber}
+                    {s.name} · {s.reference}
                     {s.status !== "active" ? ` · ${s.status}` : ""}
                   </SelectItem>
                 ))}
@@ -228,7 +258,7 @@ export function IssueCertificateForm({
           </div>
         </CardHeader>
         <CardContent className="flex flex-col gap-4">
-          {!studentId ? (
+          {!subjectId ? (
             <p className="py-12 text-center text-sm text-muted-foreground">
               Choose a student to see the certificate.
             </p>

@@ -132,7 +132,10 @@ export function countBySeverity(problems: CertificateProblem[]): Record<ProblemS
  * printing a certificate with a blank where the reason for leaving should be.
  */
 export const issueCertificateSchema = z.object({
-  studentId: z.string().uuid("Choose a student"),
+  // Whoever the certificate is about. The *template* says which kind of
+  // person that is, so the client sends one id and the server decides which
+  // column it lands in — `0224`'s invitation lesson, one module along.
+  subjectId: z.string().uuid("Choose who the certificate is for"),
   templateId: z.string().uuid("Choose a certificate"),
   issuedOn: z.string().min(1, "Choose the date of issue"),
   extra: z.record(z.string(), z.string()).default({}),

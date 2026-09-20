@@ -160,13 +160,13 @@ describe("how problems are shown", () => {
 
 describe("what the form sends", () => {
   it("insists on a student, a template and a date", () => {
-    const bad = issueCertificateSchema.safeParse({ studentId: "", templateId: "", issuedOn: "" });
+    const bad = issueCertificateSchema.safeParse({ subjectId: "", templateId: "", issuedOn: "" });
     expect(bad.success).toBe(false);
   });
 
   it("defaults extra to an empty map", () => {
     const parsed = issueCertificateSchema.parse({
-      studentId: "00000000-0000-4000-8000-000000000001",
+      subjectId: "00000000-0000-4000-8000-000000000001",
       templateId: "00000000-0000-4000-8000-000000000002",
       issuedOn: "2026-09-07",
     });

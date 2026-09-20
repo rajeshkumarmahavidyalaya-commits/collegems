@@ -95,7 +95,7 @@ describeDb("certificates", () => {
 
     // The bonafide asks for a purpose. Withhold it.
     const preview = await a.rpc("certificate_preview", {
-      p_student_id: studentId,
+      p_subject_id: studentId,
       p_template_id: template.id,
       p_extra: {},
     });
@@ -112,7 +112,7 @@ describeDb("certificates", () => {
 
     // ...and the refusal is enforced in the function, not in the screen.
     const issued = await a.rpc("certificate_issue", {
-      p_student_id: studentId,
+      p_subject_id: studentId,
       p_template_id: template.id,
       p_extra: {},
     });
@@ -124,7 +124,7 @@ describeDb("certificates", () => {
     const template = await templateOfKind("bonafide");
 
     const { data } = await a.rpc("certificate_preview", {
-      p_student_id: studentId,
+      p_subject_id: studentId,
       p_template_id: template.id,
       p_extra: { purpose: "a passport application" },
     });
@@ -141,7 +141,7 @@ describeDb("certificates", () => {
     const template = await templateOfKind("bonafide");
 
     const { data: issued, error } = await a.rpc("certificate_issue", {
-      p_student_id: studentId,
+      p_subject_id: studentId,
       p_template_id: template.id,
       p_extra: { purpose: "a bank account application" },
     });
@@ -199,7 +199,7 @@ describeDb("certificates", () => {
     const template = await templateOfKind("transfer");
 
     const { data: issued, error } = await a.rpc("certificate_issue", {
-      p_student_id: studentId,
+      p_subject_id: studentId,
       p_template_id: template.id,
       p_extra: { conduct: "Excellent", reason: "Issued by the automated test suite" },
     });
@@ -217,7 +217,7 @@ describeDb("certificates", () => {
     // check-then-insert, so two clerks pressing the button together cannot
     // both win.
     const second = await a.rpc("certificate_issue", {
-      p_student_id: studentId,
+      p_subject_id: studentId,
       p_template_id: template.id,
       p_extra: { conduct: "Excellent", reason: "Should not be possible" },
     });
@@ -289,7 +289,7 @@ describeDb("certificates", () => {
 
     const studentId = await aStudentWithBothParents();
     const result = await a.rpc("certificate_issue", {
-      p_student_id: studentId,
+      p_subject_id: studentId,
       p_template_id: theirs!.id,
       p_extra: { purpose: "x" },
     });

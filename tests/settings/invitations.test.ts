@@ -100,21 +100,64 @@ describe("the subject decides what is asked, never what is allowed", () => {
    * permission matrix looks exactly like a shortcut, and would replace a
    * per-college decision with a hardcoded one.
    */
+  /**
+   * Tables with a `subject` column of their own, which is **not** the role's.
+   *
+   * The third time this guard has had to be narrowed, and each time for the
+   * same reason: *the word is not the column.* First it reported a policy
+   * **named** `"subject teachers manage marks"`, about an academic subject —
+   * matching the statement instead of the expression. Then a planted
+   * `using (role_subject = 'guardian')` passed, because `\b` finds no boundary
+   * inside a word containing an underscore. Now `certificates.subject` — the
+   * student-or-staff discriminator from `0245` — is read by three policies, and
+   * it must be: that is what stops a teacher reading a colleague's experience
+   * certificate.
+   *
+   * A bare `subject` is still forbidden everywhere else, so a policy that
+   * joined `roles` and compared its subject is caught. An exception is a line
+   * somebody wrote on purpose, with the reason — the `nav-audience` shape.
+   */
+  const OWN_SUBJECT_COLUMN: Record<string, string> = {
+    certificates:
+      "certificates.subject is student-or-staff (0245) and is load-bearing in " +
+      "the read policies: it is what keeps a staff certificate off the staff-room " +
+      "table. Nothing to do with which record an invitation must name.",
+  };
+
   it("never appears inside a policy", () => {
     const sql = code(migrationSql());
     for (const stmt of sql.matchAll(/create policy[\s\S]*?;/gi)) {
-      // The policy's *name* is not its expression, and this codebase has a
-      // `"subject teachers manage marks"` — about an academic subject. Matching
-      // the whole statement reported it and would have had somebody weaken a
-      // correct policy to satisfy a guard. Drop the quoted name first.
+      // The policy's *name* is not its expression. Drop the quoted name first,
+      // or a policy called "subject teachers manage marks" reports itself and
+      // somebody weakens a correct policy to satisfy a guard.
       const expression = stmt[0].replace(/"[^"]*"/, "");
-      // `role_subject`, not just `subject`: `\b` finds no boundary inside a
-      // word containing an underscore, so the first draft passed on a planted
-      // `using (role_subject = 'guardian')` — which is precisely the shortcut
-      // worth forbidding, since `invitations` is where the column is carried.
+      const table = /\bon\s+public\.(\w+)/i.exec(expression)?.[1] ?? "";
+
+      // The role's own spelling is forbidden on every table, always.
       expect(expression, "a policy is reading the role's subject").not.toMatch(
-        /\b(?:role_subject|subject)\b/i,
+        /\brole_subject\b|\broles\.subject\b/i,
       );
+
+      // An allowlisted table exempts its **own** column, not a joined one. A
+      // planted `(select r.subject from public.roles r limit 1) = 'staff'`
+      // inside a certificates policy passed the first draft of this: the table
+      // was allowed, so every `subject` in the statement was. If a policy
+      // reaches into `roles` at all, no spelling of `subject` is innocent.
+      if (/public\.roles\b/i.test(expression)) {
+        expect(
+          expression,
+          `a policy on ${table} joins roles and reads a subject`,
+        ).not.toMatch(/\bsubject\b/i);
+      }
+
+      // A bare `subject` is forbidden unless the table owns one and says so.
+      if (!(table in OWN_SUBJECT_COLUMN)) {
+        expect(
+          expression,
+          `a policy on ${table} reads a bare "subject" — if that column is its ` +
+            "own and not the role's, name it in OWN_SUBJECT_COLUMN with the reason",
+        ).not.toMatch(/\bsubject\b/i);
+      }
     }
   });
 

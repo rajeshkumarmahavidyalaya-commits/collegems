@@ -431,6 +431,7 @@ export type Database = {
           is_default: boolean
           kind: string
           name: string
+          subject: string
           tenant_id: string
           updated_at: string
         }
@@ -444,6 +445,7 @@ export type Database = {
           is_default?: boolean
           kind: string
           name: string
+          subject?: string
           tenant_id: string
           updated_at?: string
         }
@@ -457,6 +459,7 @@ export type Database = {
           is_default?: boolean
           kind?: string
           name?: string
+          subject?: string
           tenant_id?: string
           updated_at?: string
         }
@@ -484,8 +487,10 @@ export type Database = {
           serial_no: string
           session_id: string
           snapshot: Json
+          staff_id: string | null
           status: string
-          student_id: string
+          student_id: string | null
+          subject: string
           template_id: string | null
           template_name: string
           tenant_id: string
@@ -504,8 +509,10 @@ export type Database = {
           serial_no: string
           session_id: string
           snapshot: Json
+          staff_id?: string | null
           status?: string
-          student_id: string
+          student_id?: string | null
+          subject?: string
           template_id?: string | null
           template_name: string
           tenant_id: string
@@ -524,8 +531,10 @@ export type Database = {
           serial_no?: string
           session_id?: string
           snapshot?: Json
+          staff_id?: string | null
           status?: string
-          student_id?: string
+          student_id?: string | null
+          subject?: string
           template_id?: string | null
           template_name?: string
           tenant_id?: string
@@ -540,6 +549,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "certificates_staff_fkey"
+            columns: ["tenant_id", "staff_id"]
+            isOneToOne: false
+            referencedRelation: "staff"
+            referencedColumns: ["tenant_id", "id"]
+          },
+          {
             foreignKeyName: "certificates_student_fkey"
             columns: ["tenant_id", "student_id"]
             isOneToOne: false
@@ -552,6 +568,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "certificate_templates"
             referencedColumns: ["tenant_id", "id"]
+          },
+          {
+            foreignKeyName: "certificates_template_subject_fkey"
+            columns: ["tenant_id", "template_id", "subject"]
+            isOneToOne: false
+            referencedRelation: "certificate_templates"
+            referencedColumns: ["tenant_id", "id", "subject"]
           },
           {
             foreignKeyName: "certificates_tenant_id_fkey"
@@ -7124,8 +7147,10 @@ export type Database = {
           serial_no: string
           session_id: string
           snapshot: Json
+          staff_id: string | null
           status: string
-          student_id: string
+          student_id: string | null
+          subject: string
           template_id: string | null
           template_name: string
           tenant_id: string
@@ -7142,7 +7167,7 @@ export type Database = {
         Args: {
           p_extra?: Json
           p_issued_on?: string
-          p_student_id: string
+          p_subject_id: string
           p_template_id: string
         }
         Returns: {
@@ -7158,8 +7183,10 @@ export type Database = {
           serial_no: string
           session_id: string
           snapshot: Json
+          staff_id: string | null
           status: string
-          student_id: string
+          student_id: string | null
+          subject: string
           template_id: string | null
           template_name: string
           tenant_id: string
@@ -7177,7 +7204,7 @@ export type Database = {
         Args: {
           p_extra?: Json
           p_issued_on?: string
-          p_student_id: string
+          p_subject_id: string
           p_template_id: string
         }
         Returns: Json
@@ -7186,8 +7213,23 @@ export type Database = {
         Args: { p_body: string; p_values: Json }
         Returns: string
       }
+      certificate_school_values: {
+        Args: { p_tenant_id: string }
+        Returns: Json
+      }
+      certificate_school_values_problems: {
+        Args: never
+        Returns: {
+          message: string
+          severity: string
+        }[]
+      }
       certificate_snapshot: {
         Args: { p_extra?: Json; p_issued_on?: string; p_student_id: string }
+        Returns: Json
+      }
+      certificate_staff_snapshot: {
+        Args: { p_extra?: Json; p_issued_on?: string; p_staff_id: string }
         Returns: Json
       }
       certificate_template_problems: {
