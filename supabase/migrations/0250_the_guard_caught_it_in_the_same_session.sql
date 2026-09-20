@@ -1,0 +1,46 @@
+-- 0250 — The convention 0204 deleted is still in every file written before it
+--
+-- `0249` created `exam_seat_allocations_tenant_idx on (tenant_id)` and
+-- `index_guard_violations()` reported it five times in the same session, once
+-- per index that already covers it:
+--
+--     exam_seat_allocations_tenant_idx  <  exam_seat_allocations_one_per_seat
+--                                       <  exam_seat_allocations_one_per_student
+--                                       <  exam_seat_allocations_paper_idx
+--                                       <  exam_seat_allocations_plan_idx
+--                                       <  exam_seat_allocations_student_idx
+--
+-- It answers nothing. Every seek it serves, each of those five serves too,
+-- because a btree on (a) is a strict prefix of a btree on (a, b) — which is a
+-- property of the structure rather than a guess about query shapes.
+--
+-- The interesting part is not the index. It is **how it got there**:
+--
+-- > `0204` dropped 87 of these and the convention that produced them is still
+-- > sitting, unchanged and applied, in all 203 migrations written before it.
+-- > This module's schema was written by reading `0184`'s, which has
+-- > `renewal_decisions_tenant_idx` on exactly this pattern — so copying a
+-- > neighbouring module copied the defect with it.
+--
+-- A comment in `0204` could not have stopped that, and neither could reading
+-- it, because the way anybody learns a module's shape here is to open the
+-- nearest one. **The guard is the only mechanism that scales to the next
+-- person**, and this is the cheapest possible demonstration of it working: the
+-- defect existed for the length of one session and was found by the check that
+-- runs after every migration, not by a reviewer and not by a slow query in
+-- eighteen months.
+--
+-- Rule: migrations are immutable once applied. `0249` is applied and recorded,
+-- so this is a second file rather than an edit to the first — and the pair
+-- reads better than a silent correction would.
+
+drop index public.exam_seat_allocations_tenant_idx;
+
+-- Left in place deliberately, and each is a real prefix of nothing:
+--
+--   exam_seat_allocations_plan_idx     (tenant_id, plan_id, room_id, seat_no)
+--       the room chart, in seat order — the query the invigilator's sheet makes
+--   exam_seat_allocations_student_idx  (tenant_id, student_id)
+--       "where do I sit", the candidate's own question
+--   exam_seat_allocations_paper_idx    (tenant_id, exam_subject_id)
+--       the adjacency critic, which groups a sitting by paper

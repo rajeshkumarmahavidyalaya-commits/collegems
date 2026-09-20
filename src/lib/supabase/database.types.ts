@@ -1225,6 +1225,170 @@ export type Database = {
           },
         ]
       }
+      exam_seat_allocations: {
+        Row: {
+          created_at: string
+          exam_subject_id: string
+          id: string
+          is_override: boolean
+          note: string | null
+          plan_id: string
+          planned_capacity: number
+          room_id: string
+          room_name: string
+          run_status: string
+          seat_no: number
+          student_id: string
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          exam_subject_id: string
+          id?: string
+          is_override?: boolean
+          note?: string | null
+          plan_id: string
+          planned_capacity: number
+          room_id: string
+          room_name: string
+          run_status?: string
+          seat_no: number
+          student_id: string
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          exam_subject_id?: string
+          id?: string
+          is_override?: boolean
+          note?: string | null
+          plan_id?: string
+          planned_capacity?: number
+          room_id?: string
+          room_name?: string
+          run_status?: string
+          seat_no?: number
+          student_id?: string
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "exam_seat_allocations_exam_subject_id_fkey"
+            columns: ["exam_subject_id"]
+            isOneToOne: false
+            referencedRelation: "exam_subjects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "exam_seat_allocations_plan_fkey"
+            columns: ["tenant_id", "plan_id", "run_status"]
+            isOneToOne: false
+            referencedRelation: "exam_seat_plans"
+            referencedColumns: ["tenant_id", "id", "status"]
+          },
+          {
+            foreignKeyName: "exam_seat_allocations_room_id_fkey"
+            columns: ["room_id"]
+            isOneToOne: false
+            referencedRelation: "class_rooms"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "exam_seat_allocations_student_fkey"
+            columns: ["tenant_id", "student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["tenant_id", "id"]
+          },
+          {
+            foreignKeyName: "exam_seat_allocations_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      exam_seat_plans: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          exam_id: string
+          id: string
+          published_at: string | null
+          published_by: string | null
+          rules: Json
+          session_id: string
+          sits_on: string
+          status: string
+          tenant_id: string
+          time_slot_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          exam_id: string
+          id?: string
+          published_at?: string | null
+          published_by?: string | null
+          rules?: Json
+          session_id: string
+          sits_on: string
+          status?: string
+          tenant_id: string
+          time_slot_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          exam_id?: string
+          id?: string
+          published_at?: string | null
+          published_by?: string | null
+          rules?: Json
+          session_id?: string
+          sits_on?: string
+          status?: string
+          tenant_id?: string
+          time_slot_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "exam_seat_plans_exam_fkey"
+            columns: ["tenant_id", "exam_id"]
+            isOneToOne: false
+            referencedRelation: "exams"
+            referencedColumns: ["tenant_id", "id"]
+          },
+          {
+            foreignKeyName: "exam_seat_plans_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "academic_sessions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "exam_seat_plans_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "exam_seat_plans_time_slot_id_fkey"
+            columns: ["time_slot_id"]
+            isOneToOne: false
+            referencedRelation: "time_slots"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       exam_subjects: {
         Row: {
           created_at: string
@@ -7441,6 +7605,67 @@ export type Database = {
         }
         Returns: string
       }
+      exam_seat_candidates: {
+        Args: { p_exam_id: string; p_sits_on: string; p_time_slot_id?: string }
+        Returns: {
+          admission_number: string
+          exam_subject_id: string
+          is_optional: boolean
+          paper: string
+          roll_number: string
+          roll_sort: string
+          section_id: string
+          section_label: string
+          student_id: string
+          student_name: string
+        }[]
+      }
+      exam_seat_chart: {
+        Args: { p_plan_id: string }
+        Returns: {
+          admission_number: string
+          is_override: boolean
+          note: string
+          paper: string
+          planned_capacity: number
+          roll_number: string
+          room_id: string
+          room_name: string
+          seat_no: number
+          section_label: string
+          student_id: string
+          student_name: string
+        }[]
+      }
+      exam_seat_move: {
+        Args: {
+          p_allocation_id: string
+          p_note: string
+          p_room_id: string
+          p_seat_no: number
+        }
+        Returns: Json
+      }
+      exam_seat_plan_discard: { Args: { p_plan_id: string }; Returns: Json }
+      exam_seat_plan_generate: {
+        Args: {
+          p_exam_id: string
+          p_room_ids?: string[]
+          p_sits_on: string
+          p_time_slot_id?: string
+        }
+        Returns: Json
+      }
+      exam_seat_plan_publish: { Args: { p_plan_id: string }; Returns: Json }
+      exam_seat_plan_unpublish: { Args: { p_plan_id: string }; Returns: Json }
+      exam_seating_problems: {
+        Args: { p_plan_id: string }
+        Returns: {
+          message: string
+          severity: string
+        }[]
+      }
+      exam_seating_rules: { Args: { p_rules?: Json }; Returns: Json }
       exams_announce_results: { Args: { p_exam_id: string }; Returns: Json }
       exams_attendance_summary: {
         Args: { p_session_id: string; p_student_id: string; p_upto?: string }
