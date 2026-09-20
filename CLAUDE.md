@@ -882,6 +882,53 @@ replacing a load-bearing authorization check is a probe of that function as
 several roles, not a tidy-up, and `checks_run` is the one that already taught
 this the expensive way.
 
+#### …and the third instance put it inside a policy, where it is worse
+
+The two above are a **report** and a **check** gated on a permission a family
+holds. `0249` did it to an RLS policy, which is the same mistake with the
+boundary underneath it rather than a screen:
+
+```sql
+create policy "staff view exam_seat_allocations" on public.exam_seat_allocations
+  for select to authenticated
+  using ( tenant_id = current_tenant_id()
+          and role_has_permission('exams.view') );   -- held by parent and student
+```
+
+`exams.view` is what lets a family read their own child's result — correct on
+`exam_results`, where the policy beside it is row-scoped, and a disaster on a
+**tenant-wide** one. Probed as a candidate: **302 seats visible, draft
+included** — where every child sits, their roll number and their paper, to all
+302 families and every guardian.
+
+> **A permission is not a proxy for an audience, and the word in the policy name
+> is not a predicate.** Calling it *"staff view …"* is the same kind of claim as
+> a comment: it describes who the author had in mind, and the matrix decides.
+
+Two things it settled, and the second is the one that is easy to get backwards:
+
+- **Check the matrix, not the name, when a gate is tenant-wide.** Row-scoped
+  beside it is what makes `exams.view` safe on `exam_results`; nothing about the
+  permission changed, only what the policy grants with it.
+- **RLS policies are OR-ed, so a narrow one does not restrain a broad one.**
+  The candidate's own `run_status = 'published' and student_id = …` policy was
+  correct from the first migration and was never reached, because the wide
+  policy answered first. **Adding a correct narrow policy does not fix an
+  over-broad one sitting next to it** — it is an alternative, not a restriction,
+  and there is no arrangement of permissive policies in which one limits
+  another. A gate that must narrow has to be narrowed *in place*.
+
+And the reason it survived writing, review and a first probe: **nobody signs in
+as a candidate here.** Two logins, both administrators. The rule two sections
+above — *the roles a reason forgets are the roles nobody signs into* — applied
+to a policy rather than a menu. The probe that found it created the login in a
+rolled-back transaction, and its **first run reported the guardian seeing 0
+rows, which was a probe that tested nothing**: the student it picked has no
+guardian on record, so no profile was created and the empty answer read exactly
+like a correct refusal. A probe now checks its own set-up before it reports.
+
+See `docs/modules/seating.md`.
+
 ### An invoker function over row-ownership RLS lies quietly
 
 The counter-case, and it is the more dangerous one because it never raises.
@@ -1244,6 +1291,28 @@ exist** — a bus with 40 seats, a room with 4 beds, debits equalling credits. N
 constraint sees a second row, so those live in the write function under an
 advisory lock, with the numbers in the message.
 
+##### …unless the occupants are numbered
+
+`exam_seat_allocations` is the exception, and it is an exception to the
+*mechanism* rather than to the rule. A room with 40 seats reads exactly like a
+bus with 40 seats — until the seats are given numbers:
+
+```sql
+check (seat_no <= planned_capacity)            -- one row
+unique (tenant_id, plan_id, room_id, seat_no)  -- one row per seat
+```
+
+> **Two constraints that each see one row enforce a rule about all of them,
+> because the numbering *is* the count.** A forty-first candidate needs a
+> forty-first seat number, the CHECK refuses it, and no lock is taken.
+
+The advisory-lock answer is for a capacity whose occupants are **anonymous** —
+`transport_assignments` counts seats and does not number them, and could. So the
+question to ask before reaching for the lock is not *"is this about other
+rows?"* but *"is the thing being counted already identified?"* Where it is, the
+pigeonhole principle does the work that a `select count(*)` under a lock was
+going to do, and cannot race.
+
 #### …and the second boundary: it carries a fact that is still true
 
 The first boundary is about distance. This one is about **time**, and it is the
@@ -1504,6 +1573,18 @@ Two consequences worth knowing before you touch this module:
   the table is the record of what happened and nobody should ever edit it;
   the absent policy where one role writes through a definer function and the
   rest simply have no way in. Test each for what it actually does.
+
+  **And the sentence above is about a test only by accident — a *caller* has
+  the same problem, and there it is a lie rather than a weak assertion.**
+  `exam_seat_move` ran two UPDATEs against a published plan, matched no row,
+  raised nothing, and returned `{"moved": true, "swapped": true}` naming the
+  seat. The function comment said *"refused once the plan is published, by the
+  write policy rather than by a check here"* — and a permissive policy does not
+  refuse, it grants nothing, silently. The officer closes the dialog, the toast
+  says *moved*, and on the morning of the exam the child is where nobody moved
+  them from. **Every write function asserts `get diagnostics ... row_count`
+  after every statement**, and a comment that names a policy as the mechanism is
+  the first thing to go and check.
 - **Amounts are signed, positive means "owes more", and the RPCs take positive
   numbers** and do the signing. Never ask a caller for a negative amount.
 - **`session_id` on a ledger entry is which year's account it moves;

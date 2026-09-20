@@ -252,6 +252,17 @@ list below came from search results describing eSkooly's feature set rather than
 from the documentation itself. Each gap was then checked against **this**
 codebase, which is the half that is certain.
 
+**Closed: the exam seat plan.** Measured before building: 12 sections of 25-27,
+302 candidates on each of 8 dates, 12 rooms of 40 — and the arrangement a
+college gets for free, a section in its own classroom, puts **290 of 290**
+adjacent pairs in front of the identical question paper. Generated, it is **0 of
+290**. Migrations `0249`-`0254`; see [seating.md](./modules/seating.md). The
+sharp part was again the policy: `0249` gated the tenant-wide read on
+`exams.view`, which the matrix says is held by parent and student, so every
+family could read the whole college's plan including the unpublished draft.
+Found by probing as a candidate, which needed a login created in a rolled-back
+transaction because this college has two logins and both are administrators.
+
 **Closed:** *certificates for students **and employees***. `certificates.student_id`
 was `not null`, so the whole frozen-document engine was structurally
 student-only and `staff_exit` handed a departing lecturer nothing. Migrations
@@ -268,7 +279,6 @@ the day this shipped.
 | Live virtual classes (Zoom, BigBlueButton, Jitsi, Meet) | four third-party integrations, none testable here |
 | Biometric attendance | needs hardware |
 | QR / barcode on ID cards | the card renderer exists; a code with **no reader** would be a string nobody scans, so it is only worth building with the thing that reads it |
-| Exam seat plan | self-contained and genuinely missing |
 | Online parent/student registration | **structurally absent**: every route is behind the login wall, and `/signup` needs an invitation to get a tenant. `enquiry` is staff-entered |
 | Syllabus as its own object | `study-material` is adjacent, not the same |
 | Inventory selling | `stock_movements.kind` is `adjustment \| issue \| receipt`; a sale also crosses into the fee ledger |

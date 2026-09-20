@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowLeft, CalendarDays, MessageSquare, ScrollText, Scale } from "lucide-react";
+import { ArrowLeft, CalendarDays, LayoutGrid, MessageSquare, ScrollText, Scale } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { hasPermission } from "@/lib/auth/permissions";
@@ -19,7 +19,18 @@ export default async function ExamPage({ params }: { params: Promise<{ examId: s
   const { examId } = await params;
   const locale = await getLocale();
 
-  const [exam, papers, problems, results, sections, subjects, canManage, canGrade, canPublish] =
+  const [
+    exam,
+    papers,
+    problems,
+    results,
+    sections,
+    subjects,
+    canManage,
+    canGrade,
+    canPublish,
+    canSeeSeating,
+  ] =
     await Promise.all([
       getExam(examId),
       listPapers(examId),
@@ -30,6 +41,11 @@ export default async function ExamPage({ params }: { params: Promise<{ examId: s
       hasPermission("exams.manage"),
       hasPermission("exams.grade"),
       hasPermission("exams.publish"),
+      // Gated on the permission the seating screen itself reads, not on
+      // `exams.manage`: an invigilator may look at the chart and may not make
+      // one, and a button to a screen that will refuse you is the same defect
+      // one click along.
+      hasPermission("exams.seating"),
     ]);
 
   if (!exam) notFound();
@@ -59,6 +75,14 @@ export default async function ExamPage({ params }: { params: Promise<{ examId: s
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
+          {canSeeSeating && (
+            <Button asChild variant="outline">
+              <Link href={`/exams/${examId}/seating`}>
+                <LayoutGrid className="size-4" aria-hidden="true" />
+                Seating
+              </Link>
+            </Button>
+          )}
           <Button asChild variant="outline">
             <Link href={`/exams/${examId}/report-cards`}>
               <ScrollText className="size-4" aria-hidden="true" />
