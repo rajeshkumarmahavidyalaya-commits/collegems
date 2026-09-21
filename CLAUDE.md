@@ -1783,6 +1783,56 @@ came out of that and apply to any module that wants to write here:
   issue (excluding reversals), so a retried return converges instead of
   double-billing.
 
+**Inventory selling is the fourth module through that door** (migrations
+`0261`-`0264`), and it took all three points unchanged: the charge is booked at
+the counter where the amount is final, store keepers get a policy permitting
+exactly `entry_type = 'sale'` rows carrying a `stock_movement_id`, and one
+partial unique index makes a retried sale converge. **Price is not cost** —
+`unit_cost` is what the school paid and `unit_price` what the family pays, two
+facts rather than the `fine_paid` drift — and `inventory_items.sale_price` is
+null by default, because *not for sale* and *free* are different.
+
+Three things it taught, and the second is the one to carry:
+
+- **A correction is two writes too.** `fees_reverse_entry` would cancel the
+  charge and leave the goods off the shelf, so it refuses a sale by name and
+  sends it to `stock_sale_reverse` — which is `stock_record_movement` refusing
+  `kind = 'sale'` in the other direction. Two functions each refusing the
+  other's job beats one that quietly does half. And `0026`'s note —
+  *"`fees_reverse_entry` copied `invoice_id` but knew nothing about book
+  issues"* — **is what caught the same omission one column along**: a reversal
+  dropping `stock_movement_id` is invisible to the store keeper's own SELECT
+  policy, so the seller sees the charge and not its cancellation. *A new source
+  column on `ledger_entries` is not one change, it is two.*
+- **The sale worked, both rows were right, and the balance did not move.**
+  Probed: stock 15 -> 13, a correctly signed immutable charge of 50.00 written,
+  and `fees_student_balances` reporting 1100.00 -> **1100.00**. Today is
+  2026-09-21; the flag says 2025-2026 and the date falls in 2026-2027, so the
+  charge was filed into a year the fee screen does not read. Rule 2 already
+  settled it — *a row that bills a year is not a row that records a day* — and
+  a sale is **genuinely both**, so it writes two rows with two different
+  `session_id`s: the movement from the date (`0198`), the charge from
+  `current_session_id()`. That split was in the precedent too, one statement
+  below the bullet points that were copied.
+
+  > **Assert the number a person reads, not the rows you wrote.** Every
+  > assertion about rows passed. Nothing was wrong, and the answer was
+  > invisible.
+- **And `allowed_values` was reading a different constraint's list.** `0222`
+  added it so a sentence could consult the CHECK instead of carrying a second
+  copy; asked for `stock_movements.kind` it answered **2 of 6**, because it
+  matched any CHECK mentioning the column and `stock_movements_cost_chk` sorts
+  first. The oldest defect in this file, inside the one thing built to prevent
+  it — *a plausible answer rather than an error*. Invisible because both live
+  callers have exactly one matching CHECK. Anchored on `CHECK ((col = ANY
+  (ARRAY[` it is one of one for all five columns anything asks about, and it
+  returns **null rather than choosing** when two match, degrading to the
+  behaviour `0222` documented. `stock_record_movement`'s own copy of the list —
+  migration `0101`'s defect, in the module `0101`'s convention names — is gone
+  with it.
+
+See `docs/modules/inventory.md`.
+
 `book_issues.fine_paid` was dropped: for a student the fee balance answers it,
 and a second boolean free to disagree with the ledger is exactly the drift the
 ledger exists to prevent. **Staff library fines are a payroll matter, not a fee

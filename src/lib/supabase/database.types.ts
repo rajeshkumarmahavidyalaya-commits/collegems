@@ -2624,6 +2624,7 @@ export type Database = {
           name: string
           notes: string | null
           reorder_level: number
+          sale_price: number | null
           sku: string
           tenant_id: string
           unit: string
@@ -2638,6 +2639,7 @@ export type Database = {
           name: string
           notes?: string | null
           reorder_level?: number
+          sale_price?: number | null
           sku: string
           tenant_id: string
           unit?: string
@@ -2652,6 +2654,7 @@ export type Database = {
           name?: string
           notes?: string | null
           reorder_level?: number
+          sale_price?: number | null
           sku?: string
           tenant_id?: string
           unit?: string
@@ -3411,6 +3414,7 @@ export type Database = {
           reference: string | null
           reverses_entry_id: string | null
           session_id: string
+          stock_movement_id: string | null
           student_id: string
           tenant_id: string
         }
@@ -3432,6 +3436,7 @@ export type Database = {
           reference?: string | null
           reverses_entry_id?: string | null
           session_id: string
+          stock_movement_id?: string | null
           student_id: string
           tenant_id: string
         }
@@ -3453,6 +3458,7 @@ export type Database = {
           reference?: string | null
           reverses_entry_id?: string | null
           session_id?: string
+          stock_movement_id?: string | null
           student_id?: string
           tenant_id?: string
         }
@@ -3490,6 +3496,13 @@ export type Database = {
             columns: ["session_id"]
             isOneToOne: false
             referencedRelation: "academic_sessions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ledger_entries_stock_movement_id_fkey"
+            columns: ["stock_movement_id"]
+            isOneToOne: false
+            referencedRelation: "stock_movements"
             referencedColumns: ["id"]
           },
           {
@@ -5640,9 +5653,11 @@ export type Database = {
           recorded_by: string | null
           reference: string | null
           session_id: string
+          sold_to_student_id: string | null
           supplier: string | null
           tenant_id: string
           unit_cost: number | null
+          unit_price: number | null
         }
         Insert: {
           created_at?: string
@@ -5657,9 +5672,11 @@ export type Database = {
           recorded_by?: string | null
           reference?: string | null
           session_id: string
+          sold_to_student_id?: string | null
           supplier?: string | null
           tenant_id: string
           unit_cost?: number | null
+          unit_price?: number | null
         }
         Update: {
           created_at?: string
@@ -5674,11 +5691,20 @@ export type Database = {
           recorded_by?: string | null
           reference?: string | null
           session_id?: string
+          sold_to_student_id?: string | null
           supplier?: string | null
           tenant_id?: string
           unit_cost?: number | null
+          unit_price?: number | null
         }
         Relationships: [
+          {
+            foreignKeyName: "stock_movements_buyer_fkey"
+            columns: ["tenant_id", "sold_to_student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["tenant_id", "id"]
+          },
           {
             foreignKeyName: "stock_movements_item_fkey"
             columns: ["tenant_id", "item_id"]
@@ -8264,6 +8290,7 @@ export type Database = {
           reference: string | null
           reverses_entry_id: string | null
           session_id: string
+          stock_movement_id: string | null
           student_id: string
           tenant_id: string
         }
@@ -8304,6 +8331,7 @@ export type Database = {
           reference: string | null
           reverses_entry_id: string | null
           session_id: string
+          stock_movement_id: string | null
           student_id: string
           tenant_id: string
         }
@@ -8341,6 +8369,7 @@ export type Database = {
           reference: string | null
           reverses_entry_id: string | null
           session_id: string
+          stock_movement_id: string | null
           student_id: string
           tenant_id: string
         }
@@ -8371,6 +8400,7 @@ export type Database = {
           reference: string | null
           reverses_entry_id: string | null
           session_id: string
+          stock_movement_id: string | null
           student_id: string
           tenant_id: string
         }
@@ -8408,6 +8438,7 @@ export type Database = {
           reference: string | null
           reverses_entry_id: string | null
           session_id: string
+          stock_movement_id: string | null
           student_id: string
           tenant_id: string
         }
@@ -10140,6 +10171,21 @@ export type Database = {
       stock_reverse_movement: {
         Args: { p_movement_id: string; p_reason: string }
         Returns: string
+      }
+      stock_sale_reverse: {
+        Args: { p_movement_id: string; p_reason: string }
+        Returns: Json
+      }
+      stock_sell_to_student: {
+        Args: {
+          p_happened_on?: string
+          p_item_id: string
+          p_note?: string
+          p_quantity: number
+          p_student_id: string
+          p_unit_price?: number
+        }
+        Returns: Json
       }
       storage_object_tenant_matches: {
         Args: { p_name: string }

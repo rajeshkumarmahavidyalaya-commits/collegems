@@ -140,3 +140,149 @@ librarian are the same person.
   count is a bulk preview-then-apply, which is rule 13 work.
 - **No per-location stock.** One school, one store. A school with two campuses
   needs a location dimension on every movement.
+
+---
+
+## Selling from the store
+
+Phase 3b's last self-contained item. The roadmap's note read *"`stock_movements.kind`
+is `adjustment | issue | receipt`; a sale also crosses into the fee ledger"* —
+and the first half was measuring the **data in use**, not the constraint:
+`stock_movements_kind_check` has listed five kinds since the module shipped. The
+second half is exactly right, and is what makes this a money change.
+
+### The pattern was already written down
+
+Rule 6 writes library fines up as the shape for *"any module that wants to write
+here"*, and a sale takes all three points unchanged:
+
+| | library fine | store sale |
+|---|---|---|
+| when the charge is booked | at return, when the amount is final | at the counter, same reason |
+| the narrow door | `entry_type = 'fine'` + `book_issue_id`, librarians only | `entry_type = 'sale'` + `stock_movement_id`, store keepers only |
+| idempotency | partial unique index on the source row | the same, excluding reversals |
+
+That narrow INSERT policy is what keeps `stock_sell_to_student` `SECURITY
+INVOKER` — the two policies are the boundary, and the role check inside only
+turns `42501` into a sentence.
+
+**Price is not cost.** `unit_cost` is what the school paid (already restricted
+to `receipt` and `adjustment`); `unit_price` is what the family pays. A school
+buys exercise books at 18 and sells at 25, and one column would make the store's
+margin unanswerable. `inventory_items.sale_price` is the default and **null
+means not for sale** — different from 0.00, and the reason a school can stock
+chalk and floor cleaner without either being on a menu.
+
+**A sale is to a student.** `ledger_entries.student_id` is `not null`, so a sale
+to staff cannot reach the fee ledger at all — the same wall that sent staff
+library fines to payroll. Not built, named.
+
+### Two writes, and a correction is two more
+
+`fees_reverse_entry` would cancel the charge and leave the goods off the shelf.
+So it refuses a sale by name and sends it to `stock_sale_reverse`, which puts
+the stock back as a `return` and reverses the charge — the same shape as
+`stock_record_movement` refusing `kind = 'sale'` and sending it the other way.
+**Two functions, each refusing the other's job in a sentence**, rather than one
+that quietly does half.
+
+And the hazard `0026` had already written down, one column along:
+
+> `fees_reverse_entry` copied `invoice_id` but knew nothing about book issues,
+> so reversing a library fine would have produced an entry with no link back to
+> the book — invisible to the librarian policy above.
+
+Identical here: a reversal dropping `stock_movement_id` is invisible to the
+store keeper's own SELECT policy, so the person who made the sale sees the
+charge and not its cancellation. **A new source column on `ledger_entries` is
+not one change, it is two** — and the note from 2026's January is what caught
+it.
+
+---
+
+## Two things the build found that were not about selling
+
+### `allowed_values` was reading a different constraint's list
+
+`0222` added it so *"a validator and an error message can consult the constraint
+instead of carrying a second copy of the list"*. The first thing asked of it
+after `0261` was the sanity check:
+
+```
+select array_length(allowed_values('public.stock_movements','kind'), 1);   -- 2
+```
+
+Six kinds, answer **two**. It matched any CHECK whose text contains `kind = ANY
+(ARRAY[`, took the first by name, and `stock_movements_cost_chk` — *where a cost
+may be recorded* — sorts before `stock_movements_kind_check`.
+
+> This codebase's oldest recurring defect, in the one place built to prevent it:
+> **a plausible answer rather than an error.** Two is a number somebody quotes.
+
+Invisible because both live callers ask about a column with exactly one matching
+CHECK. Measured across the five columns anything asks about, the loose pattern
+matches two for `stock_movements.kind` and two for `ledger_entries.entry_type`;
+**anchored on `CHECK ((col = ANY (ARRAY[`, exactly one for all five.** It now
+returns null rather than choosing when two match, which degrades to the
+behaviour `0222` already documented: the sentence stops naming the values and
+the CHECK still refuses the write.
+
+And the second copy this was always about: `stock_record_movement` opened with
+its own list of kinds beside the constraint that holds one. Migration `0101`'s
+defect, in the module `0101`'s own convention names. It consults the constraint
+now, so the next kind is one `ALTER`.
+
+### The sale worked, both rows were right, and the balance did not move
+
+The probe's first run:
+
+```
+SALE   total 50.00 | on hand 15.00 -> 13.00 | balance 1100.00 -> 1100.00
+```
+
+Stock left the shelf, a correctly signed and linked immutable charge was
+written, and **the only screen that collects the money never saw it.**
+
+|  |  |
+|---|---|
+| today | 2026-09-21 |
+| the flag says | **2025-2026** |
+| the date falls in | **2026-2027** |
+| the balance reads | 2025-2026 |
+
+`stock_sell_to_student` stamped the charge with the *date's* year;
+`fees_student_balances` filters on the *flag's*. Rule 2 already settled which
+one a charge takes — **a row that bills a year is not a row that records a
+day** — and a sale is genuinely both, so it writes two rows with two different
+`session_id`s on purpose: the movement from the date (`0198`), the charge from
+`current_session_id()`.
+
+**That split was in the precedent too.** `library_return_book` — the function
+rule 6 names as *the* pattern — dates the issue and bills the fine with
+`current_session_id(v_tenant_id)`, one statement below the three bullet points
+that were copied. Migration `0264`.
+
+> **Assert the number a person reads, not the rows you wrote.** Every assertion
+> about rows passed. Nothing was wrong, and the answer was still invisible.
+
+### Probed, all rolled back
+
+```
+SALE      50.00 | on hand 15.00 -> 13.00 | BALANCE 1100.00 -> 1150.00 (+50.00)
+HALF-REV  That charge is a sale from the store. Use stock_sale_reverse, which
+          also puts the stock back
+REVERSED  on hand 13.00 -> 15.00 | BALANCE 1150.00 -> 1100.00 | twice: That
+          sale has already been reversed
+TEACHER   Your role does not sell from the store
+NO PRICE  A4 paper has no price, so it cannot be sold. Give it a sale price on
+          the item first
+LEAVER    Saanvi Gupta has left the school, so nothing can be sold to them
+TOO MANY  There are 13 box of Chalk (white) on hand and you are selling 99999
+```
+
+The teacher login was created for the probe, because this college has none —
+*the roles a reason forgets are the roles nobody signs into.*
+
+**Not built yet: the counter screen.** The write path is correct and nothing in
+the application can call it, which is rule 6's own sentence. That is the next
+commit.

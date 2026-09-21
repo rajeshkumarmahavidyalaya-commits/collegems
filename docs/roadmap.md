@@ -282,6 +282,18 @@ was not the schema but the policy — `staff view certificates` was tenant-wide,
 and would have handed every teacher their colleagues' experience certificates
 the day this shipped.
 
+**Closed: inventory selling.** The note above read *"`stock_movements.kind` is
+`adjustment | issue | receipt`"* and was measuring the **data in use** — the
+CHECK has listed five kinds since the module shipped. The second half was
+right, and is what made it a money change: migrations `0261`-`0264` take rule
+6's library-fine pattern unchanged (a narrow INSERT policy for one entry type
+carrying a source id, a partial unique index for idempotency, the charge booked
+when the amount is final). Two things found on the way — `allowed_values`
+answering **2 of 6** because it matched a different constraint, and a sale whose
+charge was filed into the year the *date* falls in rather than the year the
+school bills, so stock moved and **the balance did not**. See
+[inventory.md](./modules/inventory.md).
+
 **Still open, measured as zero occurrences in `src/` and the migrations:**
 
 | | notes |
@@ -291,7 +303,6 @@ the day this shipped.
 | Biometric attendance | needs hardware |
 | QR / barcode on ID cards | the card renderer exists; a code with **no reader** would be a string nobody scans, so it is only worth building with the thing that reads it |
 | Online parent/student registration | **structurally absent**: every route is behind the login wall, and `/signup` needs an invitation to get a tenant. `enquiry` is staff-entered |
-| Inventory selling | `stock_movements.kind` is `adjustment \| issue \| receipt`; a sale also crosses into the fee ledger |
 
 And the counter-direction, stated because absence of evidence is not evidence:
 the double-entry general ledger, the append-only money ledger with gapless
