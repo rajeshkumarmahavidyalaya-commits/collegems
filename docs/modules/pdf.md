@@ -483,3 +483,50 @@ the declaration of intent beside it.
 - **A school's letterhead.** The header is the school's name and address as
   text. An uploaded logo is a Storage read and an image embed — small, and not
   attempted here because no school has uploaded one.
+
+---
+
+## The declaration of intent said two for as long as there were eight
+
+`next.config.ts` carries an `outputFileTracingIncludes` entry so the vendored
+`.ttf` reaches the serverless bundle, under a comment that is careful and
+honest about what it does: **measured, the tracer finds the font unaided**, so
+the entry is a declaration of intent rather than the thing that makes it work.
+It exists because the tracer can follow
+`readFile(join(process.cwd(), "<literal>"))` and cannot follow a computed path,
+and `tests/pdf/document.test.ts` guards the literal directly.
+
+It named **two routes**. There are **eight**:
+
+```
+/(app)/certificates/[id]/pdf              declared
+/(app)/fees/invoices/[invoiceId]/pdf      declared
+/(app)/exams/[examId]/report-cards/pdf
+/(app)/report-card/[studentId]/[examId]/pdf
+/(app)/staff/[id]/id-card/pdf
+/(app)/staff/id-cards/pdf
+/(app)/students/[id]/id-card/pdf
+/(app)/students/id-cards/pdf
+```
+
+Report cards and identity cards shipped as files and nothing brought them here,
+and the sentence underneath went on reading *"scoped to the two routes that
+render a PDF"* — a comment that disagrees with its own code, in the same file
+whose other comment is this module's best example of getting that right.
+
+**Nothing was broken, and that is the whole reason it lasted.** The tracer
+finds the font for all eight, so there was no failure to notice; what was
+missing is the thing that would matter on the day a refactor computes the
+filename, which is the only day this entry has ever been for.
+
+So the fix is the list *and* a guard on the omission — the `nav-audience`
+shape, a third time. `tests/pdf/document.test.ts` now reads every `route.ts`
+importing `@/lib/pdf` and fails when one is not named in the config, verified
+both ways: dropping a declared route names it, and planting a ninth route names
+that. Adding a PDF route is a line somebody writes on purpose.
+
+> **A comment measured once is not a comment checked since.** The paragraph
+> saying *"built with these lines deleted: the tracer finds it unaided"* was
+> true when it was written and is still true. The paragraph beside it, counting
+> the routes, was true when it was written and quietly stopped being true four
+> commits later. **The half that ages is the half that counts something.**

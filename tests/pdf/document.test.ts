@@ -1,5 +1,5 @@
 import { readFileSync, readdirSync, statSync } from "node:fs";
-import { join } from "node:path";
+import { join, relative, sep } from "node:path";
 import { inflateSync } from "node:zlib";
 import { PDFArray, PDFDocument, PDFRawStream } from "pdf-lib";
 import { describe, expect, it } from "vitest";
@@ -190,6 +190,48 @@ describe("the document font", () => {
     expect(source).toMatch(/join\(\s*process\.cwd\(\)\s*,\s*"[^"$`]+\.ttf"\s*\)/);
     // No template literal and no concatenation in the path.
     expect(source).not.toMatch(/join\(\s*process\.cwd\(\)\s*,\s*`/);
+  });
+
+  /**
+   * The list in `next.config.ts` said **two** for as long as there were
+   * **eight**: report cards and identity cards shipped as files and nothing
+   * brought them here, so a declaration of intent covered a quarter of its own
+   * surface. Nothing was broken — the comment beside it records, measured, that
+   * the tracer finds the `.ttf` unaided — which is exactly why it could sit
+   * wrong through four commits that added PDF routes.
+   *
+   * So the guard is on the **omission**, the shape `nav-audience` uses: every
+   * route handler that imports the renderer must be named, and a ninth is a
+   * line somebody writes on purpose rather than a silent gap.
+   */
+  it("declares the font for every route that renders a PDF", () => {
+    const appDir = join(ROOT, "src/app");
+
+    function handlers(dir: string, acc: string[] = []): string[] {
+      for (const entry of readdirSync(dir, { withFileTypes: true })) {
+        const p = join(dir, entry.name);
+        if (entry.isDirectory()) handlers(p, acc);
+        else if (entry.name === "route.ts" && /from "@\/lib\/pdf/.test(readFileSync(p, "utf8"))) {
+          // Next keys these by the route path inside `app`, route groups and
+          // all — `/(app)/students/id-cards/pdf`.
+          acc.push("/" + relative(appDir, dir).split(sep).join("/"));
+        }
+      }
+      return acc;
+    }
+
+    const config = readFileSync(join(ROOT, "next.config.ts"), "utf8");
+    const declared = new Set(
+      [...config.matchAll(/"(\/\([^"]*pdf)":\s*\[/g)].map((m) => m[1]),
+    );
+
+    const undeclared = handlers(appDir).filter((route) => !declared.has(route));
+    expect(
+      undeclared.sort(),
+      "A route handler that renders a PDF reads the font from disk, and the " +
+        "file tracer can only follow it as a string literal. Add the route to " +
+        "outputFileTracingIncludes in next.config.ts.",
+    ).toEqual([]);
   });
 
   it("ships its licence beside it", () => {

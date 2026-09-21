@@ -35,12 +35,29 @@ const nextConfig: NextConfig = {
    * finds out. `tests/pdf/document.test.ts` guards the literal directly, which
    * is the executable half; this is the declaration of intent beside it.
    *
-   * Scoped to the two routes that render a PDF rather than applied globally: a
+   * Scoped to the routes that render a PDF rather than applied globally: a
    * blanket include puts 189 kB into every function in the app.
+   *
+   * **And the list said two for as long as there were eight.** Report cards and
+   * identity cards shipped as files and nothing brought them here, so a
+   * declaration of intent covered a quarter of its own surface — the defect
+   * this file already records about the *other* comment in it, one paragraph
+   * along. Nothing was broken, because the tracer finds the font unaided; what
+   * was missing is the thing that would matter on the day it does not.
+   *
+   * So the omission is guarded rather than the list: `tests/pdf/document.test.ts`
+   * reads every route handler importing `@/lib/pdf` and fails when one is not
+   * named here. Adding a ninth PDF route is a line somebody writes on purpose.
    */
   outputFileTracingIncludes: {
     "/(app)/certificates/[id]/pdf": ["./src/lib/pdf/fonts/**"],
+    "/(app)/exams/[examId]/report-cards/pdf": ["./src/lib/pdf/fonts/**"],
     "/(app)/fees/invoices/[invoiceId]/pdf": ["./src/lib/pdf/fonts/**"],
+    "/(app)/report-card/[studentId]/[examId]/pdf": ["./src/lib/pdf/fonts/**"],
+    "/(app)/staff/[id]/id-card/pdf": ["./src/lib/pdf/fonts/**"],
+    "/(app)/staff/id-cards/pdf": ["./src/lib/pdf/fonts/**"],
+    "/(app)/students/[id]/id-card/pdf": ["./src/lib/pdf/fonts/**"],
+    "/(app)/students/id-cards/pdf": ["./src/lib/pdf/fonts/**"],
   },
 
   /**
