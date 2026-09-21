@@ -6318,6 +6318,166 @@ export type Database = {
           },
         ]
       }
+      syllabus_progress: {
+        Row: {
+          class_level_id: string
+          covered_on: string | null
+          created_at: string
+          id: string
+          note: string | null
+          recorded_by_staff_id: string | null
+          section_id: string
+          session_id: string
+          status: string
+          subject_id: string
+          tenant_id: string
+          unit_id: string
+          updated_at: string
+        }
+        Insert: {
+          class_level_id: string
+          covered_on?: string | null
+          created_at?: string
+          id?: string
+          note?: string | null
+          recorded_by_staff_id?: string | null
+          section_id: string
+          session_id: string
+          status: string
+          subject_id: string
+          tenant_id: string
+          unit_id: string
+          updated_at?: string
+        }
+        Update: {
+          class_level_id?: string
+          covered_on?: string | null
+          created_at?: string
+          id?: string
+          note?: string | null
+          recorded_by_staff_id?: string | null
+          section_id?: string
+          session_id?: string
+          status?: string
+          subject_id?: string
+          tenant_id?: string
+          unit_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "syllabus_progress_recorded_by_staff_id_fkey"
+            columns: ["recorded_by_staff_id"]
+            isOneToOne: false
+            referencedRelation: "staff"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "syllabus_progress_section_fkey"
+            columns: ["tenant_id", "section_id", "class_level_id"]
+            isOneToOne: false
+            referencedRelation: "sections"
+            referencedColumns: ["tenant_id", "id", "class_level_id"]
+          },
+          {
+            foreignKeyName: "syllabus_progress_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "academic_sessions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "syllabus_progress_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "syllabus_progress_unit_fkey"
+            columns: ["tenant_id", "unit_id", "class_level_id", "subject_id"]
+            isOneToOne: false
+            referencedRelation: "syllabus_units"
+            referencedColumns: [
+              "tenant_id",
+              "id",
+              "class_level_id",
+              "subject_id",
+            ]
+          },
+        ]
+      }
+      syllabus_units: {
+        Row: {
+          class_level_id: string
+          created_at: string
+          description: string | null
+          id: string
+          planned_periods: number
+          position: number
+          session_id: string
+          subject_id: string
+          tenant_id: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          class_level_id: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          planned_periods?: number
+          position: number
+          session_id: string
+          subject_id: string
+          tenant_id: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          class_level_id?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          planned_periods?: number
+          position?: number
+          session_id?: string
+          subject_id?: string
+          tenant_id?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "syllabus_units_class_level_id_fkey"
+            columns: ["class_level_id"]
+            isOneToOne: false
+            referencedRelation: "class_levels"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "syllabus_units_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "academic_sessions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "syllabus_units_subject_id_fkey"
+            columns: ["subject_id"]
+            isOneToOne: false
+            referencedRelation: "subjects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "syllabus_units_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       tenants: {
         Row: {
           created_at: string
@@ -9862,6 +10022,10 @@ export type Database = {
           total_count: number
         }[]
       }
+      staff_teaches: {
+        Args: { p_section_id: string; p_subject_id: string }
+        Returns: boolean
+      }
       staff_update: {
         Args: {
           p_date_of_joining?: string
@@ -10201,6 +10365,59 @@ export type Database = {
           severity: string
           timetable_entry_id: string
         }[]
+      }
+      syllabus_for_section: {
+        Args: { p_section_id: string; p_subject_id: string }
+        Returns: {
+          covered_on: string
+          description: string
+          note: string
+          planned_periods: number
+          recorded_by: string
+          status: string
+          title: string
+          unit_id: string
+          unit_position: number
+        }[]
+      }
+      syllabus_mark: {
+        Args: {
+          p_covered_on?: string
+          p_note?: string
+          p_section_id: string
+          p_status: string
+          p_unit_id: string
+        }
+        Returns: Json
+      }
+      syllabus_pace: {
+        Args: { p_session_id?: string }
+        Returns: {
+          last_covered_on: string
+          periods_covered: number
+          periods_planned: number
+          section_id: string
+          section_label: string
+          share_covered: number
+          share_elapsed: number
+          subject_id: string
+          subject_name: string
+          units: number
+          units_covered: number
+          year_state: string
+        }[]
+      }
+      syllabus_problems: {
+        Args: never
+        Returns: {
+          message: string
+          severity: string
+        }[]
+      }
+      syllabus_reorder: { Args: { p_unit_ids: string[] }; Returns: Json }
+      syllabus_unmark: {
+        Args: { p_section_id: string; p_unit_id: string }
+        Returns: Json
       }
       timetable_busy_in_slot: {
         Args: {
