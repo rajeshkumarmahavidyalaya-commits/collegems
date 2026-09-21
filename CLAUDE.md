@@ -1585,6 +1585,23 @@ Two consequences worth knowing before you touch this module:
   them from. **Every write function asserts `get diagnostics ... row_count`
   after every statement**, and a comment that names a policy as the mechanism is
   the first thing to go and check.
+
+  **And the sentence above has a scope that the very next module got wrong.**
+  `syllabus_mark` opened with that assertion, copied from `exam_seat_move` two
+  days later — onto an **INSERT**. Probed as a teacher marking a subject they do
+  not teach: `new row violates row-level security policy for table
+  "syllabus_progress"`, on the screen, because
+
+  > **an `UPDATE` that no policy matches writes nothing and raises nothing,
+  > while an `INSERT` whose `WITH CHECK` fails *raises*.** Opposite failure
+  > modes, and `get diagnostics` is the tool for the first one only.
+
+  So the branch could never execute, and it sat exactly where a reader would
+  believe the refusal was handled — which is worse than no branch, for the same
+  reason a comment that answers a slightly different question is worse than no
+  comment. An INSERT needs the check **before** it, naming what it refuses;
+  the row count still guards the `on conflict do update` path beside it.
+  Migration `0257`, and `docs/modules/syllabus.md`.
 - **Amounts are signed, positive means "owes more", and the RPCs take positive
   numbers** and do the signing. Never ask a caller for a negative amount.
 - **`session_id` on a ledger entry is which year's account it moves;

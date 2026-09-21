@@ -252,6 +252,17 @@ list below came from search results describing eSkooly's feature set rather than
 from the documentation itself. Each gap was then checked against **this**
 codebase, which is the half that is certain.
 
+**Closed: the syllabus.** Measured before building: zero occurrences anywhere —
+*curriculum* here means `section_subjects`, and `study_material` is files.
+Nothing said what was **in** a subject, and nothing recorded what had been
+taught. Migrations `0255`-`0257`; see [syllabus.md](./modules/syllabus.md). The
+shape is the decision: a syllabus is about a **course** (session, class level,
+subject) and coverage is about a **class**, so one syllabus serves every
+section that studies it and each covers it at its own pace — demonstrated,
+Grade 1 · A 2/5 and Grade 1 · B 0/5 from the same rows. The pace carries three
+numbers rather than one, because this college's current session ended on
+31 Mar 2026 and a naive elapsed fraction reads **173%**.
+
 **Closed: the exam seat plan.** Measured before building: 12 sections of 25-27,
 302 candidates on each of 8 dates, 12 rooms of 40 — and the arrangement a
 college gets for free, a section in its own classroom, puts **290 of 290**
@@ -280,7 +291,6 @@ the day this shipped.
 | Biometric attendance | needs hardware |
 | QR / barcode on ID cards | the card renderer exists; a code with **no reader** would be a string nobody scans, so it is only worth building with the thing that reads it |
 | Online parent/student registration | **structurally absent**: every route is behind the login wall, and `/signup` needs an invitation to get a tenant. `enquiry` is staff-entered |
-| Syllabus as its own object | `study-material` is adjacent, not the same |
 | Inventory selling | `stock_movements.kind` is `adjustment \| issue \| receipt`; a sale also crosses into the fee ledger |
 
 And the counter-direction, stated because absence of evidence is not evidence:
