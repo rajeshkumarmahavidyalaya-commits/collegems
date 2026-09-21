@@ -9,17 +9,17 @@ before trusting it.
 
 ## The governing fact
 
-Six days on, the left-hand column moved and the right-hand one did not. That is
+Seven days on, the left-hand column moved and the right-hand one did not. That is
 the finding, not the individual numbers.
 
-| built (14 Sep → 20 Sep) | exercised (20 Sep) |
+| built (14 Sep → 21 Sep) | exercised (21 Sep) |
 |---|---|
-| 229 → **245** migrations | **0** scheduled runs ever fired |
-| 100 → **102** tables, 493 → **518** functions, 251 → **248** policies | **1** notification ever composed; its only `sent` delivery is in-app |
-| 92 → **94** page routes, and **9** route handlers | **0 of 5** channels configured — `in_app` is on, and it needs no provider |
+| 229 → **261** migrations | **0** scheduled runs ever fired |
+| 100 → **106** tables, 493 → **541** functions, 251 → **262** policies | **1** notification ever composed; its only `sent` delivery is in-app |
+| 92 → **98** page routes, and **9** route handlers | **0 of 5** channels configured — `in_app` is on, and it needs no provider |
 | 6 Edge Functions | **0** devices registered |
-| 67 permissions, 19 → **20** reports, 12 → **14** critics | **0** payment intents, **0** promotion runs, **0** jobs |
-| 45 → **48** module docs | **3** logins, **all three** administrators |
+| 67 → **69** permissions, 19 → **20** reports, 12 → **15** critics | **0** payment intents, **0** promotion runs, **0** jobs |
+| 45 → **51** module docs | **3** logins, **all three** administrators |
 | 5 cron entries, all active | **0** objects in Storage |
 
 Two things did move on the right, and both are worth naming:

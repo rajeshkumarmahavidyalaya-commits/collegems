@@ -37,26 +37,27 @@ export async function listBooks(params: ListParams): Promise<{ rows: BookRow[]; 
   const supabase = await createClient();
   const { pageIndex, pageSize, sortBy, sortDesc, search, categoryId } = params;
 
-  let query = supabase
-    .from("books")
-    .select("id, title, author, isbn, publisher, shelf_location, total_copies, available_copies, book_categories ( name )", {
-      count: "exact",
-    });
-
-  if (search && search.trim()) {
-    const like = `%${search.trim()}%`;
-    query = query.or(`title.ilike.${like},author.ilike.${like},isbn.ilike.${like}`);
-  }
-  if (categoryId) {
-    query = query.eq("category_id", categoryId);
-  }
-
+  // The two filters go into `library_books` (migration `0259`) and the paging
+  // stays here: PostgREST applies `.order()`, `.range()` and `count: exact` to
+  // a set-returning function exactly as it does to a table, which is the idiom
+  // `fees_student_balances` already established. What this replaced was
+  //
+  //   .or(`title.ilike.${like},author.ilike.${like},isbn.ilike.${like}`)
+  //
+  // — a filter language with a borrower's typing spliced into it, so a search
+  // for `Gödel, Escher, Bach` closes the group early. The sort column is still
+  // whitelisted here, because that one is a client-supplied *identifier* and
+  // no bound parameter can carry it.
   const orderColumn = sortBy && BOOK_SORT_COLUMNS.has(sortBy) ? sortBy : "title";
-  query = query
+
+  const { data, count, error } = await supabase
+    .rpc(
+      "library_books",
+      { p_query: search?.trim() || "", p_category_id: categoryId || undefined },
+      { count: "exact" },
+    )
     .order(orderColumn, { ascending: !sortDesc })
     .range(pageIndex * pageSize, pageIndex * pageSize + pageSize - 1);
-
-  const { data, count, error } = await query;
   if (error) throw new Error(error.message);
 
   return {
@@ -67,7 +68,7 @@ export async function listBooks(params: ListParams): Promise<{ rows: BookRow[]; 
       isbn: b.isbn,
       publisher: b.publisher,
       shelfLocation: b.shelf_location,
-      categoryName: b.book_categories?.name ?? null,
+      categoryName: b.category_name,
       totalCopies: b.total_copies,
       availableCopies: b.available_copies,
     })),

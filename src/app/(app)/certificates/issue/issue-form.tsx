@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { AlertTriangle, CircleAlert, Info, Loader2, Stamp } from "lucide-react";
+import { AlertTriangle, ChevronsUpDown, CircleAlert, Info, Loader2, Stamp } from "lucide-react";
 import { toast } from "sonner";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
@@ -10,6 +10,15 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import {
   Select,
   SelectContent,
@@ -21,6 +30,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import {
   issueCertificate,
   previewCertificate,
+  searchStudents,
   type SubjectRow,
   type TemplateRow,
 } from "../actions";
@@ -38,6 +48,115 @@ import {
 // `SubjectRow` comes from the action: id, name, reference, status — the same
 // four facts whether the reference is an admission number or an employee code.
 
+/** One line for a person, whichever kind of reference they carry. */
+function subjectLabel(row: SubjectRow): string {
+  return `${row.name} · ${row.reference}${row.status !== "active" ? ` · ${row.status}` : ""}`;
+}
+
+/**
+ * A type-ahead over `student_search`, because 303 children do not fit in a
+ * `<Select>` and the old screen's answer to that was to show the first twenty.
+ *
+ * `shouldFilter={false}`: cmdk's own fuzzy filter would run *again* over an
+ * answer the database already narrowed, and would drop a child whose name
+ * matches on the server and not in the browser. The search is server-side and
+ * the list renders what came back.
+ *
+ * The selection is held as a row rather than an id, so the trigger can keep
+ * showing who was chosen after the term is cleared — an id alone would need
+ * the whole roll in memory to render its own label, which is the thing this
+ * replaced.
+ */
+function StudentPicker({
+  id,
+  selected,
+  onSelect,
+}: {
+  id: string;
+  selected: SubjectRow | null;
+  onSelect: (row: SubjectRow) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [term, setTerm] = useState("");
+  const [rows, setRows] = useState<SubjectRow[]>([]);
+  const [searching, startSearch] = useTransition();
+
+  useEffect(() => {
+    const needle = term.trim();
+    if (needle.length < 2) {
+      setRows([]);
+      return;
+    }
+    // Settle first: every keystroke would otherwise be a round trip.
+    const handle = setTimeout(() => {
+      startSearch(async () => {
+        const hits = await searchStudents(needle);
+        setRows(hits.map((h) => ({ id: h.id, name: h.name, reference: h.admissionNumber, status: h.status })));
+      });
+    }, 250);
+    return () => clearTimeout(handle);
+  }, [term]);
+
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <Button
+          id={id}
+          type="button"
+          variant="outline"
+          role="combobox"
+          aria-expanded={open}
+          className="justify-between font-normal"
+        >
+          <span dir="auto" className={selected ? undefined : "text-muted-foreground"}>
+            {selected ? subjectLabel(selected) : "Search by name or admission number"}
+          </span>
+          <ChevronsUpDown className="size-4 shrink-0 opacity-50" aria-hidden="true" />
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
+        <Command shouldFilter={false}>
+          <CommandInput
+            placeholder="Search by name or admission number"
+            value={term}
+            onValueChange={setTerm}
+          />
+          <CommandList>
+            {searching && (
+              <div className="flex items-center justify-center py-6 text-muted-foreground">
+                <Loader2 className="size-4 animate-spin" />
+              </div>
+            )}
+            {!searching && (
+              <CommandEmpty>
+                {term.trim().length < 2
+                  ? "Type at least two characters."
+                  : "Nobody matched that search."}
+              </CommandEmpty>
+            )}
+            {rows.length > 0 && (
+              <CommandGroup>
+                {rows.map((row) => (
+                  <CommandItem
+                    key={row.id}
+                    value={row.id}
+                    onSelect={() => {
+                      onSelect(row);
+                      setOpen(false);
+                    }}
+                  >
+                    <span dir="auto">{subjectLabel(row)}</span>
+                  </CommandItem>
+                ))}
+              </CommandGroup>
+            )}
+          </CommandList>
+        </Command>
+      </PopoverContent>
+    </Popover>
+  );
+}
+
 /**
  * Why this form does not use the `react-hook-form` primitives the rest of the
  * app uses: **its field set is data**. A template declares its own extra boxes
@@ -54,17 +173,22 @@ import {
  */
 export function IssueCertificateForm({
   templates,
-  students,
   staff,
 }: {
   templates: TemplateRow[];
-  students: SubjectRow[];
-  /** Staff are listed whole: a college's payroll fits in a Select (see the action). */
+  /**
+   * Staff are listed whole and students are not, and the asymmetry is
+   * measured rather than assumed: **15 employees against 303 students.** The
+   * old screen listed both whole and the student list was
+   * `.order("admission_number").limit(20)`, so twenty children could be issued
+   * a certificate and 283 were not in the picker at all.
+   */
   staff: SubjectRow[];
 }) {
   const t = useT();
   const router = useRouter();
   const [subjectId, setSubjectId] = useState("");
+  const [selectedStudent, setSelectedStudent] = useState<SubjectRow | null>(null);
   const [templateId, setTemplateId] = useState(
     templates.find((t) => t.isDefault)?.id ?? templates[0]?.id ?? "",
   );
@@ -82,7 +206,6 @@ export function IssueCertificateForm({
 
   // Which list the picker shows, read off the template rather than chosen.
   const forStaff = template?.subject === "staff";
-  const subjects = forStaff ? staff : students;
 
   // The template's boxes are its own. Switching template keeps nothing, because
   // a "reason for leaving" typed against a transfer certificate is not an
@@ -97,6 +220,7 @@ export function IssueCertificateForm({
   // template disagreeing, and the person would have to work out why.
   useEffect(() => {
     setSubjectId("");
+    setSelectedStudent(null);
   }, [forStaff]);
 
   useEffect(() => {
@@ -165,21 +289,29 @@ export function IssueCertificateForm({
           */}
           <div className="flex flex-col gap-1.5">
             <Label htmlFor="subject">{forStaff ? "Member of staff" : "Student"}</Label>
-            <Select value={subjectId} onValueChange={setSubjectId}>
-              <SelectTrigger id="subject">
-                <SelectValue
-                  placeholder={forStaff ? "Choose a member of staff" : "Choose a student"}
-                />
-              </SelectTrigger>
-              <SelectContent>
-                {subjects.map((s) => (
-                  <SelectItem key={s.id} value={s.id}>
-                    {s.name} · {s.reference}
-                    {s.status !== "active" ? ` · ${s.status}` : ""}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            {forStaff ? (
+              <Select value={subjectId} onValueChange={setSubjectId}>
+                <SelectTrigger id="subject">
+                  <SelectValue placeholder="Choose a member of staff" />
+                </SelectTrigger>
+                <SelectContent>
+                  {staff.map((s) => (
+                    <SelectItem key={s.id} value={s.id}>
+                      {subjectLabel(s)}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            ) : (
+              <StudentPicker
+                id="subject"
+                selected={selectedStudent}
+                onSelect={(row) => {
+                  setSelectedStudent(row);
+                  setSubjectId(row.id);
+                }}
+              />
+            )}
           </div>
 
           <div className="flex flex-col gap-1.5">

@@ -9043,6 +9043,20 @@ export type Database = {
         Args: { p_budget_seconds?: number; p_limit?: number }
         Returns: Json
       }
+      library_books: {
+        Args: { p_category_id?: string; p_query?: string }
+        Returns: {
+          author: string
+          available_copies: number
+          category_name: string
+          id: string
+          isbn: string
+          publisher: string
+          shelf_location: string
+          title: string
+          total_copies: number
+        }[]
+      }
       library_issue_book: {
         Args: { p_book_id: string; p_due_at?: string; p_member_id: string }
         Returns: {
@@ -10254,6 +10268,15 @@ export type Database = {
           reason: string
           starts_on: string
           student_id: string
+        }[]
+      }
+      student_search: {
+        Args: { p_limit?: number; p_query: string }
+        Returns: {
+          admission_number: string
+          full_name: string
+          id: string
+          status: string
         }[]
       }
       subscription_expire_trials: { Args: never; Returns: number }

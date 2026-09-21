@@ -764,6 +764,60 @@ Three things, and the third is about verifying a guard rather than writing one:
 
 See `docs/modules/search.md`, which also carries the search half.
 
+#### …and the same half-landed fix, in the module that first wrote the rule down
+
+`0223` replaced one `.or("first_name.ilike.%" + term + "%")` with a bound
+parameter, wrote down *the fix is not to escape more carefully, it is to stop
+building a query out of text*, and guarded **the module it was in**. Eight more
+sites went on doing it for thirty-six migrations — three in the command palette
+and five more. Reading the five together says they are **one** finding:
+
+> **Four of them are "find a student by admission number or name", written four
+> times** — `fees`, `transport`, `hostel` byte-identical, `certificates`
+> different. `formatMoney` under four names, one layer along, and rule 6's
+> billing sentence unchanged: *one definition, consulted by everything.*
+
+`student_search`, `global_search` and `guardian_search` are that definition now,
+and the guard is a sweep of `src/` rather than a check in one module.
+
+Four things, and the last is the one that cost a migration:
+
+- **A search parameter no caller passes is not a search.** `certificates`
+  accepted a term and the only call site passed `""`, so the filter-string
+  branch was unreachable and what shipped was the fallback beneath it:
+  `.order("admission_number").limit(20)` into a flat `<Select>`. **20 of 302
+  students could be issued a certificate.** The comment twenty lines below it
+  defends listing *staff* whole because "a college's staff is bounded by the
+  size of a college" — true of 15 people and false of 302, in a paragraph
+  naming the defect above it.
+- **The discriminator in a guard is what a file does, not how it spells an
+  identifier.** Zod's `.or()` is a different method with the same name; the
+  first draft excluded it by testing the argument for `z.`, and reported a
+  validations module that imports zod under an alias. **A guard that reports a
+  correct file is a guard somebody switches off.**
+- **A sort column is the one thing a bound parameter cannot carry.** It is an
+  identifier, not a value, so `listBooks` keeps its server-side whitelist while
+  the search term moves into the function. The two look alike in the same call
+  and are not the same problem.
+- **The probe contradicted the comment in the migration that shipped it.**
+  `0259` said *"a class teacher finds the children they teach"*; measured, a
+  teacher reads **302 of 302** students, 872 people and 555 guardian links, and
+  only `enrolments` (27) and `attendance_records` (500) are row-scoped. The
+  sentence came from `teachers view own section students`, whose predicate says
+  exactly that — and which **is unreachable**, because `staff roles view
+  students` grants a teacher every row and policies are OR-ed.
+
+  > `0249` learned that from the other end. The corollary it did not state:
+  > **the narrow policy still reads like a promise.** Its existence is a claim
+  > about the schema, and reading the policy list is how you come to believe it.
+  > **Write down what the probe said, not what the design intended.**
+
+  `0260` corrects the comments and deliberately does **not** narrow the policy:
+  a teacher reads the whole roll on the class picker, the importer, ID cards,
+  the fee counter and the register, so that is a probe as all six seats rather
+  than a tidy-up — and what a college wants a teacher to see is a decision
+  `role_permissions` exists to express.
+
 #### …and the catalogue of reports was never given that treatment
 
 `0200` fixed one **check**. `reference.reports` is the older and larger

@@ -762,27 +762,20 @@ export async function searchStudentsForCounter(query: string): Promise<CounterHi
   if (needle.length < 2) return [];
 
   const supabase = await createClient();
-  const like = `%${needle}%`;
 
-  const [byAdmission, byName] = await Promise.all([
-    supabase.from("students").select("id").ilike("admission_number", like).limit(10),
-    supabase
-      .from("people")
-      .select("students ( id )")
-      .or(`first_name.ilike.${like},last_name.ilike.${like}`)
-      .limit(10),
-  ]);
-
-  const ids = new Set<string>();
-  for (const row of byAdmission.data ?? []) ids.add(row.id);
-  for (const row of byName.data ?? []) {
-    const student = Array.isArray(row.students) ? row.students[0] : row.students;
-    if (student?.id) ids.add(student.id);
-  }
-  if (ids.size === 0) return [];
+  // `student_search` (migration `0259`) is the one definition of "find a
+  // student by admission number or name". This module had its own copy, in two
+  // round trips, with the term spliced into a PostgREST filter string.
+  const { data: hits, error: searchError } = await supabase.rpc("student_search", {
+    p_query: needle,
+    p_limit: 10,
+  });
+  if (searchError) throw new Error(searchError.message);
+  const ids = (hits ?? []).map((hit) => hit.id);
+  if (ids.length === 0) return [];
 
   const { data, error } = await supabase.rpc("fees_student_balances", {
-    p_student_ids: [...ids],
+    p_student_ids: ids,
   });
   if (error) throw new Error(error.message);
 

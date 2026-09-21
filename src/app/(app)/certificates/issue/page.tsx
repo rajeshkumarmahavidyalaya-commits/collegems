@@ -2,7 +2,7 @@ import Link from "next/link";
 import { ArrowLeft, ShieldAlert } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { hasPermission } from "@/lib/auth/permissions";
-import { listStaffSubjects, listTemplates, searchStudents } from "../actions";
+import { listStaffSubjects, listTemplates } from "../actions";
 import { IssueCertificateForm } from "./issue-form";
 
 export const metadata = { title: "Issue a certificate" };
@@ -43,19 +43,12 @@ export default async function IssueCertificatePage() {
     );
   }
 
-  const [templates, rawStudents, staff] = await Promise.all([
-    listTemplates(),
-    searchStudents(""),
-    listStaffSubjects(),
-  ]);
-  // One shape for both lists: a name, a reference and a status, whether the
-  // reference is an admission number or an employee code.
-  const students = rawStudents.map((s) => ({
-    id: s.id,
-    name: s.name,
-    reference: s.admissionNumber,
-    status: s.status,
-  }));
+  // No student list is loaded here. It used to be `searchStudents("")`, which
+  // returned the first twenty by admission number and put them in a `<Select>`
+  // — so 283 of this college's 303 children could not be issued a certificate.
+  // The form searches as somebody types; staff still arrive whole, because 15
+  // people do fit in a `<Select>`.
+  const [templates, staff] = await Promise.all([listTemplates(), listStaffSubjects()]);
 
   return (
     <div className="flex flex-col gap-6">
@@ -74,7 +67,7 @@ export default async function IssueCertificatePage() {
         </p>
       </div>
 
-      <IssueCertificateForm templates={templates} students={students} staff={staff} />
+      <IssueCertificateForm templates={templates} staff={staff} />
     </div>
   );
 }

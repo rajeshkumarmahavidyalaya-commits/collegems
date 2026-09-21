@@ -114,30 +114,51 @@ export async function listCertificates(limit = 50): Promise<CertificateRow[]> {
   });
 }
 
-/** Students an administrator may issue to, for the picker. */
-export async function searchStudents(term: string) {
+/**
+ * Students an administrator may issue to, for the picker.
+ *
+ * ## This used to reach twenty of three hundred and three
+ *
+ * The term was spliced into a PostgREST filter string — and **no caller ever
+ * passed one.** `/certificates/issue` called `searchStudents("")`, so the
+ * branch was unreachable and what shipped was the fallback underneath it:
+ * `.order("admission_number").limit(20)`, rendered into a flat `<Select>`.
+ * Twenty of this college's 303 students could be issued a certificate, in
+ * admission-number order, and the other 283 were not in the list.
+ *
+ * > **A search parameter no caller passes is not a search.** It reads like one
+ * > in the signature and like a bounded list on the screen, and only counting
+ * > the rows tells them apart.
+ *
+ * It is a real type-ahead now, over `student_search` (migration `0259`), which
+ * four modules had each written their own copy of. The screen debounces and
+ * calls it with what somebody typed.
+ */
+export async function searchStudents(term: string): Promise<StudentSubject[]> {
+  const needle = term.trim();
+  if (needle.length < 2) return [];
+
   const supabase = await createClient();
-  let query = supabase
-    .from("students")
-    .select("id, admission_number, status, people:person_id ( first_name, last_name )")
-    .order("admission_number")
-    .limit(20);
+  const { data, error } = await supabase.rpc("student_search", {
+    p_query: needle,
+    p_limit: 20,
+  });
+  if (error) throw new Error(error.message);
 
-  const trimmed = term.trim();
-  if (trimmed) {
-    query = query.or(
-      `admission_number.ilike.%${trimmed}%,people.first_name.ilike.%${trimmed}%,people.last_name.ilike.%${trimmed}%`,
-    );
-  }
-
-  const { data } = await query;
   return (data ?? []).map((s) => ({
     id: s.id,
     admissionNumber: s.admission_number,
     status: s.status,
-    name: `${s.people?.first_name ?? ""} ${s.people?.last_name ?? ""}`.trim(),
+    name: s.full_name,
   }));
 }
+
+export type StudentSubject = {
+  id: string;
+  admissionNumber: string;
+  status: string;
+  name: string;
+};
 
 /**
  * Everybody the college employs, for the staff half of the issue form.

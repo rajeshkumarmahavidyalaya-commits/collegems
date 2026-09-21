@@ -172,11 +172,159 @@ longer pulls `NAV_GROUPS` or a second Lucide icon.
 
 ---
 
-## Still a filter string, and named rather than quietly fixed
+## The other five, and the picker that could reach twenty of three hundred
 
-`0258` closes three of the eight sites `0223` left. Five remain, and they are
-one finding rather than five: **four of them are the same student picker,
-written four times** — in `fees`, `transport`, `hostel` and `certificates`, the
-first three byte-identical — and the fifth is the library list. They are named
-here rather than half-fixed, because one `student_search` consulted by four
-callers is a different change from four escapes.
+`0258` closed three of the eight sites `0223` left. Reading the remaining five
+together says they are **one** finding rather than five:
+
+| | |
+|---|---|
+| `fees/actions.ts` `searchStudentsForCounter` | byte-identical |
+| `transport/actions.ts` `searchStudentsForTransport` | to each |
+| `hostel/actions.ts` `searchStudentsForHostel` | other |
+| `certificates/actions.ts` `searchStudents` | different, and worse |
+| `library/actions.ts` `listBooks` | a list, not a picker |
+
+**Four of them are "find a student by admission number or name", written four
+times** — `formatMoney` under four names, one layer along, and rule 6's
+sentence about billing applies unchanged: *one definition, consulted by
+everything.* Three of the four also made **two** round trips per keystroke,
+because `students.admission_number` and `people.first_name` are on different
+tables and PostgREST was asked twice.
+
+`public.student_search(p_query, p_limit)` (migration `0259`) is that one
+definition, and the three module-specific hydrations — a fee balance, a bus
+assignment, a hostel bed — stay where they were.
+
+### The fourth was not a copy
+
+`certificates.searchStudents` had a *different* filter string, one reaching an
+embedded table from a top-level `or` — and **nothing ever passed it a term.**
+`/certificates/issue` called `searchStudents("")`, so that branch was
+unreachable and what shipped was the fallback under it:
+
+```ts
+.order("admission_number").limit(20)
+```
+
+rendered into a flat `<Select>`. Measured on this college: **20 of 302
+students** could be issued a certificate, in admission-number order, and the
+other 282 were not in the list at all.
+
+> **A search parameter no caller passes is not a search.** It reads like one in
+> the signature and like a bounded list on the screen, and only counting the
+> rows tells them apart.
+
+The comment twenty lines below it explains that the *staff* picker deliberately
+takes no term because "a college's staff is bounded by the size of a college,
+so the whole list fits in a `<Select>`" — true of **15** employees and false of
+**302** students, in a paragraph naming the very defect above it. Staff keep
+their `<Select>`; students get a type-ahead over `student_search`, with
+`shouldFilter={false}` so cmdk does not re-filter an answer the database
+already narrowed.
+
+### The library one is a list, so it is shaped differently
+
+`listBooks` pages, sorts and counts, and `fees_student_balances` already
+established the idiom: PostgREST applies `.order()`, `.range()` and
+`count: "exact"` to a set-returning function exactly as it does to a table. So
+`library_books` takes the two filters and the whitelisted sort column stays in
+TypeScript — **that one is a client-supplied identifier, and no bound parameter
+can carry it.**
+
+A set-returning function is an optimisation fence (rule 7), so it runs to
+completion before the range applies. That is not a change: `count: "exact"`
+already paid for a full pass.
+
+---
+
+## The guard is the sweep, not the module
+
+`0223` fixed one site and guarded **one module**, and eight more went on doing
+it for thirty-six migrations.
+
+> **A rule guarded in the module that discovered it is a rule that holds in
+> that module.**
+
+`tests/security/a-search-box-is-not-a-filter-string.test.ts` sweeps `src/`.
+Deliberate exceptions live in `NOT_A_SEARCH_TERM` with a reason, and the bar is
+*the argument is not text a person typed* — today that is one entry,
+`homework/actions.ts`, whose `.or(filters.join(","))` is two `in.(…)` lists of
+uuids this server read back a moment earlier.
+
+Two things about building it:
+
+- **The discriminator is what the file does, not how it spells an
+  identifier.** Zod's `.or()` is a different method with the same name, and the
+  first draft excluded it by checking the argument starts with `z.` — so a
+  validations module importing zod under an alias was reported as a defect. **A
+  guard that reports a correct file is a guard somebody switches off.** It now
+  only looks at files that build a Supabase query at all.
+- **Anchor to the statement.** The check that the RPCs bind their parameter
+  first concatenated every migration and asserted the shape appeared
+  *somewhere* — which three functions satisfy between them while any one of
+  them changes freely. It reads each function's own latest body now. Verified
+  by planting: four violations each fail the right check, and the aliased-Zod
+  control passes.
+
+---
+
+## The probe contradicted a comment in the migration that shipped it
+
+`0259` said, in its header and on the function:
+
+> *INVOKER, so row-ownership RLS decides — a class teacher finds the children
+> they teach.*
+
+It is false. A teacher login built in a rolled-back transaction, attached as
+class teacher to a section with 27 enrolments:
+
+| table | this teacher | the college |
+|---|---|---|
+| `students` | **302** | 302 |
+| `people` | **872** | 872 |
+| `guardian_student` | **555** | 555 |
+| `enrolments` | 27 | 302 |
+| `attendance_records` | 500 | 6,000 |
+
+`enrolments` and `attendance_records` are row-scoped; `students`, `people` and
+`guardian_student` are **tenant-wide for every staff role**. That is rule 4's
+own refinement — *the matrix does real work wherever RLS is deliberately
+tenant-wide* — and it is the existing design: `0183` looked squarely at
+`people` and narrowed it for **families**, keeping staff.
+
+The sentence was easy to write because `students` carries `teachers view own
+section students`, whose predicate is exactly *"children in a section I am
+class teacher of"*. It is unreachable: `staff roles view students` grants a
+teacher every row with no predicate, and **RLS policies are OR-ed.**
+
+> `0249` learned that from the other end — a correct narrow policy beside an
+> over-broad one is an alternative, never a restriction. The corollary it did
+> not state: **the narrow policy still reads like a promise.** Two of them here
+> (`students` and `people`) have been unreachable since the module shipped, and
+> reading the policy list is how you come to believe otherwise.
+
+Migration `0260` corrects both comments and **deliberately does not narrow the
+policy**: a teacher reads the whole roll on the class picker, the importer, ID
+cards, the fee counter and the register, and taking that away is a
+security-relevant rewrite whose instrument is a probe as all six seats.
+
+> **Write down what the probe said, not what the design intended.**
+
+---
+
+## The cost of the picker
+
+Built before and after over all 108 routes: the shared bundle is **103 kB both
+ways** and exactly **one route moved — `/certificates/issue`, 213 → 223 kB.**
+
+That is Radix Popover arriving for the first time: `src/components/ui/popover.tsx`
+had been a primitive nothing imported, and this is its first caller. Ten
+kilobytes, on one route behind `certificates.issue`, to make 282 more children
+reachable — taken deliberately rather than deferred, because the picker is the
+screen's main control and not something behind an interaction (rule: *a
+conditional render is not a conditional load*, and its converse — `next/dynamic`
+on the thing somebody came here to use buys a spinner, not a saving).
+
+The staff half still uses the `<Select>` it always had, so the asymmetry on the
+screen is the asymmetry in the data: **15 employees, 302 students.**
