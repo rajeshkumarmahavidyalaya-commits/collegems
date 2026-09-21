@@ -68,19 +68,43 @@ export async function listLeave(status?: string): Promise<LeaveRow[]> {
 }
 
 /** Students the caller may apply for. RLS decides the list. */
-export async function listStudentsForLeave() {
+/**
+ * The children leave may be applied for, for the picker.
+ *
+ * This used to be `listStudentsForLeave()` — the active roll, `.limit(200)`,
+ * loaded on every view and rendered into a flat `<Select>`. On this college
+ * that is **200 of 302**, so **102 children could not have leave applied for
+ * them from this screen at all**, and the list also supplied the dialog's
+ * default (`students[0]`), which is the `/timetable` defect: a picker's default
+ * is decided by what the picker was given.
+ *
+ * > **The bound was invisible from the seat the screen was built for.** RLS
+ * > scopes this read, so a guardian sees their own one or two children and a
+ * > dropdown of two looks perfect. The truncation only exists for the office,
+ * > and the 102 it drops look exactly like children who are not enrolled.
+ *
+ * The cost of the fix is named rather than hidden: a family with one child now
+ * types two characters where they used to open a list of one. Giving them their
+ * own short list back is `family_my_students()` (rule 14's relationship, not a
+ * role branch) and is deliberately not built here — one screen, one mechanism,
+ * and the thing being removed is a correctness defect rather than a keystroke.
+ */
+export async function searchStudentsForLeave(term: string) {
+  const needle = term.trim();
+  if (needle.length < 2) return [];
+
   const supabase = await createClient();
-  const { data } = await supabase
-    .from("students")
-    .select("id, admission_number, people:person_id ( first_name, last_name )")
-    .eq("status", "active")
-    .order("admission_number")
-    .limit(200);
+  const { data, error } = await supabase.rpc("student_search", {
+    p_query: needle,
+    p_limit: 20,
+  });
+  if (error) throw new Error(error.message);
 
   return (data ?? []).map((s) => ({
     id: s.id,
     admissionNumber: s.admission_number,
-    name: `${s.people?.first_name ?? ""} ${s.people?.last_name ?? ""}`.trim(),
+    name: s.full_name,
+    status: s.status,
   }));
 }
 

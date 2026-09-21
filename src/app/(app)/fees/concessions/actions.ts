@@ -178,19 +178,37 @@ export async function listConcessionProblems(): Promise<ConcessionProblem[]> {
   }));
 }
 
-export async function listStudentsForConcession() {
+/**
+ * The children an award may be granted to, for the picker.
+ *
+ * This used to be `listStudentsForConcession()` — the whole active roll,
+ * `.limit(500)`, loaded on every view of `/fees/concessions` and rendered into
+ * a flat `<Select>`. On this college that is **302 children in one dropdown**,
+ * and at 501 it silently stops listing some of them.
+ *
+ * > That is the certificate picker's defect (20 of 302) with a more generous
+ * > bound, which is exactly why it read as fine. **A bound nobody has reached
+ * > is not a bound somebody decided.**
+ *
+ * `student_search` (migration `0259`) is the one definition, and it is INVOKER
+ * so `students`' policies still decide which children come back.
+ */
+export async function searchStudentsForConcession(term: string) {
+  const needle = term.trim();
+  if (needle.length < 2) return [];
+
   const supabase = await createClient();
-  const { data } = await supabase
-    .from("students")
-    .select("id, admission_number, people:person_id ( first_name, last_name )")
-    .eq("status", "active")
-    .order("admission_number")
-    .limit(500);
+  const { data, error } = await supabase.rpc("student_search", {
+    p_query: needle,
+    p_limit: 20,
+  });
+  if (error) throw new Error(error.message);
 
   return (data ?? []).map((s) => ({
     id: s.id,
     admissionNumber: s.admission_number,
-    name: `${s.people?.first_name ?? ""} ${s.people?.last_name ?? ""}`.trim(),
+    name: s.full_name,
+    status: s.status,
   }));
 }
 

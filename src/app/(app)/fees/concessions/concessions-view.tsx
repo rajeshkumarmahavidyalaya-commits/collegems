@@ -25,6 +25,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { StudentPicker, type PickedStudent } from "@/components/people/student-picker";
 import { useI18n } from "@/components/providers/i18n-provider";
 
 import {
@@ -34,6 +35,7 @@ import {
   statusTone,
 } from "@/lib/validations/concessions";
 import {
+  searchStudentsForConcession,
   awardConcession,
   createConcession,
   revokeConcession,
@@ -41,17 +43,13 @@ import {
   type ConcessionRow,
 } from "./actions";
 
-type Student = { id: string; name: string; admissionNumber: string };
-
 export function ConcessionsView({
   concessions,
   awards,
-  students,
   canManage,
 }: {
   concessions: ConcessionRow[];
   awards: AwardRow[];
-  students: Student[];
   canManage: boolean;
 }) {
   const { t } = useI18n();
@@ -149,7 +147,6 @@ export function ConcessionsView({
         open={awarding}
         onOpenChange={setAwarding}
         concessions={concessions.filter((c) => c.isActive)}
-        students={students}
       />
     </div>
   );
@@ -396,16 +393,14 @@ function AwardDialog({
   open,
   onOpenChange,
   concessions,
-  students,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   concessions: ConcessionRow[];
-  students: Student[];
 }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
-  const [studentId, setStudentId] = useState("");
+  const [student, setStudent] = useState<PickedStudent | null>(null);
   const [concessionId, setConcessionId] = useState("");
   const [reason, setReason] = useState("");
   const [endsOn, setEndsOn] = useState("");
@@ -413,7 +408,7 @@ function AwardDialog({
   function submit() {
     startTransition(async () => {
       const result = await awardConcession({
-        studentId,
+        studentId: student!.id,
         concessionId,
         reason,
         endsOn: endsOn || null,
@@ -441,18 +436,12 @@ function AwardDialog({
 
         <div className="flex flex-col gap-1.5">
           <Label htmlFor="a-student">Student</Label>
-          <Select value={studentId} onValueChange={setStudentId}>
-            <SelectTrigger id="a-student">
-              <SelectValue placeholder="Choose a student" />
-            </SelectTrigger>
-            <SelectContent>
-              {students.map((s) => (
-                <SelectItem key={s.id} value={s.id}>
-                  {s.name} · {s.admissionNumber}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <StudentPicker
+            id="a-student"
+            search={searchStudentsForConcession}
+            selected={student}
+            onSelect={setStudent}
+          />
         </div>
 
         <div className="flex flex-col gap-1.5">
@@ -501,7 +490,7 @@ function AwardDialog({
           </Button>
           <Button
             onClick={submit}
-            disabled={pending || !studentId || !concessionId || reason.trim().length < 3}
+            disabled={pending || !student || !concessionId || reason.trim().length < 3}
           >
             {pending && <Loader2 className="size-3.5 animate-spin" aria-hidden="true" />}
             Award

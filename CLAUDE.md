@@ -818,6 +818,47 @@ Four things, and the last is the one that cost a migration:
   than a tidy-up — and what a college wants a teacher to see is a decision
   `role_permissions` exists to express.
 
+##### …and the picker written to fix it was about to become the fifth copy
+
+`0259` replaced four copies of one *query*, and put the **picker** inside
+`certificates/issue/issue-form.tsx` — where the next screen would have pasted
+it. The same mistake one layer up, in the commit that fixed the first one.
+*The second consumer decides the unit of work*, and there were three:
+
+| screen | what it did | who it could reach |
+|---|---|---|
+| `/certificates/issue` | `.limit(20)` | **20 of 303** |
+| `/attendance/leave` | `.limit(200)` | **200 of 303** |
+| `/fees/concessions` | `.limit(500)` | 303, in one dropdown |
+
+> **A bound nobody has reached is not a bound somebody decided.** Three
+> generosities of one mistake; the third is correct today and drops children at
+> 501.
+
+Three things:
+
+- **A truncation is invisible from the seat the screen was built for.** RLS
+  scopes the leave read, so a guardian sees their own two children and a
+  dropdown of two looks perfect. The 102 missing children exist only for the
+  office — and look exactly like children who are not enrolled.
+- **A picker's default is decided by what the picker was given.** That dialog
+  opened on `students[0]`, an arbitrary child pre-selected on a form applying
+  for leave: `/timetable` defaulting to `sections[0]`, in another module.
+- **Measure the trade in both directions.** Shared bundle 103 kB either way;
+  `/fees/concessions` and `/attendance/leave` each **+8 kB of JavaScript**
+  (Radix Popover, cached, now shared by three routes) against **−32.0 kB and
+  −21.1 kB of JSON per view** — the roll, re-sent every time. A correctness fix
+  that is also cheaper from the second page view on.
+
+`tests/people/one-student-picker.test.ts` is the guard, and **it found the third
+screen itself** — written for the two I knew about, it named
+`/attendance/leave` on its first run. It also pins the shape: the component
+takes its server action as a **prop** and may not import from `@/app/…`, which
+is rule 8's split applied to a picker — *share the choreography, keep the
+authorization with the caller.* The negative control is the **staff** `<Select>`
+on the same certificate form: 15 people, deliberately whole. **The bar is a
+roll, not a list.**
+
 #### …and the catalogue of reports was never given that treatment
 
 `0200` fixed one **check**. `reference.reports` is the older and larger

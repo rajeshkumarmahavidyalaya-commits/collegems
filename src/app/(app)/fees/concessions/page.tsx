@@ -9,7 +9,6 @@ import {
   listAwards,
   listConcessionProblems,
   listConcessions,
-  listStudentsForConcession,
 } from "./actions";
 import { ConcessionsView } from "./concessions-view";
 
@@ -26,11 +25,13 @@ export const metadata = { title: "Concessions" };
 export default async function ConcessionsPage() {
   const canManage = await hasPermission("concessions.manage");
 
-  const [concessions, awards, problems, students] = await Promise.all([
+  // No roll is loaded here. It used to be `listStudentsForConcession()` — the
+  // whole active roll on every view, into a flat `<Select>` — and the award
+  // dialog searches as somebody types instead.
+  const [concessions, awards, problems] = await Promise.all([
     listConcessions(),
     listAwards(),
     listConcessionProblems(),
-    canManage ? listStudentsForConcession() : Promise.resolve([]),
   ]);
 
   const live = awards.filter((a) => a.status === "active").length;
@@ -107,7 +108,6 @@ export default async function ConcessionsPage() {
       <ConcessionsView
         concessions={concessions}
         awards={awards}
-        students={students}
         canManage={canManage}
       />
     </div>

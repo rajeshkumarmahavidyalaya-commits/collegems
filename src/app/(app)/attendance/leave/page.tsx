@@ -3,7 +3,7 @@ import { ArrowLeft, CalendarOff } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { hasPermission } from "@/lib/auth/permissions";
-import { listLeave, listStudentsForLeave } from "./actions";
+import { listLeave } from "./actions";
 import { LeaveList } from "./leave-list";
 
 export const metadata = { title: "Student leave" };
@@ -18,9 +18,10 @@ export const metadata = { title: "Student leave" };
  * request anyway.
  */
 export default async function StudentLeavePage() {
-  const [leave, students, canApply, canDecide] = await Promise.all([
+  // No roll is loaded here. It used to be `listStudentsForLeave()` —
+  // `.limit(200)` against 302 children — and the dialog searches instead.
+  const [leave, canApply, canDecide] = await Promise.all([
     listLeave(),
-    listStudentsForLeave(),
     hasPermission("leave.apply"),
     hasPermission("leave.decide"),
   ]);
@@ -70,7 +71,6 @@ export default async function StudentLeavePage() {
 
       <LeaveList
         leave={leave}
-        students={students}
         canApply={canApply}
         canDecide={canDecide}
       />

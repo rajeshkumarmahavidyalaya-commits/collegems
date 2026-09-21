@@ -28,7 +28,14 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { applyForLeave, cancelLeave, decideLeave, type LeaveRow } from "./actions";
+import {
+  applyForLeave,
+  cancelLeave,
+  decideLeave,
+  searchStudentsForLeave,
+  type LeaveRow,
+} from "./actions";
+import { StudentPicker, type PickedStudent } from "@/components/people/student-picker";
 import {
   blocksTheDates,
   kindLabel,
@@ -38,22 +45,18 @@ import {
   statusTone,
 } from "@/lib/validations/student-leave";
 
-type Student = { id: string; name: string; admissionNumber: string };
-
 export function LeaveList({
   leave,
-  students,
   canApply,
   canDecide,
 }: {
   leave: LeaveRow[];
-  students: Student[];
   canApply: boolean;
   canDecide: boolean;
 }) {
   return (
     <div className="flex flex-col gap-4">
-      {canApply && <ApplyForLeave students={students} />}
+      {canApply && <ApplyForLeave />}
 
       {leave.map((row) => (
         <LeaveCard key={row.id} row={row} canDecide={canDecide} />
@@ -161,14 +164,14 @@ function LeaveCard({ row, canDecide }: { row: LeaveRow; canDecide: boolean }) {
   );
 }
 
-function ApplyForLeave({ students }: { students: Student[] }) {
+function ApplyForLeave() {
   const t = useT();
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [pending, startTransition] = useTransition();
 
   const today = new Date().toISOString().slice(0, 10);
-  const [studentId, setStudentId] = useState(students[0]?.id ?? "");
+  const [student, setStudent] = useState<PickedStudent | null>(null);
   const [startsOn, setStartsOn] = useState(today);
   const [endsOn, setEndsOn] = useState(today);
   const [kind, setKind] = useState<(typeof LEAVE_KINDS)[number]>("sick");
@@ -176,7 +179,13 @@ function ApplyForLeave({ students }: { students: Student[] }) {
 
   function submit() {
     startTransition(async () => {
-      const result = await applyForLeave({ studentId, startsOn, endsOn, kind, reason });
+      const result = await applyForLeave({
+        studentId: student!.id,
+        startsOn,
+        endsOn,
+        kind,
+        reason,
+      });
       if (result.ok) {
         toast.success("Sent. The class teacher will see it straight away.");
         setOpen(false);
@@ -208,18 +217,12 @@ function ApplyForLeave({ students }: { students: Student[] }) {
         <div className="flex flex-col gap-4">
           <div className="flex flex-col gap-1.5">
             <Label htmlFor="leave-student">Student</Label>
-            <Select value={studentId} onValueChange={setStudentId}>
-              <SelectTrigger id="leave-student">
-                <SelectValue placeholder="Choose a student" />
-              </SelectTrigger>
-              <SelectContent>
-                {students.map((s) => (
-                  <SelectItem key={s.id} value={s.id}>
-                    {s.name} · {s.admissionNumber}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <StudentPicker
+              id="leave-student"
+              search={searchStudentsForLeave}
+              selected={student}
+              onSelect={setStudent}
+            />
           </div>
 
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -275,7 +278,7 @@ function ApplyForLeave({ students }: { students: Student[] }) {
           <DialogClose asChild>
             <Button variant="ghost">Cancel</Button>
           </DialogClose>
-          <Button onClick={submit} disabled={pending || reason.trim().length < 3}>
+          <Button onClick={submit} disabled={pending || !student || reason.trim().length < 3}>
             {pending && <Loader2 className="size-4 animate-spin" aria-hidden="true" />}
             Send it
           </Button>

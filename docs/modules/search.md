@@ -328,3 +328,74 @@ on the thing somebody came here to use buys a spinner, not a saving).
 
 The staff half still uses the `<Select>` it always had, so the asymmetry on the
 screen is the asymmetry in the data: **15 employees, 302 students.**
+
+---
+
+## …and the picker I had just written was about to become the fifth copy
+
+`0259` replaced four copies of one *query*. The **picker** went into
+`issue-form.tsx`, where the next screen would have pasted it — the same mistake
+one layer up, in the commit that fixed the first one. So it moved to
+`src/components/people/student-picker.tsx`, and the sweep that followed found
+the screens that needed it.
+
+**Three screens loaded a roll into a flat `<Select>`**, each with a different
+bound, measured against this college's **303 active students**:
+
+| screen | what it did | who it could reach |
+|---|---|---|
+| `/certificates/issue` | `.order("admission_number").limit(20)` | **20 of 303** |
+| `/attendance/leave` | `.limit(200)` | **200 of 303** |
+| `/fees/concessions` | `.limit(500)` | 303, in one dropdown |
+
+> **A bound nobody has reached is not a bound somebody decided.** The three are
+> the same mistake at three generosities, and only the generosity differs — the
+> concessions screen is correct today and silently drops children at 501.
+
+Two things make the leave one the sharpest:
+
+- **The truncation was invisible from the seat the screen was built for.** RLS
+  scopes that read, so a guardian sees their own one or two children and a
+  dropdown of two looks perfect. The 102 missing children exist only for the
+  office, and they look exactly like children who are not enrolled.
+- **A picker's default is decided by what the picker was given.** The dialog
+  opened on `students[0]` — an arbitrary first-by-admission-number child,
+  pre-selected on a form that applies for leave. That is `/timetable` defaulting
+  to `sections[0]`, in a different module.
+
+### What the fix costs, in both directions
+
+Built before and after, all 108 routes; the shared bundle is **103 kB** either
+way.
+
+| route | JavaScript | JSON per view |
+|---|---|---|
+| `/fees/concessions` | **+8 kB** | **−32.0 kB** |
+| `/attendance/leave` | **+8 kB** | **−21.1 kB** |
+| `/certificates/issue` | +1 kB | *(already fixed)* |
+
+The JavaScript is Radix Popover, cached after the first visit and now shared by
+three routes — which is why the first route paid 10 kB and these pay 8. The JSON
+is the roll, re-sent on **every view**: 32,765 bytes for 303 children, 21,619
+for the 200 the leave screen asked for. So it is a correctness fix that also
+gets cheaper from the second page view onward, and both halves are measured
+rather than argued.
+
+### The guard found the third one
+
+`tests/people/one-student-picker.test.ts` was written for the two screens I knew
+about and immediately named `/attendance/leave`, which I had not looked at. Four
+checks, each verified by planting: no file renders a student list as
+`SelectItem`s, `StudentPicker` has exactly one definition, every user imports it
+rather than copying it, and the component takes its server action as a **prop**
+(so it can never reach into `@/app/…` for one).
+
+That last one is rule 8's split applied to a picker: **share the choreography,
+keep the authorization with the caller.** All three callers reach
+`student_search` today; a screen that must narrow the roll further — to one
+section, to children with a balance — supplies a different action without the
+component learning about it.
+
+And the negative control that matters: the **staff** `<Select>` on the same
+certificate form is 15 people and stays a dropdown. The bar is a *roll*, not a
+list.
