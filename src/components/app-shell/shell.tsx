@@ -131,7 +131,7 @@ export function AppShell({
         </main>
       </div>
 
-      <CommandPalette />
+      <CommandPalette navGroups={navGroups} />
     </div>
   );
 }

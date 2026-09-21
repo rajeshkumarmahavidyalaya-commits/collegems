@@ -1,83 +1,51 @@
 "use server";
 
 import { createClient } from "@/lib/supabase/server";
+import { isSearchKind, type SearchHit } from "@/lib/validations/search-display";
 
-export type SearchResult = {
-  id: string;
-  type: "student" | "staff" | "book";
-  title: string;
-  subtitle: string;
-  href: string;
-};
+export type { SearchHit } from "@/lib/validations/search-display";
 
-export async function globalSearch(query: string): Promise<SearchResult[]> {
+/**
+ * Students, colleagues and books matching one term, for the command palette.
+ *
+ * ## It used to be five round trips and three filter strings
+ *
+ * Each keystroke fired five PostgREST requests, three of which built a filter
+ * **language** out of somebody's typing:
+ *
+ *   .or(`first_name.ilike.${like},last_name.ilike.${like}`, { referencedTable: "people" })
+ *
+ * Migration `0223` replaced exactly this shape once, in the sibling picker, and
+ * wrote down why — *the fix is not to escape more carefully, it is to stop
+ * building a query out of text.* It fixed one of nine; these were three more.
+ * `global_search` (migration `0258`) takes the term as a **bound parameter**
+ * and answers in one round trip. Probed: a book called `Gödel, Escher, Bach`
+ * is found by searching for `Escher, Bach`, which is the term that closes the
+ * `or(` group early.
+ *
+ * ## There is no audience logic here, deliberately
+ *
+ * The function is `SECURITY INVOKER`, so the policies decide. Probed as a
+ * guardian with one child on record, against an administrator on the same term
+ * and the same day: **1 student, 0 staff, 10 books** against **20, 7, 10**. A
+ * palette that filtered by role would be a second answer to a question Postgres
+ * already answers — and the *first* answer is the only one that is a boundary.
+ */
+export async function globalSearch(query: string): Promise<SearchHit[]> {
   const q = query.trim();
+  // The floor is in the function too; this saves the round trip.
   if (q.length < 2) return [];
 
   const supabase = await createClient();
-  const like = `%${q}%`;
+  const { data, error } = await supabase.rpc("global_search", { p_query: q, p_limit: 5 });
+  if (error) throw new Error(error.message);
 
-  const [students, studentsByName, staff, staffByName, books] = await Promise.all([
-    supabase
-      .from("students")
-      .select("id, admission_number, people:person_id ( first_name, last_name )")
-      .ilike("admission_number", like)
-      .limit(5),
-    supabase
-      .from("students")
-      .select("id, admission_number, people:person_id!inner ( first_name, last_name )")
-      .or(`first_name.ilike.${like},last_name.ilike.${like}`, { referencedTable: "people" })
-      .limit(5),
-    supabase
-      .from("staff")
-      .select("id, employee_code, designation, people:person_id ( first_name, last_name )")
-      .or(`employee_code.ilike.${like},designation.ilike.${like}`)
-      .limit(5),
-    supabase
-      .from("staff")
-      .select("id, employee_code, designation, people:person_id!inner ( first_name, last_name )")
-      .or(`first_name.ilike.${like},last_name.ilike.${like}`, { referencedTable: "people" })
-      .limit(5),
-    supabase.from("books").select("id, title, author").or(`title.ilike.${like},author.ilike.${like}`).limit(5),
-  ]);
-
-  const results: SearchResult[] = [];
-  const seenStudents = new Set<string>();
-  const seenStaff = new Set<string>();
-
-  for (const s of [...(students.data ?? []), ...(studentsByName.data ?? [])]) {
-    if (seenStudents.has(s.id)) continue;
-    seenStudents.add(s.id);
-    const name = s.people ? `${s.people.first_name} ${s.people.last_name}` : s.admission_number;
-    results.push({
-      id: s.id,
-      type: "student",
-      title: name,
-      subtitle: `Admission #${s.admission_number}`,
-      href: `/library/members`,
-    });
-  }
-  for (const s of [...(staff.data ?? []), ...(staffByName.data ?? [])]) {
-    if (seenStaff.has(s.id)) continue;
-    seenStaff.add(s.id);
-    const name = s.people ? `${s.people.first_name} ${s.people.last_name}` : s.employee_code;
-    results.push({
-      id: s.id,
-      type: "staff",
-      title: name,
-      subtitle: s.designation,
-      href: `/library/members`,
-    });
-  }
-  for (const b of books.data ?? []) {
-    results.push({
-      id: b.id,
-      type: "book",
-      title: b.title,
-      subtitle: b.author,
-      href: `/library/books/${b.id}`,
-    });
-  }
-
-  return results;
+  return (data ?? []).flatMap((row) =>
+    // A kind the client does not know how to route is dropped rather than
+    // rendered as a dead item: the projection and the renderer live in
+    // different files and are free to drift.
+    isSearchKind(row.kind)
+      ? [{ kind: row.kind, id: row.id, title: row.title, reference: row.reference }]
+      : [],
+  );
 }

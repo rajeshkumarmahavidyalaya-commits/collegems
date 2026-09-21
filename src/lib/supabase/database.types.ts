@@ -8445,6 +8445,15 @@ export type Database = {
         Returns: string
       }
       front_office_next_number: { Args: { p_kind: string }; Returns: string }
+      global_search: {
+        Args: { p_limit?: number; p_query: string }
+        Returns: {
+          id: string
+          kind: string
+          reference: string
+          title: string
+        }[]
+      }
       grading_grade_for: {
         Args: { p_percentage: number; p_rules: Json }
         Returns: {

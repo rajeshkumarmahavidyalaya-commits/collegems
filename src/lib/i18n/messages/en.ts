@@ -32,6 +32,13 @@ export const en = {
   "app.signOut": "Sign out",
   "app.signedInAs": "Signed in as {name}",
   "app.language": "Language",
+  // The command palette. `palette.admission` is a *sentence* around a value,
+  // which is why it is a key and a designation or an author is not.
+  "palette.title": "Search",
+  "palette.description": "Find a student, a colleague or a book, or jump to a page",
+  "palette.placeholder": "Search students, staff, books…",
+  "palette.results": "Results",
+  "palette.admission": "Admission #{number}",
   "app.language.choose": "Choose a language",
   "app.language.followSchool": "Follow the school ({name})",
   "app.language.saved": "Language changed to {name}.",

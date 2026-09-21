@@ -720,6 +720,50 @@ Three things:
 
 See `docs/modules/role-access.md`, which is the six seats side by side.
 
+#### …and the guard could only ever ask the list, not its readers
+
+Both sections above guard `nav-config.ts` — whether somebody decided who an
+entry is for, and whether the reason they wrote was checked against every seat.
+The list was right. **The app shell read it twice and filtered it once.**
+
+`navForRole(roleCode)` has existed since the shell was built and the sidebar has
+always called it. `CommandPalette` — mounted in the shell, so on all 94
+authenticated pages — imported `NAV_GROUPS` raw. Counted over the 54 entries:
+a guardian's sidebar offers **10**, their Ctrl-K offers **54**, *Payroll*, *Fee
+counter*, *Voucher book*, *Delivery log* and *What each role may do* among them.
+Three of those are the entries the section above describes taking away from
+exactly that seat, and `nav-audience` went on passing throughout.
+
+> **A guard on a list is not a guard on its consumers.** It can ask whether a
+> decision was made. It cannot ask whether every renderer honoured it.
+
+So the new guard is on the **raw read**: `NAV_GROUPS` outside `nav-config.ts`
+fails, and `navForRole` must have exactly two call sites, because two callers of
+one filter is where two answers come from. The tree arrives as a prop.
+
+Three things, and the third is about verifying a guard rather than writing one:
+
+- **Not a boundary, and saying so is the point.** Rule 4's first sentence holds:
+  every page behind those entries checks its own permission. What was wrong is
+  the claim about *who this product is for*, made twice and differently on one
+  screen — and the same half-landed fix put **every student and every member of
+  staff in the palette at `/library/members`**, so searching for a child by name
+  took the office to the library's membership list. A link that goes somewhere
+  is not a link that errors, which is why it survived.
+- **A translated entry and an untranslated one are the same entry.** The sidebar
+  drew `t(item.messageKey)` and the palette drew `item.title`, so one nav row was
+  Hindi in one half of the shell and English in the other. Rule 15's sentence
+  about the interface, inside a single component.
+- **Two of the six plants passed, and only one of them was a weak check.** An
+  import with no call does not violate *"`navForRole` has two call sites"*, and a
+  plant that does not violate the rule tests nothing — that is a faulty plant,
+  not a finding. The other, widening a prop to `NavGroup[] | undefined`, really
+  did slip an anchor that matched a prefix. **Read which of the two you have
+  before you change the check**, or a correct guard gets loosened to accept a
+  plant that was never a violation.
+
+See `docs/modules/search.md`, which also carries the search half.
+
 #### …and the catalogue of reports was never given that treatment
 
 `0200` fixed one **check**. `reference.reports` is the older and larger

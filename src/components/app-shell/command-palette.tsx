@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { BookOpen, LayoutDashboard, Loader2, User, Users } from "lucide-react";
+import { BookOpen, Loader2, User, Users } from "lucide-react";
 import {
   CommandDialog,
   CommandEmpty,
@@ -11,19 +11,63 @@ import {
   CommandItem,
   CommandList,
 } from "@/components/ui/command";
-import { globalSearch, type SearchResult } from "@/app/actions/search";
-import { NAV_GROUPS } from "./nav-config";
+import { globalSearch } from "@/app/actions/search";
+import {
+  searchHitHref,
+  searchHitSubtitle,
+  type SearchHit,
+  type SearchKind,
+} from "@/lib/validations/search-display";
+import { useT } from "@/components/providers/i18n-provider";
+import type { NavGroup } from "./nav-config";
 
-const TYPE_ICON: Record<SearchResult["type"], typeof User> = {
+const KIND_ICON: Record<SearchKind, typeof User> = {
   student: User,
   staff: Users,
   book: BookOpen,
 };
 
-export function CommandPalette() {
+/**
+ * Ctrl-K, on all 94 authenticated pages.
+ *
+ * ## It takes the nav tree rather than reading it
+ *
+ * `navForRole(roleCode)` has existed since the shell was built and the sidebar
+ * has always called it. This component imported `NAV_GROUPS` **raw**, so the
+ * two halves of one app shell disagreed about who a menu entry is for:
+ *
+ * | role | sidebar | palette |
+ * |---|---|---|
+ * | admin | 51 | 54 |
+ * | teacher | 26 | 54 |
+ * | accountant | 33 | 54 |
+ * | librarian | 16 | 54 |
+ * | parent | 10 | 54 |
+ * | student | 10 | 54 |
+ *
+ * A guardian pressing Ctrl-K was offered *Payroll*, *Fee counter*, *Voucher
+ * book*, *Delivery log* and *What each role may do* — three of those are
+ * entries `CLAUDE.md`'s rule 4 section describes taking away from exactly that
+ * seat, and the guard that did it went on passing, because it reads the
+ * `roles` lists and this file read the same lists without the filter.
+ *
+ * > **A guard on a list is not a guard on its consumers.**
+ *
+ * So the tree arrives as a prop, already filtered, from the one place that
+ * filters it. There is no `roleCode` here and no second call to `navForRole`:
+ * two callers of one filter is where the two answers came from in the first
+ * place. `tests/app-shell/nav-consumers.test.ts` is the executable half.
+ *
+ * **None of this is a boundary** — rule 4's first sentence is that the menu is
+ * never the gate, and that is as true of a palette as of a sidebar. Every page
+ * behind these entries still checks its own permission, and the search results
+ * are decided by RLS inside `global_search`.
+ */
+export function CommandPalette({ navGroups }: { navGroups: NavGroup[] }) {
+  const t = useT();
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
-  const [results, setResults] = useState<SearchResult[]>([]);
+  const [results, setResults] = useState<SearchHit[]>([]);
   const [isPending, startTransition] = useTransition();
   const router = useRouter();
 
@@ -58,14 +102,9 @@ export function CommandPalette() {
   }
 
   return (
-    <CommandDialog
-      open={open}
-      onOpenChange={setOpen}
-      title="Search SchoolOS"
-      description="Search students, staff, and books, or jump to a page"
-    >
+    <CommandDialog open={open} onOpenChange={setOpen} title={t("palette.title")} description={t("palette.description")}>
       <CommandInput
-        placeholder="Search students, staff, books…"
+        placeholder={t("palette.placeholder")}
         value={query}
         onValueChange={setQuery}
       />
@@ -75,18 +114,27 @@ export function CommandPalette() {
             <Loader2 className="size-4 animate-spin" />
           </div>
         )}
-        {!isPending && <CommandEmpty>No results found.</CommandEmpty>}
+        {!isPending && <CommandEmpty>{t("state.noResults")}</CommandEmpty>}
 
         {results.length > 0 && (
-          <CommandGroup heading="Results">
-            {results.map((r) => {
-              const Icon = TYPE_ICON[r.type];
+          <CommandGroup heading={t("palette.results")}>
+            {results.map((hit) => {
+              const Icon = KIND_ICON[hit.kind];
+              const subtitle = searchHitSubtitle(hit, t);
               return (
-                <CommandItem key={`${r.type}-${r.id}`} onSelect={() => go(r.href)}>
+                <CommandItem key={`${hit.kind}-${hit.id}`} onSelect={() => go(searchHitHref(hit))}>
                   <Icon className="size-4 text-muted-foreground" aria-hidden="true" />
                   <div className="flex flex-col">
-                    <span>{r.title}</span>
-                    <span className="text-xs text-muted-foreground">{r.subtitle}</span>
+                    {/* A name and an admission number are data, and a school
+                        with an Urdu interface still has Latin-script names in
+                        it: `dir="auto"` lets each value declare its own run
+                        rather than inheriting the page's. */}
+                    <span dir="auto">{hit.title}</span>
+                    {subtitle && (
+                      <span dir="auto" className="text-xs text-muted-foreground">
+                        {subtitle}
+                      </span>
+                    )}
                   </div>
                 </CommandItem>
               );
@@ -94,20 +142,19 @@ export function CommandPalette() {
           </CommandGroup>
         )}
 
-        <CommandGroup heading="Navigate">
-          <CommandItem onSelect={() => go("/")}>
-            <LayoutDashboard className="size-4 text-muted-foreground" aria-hidden="true" />
-            Dashboard
-          </CommandItem>
-          {NAV_GROUPS.flatMap((g) => g.items)
-            .filter((item) => item.href !== "/")
-            .map((item) => (
+        {navGroups.map((group) => (
+          <CommandGroup
+            key={group.messageKey ?? group.title}
+            heading={group.messageKey ? t(group.messageKey) : group.title}
+          >
+            {group.items.map((item) => (
               <CommandItem key={item.href} onSelect={() => go(item.href)}>
                 <item.icon className="size-4 text-muted-foreground" aria-hidden="true" />
-                {item.title}
+                {item.messageKey ? t(item.messageKey) : item.title}
               </CommandItem>
             ))}
-        </CommandGroup>
+          </CommandGroup>
+        ))}
       </CommandList>
     </CommandDialog>
   );
