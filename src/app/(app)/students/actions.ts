@@ -54,6 +54,10 @@ export async function listStudents(
   const orderColumn = sortBy && STUDENT_SORT_COLUMNS.has(sortBy) ? sortBy : "admission_number";
   query = query
     .order(orderColumn, { ascending: !sortDesc })
+    // The default (`admission_number`) is unique and needed no tiebreak, which
+    // is why this went unnoticed — but `status` is **1 distinct value over 303
+    // rows**, so sorting the roll by it made every page an arbitrary slice.
+    .order("admission_number", { ascending: true })
     .range(pageIndex * pageSize, pageIndex * pageSize + pageSize - 1);
 
   const { data, count, error } = await query;

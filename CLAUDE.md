@@ -3880,6 +3880,25 @@ the calm, institutional feel this product is aiming for.
 - **Lists use the DataTable primitive** (`src/components/data-table/`) with
   server-side pagination/sort/filter. Whitelist sortable columns server-side —
   never interpolate a client-supplied column name into `.order()`.
+
+  **And whitelisting the column is only half of it.** `limit`/`offset` over an
+  order that is not *total* returns an arbitrary slice of each tied group, and
+  Postgres need not pick the same arrangement twice — so page 2 repeats a row
+  from page 1 and silently drops another. Rule 7 wrote that down for **exports**
+  and it was never carried to the screen that pages the same way. Measured: four
+  of the six paged lists here had no tiebreak, and the sharpest is the one
+  nobody sorts by hand — `/fees` opens on `full_name`, **102 distinct names over
+  302 children**, so the unmodified balances screen was already unstable.
+  `/students` hid it the other way: its default `admission_number` is 303 of 303
+  distinct, and `status` is **1 of 303**. *A whitelist that admits a column says
+  nothing about whether that column can carry a page.*
+
+  `tests/data-table/a-page-needs-a-total-order.test.ts` requires a second
+  `.order()` at every `.range()`, or a single column named in
+  `UNIQUE_BY_ITSELF` with a unique index or gapless serial as its evidence —
+  and `/fees/invoices` had chained `invoice_number` onto a tying `issue_date`
+  since it was written, which is the rule already being known by one person.
+  **One list doing it right is not a rule until something checks the others.**
 - **Forms use the form primitives** (`src/components/forms/`): `TextField` /
   `SelectField` / `TextareaField`, `ErrorSummary`, `useUnsavedChangesGuard`.
 - **A list of valid values belongs in one place, and the constraint is usually

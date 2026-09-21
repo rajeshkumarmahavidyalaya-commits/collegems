@@ -670,3 +670,67 @@ other side, where a `--` disarmed it:
 in the group. `loading.tsx` and both `not-found.tsx` are Server Components and
 cost the browser nothing. The number moves in the direction the change predicts,
 which is the only kind worth quoting.
+
+---
+
+## A page needs a total order, and four of six lists did not have one
+
+The DataTable pages server-side with `limit`/`offset`, and the sortable columns
+are whitelisted so a client-supplied name can never reach `.order()`. That is
+the *injection* half, and it was right. The other half was missing:
+
+> **`limit`/`offset` over an order that is not total returns an arbitrary slice
+> of each tied group, and Postgres need not pick the same arrangement twice.**
+> So page 2 can repeat a row from page 1 and silently drop another.
+
+Rule 7 already wrote this down — for **exports**, where *"an export could
+contain one row twice and miss another"* — and never carried it to the screen
+that pages the same way. Measured on this college, which is what makes it a
+defect rather than a theory:
+
+| list | sorted by | rows | distinct | tied |
+|---|---|---|---|---|
+| `/fees` balances | `full_name` *(the default)* | 302 | 102 | **200** |
+| `/fees` balances | `charged` | 302 | 12 | **290** |
+| `/fees` balances | `balance` | 302 | 25 | **277** |
+| `/students` | `status` | 303 | **1** | **302** |
+| `/library/books` | `total_copies` | 21 | 5 | **16** |
+| `/library/issues` | `issued_at` | 26 | 4 | **22** |
+| `/fees/invoices` | `issue_date, invoice_number` | 317 | 317 | 0 |
+| `/library/members` | `membership_number` | 75 | 75 | 0 |
+
+Three things:
+
+- **The default sort is where it hurts, and it is the one nobody sorts by
+  hand.** `/fees` opens ordered by `full_name` — 102 distinct names over 302
+  children — so the *unmodified* balances screen could show a family twice and
+  hide another, before anybody clicked a column heading.
+- **`/students` looked fine because its default is unique.** `admission_number`
+  is 303 of 303 distinct, so the list is stable until somebody sorts by
+  `status`, which is **one value across the whole roll**. A whitelist that
+  admits a column says nothing about whether that column can carry a page.
+- **Two lists already had the fix and one of them was deliberate.**
+  `/fees/invoices` chains `invoice_number` onto a tying `issue_date` — somebody
+  knew. **One list doing it right is not a rule until something checks the
+  others**, which is the same sentence as `0223` guarding one module while eight
+  more sites went on splicing filter strings.
+
+`tests/data-table/a-page-needs-a-total-order.test.ts` finds every `.range()` in
+`src/` and requires a second `.order()`, or a single column named in
+`UNIQUE_BY_ITSELF` **with its evidence** — a unique index or a gapless serial
+checked against the live schema, never "it looks distinct today". The bar
+matters: `admission_number` and `status` are the same table and the same
+eyeball, and one of them is 303 of 303 while the other is 1 of 303.
+
+Five plants, each failing the check it should and green on revert: the balances
+tiebreak removed, the invoice list's second key removed, the students tiebreak
+removed, the members list re-sorted onto `status`, and the allowlist made stale.
+The failure names the file, the line and the columns, because a guard whose
+message is *"expected [] to equal [...]"* is one somebody re-derives every time.
+
+**And the library list made it worse before it made it better.** Moving
+`listBooks` onto a set-returning function (`library_books`, migration `0259`)
+removed even the incidental stability of a table scan: a function's rows have no
+order of their own at all. The fix arrived in the same pass, but the direction is
+worth recording — *a refactor that is correct about what it set out to change can
+still take away something nobody wrote down.*

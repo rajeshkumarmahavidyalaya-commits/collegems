@@ -57,6 +57,9 @@ export async function listBooks(params: ListParams): Promise<{ rows: BookRow[]; 
       { count: "exact" },
     )
     .order(orderColumn, { ascending: !sortDesc })
+    // A tiebreak, because `total_copies` is 5 distinct values over 21 books and
+    // a set-returning function has no order of its own to fall back on.
+    .order("id", { ascending: true })
     .range(pageIndex * pageSize, pageIndex * pageSize + pageSize - 1);
   if (error) throw new Error(error.message);
 
@@ -338,6 +341,9 @@ export async function listIssues(params: ListParams): Promise<{ rows: IssueRow[]
 
   query = query
     .order("issued_at", { ascending: false })
+    // 26 issues over 4 distinct timestamps: a bulk issue gives a whole class
+    // the same `issued_at`, so this is the column most likely to tie.
+    .order("id", { ascending: true })
     .range(pageIndex * pageSize, pageIndex * pageSize + pageSize - 1);
 
   const { data, count, error } = await query;

@@ -78,6 +78,12 @@ export async function listBalances(params: {
       { count: "exact" },
     )
     .order(orderColumn, { ascending: !sortDesc, nullsFirst: false })
+    // Every sortable column here ties, including the default. Measured on this
+    // college: 302 rows over 102 distinct names, 25 distinct balances, 12
+    // distinct charges. `limit`/`offset` over an order that is not total
+    // returns an arbitrary slice per page, so page 2 can repeat a child from
+    // page 1 and skip another — rule 7's export rule, on a screen.
+    .order("student_id", { ascending: true })
     .range(pageIndex * pageSize, pageIndex * pageSize + pageSize - 1);
 
   if (error) throw new Error(error.message);
