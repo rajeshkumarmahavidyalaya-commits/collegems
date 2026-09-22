@@ -234,14 +234,21 @@ What is genuinely left:
   carry an attachment on a delivery.
 - **A digest that carries the rows.** `report.digest` sends a count and a link,
   deliberately — the attachment is the item above, wearing a different hat.
-- **A real measurement of a class of ID cards.** Report cards and ID cards are
-  both done — see [pdf.md](./modules/pdf.md) — and the ID card turned up the
-  sharper finding: `cardGaps()` has marked a missing photograph `blocking: true`
-  since the module shipped, and `blocking` decided a **text colour**. It is
-  executable now, and the PDF refuses where printing still goes ahead. What is
-  unmeasured is the size of a real class: this college has **0 objects in
-  Storage**, so the byte ceiling on a set is a written-down guess rather than a
-  number.
+- ~~**A real measurement of a class of ID cards.**~~ Measured — the renderers
+  take plain documents, so a set can be sized without a database. **302 ID cards
+  is 93.6 MB and 9.3 s; 302 report cards is 744 kB and 5.9 s** — 126× apart at
+  the same number of children. The step that mattered is that **a set is its
+  photographs**: at forty cards the file is 1.0019× the portraits it carries, so
+  `MAX_PHOTO_BYTES`, which bounds the *input*, is within 0.2% a bound on the
+  *response*. That was the assumption the ceiling rested on. Still unmeasured: a
+  real photograph (0 objects in Storage, and a JPEG is ~10× smaller than the PNG
+  used here) and the platform's own response ceiling. See
+  [performance.md](./performance.md).
+
+  The other half of that entry stands: `cardGaps()` had marked a missing
+  photograph `blocking: true` since the module shipped and `blocking` decided a
+  **text colour**. It is executable now — the PDF refuses where printing still
+  goes ahead.
 
 ---
 

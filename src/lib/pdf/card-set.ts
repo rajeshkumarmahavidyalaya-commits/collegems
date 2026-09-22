@@ -21,11 +21,22 @@ import { UnfinishedCard, type CardDocument, type CardPhoto } from "./card";
  * at all — **a bound on rows is not a bound on bytes** — and this is the second
  * half of it.
  *
- * 24 MB is a deliberate guess rather than a measurement, and it is written down
- * as one: this college has **0 objects in Storage**, so there is no real
- * photograph to size. It is roughly a hundred and twenty 200 kB portraits, and
- * the refusal says the number so the first school to meet it tells us what the
- * real one should be.
+ * 24 MB is still a decision rather than a derivation — what a platform will
+ * return is a fact about the deployment — but the **ratio** underneath it is
+ * measured now, where it used to be assumed. Rendering a set of synthetic cards
+ * around a 309,609-byte portrait: one card is 314,370 bytes, each further card
+ * adds 310,089, and at forty the file is **1.0019×** the photographs it
+ * carries. The font is embedded once and subset (4,761 bytes); the card itself
+ * is 480.
+ *
+ * > **A bound on the photographs is, to within 0.2%, a bound on the response.**
+ * > That is the step the ceiling rested on and nobody had checked.
+ *
+ * What is still unmeasured is a *real* photograph: this college has **0 objects
+ * in Storage**, and a JPEG portrait is roughly a tenth of that PNG — so 24 MB
+ * is ~77 cards of one kind and several hundred of the other. The refusal says
+ * the number for exactly that reason, so the first school to meet it tells us
+ * what the real one should be. See `docs/performance.md`.
  */
 export const MAX_PHOTO_BYTES = 24 * 1024 * 1024;
 

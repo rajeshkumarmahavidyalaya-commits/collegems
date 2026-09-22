@@ -441,3 +441,68 @@ school is worth not carrying.
 > improvement that was a warm cache — the same lesson the session-scope sweep
 > learned about a broken grep, arriving on the timing side. When a number moves
 > that your change cannot explain, the number is measuring something else.
+
+---
+
+## A set of documents is its photographs
+
+`docs/roadmap.md` carried this as the one unmeasured thing about the PDF module:
+
+> *What is unmeasured is the size of a real class: this college has 0 objects in
+> Storage, so the byte ceiling on a set is a written-down guess rather than a
+> number.*
+
+`renderIdCards` and `renderReportCards` take plain documents, so a set can be
+measured without a database or a network — synthetic rows and a PNG built in
+the test process. Warm, one process, Node 20:
+
+| set | bytes | ms |
+|---|---|---|
+| 1 ID card | 314,370 | 83 |
+| 2 | 624,459 | 89 |
+| 8 | 2,485,186 | 281 |
+| 40 | 12,407,953 | 1,330 |
+| 302 | 93,650,511 | 9,297 |
+| 1 report card | 8,212 | 54 |
+| 40 | 103,323 | 847 |
+| 302 | 744,337 | 5,868 |
+
+The portrait was a 300 × 400 8-bit RGB PNG: **309,609 bytes**.
+
+### What the numbers say
+
+**The PDF is the photographs.** One card is 314,370 bytes around a 309,609-byte
+portrait — **4,761 bytes** of everything else, which is the subset font
+(`subset: true`, as `font.ts` says) plus the page. Each further card adds
+**310,089**: the photograph, plus **480 bytes** of rules, labels and text. At 40
+cards the whole file is **1.0019×** the photographs it carries.
+
+That ratio is the assumption underneath `MAX_PHOTO_BYTES`, and it had never been
+checked. The ceiling bounds the **input** — bytes downloaded from the `avatars`
+bucket — and is used as a proxy for the size of the **response**. Within 0.2%,
+at this photograph size, it is one.
+
+**And the count bound is the generous one, as its comment claims.** At 310 kB a
+portrait, 24 MB binds at ~77 cards while `MAX_CARDS_PER_RUN` is 120 — so a class
+of 120 is refused by bytes, with the number in the message, and never silently
+truncated.
+
+**Report cards are a different order of thing entirely.** Same row count, 8.2 kB
+each, no images: 302 of them is **744 kB** against the ID cards' 93.6 MB —
+**126× apart** at the same number of children. The report-card route's own
+comment says *"a school-wide run is 5.5 seconds and 754 kB"*; measured
+independently here at 5.9 s and 744 kB, which is the same number twice.
+
+### What this still does not measure
+
+- **A real photograph.** 300 × 400 of synthetic noise is close to a worst case
+  for PNG. A JPEG portrait of the same face is roughly a tenth of it, which
+  moves the ceiling from ~77 cards to several hundred — so the number a school
+  meets depends on the format its office uploads, and the refusal says the
+  number for that reason.
+- **The JPEG embed path.** `embedJpg` stores the stream as-is, so the ratio
+  should hold or improve; not measured, because there is no JPEG encoder in this
+  process and inventing one would measure the encoder.
+- **The platform's own response ceiling.** What Vercel will return is a fact
+  about the deployment and was not established here, so nothing in this file
+  claims 24 MB is safe to send — only that 24 MB of photographs is a 24 MB file.
