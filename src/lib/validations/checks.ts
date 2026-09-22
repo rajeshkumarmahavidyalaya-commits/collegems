@@ -105,10 +105,13 @@ export function checkStatusLabel(status: CheckGroup["status"], t: Translator): s
 }
 
 /**
- * Severity within a check. `error` is the runner's own, not a critic's — a
- * critic only ever says `warning` or `info`.
+ * Severity within a check, from `./severity` — one definition for all six
+ * screens that draw one.
+ *
+ * The comment this replaces said *"`error` is the runner's own, not a critic's
+ * — a critic only ever says `warning` or `info`"*, and both halves were false
+ * when it was written: **eight** critics say `error` themselves, and three said
+ * `warn`, which is neither. A comment that asserts a vocabulary is exactly
+ * where somebody stops checking it.
  */
-export function severityTone(severity: string): "destructive" | "warning" | "secondary" {
-  if (severity === "error") return "destructive";
-  return severity === "warning" ? "warning" : "secondary";
-}
+export { severityLabel, severityTone } from "./severity";

@@ -26,11 +26,7 @@ export function planStatusTone(status: string): "default" | "success" | "seconda
   return "default";
 }
 
-export function severityTone(severity: string): "destructive" | "warning" | "secondary" {
-  if (severity === "error") return "destructive";
-  if (severity === "warning") return "warning";
-  return "secondary";
-}
+export { severityTone } from "./severity";
 
 /**
  * How a sitting's state reads on the list, and why it is three states rather

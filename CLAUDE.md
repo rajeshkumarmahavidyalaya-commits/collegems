@@ -2911,6 +2911,47 @@ Two rules for the runner, and both are about not looking clean when you are not:
   *"showing the first 200; there are at least this many"*. Rule 13's import
   lesson, arriving on a screen instead of in a spreadsheet.
 
+#### …and the word a critic uses had no home, so it drifted
+
+Twenty-two critics feed `checks_run`, which returns `severity text`. **Nothing
+constrains the word** — a set-returning function cannot carry a CHECK, so
+migration `0101`'s answer (*consult the constraint*) has nothing to consult.
+Swept over the latest definition of each: `warning` 13, `info` 9, `error` 8 —
+and **`warn` 3**, in the three most recently written critics. Typed once and
+copied twice, and both spellings read as correct.
+
+It decided a colour. `severityTone` was `severity === "warning" ? "warning" :
+"secondary"`, so a `warn` was drawn in the same grey as an `info`, and live that
+was exactly one row: *"302 of 302 active students have nobody who can sign
+in."* The loudest finding the product has, rendered as an aside.
+
+> **A vocabulary with no home drifts, and drifts quietly.** The list of words
+> was written down **twice** and agreed; `severityTone` was **six copies under
+> one name** (`formatMoney`'s shape, rule 15); and the conservative default —
+> `z.enum(…).catch("warning")` — existed exactly **once**, in `certificates.ts`,
+> where five renderers never found it. Three of the six copies had no `error`
+> branch at all: correct for their own critic today, wrong the morning one grows
+> one.
+
+Two things generalise, and the second was a correction rather than a finding:
+
+- **The colour is a judgement; the word is a fact.** `severityTone` is loud
+  about a word it does not know, because the cost of being wrong there is a row
+  nobody reads. `severityLabel` stays **literal** about the same word, because
+  the cost of being wrong there is somebody believing the product classified
+  something it did not. A first draft made both fall back to *"Check this"*, and
+  `tests/timetable/substitution-shapes.test.ts` — pinning rule 15's *the
+  fallback is the value, not the key* since the substitutions module shipped —
+  refused it. **An existing guard catching a new mistake is the suite working.**
+- **The screen held a third copy.** `/checks` drew the badge text with an inline
+  ternary, a fourth wording of the same three words, in English, on a page whose
+  catalogue already had `severity.*` in all three languages. Deleting the copy
+  translated the badges.
+
+Migration `0266` and `tests/checks/one-word-per-severity.test.ts` — the critics'
+words, and the number of places that decide what they mean. Four plants, each
+caught.
+
 See `docs/modules/checks.md`.
 
 ### …and a dashboard is not a report

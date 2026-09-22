@@ -48,7 +48,11 @@ const LOCALE_AWARE = new Set([
   // The staff daily-work batch.
   "timetable.periodLabel",
   "substitutions.periodLabel",
-  "substitutions.severityLabel",
+  // Moved out of `substitutions` by `0266`: six modules had written their own
+  // `severityTone` beside this module's copy of the vocabulary, so how bad a
+  // finding is now has one home. `substitutions` re-exports it, and this list
+  // names the **definition**.
+  "severity.severityLabel",
   "substitutions.reasonLabel",
   "staff-display.staffStatusLabel",
   "certificates.kindLabel",

@@ -76,8 +76,9 @@ export function parseTemplateFields(raw: unknown): TemplateField[] {
 // The preview
 // ---------------------------------------------------------------------------
 
-export const PROBLEM_SEVERITIES = ["error", "warning", "info"] as const;
-export type ProblemSeverity = (typeof PROBLEM_SEVERITIES)[number];
+import { PROBLEM_SEVERITIES, type ProblemSeverity } from "./severity";
+
+export { PROBLEM_SEVERITIES, type ProblemSeverity };
 
 export const problemSchema = z.object({
   severity: z.enum(PROBLEM_SEVERITIES).catch("warning"),

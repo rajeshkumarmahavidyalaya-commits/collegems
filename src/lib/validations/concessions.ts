@@ -39,9 +39,7 @@ export function statusTone(status: string): "success" | "secondary" {
   return status === "revoked" ? "secondary" : "success";
 }
 
-export function severityTone(severity: string): "warning" | "secondary" {
-  return severity === "warning" ? "warning" : "secondary";
-}
+export { severityTone } from "./severity";
 
 /**
  * How a concession reads on a screen. A percentage with a ceiling is the shape

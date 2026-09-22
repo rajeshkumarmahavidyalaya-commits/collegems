@@ -148,8 +148,14 @@ describe("severity", () => {
   });
 
   it("degrades to something readable for a severity it has never seen", () => {
+    // The word is a fact and the colour is a judgement, so they degrade in
+    // opposite directions. The label stays literal — rule 15's *the fallback is
+    // the value, not the key* — and the tone goes **loud**, because the six
+    // copies of `severityTone` this one replaced all fell through to
+    // `secondary`, and a `warn` was drawn in the same grey as a note while
+    // saying "302 of 302 families cannot sign in" (migration `0266`).
     expect(severityLabel("catastrophe", t)).toBe("catastrophe");
-    expect(severityTone("catastrophe")).toBe("secondary");
+    expect(severityTone("catastrophe")).toBe("warning");
   });
 });
 

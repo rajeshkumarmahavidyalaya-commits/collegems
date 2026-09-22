@@ -355,3 +355,108 @@ Measured on the demo college: **299 `not_invited`, 2 `no_guardian`, 1 `ok`.** Th
 two are the sharper finding — `SOS-2025-9001` and admission number `1234`, both
 in Grade 1 A, have no guardian at all, so no invitation run would ever reach
 them and the bulk preview would never have shown them.
+
+---
+
+## One severity, spelled two ways
+
+Migration `0266`. Found by running the product's own critics against the live
+college and reading the *column* rather than the messages.
+
+`checks_run` returns `severity text` and twenty-two `*_problems()` functions
+fill it in. **Nothing constrains the word** — a set-returning function cannot
+carry a CHECK, so migration `0101`'s usual answer (*consult the constraint*) has
+nothing to consult. Swept over the latest definition of each critic:
+
+| word | critics |
+|---|---|
+| `warning` | 13 |
+| `info` | 9 |
+| `error` | 8 |
+| **`warn`** | **3** — `family_login_problems` (`0235`), `scheduler_problems` (`0241`), `job_problems` (`0243`) |
+
+The three are the three most recently written. That is what makes it drift
+rather than a decision: it was typed once and copied twice, and both spellings
+read as correct.
+
+### It decided a colour
+
+`severityTone` was `severity === "warning" ? "warning" : "secondary"`, so a
+`warn` fell through to the neutral tone — **the same grey an `info` gets**.
+Measured on the live college, that was exactly one row, and it is the loudest
+finding the product has:
+
+> *302 of 302 active students have nobody who can sign in: no fee account,
+> timetable, result or absence notice reaches their families.*
+
+Drawn as an aside, beside *"13 hostel beds have not been renewed"* in the same
+colour.
+
+### Why nobody noticed: the vocabulary had no home
+
+Reading the TypeScript side as data:
+
+| | |
+|---|---|
+| the list of words | **twice** — `substitutions.ts` and `certificates.ts`, agreeing |
+| `severityTone` | **six copies**, six modules, one name |
+| the conservative default | **once** — `z.enum(…).catch("warning")` in `certificates.ts` |
+
+`formatMoney`-under-four-names (rule 15) with a consequence. And three of the
+six copies had **no `error` branch at all** — correct for their own critic
+today, and wrong the morning one of those critics grows an `error`, which is the
+whole argument for one definition rather than six that happen to agree.
+
+The decision had already been made correctly, once: `certificates.ts` has
+treated an unrecognised severity as `warning` since it shipped. Five renderers
+never found it.
+
+`src/lib/validations/severity.ts` is the one home now; `substitutions.ts` and
+`certificates.ts` re-export so their callers keep the name they know.
+
+### The colour and the word degrade in opposite directions
+
+A first draft made `severityLabel` fall back to *"Check this"* as well, and
+`tests/timetable/substitution-shapes.test.ts` — which has pinned this since the
+substitutions module shipped — refused it:
+
+> **The colour is a judgement; the word is a fact.** `severityTone` is
+> deliberately loud about a word it does not know, because the cost of being
+> wrong there is a row nobody reads. `severityLabel` is deliberately literal
+> about the same word, because the cost of being wrong *there* is somebody
+> believing the product classified something it did not.
+
+That is rule 15's own sentence — *the fallback is the value, not the key* — and
+an existing guard catching a new mistake is the suite doing its job.
+
+### A third copy, on the screen
+
+`/checks` drew its badge text with an inline ternary — `"Broken"` / `"Check
+this"` / `"Note"` — a **fourth** wording of the same three words, in English,
+on a page whose catalogue already had `severity.error/warning/info` in all three
+languages. It calls `severityLabel` now, so `/checks` gains Hindi and Urdu for
+those badges as a side effect of removing the copy.
+
+### Guards
+
+`tests/checks/one-word-per-severity.test.ts`, no database:
+
+- every critic's **latest** definition emits only `error`/`warning`/`info`, and
+  none of the near-misses (`warn`, `critical`, `fatal`, `notice`, `danger`,
+  `severe`) — anchored on those words rather than on "every quoted string",
+  because these bodies are full of quoted words that are not severities;
+- `severityTone`, `severityLabel`, `PROBLEM_SEVERITIES` and `SEVERITY_LABEL`
+  have exactly **one definition** each in `src/`. A re-export is allowed on
+  purpose: a module may keep the name its callers know while there is one body.
+
+Four plants, each caught, each green on revert: a critic back on `'warn'`, a
+critic inventing `'critical'`, a seventh `severityTone`, and the default going
+quiet again.
+
+### The cost
+
+Measured, whole build: `/checks` **107 kB before and after**; `/promotion`
+220 → **221 kB** and `/settings/school` 185 → **186 kB**, because those two
+modules had a two-line `severityTone` with no imports and now reach `./labels`
+through the shared one. Shared bundle 103 kB either way. **+1 kB on two routes,
+for one definition of what a severity means.**

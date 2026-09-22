@@ -108,9 +108,7 @@ export function originSentence(setting: {
     : `Set on ${when}`;
 }
 
-export function severityTone(severity: string): "warning" | "secondary" {
-  return severity === "warning" ? "warning" : "secondary";
-}
+export { severityTone } from "./severity";
 
 export const saveSettingSchema = z.object({
   key: z.string().min(1),

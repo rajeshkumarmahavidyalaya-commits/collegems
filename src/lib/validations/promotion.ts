@@ -217,9 +217,7 @@ export function needsTargetSection(decision: string) {
  */
 export type SessionProblem = { severity: string; message: string };
 
-export function severityTone(severity: string): "warning" | "secondary" {
-  return severity === "warning" ? "warning" : "secondary";
-}
+export { severityTone } from "./severity";
 
 /**
  * One thing a rollover cannot close, as `promotion_left_behind` said it.

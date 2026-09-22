@@ -8,6 +8,7 @@ import {
   attentionCount,
   checkStatusLabel,
   checkTone,
+  severityLabel,
   severityTone,
 } from "@/lib/validations/checks";
 import { listChecks } from "./actions";
@@ -98,12 +99,12 @@ export default async function ChecksPage() {
                         aria-hidden="true"
                       />
                       <span className="flex flex-wrap items-baseline gap-2">
+                        {/* The word and the colour come from the same place.
+                            This was a third comparison of the vocabulary — and
+                            the one that decides what a person *reads*, so a
+                            `warn` said "Note" beside a grey badge. */}
                         <Badge variant={severityTone(problem.severity)}>
-                          {problem.severity === "error"
-                            ? "Broken"
-                            : problem.severity === "warning"
-                              ? "Check this"
-                              : "Note"}
+                          {severityLabel(problem.severity, t)}
                         </Badge>
                         <span>{problem.message}</span>
                       </span>

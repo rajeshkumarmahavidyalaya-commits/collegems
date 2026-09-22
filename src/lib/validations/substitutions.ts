@@ -1,5 +1,4 @@
 import { z } from "zod";
-import { labelFor } from "./labels";
 import type { Translator } from "@/lib/i18n/translate";
 
 /**
@@ -35,31 +34,23 @@ export const clearCoverSchema = z.object({
   onDate: dateStringSchema,
 });
 
-export const PROBLEM_SEVERITIES = ["error", "warning", "info"] as const;
-export type ProblemSeverity = (typeof PROBLEM_SEVERITIES)[number];
+/**
+ * How bad a finding is lives in `./severity` — one definition, consulted by
+ * everything. This module had the list and one of the six `severityTone`
+ * copies; re-exported here so a caller that thinks of it as part of the
+ * substitutions vocabulary still finds it, and so there is still exactly one
+ * body.
+ */
+import {
+  PROBLEM_SEVERITIES,
+  SEVERITY_LABEL,
+  severityLabel,
+  severityTone,
+  type ProblemSeverity,
+} from "./severity";
 
-export const SEVERITY_LABEL: Record<ProblemSeverity, string> = {
-  error: "Needs fixing",
-  warning: "Check this",
-  info: "Note",
-};
-
-export function severityLabel(severity: string, t: Translator): string {
-  const fallback = SEVERITY_LABEL[severity as ProblemSeverity];
-  return fallback ? labelFor(`severity.${severity}`, fallback, t) : severity;
-}
-
-/** Never colour alone — `severityLabel` always sits beside this. */
-export function severityTone(severity: string): "destructive" | "warning" | "secondary" {
-  switch (severity) {
-    case "error":
-      return "destructive";
-    case "warning":
-      return "warning";
-    default:
-      return "secondary";
-  }
-}
+export { PROBLEM_SEVERITIES, SEVERITY_LABEL, severityLabel, severityTone };
+export type { ProblemSeverity };
 
 /** Worst first: a class with nobody in it outranks a note about a merge. */
 export function severityRank(severity: string): number {
