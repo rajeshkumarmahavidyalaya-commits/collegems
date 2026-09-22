@@ -10131,8 +10131,10 @@ export type Database = {
           note: string
           quantity: number
           reference: string
+          reversed: boolean
           running: number
           unit_cost: number
+          unit_price: number
         }[]
       }
       stock_on_hand: {
@@ -10149,6 +10151,7 @@ export type Database = {
           name: string
           on_hand: number
           reorder_level: number
+          sale_price: number
           sku: string
           unit: string
         }[]

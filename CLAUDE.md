@@ -1798,7 +1798,28 @@ Three things it taught, and the second is the one to carry:
   charge and leave the goods off the shelf, so it refuses a sale by name and
   sends it to `stock_sale_reverse` — which is `stock_record_movement` refusing
   `kind = 'sale'` in the other direction. Two functions each refusing the
-  other's job beats one that quietly does half. And `0026`'s note —
+  other's job beats one that quietly does half.
+
+  **And that paragraph named two doors when there are three.**
+  `stock_reverse_movement` — the one the item screen already drew a button for,
+  on *every* row — was left accepting a sale. Probed before the fix: stock
+  15.00 → 13.00 → **15.00**, owed 8.00 → 58.00 → **58.00**. The goods come back
+  and the family stays charged, silently, which is precisely the half-done
+  correction the sentence above describes.
+
+  > **A rule written into one function is not a rule.** Rule 12 asks *who else
+  > does this?* about a fix. A refusal has the sibling question: **what else
+  > reaches this row?** — and the answer is every function that can touch either
+  > half alone, not the ones you happened to be editing.
+
+  Migration `0265`, and `tests/inventory/a-correction-is-two-writes.test.ts` is
+  the executable half. **Two of its own assertions were wrong first, and both
+  reported a correct function**: `fees_reverse_entry` refuses on
+  `stock_movement_id is not null`, which is *stricter* than `entry_type =
+  'sale'`, and `stock_record_movement` names the **seller** because it refuses
+  an attempt to *create* a sale rather than undo one. One rule, three doors,
+  three spellings — *a guard that reports a correct file is a guard somebody
+  switches off.* And `0026`'s note —
   *"`fees_reverse_entry` copied `invoice_id` but knew nothing about book
   issues"* — **is what caught the same omission one column along**: a reversal
   dropping `stock_movement_id` is invisible to the store keeper's own SELECT
@@ -1818,6 +1839,13 @@ Three things it taught, and the second is the one to carry:
   > **Assert the number a person reads, not the rows you wrote.** Every
   > assertion about rows passed. Nothing was wrong, and the answer was
   > invisible.
+- **And the screen half found the same omission one column along.** `0261` added
+  `sold_to_student_id`, `unit_price` and `sale_price`, and **no reader was
+  taught to show any of them**: the item history said two exercise books left
+  the shelf and could not say to whom, because `stock_ledger` coalesced a staff
+  name, a note and a supplier and a sale matched none of the three. A new
+  column on a table is not one change either — *it is the write, the read, and
+  the screen.* `0265`.
 - **And `allowed_values` was reading a different constraint's list.** `0222`
   added it so a sentence could consult the CHECK instead of carrying a second
   copy; asked for `stock_movements.kind` it answered **2 of 6**, because it

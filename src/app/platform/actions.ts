@@ -37,6 +37,24 @@ export type College = {
   lastActivity: string | null;
 };
 
+/**
+ * The routing question, deliberately **not** logged.
+ *
+ * `platform_am_i_an_operator()` is the one operator function that writes no
+ * `platform.access_log` row: an access log padded with routing is one nobody
+ * reads. It answers a boolean about the caller themselves, which is why it can
+ * be asked without being recorded.
+ */
+export async function amIAnOperator(): Promise<boolean> {
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("platform_am_i_an_operator");
+  // A failure here is a routing question that could not be answered, and the
+  // conservative answer is "no": it sends the person to the ordinary screen
+  // rather than to a console that would refuse them.
+  if (error) return false;
+  return data === true;
+}
+
 /** Null when the caller is not an operator — the page renders a refusal, not an empty list. */
 export async function listColleges(): Promise<College[] | null> {
   const supabase = await createClient();

@@ -283,6 +283,120 @@ TOO MANY  There are 13 box of Chalk (white) on hand and you are selling 99999
 The teacher login was created for the probe, because this college has none —
 *the roles a reason forgets are the roles nobody signs into.*
 
-**Not built yet: the counter screen.** The write path is correct and nothing in
-the application can call it, which is rule 6's own sentence. That is the next
-commit.
+## The counter
+
+Migration `0265` and the screens. The write path had been correct and uncallable
+— rule 6's own sentence — and building the caller found the defect the caller
+would have triggered.
+
+### The refusal that was written into one function
+
+`0263` wrote the rule down and guarded the *other* module with it: a correction
+to a sale is two writes, so `fees_reverse_entry` refuses one by name and sends
+it to `stock_sale_reverse`. It named two doors and there are three.
+`stock_reverse_movement` is the one the item screen **already drew a button
+for, on every row**, and it was left accepting a sale. Probed as an
+administrator in a rolled-back transaction, before the fix:
+
+```
+stock  15.00 -> 13.00 (sold 2) -> 15.00  after stock_reverse_movement
+owed    8.00 -> 58.00 (charged) -> 58.00  after stock_reverse_movement
+```
+
+The goods come back and **the family stays charged**. Nothing raises, nothing
+disagrees out loud, and the shelf and the fee account have quietly parted
+company.
+
+> **A rule written into one function is not a rule.** Rule 12 asks *who else
+> does this?* about a fix. A refusal has the sibling question: **what else
+> reaches this row?**
+
+After `0265`, probed the same way: the wrong door answers *"That is a sale, so
+reversing it has to return the goods and cancel the charge together"*, and the
+right one takes stock 13 → 15 **and** owed 58.00 → 8.00.
+
+`tests/inventory/a-correction-is-two-writes.test.ts` is the executable half and
+runs without a database. Five plants, each caught and each green on revert.
+**Two of its own assertions were wrong before any of them**, and both reported a
+correct function:
+
+- `fees_reverse_entry` refuses on `stock_movement_id is not null`, which is
+  **stricter** than `entry_type = 'sale'` — it catches any charge tied to stock
+  whatever its type. The guard demanded the narrower spelling.
+- `stock_record_movement` names `stock_sell_to_student`, because it refuses an
+  attempt to **create** a sale rather than to undo one. The guard demanded the
+  un-seller.
+
+*A guard that reports a correct file is a guard somebody switches off.* Read
+which of the two you have before changing anything.
+
+### Three columns nobody could see
+
+The same omission one column along: `0261` added `sold_to_student_id`,
+`unit_price` and `sale_price`, and no reader was taught to show any of them. The
+item history said two exercise books left the shelf and **could not say to
+whom** — `stock_ledger` coalesced a staff name, a note and a supplier, and a
+sale matched none of the three. `stock_on_hand` had no `sale_price`, so no
+screen could tell *not for sale* from *free*.
+
+Both are `drop` + `create`, because the return type changes; checked first that
+the three read models are called from this module's own `actions.ts` and one
+test file and from no other function, report or check. And a name is built with
+`coalesce`, not `a || ' ' || b`, which is null for anybody with no surname —
+true of people on this roll, and the reason a staff issue could already show a
+blank where a name belongs.
+
+### The screens
+
+- **`/inventory`** — a *Sells for* column, a *Sell* button, and a dialog that
+  charges the child's fee account. The button is drawn only when the counter
+  could actually serve somebody: a price, still stocked, some on the shelf.
+  *Not for sale*, *out of stock* and *no longer stocked* are three different
+  reasons and each is already on the row, so a button that would refuse you is
+  never drawn — this codebase's third instance of that defect in a week.
+- **The item form** gains *Sells for*, empty by default. Empty means **not for
+  sale**, and the help text says so: writing 0 would say the school gives it
+  away.
+- **`/inventory/[itemId]`** gains a *Sold at* column beside *Unit cost* — two
+  facts, two columns, so "what was our margin" stays answerable — the buyer's
+  name, an *Undone* badge, and an undo that routes a sale to `reverseSale` and
+  everything else to `reverseMovement`.
+
+The child is chosen with the shared `<StudentPicker>` (`0259`), which takes this
+module's own server action as a prop: the choreography is shared, the
+authorization is not. A child who has left is **listed** with their status
+rather than filtered out — `stock_sell_to_student` refuses them by name, and a
+picker that silently omitted them would leave the clerk searching for somebody
+who is there. The refusal explains; an empty list does not.
+
+Both toasts say **both halves**. *"Sold 2 box to Vihaan Singh · ₹50.00 added to
+their fee account"*, and on the undo *"₹50.00 came off the fee account"* —
+because saying only *Sold* is how a store comes to believe nobody was charged.
+
+### Who may
+
+Gated on `inventory.manage`, deliberately rather than on a new
+`inventory.sell`: the two INSERT policies compare three role codes, and those
+are **exactly** today's `inventory.manage` holders, so a separate permission
+would be a control the boundary cannot honour — granting it to a teacher would
+still end in a refusal from Postgres. The catalogue description was the thing
+that went stale, and `0265` updates it: *a catalogue description is a decision
+somebody already made*, which cuts both ways.
+
+Probed as all six seats, one item, one child:
+
+| seat | outcome |
+|---|---|
+| admin | sold, ₹25.00 |
+| accountant | sold, ₹25.00 |
+| librarian | sold, ₹25.00 |
+| teacher | *Your role does not sell from the store* |
+| parent | *Your role does not sell from the store* |
+| student | *Your role does not sell from the store* |
+
+### The cost
+
+Measured, before and after, whole build: `/inventory` **238 → 247 kB** — the
+Radix Popover behind the picker, now shared with three other routes, plus the
+dialog. `/inventory/[itemId]` **195 → 195 kB**: the undo branch is free.
+`First Load JS shared by all` is 103 kB either way.

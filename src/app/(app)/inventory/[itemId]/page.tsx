@@ -15,10 +15,14 @@ export const metadata = { title: "Item" };
 export default async function ItemPage({ params }: { params: Promise<{ itemId: string }> }) {
   const locale = await getLocale();
   const { itemId } = await params;
-  const [stock, ledger, canAdjust] = await Promise.all([
+  const [stock, ledger, canAdjust, canSell] = await Promise.all([
     listStock(),
     getItemLedger(itemId),
     hasPermission("inventory.adjust"),
+    // Selling is gated on `inventory.manage`, which is what the two sale
+    // policies compare against (`0265`). The gate here only draws the button;
+    // the policies are the boundary.
+    hasPermission("inventory.manage"),
   ]);
 
   const item = stock.find((s) => s.itemId === itemId);
@@ -48,6 +52,12 @@ export default async function ItemPage({ params }: { params: Promise<{ itemId: s
                 ? "No cost recorded"
                 : `${formatCurrency(item.averageCost, locale)} each · ${formatCurrency(value, locale)} on the shelf`}
             </span>
+            <span>
+              {/* Not for sale and free are different facts, so this says which. */}
+              {item.salePrice === null
+                ? "Not for sale"
+                : `Sells for ${formatCurrency(item.salePrice, locale)}`}
+            </span>
           </p>
         </div>
         <Button asChild variant="outline">
@@ -58,7 +68,7 @@ export default async function ItemPage({ params }: { params: Promise<{ itemId: s
         </Button>
       </div>
 
-      <ItemLedger rows={ledger} unit={item.unit} canAdjust={canAdjust} />
+      <ItemLedger rows={ledger} unit={item.unit} canAdjust={canAdjust} canSell={canSell} />
     </div>
   );
 }

@@ -291,8 +291,15 @@ carrying a source id, a partial unique index for idempotency, the charge booked
 when the amount is final). Two things found on the way — `allowed_values`
 answering **2 of 6** because it matched a different constraint, and a sale whose
 charge was filed into the year the *date* falls in rather than the year the
-school bills, so stock moved and **the balance did not**. See
-[inventory.md](./modules/inventory.md).
+school bills, so stock moved and **the balance did not**.
+
+`0265` is the counter screen, and building the caller found the defect the
+caller would have triggered: `0263` wrote *"a correction is two writes too"* and
+guarded two of the three doors, leaving `stock_reverse_movement` — the one the
+item screen already drew a button for, on every row — putting the goods back and
+leaving the family charged. **A rule written into one function is not a rule.**
+Plus three columns `0261` added that no reader had been taught to show, so a
+sale could not name its buyer. See [inventory.md](./modules/inventory.md).
 
 **Still open, measured as zero occurrences in `src/` and the migrations:**
 

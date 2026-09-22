@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { AlertTriangle, Boxes, HandCoins, Loader2, Pencil, Plus } from "lucide-react";
+import { AlertTriangle, Boxes, HandCoins, Loader2, Pencil, Plus, ShoppingCart } from "lucide-react";
 import { toast } from "sonner";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
@@ -33,12 +33,15 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ErrorSummary } from "@/components/forms/error-summary";
 import { SelectField, TextField, TextareaField } from "@/components/forms/form-fields";
-import { formatQuantity, itemSchema, kindTakesCost, MOVEMENT_KINDS, movementDirection, movementKindOptions, movementSchema, quantityWithUnit, stockSentence, stockTone, type ItemInput, type MovementInput } from "@/lib/validations/inventory";
+import { formatQuantity, isSellable, itemSchema, kindTakesCost, MOVEMENT_KINDS, movementDirection, movementKindOptions, movementSchema, quantityWithUnit, saleSchema, saleTotal, stockSentence, stockTone, type ItemInput, type MovementInput, type SaleInput } from "@/lib/validations/inventory";
+import { StudentPicker, type PickedStudent } from "@/components/people/student-picker";
 import { useI18n } from "@/components/providers/i18n-provider";
 import {
   addCategory,
   recordMovement,
   saveItem,
+  searchStudentsForStore,
+  sellToStudent,
   type AssetOutRow,
   type StockRow,
 } from "./actions";
@@ -63,6 +66,7 @@ export function InventoryView({
   const [itemOpen, setItemOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<StockRow | null>(null);
   const [movementFor, setMovementFor] = useState<StockRow | null>(null);
+  const [sellingItem, setSellingItem] = useState<StockRow | null>(null);
 
   return (
     <div className="flex flex-col gap-4">
@@ -99,6 +103,7 @@ export function InventoryView({
               setItemOpen(true);
             }}
             onMove={setMovementFor}
+            onSell={setSellingItem}
           />
         </TabsContent>
 
@@ -119,6 +124,7 @@ export function InventoryView({
         staff={staff}
         canAdjust={canAdjust}
       />
+      <SellDialog item={sellingItem} onClose={() => setSellingItem(null)} />
     </div>
   );
 }
@@ -130,6 +136,7 @@ function StockTab({
   onAdd,
   onEdit,
   onMove,
+  onSell,
 }: {
   stock: StockRow[];
   canManage: boolean;
@@ -137,6 +144,7 @@ function StockTab({
   onAdd: () => void;
   onEdit: (item: StockRow) => void;
   onMove: (item: StockRow) => void;
+  onSell: (item: StockRow) => void;
 }) {
   const { formatCurrency } = useI18n();
   return (
@@ -179,6 +187,7 @@ function StockTab({
                   <TableHead>Category</TableHead>
                   <TableHead>On hand</TableHead>
                   <TableHead className="text-end">Unit cost</TableHead>
+                  <TableHead className="text-end">Sells for</TableHead>
                   <TableHead>Last moved</TableHead>
                   <TableHead className="w-24 text-end">Actions</TableHead>
                 </TableRow>
@@ -226,10 +235,35 @@ function StockTab({
                       <TableCell className="text-end font-mono tabular-nums text-muted-foreground">
                         {item.averageCost === null ? "—" : formatCurrency(item.averageCost)}
                       </TableCell>
+                      <TableCell className="text-end font-mono tabular-nums">
+                        {/* Null is "not for sale", and a dash says that. A zero
+                            here would say the school gives it away. */}
+                        {item.salePrice === null ? (
+                          <span className="text-muted-foreground">—</span>
+                        ) : (
+                          formatCurrency(item.salePrice)
+                        )}
+                      </TableCell>
                       <TableCell className="font-mono tabular-nums text-muted-foreground">
                         {item.lastMovement ?? "—"}
                       </TableCell>
                       <TableCell className="text-end">
+                        {/* Drawn only when the counter could actually serve
+                            somebody. A button that will refuse you costs the
+                            person the work of trying — and "not for sale",
+                            "out of stock" and "no longer stocked" are three
+                            different reasons, each already on the row. */}
+                        {canManage && isSellable(item.salePrice, item.isActive, item.onHand) && (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="cursor-pointer"
+                            onClick={() => onSell(item)}
+                          >
+                            <ShoppingCart className="size-4" aria-hidden="true" />
+                            <span className="sr-only">Sell {item.name} to a student</span>
+                          </Button>
+                        )}
                         {(canManage || canAdjust) && (
                           <Button
                             variant="ghost"
@@ -480,6 +514,179 @@ function MovementDialog({
   );
 }
 
+/**
+ * The counter.
+ *
+ * One act, two writes: stock leaves the shelf and the amount lands on the
+ * child's fee account, where it is collected with the tuition on one receipt.
+ * Both happen inside `stock_sell_to_student`, because supabase-js cannot open
+ * a transaction and a sale that wrote one of the two would leave a shelf short
+ * with nobody billed.
+ *
+ * The price shown is the item's own. Overriding it is possible and deliberate
+ * — a damaged copy sold cheap is a real thing a counter does — and the server
+ * re-reads the item either way, so nothing here decides what a school charges.
+ */
+function SellDialog({ item, onClose }: { item: StockRow | null; onClose: () => void }) {
+  const router = useRouter();
+  const { formatCurrency } = useI18n();
+  const [pending, startTransition] = useTransition();
+  const [student, setStudent] = useState<PickedStudent | null>(null);
+  const [studentError, setStudentError] = useState<string | null>(null);
+
+  const form = useForm<SaleInput>({
+    resolver: zodResolver(saleSchema),
+    values: {
+      itemId: item?.itemId ?? "",
+      studentId: student?.id ?? "",
+      quantity: 1,
+      unitPrice: item?.salePrice ?? undefined,
+      note: "",
+      happenedOn: "",
+    },
+  });
+
+  const quantity = form.watch("quantity");
+  const unitPrice = form.watch("unitPrice");
+  const total = saleTotal(quantity, unitPrice ?? item?.salePrice);
+
+  function close() {
+    setStudent(null);
+    setStudentError(null);
+    form.reset();
+    onClose();
+  }
+
+  function onSubmit(values: SaleInput) {
+    startTransition(async () => {
+      const result = await sellToStudent(values);
+      if (!result.ok) {
+        // Every refusal here is a sentence written in Postgres — no price, not
+        // enough on the shelf, the child has left, your role does not sell.
+        toast.error(result.error);
+        return;
+      }
+      // Both halves, on one line. Saying only "Sold" is how a store comes to
+      // believe nobody was charged.
+      toast.success(
+        `Sold ${formatQuantity(result.data.quantity)} ${item?.unit ?? ""} to ${result.data.student} · ${formatCurrency(result.data.total)} added to their fee account.`,
+      );
+      close();
+      router.refresh();
+    });
+  }
+
+  return (
+    <Dialog open={item !== null} onOpenChange={(open) => !open && close()}>
+      <DialogContent className="max-h-[90svh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>Sell {item?.name}</DialogTitle>
+          <DialogDescription>
+            {item && stockSentence(item.onHand, item.reorderLevel, item.unit)}. The amount is
+            charged to the child&apos;s fee account and collected at the counter with everything
+            else — it is not money taken now.
+          </DialogDescription>
+        </DialogHeader>
+
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col gap-4" noValidate>
+            <ErrorSummary errors={form.formState.errors} submitCount={form.formState.submitCount} />
+
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="sale-student">
+                Student
+                <span aria-hidden="true" className="text-destructive">
+                  {" "}
+                  *
+                </span>
+              </Label>
+              <StudentPicker
+                id="sale-student"
+                selected={student}
+                onSelect={(picked) => {
+                  setStudent(picked);
+                  setStudentError(null);
+                  form.setValue("studentId", picked.id, { shouldValidate: true });
+                }}
+                search={searchStudentsForStore}
+              />
+              <p aria-live="polite" className="min-h-5 text-sm">
+                {studentError ? (
+                  <span role="alert" className="font-medium text-destructive">
+                    {studentError}
+                  </span>
+                ) : student && student.status !== "active" ? (
+                  // The picker lists them and the server refuses them; saying
+                  // so here saves the clerk a round trip.
+                  <span className="text-muted-foreground">
+                    {student.name} has left the college, so nothing can be sold to them.
+                  </span>
+                ) : null}
+              </p>
+            </div>
+
+            <div className="grid gap-4 sm:grid-cols-2">
+              <NumberBox
+                id="sale-quantity"
+                label="How many"
+                required
+                value={quantity}
+                error={form.formState.errors.quantity?.message}
+                onChange={(n) => form.setValue("quantity", n, { shouldValidate: true })}
+              />
+              <NumberBox
+                id="sale-price"
+                label="Price each"
+                step="0.01"
+                value={unitPrice ?? NaN}
+                error={form.formState.errors.unitPrice?.message}
+                onChange={(n) =>
+                  form.setValue("unitPrice", Number.isNaN(n) ? undefined : n, {
+                    shouldValidate: true,
+                  })
+                }
+              />
+            </div>
+
+            <div
+              className="flex items-baseline justify-between rounded-md border p-3"
+              aria-live="polite"
+            >
+              <span className="text-sm text-muted-foreground">To be added to the fee account</span>
+              <span className="font-mono text-lg font-semibold tabular-nums">
+                {total === null ? "—" : formatCurrency(total)}
+              </span>
+            </div>
+
+            <div className="grid gap-4 sm:grid-cols-2">
+              <TextField control={form.control} name="happenedOn" label="Date" />
+            </div>
+
+            <TextareaField control={form.control} name="note" label="Note" rows={2} />
+
+            <DialogFooter>
+              <Button type="button" variant="outline" className="cursor-pointer" onClick={close}>
+                Cancel
+              </Button>
+              <Button
+                type="submit"
+                disabled={pending}
+                className="cursor-pointer"
+                onClick={() => {
+                  if (!student) setStudentError("Choose a student.");
+                }}
+              >
+                {pending && <Loader2 className="size-4 animate-spin" aria-hidden="true" />}
+                Sell
+              </Button>
+            </DialogFooter>
+          </form>
+        </Form>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 function ItemDialog({
   open,
   onOpenChange,
@@ -503,6 +710,7 @@ function ItemDialog({
       categoryId: "",
       unit: item?.unit ?? "each",
       reorderLevel: item?.reorderLevel ?? 0,
+      salePrice: item?.salePrice ?? undefined,
       isAsset: item?.isAsset ?? false,
       isActive: item?.isActive ?? true,
       notes: "",
@@ -592,14 +800,33 @@ function ItemDialog({
               </Button>
             </div>
 
-            <NumberBox
-              id="item-reorder"
-              label="Reorder level"
-              required
-              value={form.watch("reorderLevel")}
-              error={form.formState.errors.reorderLevel?.message}
-              onChange={(n) => form.setValue("reorderLevel", n, { shouldValidate: true })}
-            />
+            <div className="grid gap-4 sm:grid-cols-2">
+              <NumberBox
+                id="item-reorder"
+                label="Reorder level"
+                required
+                value={form.watch("reorderLevel")}
+                error={form.formState.errors.reorderLevel?.message}
+                onChange={(n) => form.setValue("reorderLevel", n, { shouldValidate: true })}
+              />
+              <NumberBox
+                id="item-sale-price"
+                label="Sells for"
+                step="0.01"
+                value={form.watch("salePrice") ?? NaN}
+                error={form.formState.errors.salePrice?.message}
+                onChange={(n) =>
+                  form.setValue("salePrice", Number.isNaN(n) ? undefined : n, {
+                    shouldValidate: true,
+                  })
+                }
+              />
+            </div>
+            <p className="-mt-2 text-xs text-muted-foreground">
+              Leave <em>Sells for</em> empty and the item is not for sale — which is not the same
+              as free. Chalk and a projector are the school&apos;s; an exercise book is sold to a
+              child and charged to their fee account.
+            </p>
 
             <div className="flex items-center justify-between rounded-md border p-3">
               <div>

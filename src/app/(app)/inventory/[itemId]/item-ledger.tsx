@@ -26,7 +26,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { formatQuantity, movementLabel, quantityWithUnit } from "@/lib/validations/inventory";
-import { reverseMovement, type LedgerRow } from "../actions";
+import { reverseMovement, reverseSale, type LedgerRow } from "../actions";
 import { useI18n } from "@/components/providers/i18n-provider";
 
 /**
@@ -38,13 +38,33 @@ export function ItemLedger({
   rows,
   unit,
   canAdjust,
+  canSell,
 }: {
   rows: LedgerRow[];
   unit: string;
   canAdjust: boolean;
+  /** `inventory.manage`, which is what the two sale policies compare against. */
+  canSell: boolean;
 }) {
   const { formatCurrency, t } = useI18n();
   const [reversing, setReversing] = useState<LedgerRow | null>(null);
+
+  /**
+   * Which button a row gets, and it is **not** one button with a branch inside
+   * it.
+   *
+   * A sale is two writes — stock out and money owed — so undoing it is two
+   * writes, and `stock_reverse_movement` refuses one by name (`0265`) after a
+   * probe showed it putting the goods back while the family stayed charged.
+   * A row already undone gets nothing: a control that will refuse you costs
+   * the person the work of trying.
+   */
+  function undoFor(row: LedgerRow): "sale" | "movement" | null {
+    if (row.kind === "sale") return canSell && !row.reversed ? "sale" : null;
+    return canAdjust ? "movement" : null;
+  }
+
+  const anyUndo = rows.some((row) => undoFor(row) !== null);
 
   return (
     <>
@@ -79,8 +99,9 @@ export function ItemLedger({
                     <TableHead className="text-end">Quantity</TableHead>
                     <TableHead className="text-end">Balance</TableHead>
                     <TableHead className="text-end">Unit cost</TableHead>
+                    <TableHead className="text-end">Sold at</TableHead>
                     <TableHead>Who / reference</TableHead>
-                    {canAdjust && <TableHead className="w-16 text-end">Reverse</TableHead>}
+                    {anyUndo && <TableHead className="w-16 text-end">Undo</TableHead>}
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -105,24 +126,40 @@ export function ItemLedger({
                       <TableCell className="text-end font-mono tabular-nums text-muted-foreground">
                         {row.unitCost === null ? "—" : formatCurrency(row.unitCost)}
                       </TableCell>
+                      <TableCell className="text-end font-mono tabular-nums text-muted-foreground">
+                        {/* What the family was charged, beside what the school
+                            paid. Two facts, two columns. */}
+                        {row.unitPrice === null ? "—" : formatCurrency(row.unitPrice)}
+                      </TableCell>
                       <TableCell className="text-muted-foreground">
                         {row.counterparty ?? "—"}
+                        {row.reversed && (
+                          <Badge variant="outline" className="ms-2">
+                            Undone
+                          </Badge>
+                        )}
                         {row.reference && (
                           <span className="block font-mono text-xs">{row.reference}</span>
                         )}
                         {row.note && <span className="block text-xs">{row.note}</span>}
                       </TableCell>
-                      {canAdjust && (
+                      {anyUndo && (
                         <TableCell className="text-end">
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="cursor-pointer"
-                            onClick={() => setReversing(row)}
-                          >
-                            <RotateCcw className="size-4" aria-hidden="true" />
-                            <span className="sr-only">Reverse this movement</span>
-                          </Button>
+                          {undoFor(row) !== null && (
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="cursor-pointer"
+                              onClick={() => setReversing(row)}
+                            >
+                              <RotateCcw className="size-4" aria-hidden="true" />
+                              <span className="sr-only">
+                                {row.kind === "sale"
+                                  ? "Undo this sale and cancel the charge"
+                                  : "Reverse this movement"}
+                              </span>
+                            </Button>
+                          )}
                         </TableCell>
                       )}
                     </TableRow>
@@ -139,6 +176,16 @@ export function ItemLedger({
   );
 }
 
+/**
+ * One dialog, two acts — because they are two acts, and the difference is what
+ * the person needs to be told before confirming.
+ *
+ * Reversing an ordinary movement writes one opposing movement. Undoing a
+ * **sale** writes two: the goods return to the shelf *and* the charge comes
+ * off the family's fee account. Sending a sale through the first one put the
+ * stock back and left the family charged — measured, and the reason
+ * `stock_reverse_movement` now refuses a sale by name.
+ */
 function ReverseDialog({
   row,
   onClose,
@@ -149,24 +196,33 @@ function ReverseDialog({
   unit: string;
 }) {
   const router = useRouter();
-  const { t } = useI18n();
+  const { formatCurrency, t } = useI18n();
   const [pending, startTransition] = useTransition();
   const [reason, setReason] = useState("");
   const [error, setError] = useState<string | null>(null);
 
+  const isSale = row?.kind === "sale";
+
   function submit() {
     if (reason.trim() === "") {
-      setError("Say why it is being reversed.");
+      setError(isSale ? "Say why this sale is being undone." : "Say why it is being reversed.");
       return;
     }
     setError(null);
     startTransition(async () => {
-      const result = await reverseMovement({ movementId: row!.id, reason });
+      const result = isSale
+        ? await reverseSale({ movementId: row!.id, reason })
+        : await reverseMovement({ movementId: row!.id, reason });
       if (!result.ok) {
         setError(result.error);
         return;
       }
-      toast.success("Reversed.");
+      // Both halves, on one line, exactly as the sale said both.
+      toast.success(
+        result.data && "amount" in result.data
+          ? `Undone. ${formatCurrency(result.data.amount)} came off the fee account.`
+          : "Reversed.",
+      );
       setReason("");
       onClose();
       router.refresh();
@@ -177,13 +233,16 @@ function ReverseDialog({
     <Dialog open={row !== null} onOpenChange={(open) => !open && onClose()}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Reverse this movement</DialogTitle>
+          <DialogTitle>{isSale ? "Undo this sale" : "Reverse this movement"}</DialogTitle>
           <DialogDescription>
             {row && (
               <>
                 {movementLabel(row.kind, t)} of {quantityWithUnit(Math.abs(row.quantity), unit)} on{" "}
-                {row.happenedOn}. This writes an opposing movement — the original stays, because the
-                point of a store ledger is that it records what happened.
+                {row.happenedOn}
+                {isSale && row.counterparty ? `, to ${row.counterparty}` : ""}.{" "}
+                {isSale
+                  ? "The goods come back to the shelf and the charge comes off the fee account — both, in one transaction. The original stays."
+                  : "This writes an opposing movement — the original stays, because the point of a store ledger is that it records what happened."}
               </>
             )}
           </DialogDescription>
@@ -202,7 +261,7 @@ function ReverseDialog({
             value={reason}
             onChange={(event) => setReason(event.target.value)}
             aria-invalid={error ? true : undefined}
-            placeholder="Entered against the wrong item"
+            placeholder={isSale ? "The child returned it unused" : "Entered against the wrong item"}
           />
           <p aria-live="assertive" className="min-h-5">
             {error && (
@@ -219,7 +278,7 @@ function ReverseDialog({
           </Button>
           <Button type="button" disabled={pending} onClick={submit} className="cursor-pointer">
             {pending && <Loader2 className="size-4 animate-spin" aria-hidden="true" />}
-            Reverse
+            {isSale ? "Undo sale" : "Reverse"}
           </Button>
         </DialogFooter>
       </DialogContent>
