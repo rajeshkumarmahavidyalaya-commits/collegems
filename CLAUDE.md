@@ -1021,6 +1021,20 @@ Four things:
 
 See `docs/modules/permissions.md`.
 
+**…and a college founded today had never been given any of it.** Every
+permission added after `0209` was granted by reading the matrix, which reaches
+every college that already exists and no college founded tomorrow:
+`platform_start_school` seeded new colleges from four literal lists written in
+`0209`. Measured: a new college's teacher lacked 12 permissions of the demo
+college's 23, its accountant 18 of 22, and its families could not read the
+notice board or apply for leave. The administrator gets every row, so the one
+seat anybody signs into worked. `0269` makes the default matrix data
+(`reference.role_permission_defaults`). `tests/auth/default-matrix.test.ts`
+fails when a permission is declared without saying who gets it in a new
+college, either a default row or `ADMINISTRATOR_ALONE` with a reason. **A
+default written as a literal list inside a function is a default nobody
+updates.**
+
 #### …and the sweep run the other way finds the screen that asked for nothing
 
 The two checks above ask whether a permission is used and whether it is used for

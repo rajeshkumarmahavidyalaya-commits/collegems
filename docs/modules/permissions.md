@@ -251,3 +251,57 @@ reads plausibly. The catalogue row said otherwise, in as many words:
 > When the code and the catalogue disagree about what a permission means, the
 > catalogue is usually the older decision and a coherent one. Read it before
 > inventing a better split.
+
+---
+
+## A college founded today starts from a catalogue, not from 0209 (migration 0269)
+
+Found while adding a permission for live classes, by asking what a new
+permission has to answer: **who gets it in a college that does not exist
+yet?** Every permission added after `0209` was granted by reading the matrix
+(`0213`'s rule), which reaches every college that already exists. A college
+founded tomorrow was seeded by `platform_start_school` from **four literal
+lists written in 0209**, which nothing had touched since.
+
+Measured against the demo college, whose non-administrator matrix was written by
+migrations alone (5 audited hand edits, all test fixtures netting to zero, plus
+one probe reverted):
+
+| role | demo college | founded before 0269 | missing |
+|---|---|---|---|
+| teacher | 23 | 11 | 12, including `notices.view`, `leave.decide`, `exams.remark`, `syllabus.track` |
+| accountant | 22 | 4 | 18: accounts, payroll, concessions, the store, the front office |
+| librarian | 9 | 6 | 3 |
+| student / parent | 10 / 10 | 5 / 5 | `notices.view`, `leave.apply`, `leave.view`, `transport.view`, `hostel.view` |
+
+So the first real customer's families could not have read the notice board or
+applied for leave, and its class teachers could not have decided that leave.
+**The administrator gets every row whenever it was added**, which is why nobody
+saw it: the only seat anybody signs into is the one that works.
+
+`reference.role_permission_defaults` is the default matrix as data, the fifth
+catalogue beside permissions, reports, checks and plans. It is seeded row for
+row from the demo college, and `platform_start_school` reads it. The rest of
+that function is unchanged. Probed by founding a college through the real
+function in a rolled-back transaction: **all six roles match the demo college
+with zero differences** (23 / 22 / 9 / 10 / 10 / 69), and the five schema
+guards read 0.
+
+`tests/auth/default-matrix.test.ts` makes the question impossible to skip.
+Every permission a migration declares is either granted by default to some
+non-administrator role, or named in `ADMINISTRATOR_ALONE` with its reason.
+Those reasons are three: the college's own configuration, a decision about
+other people's records, or the office's side of a module. The list is read in
+both directions, and the founding function may carry no literal list of its
+own. Two plants were caught: an undecided permission and `0209`'s
+`p.code in ('...')` shape.
+
+**No existing college changes.** This affects only what a new one starts with,
+and a college still edits its own matrix at `/settings/permissions` from day
+one.
+
+Seen and not changed: `platform_start_school` defaults a new college's first
+year to **1 January**, while `academic_year_start_month` defaults to April.
+The signup form passes its own dates, so this is the fallback only, but it
+disagrees with the setting beside it.
+
