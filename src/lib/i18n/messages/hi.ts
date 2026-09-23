@@ -36,6 +36,7 @@ export const hi: Messages = {
   "nav.homework": "गृहकार्य",
   "nav.liveClasses": "लाइव कक्षाएँ",
   "nav.scanCard": "कार्ड स्कैन करें",
+  "nav.biometric": "उपस्थिति रीडर",
   "nav.fees": "शुल्क",
   "nav.familyFees": "शुल्क",
   "nav.accounts": "लेखा",

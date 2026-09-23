@@ -36,6 +36,7 @@ export const ur: Messages = {
   "nav.homework": "گھر کا کام",
   "nav.liveClasses": "براہِ راست کلاسیں",
   "nav.scanCard": "کارڈ اسکین کریں",
+  "nav.biometric": "حاضری ریڈر",
   "nav.fees": "فیس",
   "nav.familyFees": "فیس",
   "nav.accounts": "حسابات",

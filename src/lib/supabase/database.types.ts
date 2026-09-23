@@ -226,6 +226,99 @@ export type Database = {
           },
         ]
       }
+      biometric_devices: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          is_active: boolean
+          name: string
+          secret_hash: string
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_active?: boolean
+          name: string
+          secret_hash: string
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_active?: boolean
+          name?: string
+          secret_hash?: string
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "biometric_devices_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      biometric_punches: {
+        Row: {
+          device_id: string
+          device_user_code: string
+          id: string
+          punched_at: string
+          received_at: string
+          staff_id: string | null
+          tenant_id: string
+        }
+        Insert: {
+          device_id: string
+          device_user_code: string
+          id?: string
+          punched_at: string
+          received_at?: string
+          staff_id?: string | null
+          tenant_id: string
+        }
+        Update: {
+          device_id?: string
+          device_user_code?: string
+          id?: string
+          punched_at?: string
+          received_at?: string
+          staff_id?: string | null
+          tenant_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "biometric_punches_device_fkey"
+            columns: ["tenant_id", "device_id"]
+            isOneToOne: false
+            referencedRelation: "biometric_devices"
+            referencedColumns: ["tenant_id", "id"]
+          },
+          {
+            foreignKeyName: "biometric_punches_staff_fkey"
+            columns: ["tenant_id", "staff_id"]
+            isOneToOne: false
+            referencedRelation: "staff"
+            referencedColumns: ["tenant_id", "id"]
+          },
+          {
+            foreignKeyName: "biometric_punches_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       book_categories: {
         Row: {
           created_at: string
@@ -5524,6 +5617,7 @@ export type Database = {
       }
       staff: {
         Row: {
+          biometric_code: string | null
           created_at: string
           date_of_joining: string
           date_of_leaving: string | null
@@ -5538,6 +5632,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          biometric_code?: string | null
           created_at?: string
           date_of_joining?: string
           date_of_leaving?: string | null
@@ -5552,6 +5647,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          biometric_code?: string | null
           created_at?: string
           date_of_joining?: string
           date_of_leaving?: string | null
@@ -5593,6 +5689,7 @@ export type Database = {
           marked_by: string | null
           note: string | null
           session_id: string
+          source: string
           staff_id: string
           status: string
           tenant_id: string
@@ -5608,6 +5705,7 @@ export type Database = {
           marked_by?: string | null
           note?: string | null
           session_id: string
+          source?: string
           staff_id: string
           status: string
           tenant_id: string
@@ -5623,6 +5721,7 @@ export type Database = {
           marked_by?: string | null
           note?: string | null
           session_id?: string
+          source?: string
           staff_id?: string
           status?: string
           tenant_id?: string
@@ -7569,6 +7668,20 @@ export type Database = {
           english_name: string
           is_default: boolean
           native_name: string
+        }[]
+      }
+      biometric_device_register: { Args: { p_name: string }; Returns: Json }
+      biometric_device_retire: { Args: { p_id: string }; Returns: undefined }
+      biometric_ingest: {
+        Args: { p_device_id: string; p_punches: Json; p_secret: string }
+        Returns: Json
+      }
+      biometric_problems: {
+        Args: never
+        Returns: {
+          detail: string
+          kind: string
+          subject: string
         }[]
       }
       certificate_cancel: {
@@ -10163,6 +10276,7 @@ export type Database = {
           p_person_id?: string
         }
         Returns: {
+          biometric_code: string | null
           created_at: string
           date_of_joining: string
           date_of_leaving: string | null
@@ -10237,6 +10351,10 @@ export type Database = {
           total_count: number
         }[]
       }
+      staff_set_biometric_code: {
+        Args: { p_code: string; p_staff_id: string }
+        Returns: undefined
+      }
       staff_teaches: {
         Args: { p_section_id: string; p_subject_id: string }
         Returns: boolean
@@ -10251,6 +10369,7 @@ export type Database = {
           p_staff_id: string
         }
         Returns: {
+          biometric_code: string | null
           created_at: string
           date_of_joining: string
           date_of_leaving: string | null

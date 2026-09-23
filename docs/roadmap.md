@@ -340,12 +340,23 @@ decoder are proven to agree on rendered pixels, the PDF's orientation is
 proven by rebuilding the matrix, and a screenshot of the card decodes. See
 [id-cards.md](./modules/id-cards.md).
 
+**Closed: attendance readers.** The hardware was never the obstacle; what was
+missing was the other end of the wire. A fingerprint or card reader posts
+punches to the `biometric-punch` Edge Function. It authenticates with a
+per-device secret that is shown once and stored only as its SHA-256, and a
+definer that nothing holding a JWT may call writes the staff register from the
+first and last punch of each local day. It **never overwrites a row a person
+marked**: `staff_attendance.source` says whose row it is. Probed with a wrong
+secret, a retired reader, a redelivered batch, an unknown code, a departed
+teacher's code, a reader whose clock has drifted, and an office "absent" row
+present beforehand. `/hr/biometric` registers readers and codes. Migration
+`0273`; see [biometric.md](./modules/biometric.md).
+
 **Still open, measured as zero occurrences in `src/` and the migrations:**
 
 | | notes |
 |---|---|
 | Online exam / quiz | a whole LMS; eSkooly sells it as an add-on |
-| Biometric attendance | needs hardware |
 
 And the counter-direction, stated because absence of evidence is not evidence:
 the double-entry general ledger, the append-only money ledger with gapless

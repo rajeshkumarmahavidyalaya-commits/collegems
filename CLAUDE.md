@@ -3407,6 +3407,20 @@ absence notice as a question it asks before sending. A leave approved after the
 register was taken does not retrospectively change it, and re-marking is the
 school's to do. See `docs/modules/student-leave.md`.
 
+**And the same sentence read from the other side: an observation does not
+overwrite a decision.** An attendance reader at the gate is a machine
+observing, and `0273` lets it write the staff register — but only the rows it
+wrote. `staff_attendance.source` says whose row it is; the reader's upsert is
+`do update … where source = 'reader'`, and it cannot set `status`. A person
+re-marking a reader row takes it over, and the reader never takes it back. The
+office marking a teacher *on duty* has decided, and a fingerprint at 09:02 does
+not overrule them. The ingest is also rule 6's webhook shape: definer, revoked
+from everybody holding a JWT, and authenticated by the SHA-256 of a secret this
+system generated. It takes the tenant from the device row, and because no
+policy runs inside it, it resolves the year by tenant **by hand**:
+`academics_session_for_date` relies on RLS, and from inside a definer it would
+answer with any college's year. See `docs/modules/biometric.md`.
+
 ### A document a person keeps is frozen, and its wording is data too
 
 Report cards said the first half of this. Certificates — transfer, bonafide,

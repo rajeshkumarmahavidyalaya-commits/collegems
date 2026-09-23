@@ -38,6 +38,7 @@ import {
   MapPin,
   NotebookPen,
   ScanLine,
+  Fingerprint,
   Video,
   PenLine,
   PenSquare,
@@ -385,6 +386,17 @@ export const NAV_GROUPS: NavGroup[] = [
       // in as a guardian this page renders the heading "Leave" over the words
       // "Your leave, and what is left of each kind. Only unpaid leave reaches a
       // payslip" and an empty board. The list is the sentence, written down.
+      // The reader's side of the register. Administrator only, because both
+      // tables' policies are -- a device secret and every punch at the gate are
+      // the office's -- and `hr.manage`, the page's own gate, is administrator
+      // alone in the default matrix, so the menu and the boundary agree.
+      {
+        title: "Attendance readers",
+        messageKey: "nav.biometric",
+        href: "/hr/biometric",
+        icon: Fingerprint,
+        roles: ["admin"],
+      },
       {
         title: "Leave",
         messageKey: "nav.leave",

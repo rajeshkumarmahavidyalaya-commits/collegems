@@ -53,6 +53,7 @@ export const en = {
   "nav.homework": "Homework",
   "nav.liveClasses": "Live classes",
   "nav.scanCard": "Scan a card",
+  "nav.biometric": "Attendance readers",
   "nav.fees": "Fees",
   "nav.familyFees": "Fees",
   "nav.accounts": "Accounts",
