@@ -82,6 +82,7 @@ export async function GET(
       fullName: face.fullName,
       subtitle: face.subtitle,
       facts: face.facts,
+      scanCode: face.scanCode,
       schoolName: school.name,
       sessionName: school.sessionName,
       photo,

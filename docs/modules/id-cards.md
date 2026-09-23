@@ -330,3 +330,76 @@ second gate to produce it.
 - **A back face.** School rules, an emergency number, a bus route. Easy, and it
   wants a school to choose the wording — which means `reference.settings_catalog`
   rather than a constant.
+
+---
+
+## The code in the corner, and the screen that reads it
+
+The roadmap had said since ID cards shipped: *"a code with **no reader** would
+be a string nobody scans, so it is only worth building with the thing that reads
+it."* Both halves now exist: the code on every card (HTML and PDF), and `/scan`
+for staff.
+
+### What the code says: an opaque payload, not a web address
+
+`sos:student:<uuid>` or `sos:staff:<uuid>`, which is 48 characters: a version 4
+code, 33 modules square at error-correction level M. The web address was
+refused, for two reasons:
+
+- **A card outlives a deployment.** It is laminated and carried for three years,
+  and a URL printed on it is a claim about where this product will live in 2029.
+  Rule 10's *"a URL is a fact about the deployment"*, frozen into plastic.
+- **It would add nothing to the boundary.** The id grants nothing. `/scan`
+  routes to `/students/<id>` or `/staff/<id>`, and those pages read through RLS
+  exactly as if the address had been typed, so a scan can never show more than
+  typing would. The page reads nothing itself, which is why it has no
+  permission check of its own: a check there would be a second answer to a
+  question the record page already answers.
+
+The parser is strict. A shop's barcode, a Wi-Fi code or a URL is named as *not
+a SchoolOS card* rather than guessed at.
+
+### What reaches a browser
+
+- **The encoder never does.** `qrcode-generator` (MIT, no dependencies) runs in
+  the Server Component that draws the face and in the PDF renderer.
+- **The decoder only when the camera starts.** The screen uses the browser's
+  own `BarcodeDetector` where it reads QR codes (Chrome on Android, most
+  desktops). Otherwise it imports `jsQR` (Apache-2.0, no dependencies) on first
+  use, for Safari and Firefox. A phone with a native detector never downloads
+  it.
+- **The parser imports nothing**, and a guard checks that.
+
+### Drawn black on white, whatever the theme
+
+This is the one place in the interface a colour is not a token. A QR code's
+contrast is a property of the format: dark mode would invert it, and many
+scanners refuse an inverted code.
+
+### Verified, rather than assumed to agree
+
+- **The encoder and the decoder speak the same code.** The matrix a card draws
+  is rendered to pixels and decoded by the same `jsQR` the scanner falls back
+  to, for a student and a staff card.
+- **The PDF draws it the right way up.** PDF's y runs up the page and the
+  matrix's rows run down it, and an upside-down code is a mirror image, which
+  a standard decoder refuses. `qrRectangles` is its own function so a test can
+  rebuild the matrix from the rectangles read top-down, and decode it. Planting
+  the flipped orientation fails the test.
+- **The page's card scans from a screenshot.** Rendered in Chromium and decoded
+  from the image: at 768px in light mode and 375px in dark mode, the code is
+  60 to 63 CSS pixels wide, about 1.6 pixels a module. Both decoded to the exact
+  payload.
+- On the PDF the code is 44pt, about 15.5mm, roughly 0.42mm a module. The facts
+  column narrows beside it rather than running underneath.
+
+### Not built
+
+- **Anything that happens on a scan other than opening the record**, such as
+  marking a gate entry, issuing a library book or taking a fee. Each of those
+  is its own module's write with its own permission, and a scan should feed
+  them as an input, not become a second way to do them. The record page is
+  where every one of those acts already starts.
+- **Public verification** ("is this card genuine?", checked by a stranger).
+  That would need an unauthenticated read of a person's record, which rule 1
+  exists to make impossible. It would need its own decision, as `0268` had.

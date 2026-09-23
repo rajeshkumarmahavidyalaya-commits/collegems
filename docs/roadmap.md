@@ -332,13 +332,20 @@ the policy (`0271`), and that a course list taken from the stale current-year
 flag could offer nothing schedulable (`0272`). Migrations `0270`-`0272`; see
 [live-classes.md](./modules/live-classes.md).
 
+**Closed: a code on every ID card, and the thing that reads it.** Every card,
+on screen and in the PDF, carries an opaque `sos:<kind>:<uuid>` code rather
+than a URL, because a card outlives a deployment. `/scan` opens the camera and
+routes to the record page, whose RLS is the only gate. The encoder and the
+decoder are proven to agree on rendered pixels, the PDF's orientation is
+proven by rebuilding the matrix, and a screenshot of the card decodes. See
+[id-cards.md](./modules/id-cards.md).
+
 **Still open, measured as zero occurrences in `src/` and the migrations:**
 
 | | notes |
 |---|---|
 | Online exam / quiz | a whole LMS; eSkooly sells it as an add-on |
 | Biometric attendance | needs hardware |
-| QR / barcode on ID cards | the card renderer exists; a code with **no reader** would be a string nobody scans, so it is only worth building with the thing that reads it |
 
 And the counter-direction, stated because absence of evidence is not evidence:
 the double-entry general ledger, the append-only money ledger with gapless

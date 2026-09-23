@@ -55,6 +55,7 @@ type Face = {
   subtitle: string | null;
   facts: { label: string; value: string }[];
   photoPath: string | null;
+  scanCode: string;
 };
 
 /**
@@ -88,6 +89,7 @@ export async function cardDocuments(
       fullName: face.fullName,
       subtitle: face.subtitle,
       facts: face.facts,
+      scanCode: face.scanCode,
       schoolName: school.name,
       sessionName: school.sessionName,
       photo,

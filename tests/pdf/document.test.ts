@@ -866,6 +866,7 @@ function idCard(overrides: Partial<CardDocument> = {}): CardDocument {
       { label: "Blood group", value: "O+" },
       { label: "Guardian", value: "Sunita Pandey \u00b7 +91 98765 43210" },
     ],
+    scanCode: "sos:student:83f1e640-45da-44df-811b-3d4a7093bb3c",
     schoolName: "Rajesh Kumar Mahavidyalaya",
     sessionName: "2025-2026",
     photo: { bytes: new Uint8Array(PNG_2x2), contentType: "image/png" },

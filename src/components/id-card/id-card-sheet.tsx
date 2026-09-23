@@ -1,6 +1,7 @@
 import { User } from "lucide-react";
 import { CARD_ASPECT, type PersonCard, type SchoolIdentity } from "@/lib/validations/id-card";
 import type { Translator } from "@/lib/i18n/translate";
+import { QrCode } from "./qr-code";
 
 /**
  * One identity card, at the size a laminating pouch is cut for.
@@ -83,6 +84,12 @@ export function IdCardFace({
               <Row key={fact.label} label={fact.label} value={fact.value} />
             ))}
           </dl>
+        </div>
+
+        {/* Read back by the scan screen, which routes to the record page and
+            lets RLS decide who sees it. See `scan-code.ts`. */}
+        <div className="flex w-[19%] shrink-0 items-end">
+          <QrCode text={card.scanCode} label={t("idCard.scanLabel")} className="w-full rounded-sm" />
         </div>
       </div>
 

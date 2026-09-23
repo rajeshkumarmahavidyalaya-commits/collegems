@@ -35,6 +35,7 @@ export const hi: Messages = {
   "nav.exams": "परीक्षाएँ",
   "nav.homework": "गृहकार्य",
   "nav.liveClasses": "लाइव कक्षाएँ",
+  "nav.scanCard": "कार्ड स्कैन करें",
   "nav.fees": "शुल्क",
   "nav.familyFees": "शुल्क",
   "nav.accounts": "लेखा",
@@ -607,4 +608,5 @@ export const hi: Messages = {
   "liveClasses.status.scheduled": "निर्धारित",
   "liveClasses.status.cancelled": "रद्द",
   "liveClasses.noAccess": "आपकी भूमिका लाइव कक्षाएँ नहीं देखती। ज़रूरत हो तो किसी व्यवस्थापक से पूछें।",
+  "idCard.scanLabel": "इस कार्ड का स्कैन कोड",
 };

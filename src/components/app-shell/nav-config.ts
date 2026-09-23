@@ -37,6 +37,7 @@ import {
   ListChecks,
   MapPin,
   NotebookPen,
+  ScanLine,
   Video,
   PenLine,
   PenSquare,
@@ -267,6 +268,17 @@ export const NAV_GROUPS: NavGroup[] = [
         href: "/live-classes",
         icon: Video,
         roles: ["admin", "teacher", "parent", "student"],
+      },
+      // Staff only. The page reads nothing -- it turns a code into an address
+      // and the record page decides -- but a family has no card to scan, and a
+      // student or guardian scanning their own would only arrive where the menu
+      // already takes them.
+      {
+        title: "Scan a card",
+        messageKey: "nav.scanCard",
+        href: "/scan",
+        icon: ScanLine,
+        roles: ["admin", "teacher", "accountant", "librarian"],
       },
       {
         title: "Study material",

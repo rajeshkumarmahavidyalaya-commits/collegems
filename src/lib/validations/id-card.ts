@@ -1,4 +1,5 @@
 import type { MessageKey } from "@/lib/i18n/messages/en";
+import { scanCodeFor } from "./scan-code";
 import type { Translator } from "@/lib/i18n/translate";
 import type { Locale } from "@/lib/i18n/config";
 import type { SchoolIdentity } from "@/lib/school/identity";
@@ -82,6 +83,12 @@ export type PersonCard = {
   /** See `IdCard.photoPath`: the face draws the URL, the renderer needs bytes. */
   photoPath: string | null;
   facts: { label: string; value: string }[];
+  /**
+   * What the code on the card says -- `sos:student:<id>` -- which the scan
+   * screen reads back and routes to the record page. See `scan-code.ts` for
+   * why it is not a web address.
+   */
+  scanCode: string;
 };
 
 /**
@@ -165,6 +172,7 @@ export function studentFace(
     photoUrl: card.photoUrl,
     photoPath: card.photoPath,
     facts,
+    scanCode: scanCodeFor("student", card.studentId),
   };
 }
 
@@ -217,6 +225,7 @@ export function staffFace(card: StaffCard, t: Translator): PersonCard {
     photoUrl: card.photoUrl,
     photoPath: card.photoPath,
     facts,
+    scanCode: scanCodeFor("staff", card.staffId),
   };
 }
 

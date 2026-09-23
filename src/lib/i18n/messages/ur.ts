@@ -35,6 +35,7 @@ export const ur: Messages = {
   "nav.exams": "امتحانات",
   "nav.homework": "گھر کا کام",
   "nav.liveClasses": "براہِ راست کلاسیں",
+  "nav.scanCard": "کارڈ اسکین کریں",
   "nav.fees": "فیس",
   "nav.familyFees": "فیس",
   "nav.accounts": "حسابات",
@@ -604,4 +605,5 @@ export const ur: Messages = {
   "liveClasses.status.scheduled": "طے شدہ",
   "liveClasses.status.cancelled": "منسوخ",
   "liveClasses.noAccess": "آپ کا کردار براہِ راست کلاسیں نہیں دیکھتا۔ ضرورت ہو تو کسی منتظم سے پوچھیں۔",
+  "idCard.scanLabel": "اس کارڈ کا اسکین کوڈ",
 };

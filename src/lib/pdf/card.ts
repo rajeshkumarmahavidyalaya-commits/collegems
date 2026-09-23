@@ -2,6 +2,7 @@ import { PDFDocument, PDFFont, PDFImage, PDFPage, rgb } from "pdf-lib";
 import fontkit from "@pdf-lib/fontkit";
 import { documentFont, unrenderable } from "./font";
 import { UnrenderableDocument, pdfFileName } from "./document";
+import { qrModules } from "@/lib/id-card/qr";
 
 /**
  * An identity card, as a file.
@@ -54,6 +55,8 @@ export type CardDocument = {
   fullName: string;
   subtitle: string | null;
   facts: { label: string; value: string }[];
+  /** What the code in the corner says; see `scan-code.ts`. */
+  scanCode: string;
   schoolName: string;
   /** "2025-2026" — a card about *now* has to carry the now it was true of. */
   sessionName: string | null;
@@ -88,6 +91,44 @@ async function embedPhoto(doc: PDFDocument, photo: CardPhoto): Promise<PDFImage>
   // The `avatars` bucket also allows webp, which pdf-lib cannot embed. Said out
   // loud rather than drawn as a blank square — the whole point of this file.
   throw new UnfinishedCard(`A ${photo.contentType} photograph`);
+}
+
+/**
+ * The dark modules of a QR code as PDF rectangles, runs merged along each row,
+ * inside a square at (`x`, `y`) of side `size` with two modules of quiet zone.
+ *
+ * Its own function because it is the one place orientation can go wrong: PDF's
+ * y runs **up** the page and the matrix's rows run **down** it, and a code
+ * drawn upside down is a mirror image, which a standard decoder refuses.
+ * `tests/id-card/scan-code.test.ts` rebuilds the matrix from these rectangles
+ * and compares.
+ */
+export function qrRectangles(
+  modules: boolean[][],
+  x: number,
+  y: number,
+  size: number,
+): { x: number; y: number; width: number; height: number }[] {
+  const unit = size / (modules.length + 4);
+  const out: { x: number; y: number; width: number; height: number }[] = [];
+  modules.forEach((row, r) => {
+    let c = 0;
+    while (c < row.length) {
+      if (!row[c]) {
+        c++;
+        continue;
+      }
+      const start = c;
+      while (c < row.length && row[c]) c++;
+      out.push({
+        x: x + (start + 2) * unit,
+        y: y + size - (r + 3) * unit,
+        width: (c - start) * unit,
+        height: unit,
+      });
+    }
+  });
+  return out;
 }
 
 /**
@@ -182,6 +223,20 @@ function drawCard(
   const textW = CR80.width - PAD - textX;
   let y = photoY + photoH - 9;
 
+  // The code, bottom corner. 44pt is 15.5mm: a 33-module code at ~0.42mm a
+  // module, which a phone reads at a hand's length. Drawn as rectangles on a
+  // white square carrying two modules of quiet zone, so a card printed on
+  // coloured stock still scans. Text beside it narrows rather than running
+  // underneath -- a code with a word through it is not a code.
+  const qrSize = 44;
+  const qrX = CR80.width - PAD - qrSize;
+  const qrY = PAD;
+  page.drawRectangle({ x: qrX, y: qrY, width: qrSize, height: qrSize, color: rgb(1, 1, 1) });
+  for (const rect of qrRectangles(qrModules(doc.scanCode), qrX, qrY, qrSize)) {
+    page.drawRectangle({ ...rect, color: INK });
+  }
+  const besideCode = (lineY: number) => (lineY < qrY + qrSize + 2 ? textW - qrSize - 6 : textW);
+
   draw(doc.fullName, textX, y, 10.5, textW);
   y -= 11;
   if (doc.subtitle) {
@@ -196,9 +251,9 @@ function drawCard(
   // module already decides which facts matter most by putting them first.
   for (const fact of doc.facts) {
     if (y - 14 < PAD) break;
-    draw(fact.label.toLocaleUpperCase("en"), textX, y, 5.5, textW, "quiet");
+    draw(fact.label.toLocaleUpperCase("en"), textX, y, 5.5, besideCode(y), "quiet");
     y -= 7;
-    draw(fact.value, textX, y, 7.5, textW);
+    draw(fact.value, textX, y, 7.5, besideCode(y));
     y -= 10;
   }
 }

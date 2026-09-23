@@ -52,6 +52,7 @@ export const en = {
   "nav.exams": "Exams",
   "nav.homework": "Homework",
   "nav.liveClasses": "Live classes",
+  "nav.scanCard": "Scan a card",
   "nav.fees": "Fees",
   "nav.familyFees": "Fees",
   "nav.accounts": "Accounts",
@@ -675,6 +676,7 @@ export const en = {
   "liveClasses.status.scheduled": "Scheduled",
   "liveClasses.status.cancelled": "Cancelled",
   "liveClasses.noAccess": "Your role does not see live classes. Ask an administrator if it should.",
+  "idCard.scanLabel": "Scan code for this card",
 } as const;
 
 export type MessageKey = keyof typeof en;
