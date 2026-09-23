@@ -2,7 +2,7 @@ import { expect, it } from "vitest";
 import { describeDb, tenantAClient } from "../helpers/client";
 
 /**
- * CLAUDE.md rule 1 as an executable check, in two halves.
+ * CLAUDE.md rule 1 as executable checks.
  *
  * The first asks whether a table has the right **shape** — tenant_id, RLS on.
  * The second asks whether it has the right **grants**, which is a different
@@ -69,6 +69,22 @@ describeDb("schema invariants", () => {
     // slow; it will not have been this.
     const client = await tenantAClient();
     const { data, error } = await client.rpc("index_guard_violations");
+
+    expect(error).toBeNull();
+    expect(data ?? []).toEqual([]);
+  });
+
+  it("no SECURITY DEFINER function is callable anonymously by accident", async () => {
+    // Rule 1's fifth guard, added by 0267. Inside a definer no policy runs, so
+    // its EXECUTE grant is the only check there is -- and Postgres grants that
+    // to PUBLIC on every new function (Supabase adds anon explicitly too).
+    // `schedule_run` had no caller check of its own and was callable with the
+    // publishable key: probed as anon, it ran a college's switched-off fee
+    // reminder. Every definer anon can reach is named in the function with its
+    // reason; `tests/rls/definer-grants.test.ts` is the same question asked of
+    // the migrations, so it runs where this suite skips.
+    const client = await tenantAClient();
+    const { data, error } = await client.rpc("definer_guard_violations");
 
     expect(error).toBeNull();
     expect(data ?? []).toEqual([]);

@@ -7681,6 +7681,13 @@ export type Database = {
       current_tenant_id: { Args: never; Returns: string }
       dashboard_enrolment_by_grade: { Args: never; Returns: Json }
       dashboard_summary: { Args: never; Returns: Json }
+      definer_guard_violations: {
+        Args: never
+        Returns: {
+          function_name: string
+          reason: string
+        }[]
+      }
       enquiry_board: {
         Args: { p_session_id?: string }
         Returns: {

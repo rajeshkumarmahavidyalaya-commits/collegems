@@ -308,6 +308,14 @@ leaving the family charged. **A rule written into one function is not a rule.**
 Plus three columns `0261` added that no reader had been taught to show, so a
 sale could not name its buyer. See [inventory.md](./modules/inventory.md).
 
+**Before the first anonymous write path: what can anonymous already reach?**
+Asked before building online registration, and the answer was a hole.
+`schedule_run` (definer, no caller check) was executable with the publishable
+key. Probed as `anon`, it ran a college's switched-off fee reminder. `0267`
+revokes it and adds `definer_guard_violations()`, the fifth schema guard, plus a
+twin that reads the migrations so it runs in CI. See
+[privileges.md](./modules/privileges.md).
+
 **Still open, measured as zero occurrences in `src/` and the migrations:**
 
 | | notes |
@@ -320,7 +328,7 @@ sale could not name its buyer. See [inventory.md](./modules/inventory.md).
 
 And the counter-direction, stated because absence of evidence is not evidence:
 the double-entry general ledger, the append-only money ledger with gapless
-receipts, RLS isolation with four executable schema guards, the audit log's read
+receipts, RLS isolation with five executable schema guards, the audit log's read
 path, catalogue-as-data reports and checks, i18n with RTL, and scheduled reports
 that run as the person who scheduled them were not visible in what search
 returned — but the docs could not be read, so that is not a claim about eSkooly.

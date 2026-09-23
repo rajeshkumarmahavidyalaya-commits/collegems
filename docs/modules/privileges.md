@@ -163,3 +163,86 @@ Nothing to do. The default privileges are fixed, so a new table arrives without
 the four, and `privilege_guard_violations()` fails the suite if that ever stops
 being true — including if a platform upgrade resets the defaults, which is the
 failure mode this guard exists for.
+
+---
+
+## …and the same default, on functions
+
+Everything above is about **tables**. Functions have a default privilege too,
+and nobody had asked the question of it: Postgres grants EXECUTE on every new
+function to `PUBLIC`, and Supabase additionally grants it to `anon` and
+`authenticated` explicitly. For a `SECURITY INVOKER` function that is harmless:
+the caller's own policies still run inside it. For a `SECURITY DEFINER`
+function it is the whole question:
+
+> **A definer function is a privilege, not a helper.** Inside it no policy runs,
+> so its EXECUTE grant is the only check there is. Rule 1's sentence about
+> `TRUNCATE`, arriving at functions.
+
+Found while getting ready to build the first *deliberate* anonymous write path
+(the online admission form). Asked first: **what can an anonymous caller
+already reach?** `has_function_privilege('anon', …)` over the 57 definers in
+`public` returned nine:
+
+| | count | why it is or is not a hole |
+|---|---|---|
+| trigger functions | 6 | Postgres refuses to call one directly: probed as `anon`, `0A000: trigger functions can only be called as triggers` |
+| `platform_slug_available` | 1 | anonymous on purpose: the signup form asks whether a slug is free before an account exists |
+| `job_cancel` | 1 | refuses a tenantless caller in its first line, so it was harmless; revoked anyway so the guard needs no exception for luck |
+| **`schedule_run`** | 1 | **no caller check at all** |
+
+`schedule_run` is the scheduler's runner. It is a definer because it writes
+`notification_deliveries`, which has no INSERT policy by design (rule 10). It
+looks the schedule up by id with no tenant filter, and it takes the occurrence
+and the digest from its caller. Probed as `anon`, the role the publishable key
+in every browser bundle maps to, in a rolled-back transaction: it ran a
+college's **switched-off** fee reminder to status `done`. It wrote nothing only
+because none of those five families had a login yet. Once they do, anybody
+holding the public key could make any college text its families on demand. And
+because the occurrence was the caller's, the unique index that makes an
+occurrence run once did not bind: a new timestamp is a new occurrence.
+
+Its caller, `schedules_tick`, had been revoked from `anon` correctly. *The door
+was locked and the room behind it was not.*
+
+Migration `0267` revokes `schedule_run` from `public`, `anon` **and**
+`authenticated`. Its only callers are the two ticks: `schedules_tick`, a
+definer, and `schedule_digests_tick`, which pg_cron runs as `postgres` and which
+resets its impersonated role before it calls the runner. Verified afterwards:
+`anon` gets `42501`, `postgres` keeps execute, and the tick still runs.
+
+### The fifth guard
+
+`definer_guard_violations()` stands beside the schema, privilege, audit and
+index guards. It returns every `SECURITY DEFINER` function in `public` that
+`anon` can execute and that is not on its own list of `anonymous_on_purpose`
+entries, each with its reason. It was verified by planting a definer in a
+rolled-back transaction, which it named.
+
+Two decisions about its scope:
+
+- **It asks about `anon`, not `authenticated`.** A signed-in caller reaching a
+  definer is the normal case. There are dozens, each with its own permission
+  check inside. A guard that reports the normal case is a guard somebody
+  switches off. The cross-tenant half of `schedule_run` (any college's member
+  could run any college's schedule) is closed by the revoke, and it is
+  something this guard **cannot** see. That is written here rather than implied.
+- **It has a twin that needs no database.** `tests/rls/definer-grants.test.ts`
+  replays every migration's `create`, `drop`, `revoke` and `grant` on functions
+  and asks the same question. It reads its allowlist out of the SQL function,
+  so the two cannot disagree. The first draft treated `create or replace` as a
+  reset and reported `privilege_guard_violations` (revoked in `0159`, redefined
+  in `0160`) as exposed. That was wrong: **`create or replace` keeps a
+  function's grants, and only `drop` forgets them.** That last fact is also the
+  trap worth knowing about. A `drop` + `create` to change a return type
+  silently re-opens a function somebody had closed. The replay was trusted only
+  after it named the same two functions as the live query before `0267`, and
+  zero after it, over the same 49 definers.
+
+### Adding a definer
+
+Write `revoke all on function … from public, anon;` beside it, as every
+definer since `0142` has, and grant `authenticated` only if a person calls it.
+If an anonymous caller genuinely needs it, add it to `anonymous_on_purpose`
+with the reason. Both guards will then accept it, and nothing else will.
+

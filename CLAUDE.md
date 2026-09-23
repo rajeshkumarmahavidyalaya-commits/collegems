@@ -120,6 +120,34 @@ rule 1 is that the policy is the boundary and application code cannot be, and a
 privilege no policy governs is a gap in that argument whatever today's routes
 happen to reach.
 
+#### …and a fifth, on the functions a policy never sees inside
+
+A new function's EXECUTE is granted to `PUBLIC`, and Supabase adds `anon` and
+`authenticated` explicitly. That is harmless for an invoker, whose caller's
+policies still run inside it, and it is the whole question for a definer:
+
+> **A definer function is a privilege, not a helper.** Inside it no policy runs,
+> so its EXECUTE grant is the only check there is.
+
+`schedule_run`, the scheduler's runner, had no caller check, looked its schedule
+up by id with no tenant filter, and took the occurrence from its caller. Probed
+as `anon` (the publishable key in every browser bundle), it ran a college's
+**switched-off** fee reminder. It wrote nothing only because those families had
+no logins yet. Its caller `schedules_tick` had been revoked correctly. *The door
+was locked and the room behind it was not.* Migration `0267` revokes it from
+everybody holding a JWT, and `definer_guard_violations()` is the fifth guard. It
+lists every definer that `anon` can execute and that is not named, with its
+reason, in the function's own `anonymous_on_purpose` list.
+
+`tests/rls/definer-grants.test.ts` asks the same question of the migrations,
+so it runs where the DB suites skip. Its first draft was wrong in the
+instructive direction: **`create or replace` keeps a function's grants, and
+only `drop` forgets them**. So a `drop` + `create` to change a return type
+silently re-opens a function somebody had closed. Asked first because the
+online admission form is this product's first deliberate anonymous write path,
+and *"what can an anonymous caller already reach?"* comes before adding one.
+See `docs/modules/privileges.md`.
+
 ## 2. Sessions (academic years) scope every transactional table
 
 - Fees, marks, attendance, enrolments, payroll, timetable and library issues

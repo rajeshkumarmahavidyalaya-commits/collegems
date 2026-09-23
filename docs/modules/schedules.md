@@ -69,6 +69,12 @@ check-then-act — two ticks racing must have one of them lose at the index.
 That distinction is the whole index: a run starting at 19:31 because the tick
 was late is still the 19:30 occurrence.
 
+**And the index binds only while the caller cannot choose `occurrence_at`.**
+Until `0267`, `schedule_run` was executable by `anon`. A caller holding only the
+publishable key could pass any timestamp, and a new timestamp is a new
+occurrence. It is now revoked from everybody holding a JWT, and only the two
+ticks reach it. See `docs/modules/privileges.md`.
+
 ### 4. A schedule that was missed does not catch up
 
 Enabling a daily reminder at three in the afternoon must not fire this
