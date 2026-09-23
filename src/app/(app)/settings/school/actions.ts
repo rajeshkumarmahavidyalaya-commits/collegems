@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { hasPermission } from "@/lib/auth/permissions";
 import { parseFields, type SettingField, type SettingType } from "@/lib/validations/settings";
 
 export type ActionResult<T = void> =
@@ -24,6 +25,22 @@ export type SettingRow = {
 };
 
 export type SettingProblem = { key: string; severity: string; message: string };
+
+/**
+ * Whether this screen will let the caller change a setting.
+ *
+ * **One definition, asked by the screen and by anything that links to it.** A
+ * front-office card saying *switch online applications on in settings* must ask
+ * the question this screen will ask, or it sends somebody to a page drawn
+ * read-only for them -- a control that will refuse you, one click along.
+ *
+ * `settings.manage` rather than each key's own `permission_code`, because the
+ * write lands on `settings`, whose policy admits an administrator only. That
+ * is the half of rule 4 that holds the boundary, and this agrees with it.
+ */
+export async function canChangeSettings(): Promise<boolean> {
+  return hasPermission("settings.manage");
+}
 
 /**
  * Every catalogue key with its effective value. There is no role branch here:

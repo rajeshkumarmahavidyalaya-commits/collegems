@@ -148,6 +148,17 @@ online admission form is this product's first deliberate anonymous write path,
 and *"what can an anonymous caller already reach?"* comes before adding one.
 See `docs/modules/privileges.md`.
 
+**And the first one added deliberately (`0268`) is shaped by that guard.** The
+public application form reaches one INSERT through `admission_apply`. The
+applicant decides the child and the contact, bounded. The function decides the
+year, the number, the source, the status and the follow-up date. No table policy
+is opened to `anon`. The function is off by default per college, holds each
+college to an hourly limit under an advisory lock, and answers every reason it
+cannot show a form with **one** null (`0209`'s *the refusal says nothing*).
+`tests/admissions/public-form.test.ts` checks, in both directions, that the
+function reads exactly the keys the action sends. See
+`docs/modules/front-office.md`.
+
 ## 2. Sessions (academic years) scope every transactional table
 
 - Fees, marks, attendance, enrolments, payroll, timetable and library issues

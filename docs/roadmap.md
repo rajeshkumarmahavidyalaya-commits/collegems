@@ -316,6 +316,13 @@ revokes it and adds `definer_guard_violations()`, the fifth schema guard, plus a
 twin that reads the migrations so it runs in CI. See
 [privileges.md](./modules/privileges.md).
 
+**Closed: online applications.** A public `/apply/<slug>` page, off by default
+per college, writes one bounded website enquiry through two `SECURITY DEFINER`
+functions granted to `anon` on purpose and named in the definer guard. No table
+policy is opened. The limit is per college per hour under an advisory lock,
+with duplicate suppression, and one null for every reason the form cannot
+show. Migration `0268`; see [front-office.md](./modules/front-office.md).
+
 **Still open, measured as zero occurrences in `src/` and the migrations:**
 
 | | notes |
@@ -324,7 +331,6 @@ twin that reads the migrations so it runs in CI. See
 | Live virtual classes (Zoom, BigBlueButton, Jitsi, Meet) | four third-party integrations, none testable here |
 | Biometric attendance | needs hardware |
 | QR / barcode on ID cards | the card renderer exists; a code with **no reader** would be a string nobody scans, so it is only worth building with the thing that reads it |
-| Online parent/student registration | **structurally absent**: every route is behind the login wall, and `/signup` needs an invitation to get a tenant. `enquiry` is staff-entered |
 
 And the counter-direction, stated because absence of evidence is not evidence:
 the double-entry general ledger, the append-only money ledger with gapless

@@ -4,7 +4,13 @@ import { supabasePublishableKey, supabaseUrl } from "@/lib/supabase/env";
 
 // /api/health must stay reachable without a session -- it exists to diagnose
 // deployments that cannot authenticate in the first place.
-const PUBLIC_PATHS = ["/login", "/signup", "/auth", "/api/health"];
+//
+// /apply is a college's public application form (migration 0268): the one page
+// in the product for somebody who has no account and is not going to make one.
+// Everything it can do goes through two SECURITY DEFINER functions granted to
+// anon on purpose and named in `definer_guard_violations()`, so listing it here
+// opens a route, not a table.
+const PUBLIC_PATHS = ["/login", "/signup", "/auth", "/api/health", "/apply"];
 
 /**
  * Signed in, but belonging to no school yet.

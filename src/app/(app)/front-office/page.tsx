@@ -2,17 +2,29 @@ import { getUserContext } from "@/lib/auth/context";
 import { hasPermission } from "@/lib/auth/permissions";
 import { listSections } from "../students/actions";
 import { listStaffOptions } from "../hr/actions";
-import { getFunnel, listClassLevelOptions, listEnquiries, listVisitors } from "./actions";
+import {
+  getFunnel,
+  getOnlineApplications,
+  listClassLevelOptions,
+  listEnquiries,
+  listVisitors,
+} from "./actions";
+import { OnlineApplicationsCard } from "./online-applications-card";
+import { canChangeSettings } from "../settings/school/actions";
 import { FrontOfficeView } from "./front-office-view";
 
 export const metadata = { title: "Front office" };
 
 export default async function FrontOfficePage() {
-  const [ctx, canView, canManage, canAdmit] = await Promise.all([
+  const [ctx, canView, canManage, canAdmit, mayChangeSettings] = await Promise.all([
     getUserContext(),
     hasPermission("frontoffice.view"),
     hasPermission("frontoffice.manage"),
     hasPermission("frontoffice.admit"),
+    // Whether the switch is theirs to flip -- asked of the settings screen
+    // itself, so the card can never offer a link to a page that will be drawn
+    // read-only for them. See `canChangeSettings`.
+    canChangeSettings(),
   ]);
 
   if (!canView) {
@@ -28,13 +40,16 @@ export default async function FrontOfficePage() {
     );
   }
 
-  const [enquiries, funnel, visitors, classLevels, sections, staff] = await Promise.all([
+  const [enquiries, funnel, visitors, classLevels, sections, staff, online] = await Promise.all([
     listEnquiries(),
     getFunnel(),
     listVisitors(false),
     listClassLevelOptions(),
     listSections(),
     listStaffOptions(),
+    // Only somebody who may change the setting is shown where it is: a
+    // receptionist with `frontoffice.view` works the board, not the switch.
+    canManage ? getOnlineApplications() : Promise.resolve(null),
   ]);
 
   return (
@@ -47,6 +62,8 @@ export default async function FrontOfficePage() {
           click, through the same path the office already uses.
         </p>
       </div>
+
+      {online ? <OnlineApplicationsCard online={online} canChange={mayChangeSettings} /> : null}
 
       <FrontOfficeView
         enquiries={enquiries}

@@ -186,16 +186,147 @@ admitting a child.**
 
 ## Not built
 
-- **No online enquiry form.** The `website` source exists and nothing writes it;
-  a public form needs an unauthenticated write path, which is a deliberate
-  decision this system has not taken.
 - **Nothing notifies anybody.** An overdue follow-up is exactly what
   `notify_send` is for, and no code calls it.
 - **No documents against an enquiry** — a birth certificate, a previous report
   card. Storage supports it; the module does not use it yet.
 - **No admission test or interview scheduling**, which is a real stage between
   `applied` and `admitted` for selective schools.
-- **No duplicate detection.** The same family enquiring twice makes two rows,
-  and nothing notices.
+- **No duplicate detection at the desk.** The same family enquiring twice by
+  phone makes two rows, and nothing notices. The online form does suppress a
+  repeat of the same child and contact within a day (below); the desk does not.
 - **The gate has no pass printing and no photo.** The pass number exists; what
   the visitor is handed is the school's own stationery.
+
+---
+
+## The online application form (migration 0268)
+
+The note above read *"a public form needs an unauthenticated write path, which
+is a deliberate decision this system has not taken."* This is that decision,
+taken on purpose and bounded. Until now, a family that found a college online
+could only telephone. On the demo college, 2 of 8 enquiries said `website`, and
+both had been typed in by staff.
+
+**It came second, on purpose.** Before adding the first anonymous write path,
+the question was what an anonymous caller could already reach. The answer was
+`schedule_run`, which would text any college's families on demand. `0267`
+closed that and added the definer guard, and this form is built against the
+guard (see [privileges.md](./privileges.md)).
+
+### The shape
+
+| | |
+|---|---|
+| `/apply/<college slug>` | public in the middleware; a Server Component; no account |
+| `admission_form(slug)` | `SECURITY DEFINER`, granted to `anon`: the college's name, current year, class levels and its own note, **or null** |
+| `admission_apply(slug, application)` | `SECURITY DEFINER`, granted to `anon`: one website enquiry, or a sentence |
+| `admissions.online` | a catalogued setting, **off by default**: `enabled`, `per_hour` (default 30), `note` |
+| the front-office card | the address to put on the college's website, shown to `frontoffice.manage` |
+
+No table policy is opened to `anon`. As `anon`, `select * from enquiries`
+returns **0 rows**, both before and after this migration. Both functions are
+named, with their reasons, in `definer_guard_violations()`.
+
+### What the applicant decides, and what they do not
+
+The applicant decides the child and the contact, within bounds: names up to 80
+characters, contact name up to 120, a phone matching `^[0-9+() -]{6,20}$`, a
+shaped email, a real past date of birth, and a class level that belongs to
+**this** college. The function decides everything else:
+
+- **the year**, from `current_session_id` (rule 2);
+- **the number**, from the gapless numberer (rule 6);
+- **`source = 'website'` and `status = 'new'`**;
+- **a follow-up due today**, where the college is, so the application is at the
+  top of the office's list the morning it arrives.
+
+The static guard (`tests/admissions/public-form.test.ts`) checks that
+`admission_apply` reads exactly the keys the action sends, in both directions.
+It also checks that it never reads a tenant, a year, a source or a status from
+its caller.
+
+### What an anonymous caller can learn
+
+- **One null for every reason the form cannot show.** An unknown slug, a closed
+  college and a college with no current year all get the same answer. So do the
+  write's refusals: one sentence for all three reasons. This is `0209`'s *the
+  refusal says nothing*.
+- **Only its own reference number.** A repeat of the same child and contact
+  within a day returns the **first** reference and files nothing. Pressing the
+  button twice is the common case, and a duplicate row is the office's problem.
+
+### Bounded
+
+The limit is per college, per hour, and counted under an advisory lock. It is
+rule 4's answer for a rule about how many other rows exist. The duplicate check
+runs first, so pressing the button again never uses up the college's hour. The
+setting's `per_hour` is clamped to 500 in SQL: *a setting is a decision, and a
+clamp is a bound.* The honest cost: somebody can fill 30 rows an hour into one
+college's board, and the *Lost* button is the answer. The honeypot field stops
+the cheapest scripts and is described as a courtesy, not a bound.
+
+Probed as `anon`, in a rolled-back transaction, with the limit at 3:
+
+| step | result |
+|---|---|
+| form, closed college / unknown slug | `null` / `null` |
+| apply, closed | *This college is not taking applications online at the moment.* |
+| form, opened | name, `2025-2026`, its 6 class levels, the note |
+| apply | `ENQ-2025-00001` |
+| the same child again, different case | `ENQ-2025-00001`, `duplicate: true`, no row |
+| a class level from nowhere | *Choose a class from the list.* |
+| 2nd, 3rd, 4th distinct application | `-00002`, `-00003`, then the hourly refusal |
+| a phone reading `call me; drop table` | *That phone number does not look right.* |
+| 31 February | *That date of birth is not a real date.* |
+| `select` on `enquiries` / `setting_value_for` | 0 rows / `42501` |
+
+The rows landed as `website | new | due 2026-09-23 | 2025-2026`, with the
+email lowercased.
+
+### Three things worth keeping
+
+- **The audit trail reads *System*, and that is correct.** `auth.uid()` is null,
+  which is the payment webhook's case exactly (`0215`): *nobody was signed in.*
+  The row's own `source` says who it was. The audit layer is deliberately not
+  given a second meaning for null.
+- **One place a default is applied, for a named college.** `setting_value`
+  read `current_tenant_id()`, which is null for an applicant. Rather than write
+  the coalesce a second time, `setting_value_for(tenant, key)` became the
+  definition and `setting_value` its wrapper. This is safe for the reason rule 6
+  gives `notify_send_for`: `settings` is readable by every member, so its
+  protection is a tenant check and nothing narrower.
+- **React resets an uncontrolled form once its action settles.** Without the
+  submitted values handed back, a parent who mistyped one digit would have found
+  every field empty. The action returns them and the form remounts with them.
+  This was checked in a browser, in English and Hindi: errors in the reader's
+  language, values kept, focus on the summary, `aria-invalid` on the field.
+
+### Found on the way, and not fixed here
+
+- **The settings screen draws its controls on `settings.manage` for every key**,
+  while each key names its own `permission_code` and `setting_set` checks that
+  code. The accountant holds `frontoffice.manage` and not `settings.manage`, so
+  the function would admit them and the `admins manage settings` policy would
+  then refuse them with a raw RLS error. The screen, drawn read-only, is the half
+  that agrees with the boundary. The front-office card asks the screen's
+  question, `settings.manage`, rather than sending an accountant to a page that
+  is read-only for them. Making per-key permissions load-bearing is the policy
+  rewrite rule 4 already names.
+- **The seed's enquiry numbers are `ENQ-0001` to `ENQ-0008`, written by hand
+  with no sequence row**, so the first numbered enquiry is `ENQ-2025-00001`.
+  They cannot collide, because the formats differ. The office's own
+  `enquiry_create` does the same.
+
+### Not built
+
+- **No notification to the office when one arrives.** It lands at the top of the
+  board with a follow-up due today, which is where the office already looks. An
+  event nothing subscribes to would be `0219`'s *catalogue entry, not a
+  feature*.
+- **No documents with an application.** An anonymous upload is a second
+  anonymous write, into Storage, and it deserves its own decision.
+- **No confirmation email to the applicant.** The reference is on the screen.
+  An email would be a message addressed to an address nobody has verified,
+  which makes it a way to send mail to strangers from the college's name.
+

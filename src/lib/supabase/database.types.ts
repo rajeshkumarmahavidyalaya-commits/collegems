@@ -7398,6 +7398,11 @@ export type Database = {
           name: string
         }[]
       }
+      admission_apply: {
+        Args: { p_application: Json; p_slug: string }
+        Returns: Json
+      }
+      admission_form: { Args: { p_slug: string }; Returns: Json }
       admit_student: {
         Args: {
           p_admission_date?: string
@@ -9972,6 +9977,10 @@ export type Database = {
         }
       }
       setting_value: { Args: { p_key: string }; Returns: Json }
+      setting_value_for: {
+        Args: { p_key: string; p_tenant_id: string }
+        Returns: Json
+      }
       settings_effective: {
         Args: never
         Returns: {

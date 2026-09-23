@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { headers } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
 import { getUserContext } from "@/lib/auth/context";
 import {
@@ -284,4 +285,51 @@ export async function listClassLevelOptions(): Promise<{ id: string; label: stri
     .order("sequence");
   if (error) throw new Error(error.message);
   return (data ?? []).map((c) => ({ id: c.id, label: c.name }));
+}
+
+// ---------------------------------------------------------------------------
+// The public application form
+// ---------------------------------------------------------------------------
+
+export type OnlineApplications = {
+  enabled: boolean;
+  /** Absolute when the request says where this deployment lives, else null. */
+  url: string | null;
+  path: string;
+  perHour: number;
+};
+
+/**
+ * Whether families can apply online, and where. The office needs the address
+ * to put on its own website and in its messages, and a switch nobody can find
+ * the result of is a switch nobody turns on.
+ *
+ * The slug is read through RLS (`tenants` shows a member their own row), and
+ * the setting through `setting_value`, the one place its default is applied.
+ * The origin comes from the request rather than a setting, for the reason
+ * `signupUrl()` gives in the invitation actions: Postgres does not know this
+ * app's address, and null is better than a guess.
+ */
+export async function getOnlineApplications(): Promise<OnlineApplications | null> {
+  const ctx = await getUserContext();
+  if (!ctx) return null;
+  const supabase = await createClient();
+  const [{ data: tenant }, { data: setting }] = await Promise.all([
+    supabase.from("tenants").select("slug").eq("id", ctx.tenantId).maybeSingle(),
+    supabase.rpc("setting_value", { p_key: "admissions.online" }),
+  ]);
+  if (!tenant?.slug) return null;
+
+  const value = (setting ?? {}) as { enabled?: unknown; per_hour?: unknown };
+  const path = `/apply/${tenant.slug}`;
+  const h = await headers();
+  const host = h.get("x-forwarded-host") ?? h.get("host");
+  const proto = h.get("x-forwarded-proto") ?? (host?.startsWith("localhost") ? "http" : "https");
+
+  return {
+    enabled: value.enabled === true,
+    url: host ? `${proto}://${host}${path}` : null,
+    path,
+    perHour: typeof value.per_hour === "number" ? value.per_hour : 30,
+  };
 }

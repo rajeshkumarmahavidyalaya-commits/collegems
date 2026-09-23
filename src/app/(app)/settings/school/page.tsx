@@ -1,9 +1,8 @@
 import { AlertTriangle, Settings2 } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
-import { hasPermission } from "@/lib/auth/permissions";
 import { severityTone } from "@/lib/validations/settings";
-import { listSettingProblems, listSettings } from "./actions";
+import { canChangeSettings, listSettingProblems, listSettings } from "./actions";
 import { SettingsList } from "./settings-list";
 
 export const metadata = { title: "School settings" };
@@ -20,7 +19,7 @@ export default async function SchoolSettingsPage() {
   const [settings, problems, canManage] = await Promise.all([
     listSettings(),
     listSettingProblems(),
-    hasPermission("settings.manage"),
+    canChangeSettings(),
   ]);
 
   const modules = [...new Set(settings.map((s) => s.module))];
