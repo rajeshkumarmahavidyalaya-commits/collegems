@@ -104,10 +104,13 @@ describe("the menu and the boundary agree", () => {
   });
 
   it("the course list asks which years have not ended, not which year is flagged", () => {
-    const body = functionBody("live_class_courses");
+    // 0274 moved the definition to `teaching_courses()`, its second consumer
+    // being the online tests; the live-class name wraps it and must stay one.
+    const body = functionBody("teaching_courses");
     expect(body).toMatch(/a\.end_date\s*>=/);
     expect(body).not.toContain("is_current");
     expect(body).toContain("up.staff_id = ss.teacher_staff_id");
+    expect(functionBody("live_class_courses")).toMatch(/select \* from public\.teaching_courses\(\)\s*$/);
   });
 
   it("the page writes times where the college is, not where the server is", () => {

@@ -32,6 +32,7 @@ import { KIND_DESCRIPTION, kindDescription, scheduleSentence } from "@/lib/valid
 const LOCALE_AWARE = new Set([
   "notices.categoryLabel",
   "live-classes-display.lessonStatusLabel",
+  "online-tests-display.sittingStateLabel",
   // The family-facing batch: the badges a parent or a student actually reads.
   "attendance.statusLabel",
   "student-leave.kindLabel",

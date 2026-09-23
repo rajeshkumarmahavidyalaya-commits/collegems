@@ -98,3 +98,10 @@ link opens in a new tab so the list is still there when the lesson ends.
 - **Provider API integration** (creating the Zoom or Meet meeting from here).
   It would need per-college OAuth credentials, which rule 6 says live only on
   Edge Functions, and it gains nothing a pasted link does not already give.
+
+## The course list moved (0274)
+
+`live_class_courses()` is now a wrapper over `teaching_courses()`. The online
+tests were the second screen asking *which courses may I set work for*, and the
+second consumer decides the unit of work. Same rows, same order, one
+definition. See [online-tests.md](./online-tests.md).

@@ -39,6 +39,7 @@ import {
   NotebookPen,
   ScanLine,
   Fingerprint,
+  FileQuestion,
   Video,
   PenLine,
   PenSquare,
@@ -268,6 +269,16 @@ export const NAV_GROUPS: NavGroup[] = [
         messageKey: "nav.liveClasses",
         href: "/live-classes",
         icon: Video,
+        roles: ["admin", "teacher", "parent", "student"],
+      },
+      // Mirrors `/live-classes`: the teacher sets a test, the class sits it, a
+      // guardian sees the mark. Not an accountant or a librarian -- neither is a
+      // candidate for `onlinetests.*`, and the tests' policies give them no row.
+      {
+        title: "Online tests",
+        messageKey: "nav.onlineTests",
+        href: "/online-tests",
+        icon: FileQuestion,
         roles: ["admin", "teacher", "parent", "student"],
       },
       // Staff only. The page reads nothing -- it turns a code into an address

@@ -1312,6 +1312,28 @@ included, can rewrite what a certificate says.** DELETE is revoked outright,
 because a cancelled certificate has to keep its serial — a gapless sequence with
 a hole in it is a sequence nobody can audit.
 
+#### …and the sharpest case of it is an answer key
+
+`online_test_questions` holds the prompt, the options **and** `correct_option`
+on one row, so any policy that let a student read a question would publish the
+key to the class. The answer is the definer shape again, applied to reading
+rather than writing:
+
+- the table has **no** student or family policy, and the absence is commented
+  where the policy would otherwise be added;
+- a student reaches the questions only through `online_test_start`, which
+  projects everything but the key;
+- they reach the key only through `online_test_review`, and only after the test
+  has closed for everybody;
+- their sitting is revoked from every JWT role, so the only way to write a
+  score is the one function that marks it.
+
+Probed: a student reads **0** question rows, the paper contains the word
+`correct` nowhere, and a direct `update … set score = 99` is `permission
+denied`. `tests/online-tests/online-tests.test.ts` checks which functions may
+mention the key column, and was verified by planting the key in the paper. See
+`docs/modules/online-tests.md`.
+
 #### …and the same sentence is true of SELECT, where it is easier to miss
 
 Everything above is about writes, and the reason the read case hid for 184

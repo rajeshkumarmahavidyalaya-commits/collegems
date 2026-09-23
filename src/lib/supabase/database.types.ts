@@ -4321,6 +4321,220 @@ export type Database = {
           },
         ]
       }
+      online_test_attempts: {
+        Row: {
+          answers: Json
+          due_at: string
+          id: string
+          max_score: number | null
+          saved_at: string | null
+          score: number | null
+          session_id: string
+          started_at: string
+          student_id: string
+          submitted_at: string | null
+          submitted_late: boolean
+          tenant_id: string
+          test_id: string
+          test_status: string
+        }
+        Insert: {
+          answers?: Json
+          due_at: string
+          id?: string
+          max_score?: number | null
+          saved_at?: string | null
+          score?: number | null
+          session_id: string
+          started_at?: string
+          student_id: string
+          submitted_at?: string | null
+          submitted_late?: boolean
+          tenant_id: string
+          test_id: string
+          test_status?: string
+        }
+        Update: {
+          answers?: Json
+          due_at?: string
+          id?: string
+          max_score?: number | null
+          saved_at?: string | null
+          score?: number | null
+          session_id?: string
+          started_at?: string
+          student_id?: string
+          submitted_at?: string | null
+          submitted_late?: boolean
+          tenant_id?: string
+          test_id?: string
+          test_status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "online_test_attempts_student_fkey"
+            columns: ["tenant_id", "student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["tenant_id", "id"]
+          },
+          {
+            foreignKeyName: "online_test_attempts_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "online_test_attempts_test_fkey"
+            columns: ["tenant_id", "test_id", "session_id", "test_status"]
+            isOneToOne: false
+            referencedRelation: "online_tests"
+            referencedColumns: ["tenant_id", "id", "session_id", "status"]
+          },
+        ]
+      }
+      online_test_questions: {
+        Row: {
+          correct_option: number
+          created_at: string
+          id: string
+          marks: number
+          options: Json
+          position: number
+          prompt: string
+          tenant_id: string
+          test_id: string
+          test_status: string
+          updated_at: string
+        }
+        Insert: {
+          correct_option: number
+          created_at?: string
+          id?: string
+          marks?: number
+          options: Json
+          position: number
+          prompt: string
+          tenant_id: string
+          test_id: string
+          test_status?: string
+          updated_at?: string
+        }
+        Update: {
+          correct_option?: number
+          created_at?: string
+          id?: string
+          marks?: number
+          options?: Json
+          position?: number
+          prompt?: string
+          tenant_id?: string
+          test_id?: string
+          test_status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "online_test_questions_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "online_test_questions_test_fkey"
+            columns: ["tenant_id", "test_id", "test_status"]
+            isOneToOne: false
+            referencedRelation: "online_tests"
+            referencedColumns: ["tenant_id", "id", "status"]
+          },
+        ]
+      }
+      online_tests: {
+        Row: {
+          closes_at: string
+          created_at: string
+          created_by: string | null
+          duration_minutes: number
+          id: string
+          instructions: string | null
+          opens_at: string
+          reveal_answers: boolean
+          section_id: string
+          session_id: string
+          status: string
+          subject_id: string
+          teacher_staff_id: string | null
+          tenant_id: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          closes_at: string
+          created_at?: string
+          created_by?: string | null
+          duration_minutes: number
+          id?: string
+          instructions?: string | null
+          opens_at: string
+          reveal_answers?: boolean
+          section_id: string
+          session_id: string
+          status?: string
+          subject_id: string
+          teacher_staff_id?: string | null
+          tenant_id: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          closes_at?: string
+          created_at?: string
+          created_by?: string | null
+          duration_minutes?: number
+          id?: string
+          instructions?: string | null
+          opens_at?: string
+          reveal_answers?: boolean
+          section_id?: string
+          session_id?: string
+          status?: string
+          subject_id?: string
+          teacher_staff_id?: string | null
+          tenant_id?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "online_tests_course_fkey"
+            columns: ["tenant_id", "session_id", "section_id", "subject_id"]
+            isOneToOne: false
+            referencedRelation: "section_subjects"
+            referencedColumns: [
+              "tenant_id",
+              "session_id",
+              "section_id",
+              "subject_id",
+            ]
+          },
+          {
+            foreignKeyName: "online_tests_teacher_fkey"
+            columns: ["tenant_id", "teacher_staff_id"]
+            isOneToOne: false
+            referencedRelation: "staff"
+            referencedColumns: ["tenant_id", "id"]
+          },
+          {
+            foreignKeyName: "online_tests_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       payment_intents: {
         Row: {
           amount: number
@@ -9718,6 +9932,75 @@ export type Database = {
         }[]
       }
       notify_unread_count: { Args: never; Returns: number }
+      online_test_clean_answers: {
+        Args: { p_answers: Json; p_test_id: string }
+        Returns: Json
+      }
+      online_test_create: { Args: { p_test: Json }; Returns: string }
+      online_test_delete: { Args: { p_test_id: string }; Returns: undefined }
+      online_test_delete_question: {
+        Args: { p_question_id: string }
+        Returns: undefined
+      }
+      online_test_finish: {
+        Args: { p_answers: Json; p_attempt_id: string; p_late: boolean }
+        Returns: undefined
+      }
+      online_test_my_sitting: {
+        Args: { p_test_id: string }
+        Returns: {
+          attempt_id: string
+          student_id: string
+          tenant_id: string
+          test_id: string
+          timezone: string
+        }[]
+      }
+      online_test_paper: { Args: { p_attempt_id: string }; Returns: Json }
+      online_test_publish: { Args: { p_test_id: string }; Returns: undefined }
+      online_test_results: { Args: { p_test_id: string }; Returns: Json }
+      online_test_review: { Args: { p_test_id: string }; Returns: Json }
+      online_test_save: {
+        Args: { p_answers: Json; p_test_id: string }
+        Returns: Json
+      }
+      online_test_save_question: {
+        Args: { p_question: Json; p_test_id: string }
+        Returns: string
+      }
+      online_test_score: {
+        Args: { p_answers: Json; p_test_id: string }
+        Returns: {
+          max_score: number
+          score: number
+        }[]
+      }
+      online_test_start: { Args: { p_test_id: string }; Returns: Json }
+      online_test_submit: {
+        Args: { p_answers: Json; p_test_id: string }
+        Returns: Json
+      }
+      online_test_unpublish: { Args: { p_test_id: string }; Returns: undefined }
+      online_tests_list: {
+        Args: never
+        Returns: {
+          class_label: string
+          closes_at: string
+          duration_minutes: number
+          id: string
+          opens_at: string
+          question_count: number
+          reveal_answers: boolean
+          section_id: string
+          sittings: number
+          status: string
+          subject_name: string
+          submitted: number
+          timezone: string
+          title: string
+          total_marks: number
+        }[]
+      }
       payroll_discard: { Args: { p_run_id: string }; Returns: undefined }
       payroll_evaluate: {
         Args: {
@@ -10779,6 +11062,17 @@ export type Database = {
       syllabus_unmark: {
         Args: { p_section_id: string; p_unit_id: string }
         Returns: Json
+      }
+      teaching_courses: {
+        Args: never
+        Returns: {
+          label: string
+          section_id: string
+          session_id: string
+          session_name: string
+          subject_id: string
+          teacher_name: string
+        }[]
       }
       timetable_busy_in_slot: {
         Args: {

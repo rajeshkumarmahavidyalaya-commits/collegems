@@ -352,11 +352,22 @@ teacher's code, a reader whose clock has drifted, and an office "absent" row
 present beforehand. `/hr/biometric` registers readers and codes. Migration
 `0273`; see [biometric.md](./modules/biometric.md).
 
-**Still open, measured as zero occurrences in `src/` and the migrations:**
+**Closed: online tests.** `/online-tests`: multiple-choice tests that a subject
+teacher sets for one class. The class sits them against a clock frozen at the
+start, and Postgres marks each one in a single function at hand-in. The answer
+key is a column of the question row, and RLS cannot restrict columns, so the
+questions table has **no** student or family policy. A student reaches the
+questions only through a definer that projects everything but the key, and
+sees the key only after the test closes, if the teacher allows it. Questions
+freeze on publish, and a started test cannot go back to draft; both are rule
+4's composite-key device. The results roster is a tenant-filtered definer,
+because an invoker would list nobody as *not started* to a subject teacher.
+Migration `0274`; see [online-tests.md](./modules/online-tests.md).
 
-| | notes |
-|---|---|
-| Online exam / quiz | a whole LMS; eSkooly sells it as an add-on |
+**Phase 3b is closed.** Every feature the competitor's docs were searched for
+is built: online admissions, live classes, QR on ID cards, attendance readers
+and online tests. The docs themselves were never readable from this
+environment, which the paragraph below still says.
 
 And the counter-direction, stated because absence of evidence is not evidence:
 the double-entry general ledger, the append-only money ledger with gapless
