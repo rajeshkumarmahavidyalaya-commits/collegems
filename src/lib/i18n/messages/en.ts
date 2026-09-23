@@ -51,6 +51,7 @@ export const en = {
   "nav.timetable": "Timetable",
   "nav.exams": "Exams",
   "nav.homework": "Homework",
+  "nav.liveClasses": "Live classes",
   "nav.fees": "Fees",
   "nav.familyFees": "Fees",
   "nav.accounts": "Accounts",
@@ -660,6 +661,20 @@ export const en = {
   "apply.error.dateOfBirth": "Enter a real date of birth.",
   "apply.error.tooLong": "This is too long.",
   "apply.error.classLevel": "Choose a class from the list.",
+  // --- live classes (0270) -------------------------------------------------
+  "liveClasses.title": "Live classes",
+  "liveClasses.subtitle": "Lessons taught online, and the link to join each one. A link opens 15 minutes before its lesson starts.",
+  "liveClasses.upcoming": "Today and coming up",
+  "liveClasses.earlier": "Earlier",
+  "liveClasses.empty": "No live lessons in the last week or the next two.",
+  "liveClasses.join": "Join",
+  "liveClasses.opensAt": "Opens at {time}",
+  "liveClasses.ended": "Ended",
+  "liveClasses.cancelledBecause": "Cancelled: {reason}",
+  "liveClasses.withTeacher": "with {name}",
+  "liveClasses.status.scheduled": "Scheduled",
+  "liveClasses.status.cancelled": "Cancelled",
+  "liveClasses.noAccess": "Your role does not see live classes. Ask an administrator if it should.",
 } as const;
 
 export type MessageKey = keyof typeof en;

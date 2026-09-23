@@ -37,6 +37,7 @@ import {
   ListChecks,
   MapPin,
   NotebookPen,
+  Video,
   PenLine,
   PenSquare,
   Plane,
@@ -253,6 +254,18 @@ export const NAV_GROUPS: NavGroup[] = [
         messageKey: "nav.homework",
         href: "/homework",
         icon: NotebookPen,
+        roles: ["admin", "teacher", "parent", "student"],
+      },
+      // Homework's audience, for homework's reason: the subject teacher
+      // schedules, the class and its families join, the administrator does
+      // either. `live_classes` carries homework's policies row for row, so an
+      // accountant or a librarian would find an empty list here -- which is why
+      // neither is offered it.
+      {
+        title: "Live classes",
+        messageKey: "nav.liveClasses",
+        href: "/live-classes",
+        icon: Video,
         roles: ["admin", "teacher", "parent", "student"],
       },
       {

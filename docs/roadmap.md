@@ -323,12 +323,20 @@ policy is opened. The limit is per college per hour under an advisory lock,
 with duplicate suppression, and one null for every reason the form cannot
 show. Migration `0268`; see [front-office.md](./modules/front-office.md).
 
+**Closed: live classes.** `/live-classes`: a lesson for one class on a date,
+keyed onto `section_subjects`, with the join address held to an allowlist of
+provider shapes by a CHECK and Jitsi rooms generated from random bytes.
+Overlaps are refused by an exclusion constraint, and times are the college's
+wall clock. Probing found the Cancel button asking a different question from
+the policy (`0271`), and that a course list taken from the stale current-year
+flag could offer nothing schedulable (`0272`). Migrations `0270`-`0272`; see
+[live-classes.md](./modules/live-classes.md).
+
 **Still open, measured as zero occurrences in `src/` and the migrations:**
 
 | | notes |
 |---|---|
 | Online exam / quiz | a whole LMS; eSkooly sells it as an add-on |
-| Live virtual classes (Zoom, BigBlueButton, Jitsi, Meet) | four third-party integrations, none testable here |
 | Biometric attendance | needs hardware |
 | QR / barcode on ID cards | the card renderer exists; a code with **no reader** would be a string nobody scans, so it is only worth building with the thing that reads it |
 

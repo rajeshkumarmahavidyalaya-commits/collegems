@@ -3521,6 +3521,90 @@ export type Database = {
           },
         ]
       }
+      live_classes: {
+        Row: {
+          cancel_reason: string | null
+          created_at: string
+          created_by: string | null
+          ends_at: string
+          id: string
+          join_url: string
+          provider: string
+          section_id: string
+          session_id: string
+          starts_at: string
+          status: string
+          subject_id: string
+          teacher_staff_id: string | null
+          tenant_id: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          cancel_reason?: string | null
+          created_at?: string
+          created_by?: string | null
+          ends_at: string
+          id?: string
+          join_url: string
+          provider: string
+          section_id: string
+          session_id: string
+          starts_at: string
+          status?: string
+          subject_id: string
+          teacher_staff_id?: string | null
+          tenant_id: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          cancel_reason?: string | null
+          created_at?: string
+          created_by?: string | null
+          ends_at?: string
+          id?: string
+          join_url?: string
+          provider?: string
+          section_id?: string
+          session_id?: string
+          starts_at?: string
+          status?: string
+          subject_id?: string
+          teacher_staff_id?: string | null
+          tenant_id?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "live_classes_course_fkey"
+            columns: ["tenant_id", "session_id", "section_id", "subject_id"]
+            isOneToOne: false
+            referencedRelation: "section_subjects"
+            referencedColumns: [
+              "tenant_id",
+              "session_id",
+              "section_id",
+              "subject_id",
+            ]
+          },
+          {
+            foreignKeyName: "live_classes_teacher_fkey"
+            columns: ["tenant_id", "teacher_staff_id"]
+            isOneToOne: false
+            referencedRelation: "staff"
+            referencedColumns: ["tenant_id", "id"]
+          },
+          {
+            foreignKeyName: "live_classes_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       marks: {
         Row: {
           component_max_marks: number | null
@@ -9161,6 +9245,67 @@ export type Database = {
       library_waive_staff_fine: {
         Args: { p_issue_id: string; p_note?: string }
         Returns: undefined
+      }
+      live_class_cancel: {
+        Args: { p_id: string; p_reason: string }
+        Returns: undefined
+      }
+      live_class_courses: {
+        Args: never
+        Returns: {
+          label: string
+          section_id: string
+          session_id: string
+          session_name: string
+          subject_id: string
+          teacher_name: string
+        }[]
+      }
+      live_class_schedule: {
+        Args: { p_class: Json }
+        Returns: {
+          cancel_reason: string | null
+          created_at: string
+          created_by: string | null
+          ends_at: string
+          id: string
+          join_url: string
+          provider: string
+          section_id: string
+          session_id: string
+          starts_at: string
+          status: string
+          subject_id: string
+          teacher_staff_id: string | null
+          tenant_id: string
+          title: string
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "live_classes"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      live_classes_between: {
+        Args: { p_from: string; p_to: string }
+        Returns: {
+          can_manage: boolean
+          cancel_reason: string
+          ends_at: string
+          id: string
+          join_url: string
+          provider: string
+          section_id: string
+          section_label: string
+          starts_at: string
+          status: string
+          subject_name: string
+          teacher_name: string
+          timezone: string
+          title: string
+        }[]
       }
       mark_attendance: {
         Args: {
