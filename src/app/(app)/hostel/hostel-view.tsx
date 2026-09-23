@@ -1,11 +1,13 @@
 "use client";
 
 import { useEffect, useState, useTransition } from "react";
+
 import Link from "next/link";
+
 import { useRouter } from "next/navigation";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
+
 import { useQuery } from "@tanstack/react-query";
+
 import {
   AlertTriangle,
   BedDouble,
@@ -17,22 +19,27 @@ import {
   UserPlus,
   X,
 } from "lucide-react";
+
 import { toast } from "sonner";
+
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+
 import { Badge } from "@/components/ui/badge";
+
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import { Form } from "@/components/ui/form";
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+
 import { Input } from "@/components/ui/input";
+
 import { Label } from "@/components/ui/label";
+
 import {
   Select,
   SelectContent,
@@ -40,7 +47,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Switch } from "@/components/ui/switch";
+
 import {
   Table,
   TableBody,
@@ -49,20 +56,35 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ErrorSummary } from "@/components/forms/error-summary";
-import { SelectField, TextField, TextareaField } from "@/components/forms/form-fields";
-import { bedsSentence, genderAllowed, hostelKindLabel, HOSTEL_KINDS, hostelSchema, occupancyTone, roomSchema, type HostelInput, type RoomInput } from "@/lib/validations/hostel";
+
+import {
+  bedsSentence,
+  genderAllowed,
+  hostelKindLabel,
+  occupancyTone,
+} from "@/lib/validations/hostel-display";
 import { useI18n } from "@/components/providers/i18n-provider";
+
 import {
   allocateStudent,
-  saveHostel,
-  saveRoom,
   searchStudentsForHostel,
   type BoarderHit,
   type HostelRow,
   type RoomRow,
 } from "./actions";
+import dynamic from "next/dynamic";
+
+// Loaded on the click that opens them and rendered only while open: they
+// hold this page's Zod and form code, and a conditional render is not a
+// conditional load (see `fees-table.tsx` and docs/performance.md).
+const HostelDialog = dynamic(() =>
+  import("./hostel-dialogs").then((m) => m.HostelDialog),
+);
+const RoomDialog = dynamic(() =>
+  import("./hostel-dialogs").then((m) => m.RoomDialog),
+);
 
 export function HostelView({
   hostels,
@@ -107,7 +129,9 @@ export function HostelView({
         <TabsList>
           <TabsTrigger value="rooms">Rooms</TabsTrigger>
           <TabsTrigger value="houses">Houses</TabsTrigger>
-          {canAllocate && <TabsTrigger value="place">Place a child</TabsTrigger>}
+          {canAllocate && (
+            <TabsTrigger value="place">Place a child</TabsTrigger>
+          )}
         </TabsList>
 
         <TabsContent value="rooms" className="mt-4">
@@ -150,19 +174,23 @@ export function HostelView({
         )}
       </Tabs>
 
-      <HostelDialog
-        open={hostelOpen}
-        onOpenChange={setHostelOpen}
-        hostel={editingHostel}
-        feeHeads={feeHeads}
-        staff={staff}
-      />
-      <RoomDialog
-        open={roomOpen}
-        onOpenChange={setRoomOpen}
-        hostelId={roomHostelId}
-        room={editingRoom}
-      />
+      {hostelOpen ? (
+        <HostelDialog
+          open={hostelOpen}
+          onOpenChange={setHostelOpen}
+          hostel={editingHostel}
+          feeHeads={feeHeads}
+          staff={staff}
+        />
+      ) : null}
+      {roomOpen ? (
+        <RoomDialog
+          open={roomOpen}
+          onOpenChange={setRoomOpen}
+          hostelId={roomHostelId}
+          room={editingRoom}
+        />
+      ) : null}
     </div>
   );
 }
@@ -187,12 +215,17 @@ function RoomsTab({
         <div>
           <CardTitle>Rooms</CardTitle>
           <CardDescription className="max-w-2xl">
-            Beds are the capacity and the fare is per child, so two children sharing a double each
-            pay the double rate. A school charging one rate sets the same number on every room.
+            Beds are the capacity and the fare is per child, so two children
+            sharing a double each pay the double rate. A school charging one
+            rate sets the same number on every room.
           </CardDescription>
         </div>
         {canManage && hostels.length > 0 && (
-          <Button size="sm" className="cursor-pointer" onClick={() => onAdd(hostels[0].id)}>
+          <Button
+            size="sm"
+            className="cursor-pointer"
+            onClick={() => onAdd(hostels[0].id)}
+          >
             <Plus className="size-4" aria-hidden="true" />
             New room
           </Button>
@@ -201,7 +234,12 @@ function RoomsTab({
       <CardContent>
         {rooms.length === 0 ? (
           <EmptyState
-            icon={<BedDouble className="size-6 text-muted-foreground" aria-hidden="true" />}
+            icon={
+              <BedDouble
+                className="size-6 text-muted-foreground"
+                aria-hidden="true"
+              />
+            }
             title="No rooms yet"
             body="Add a boarding house first, then its rooms — each with its bed count and monthly fare."
           />
@@ -216,7 +254,9 @@ function RoomsTab({
                   <TableHead>Beds</TableHead>
                   <TableHead className="text-end">Monthly fare</TableHead>
                   <TableHead>Status</TableHead>
-                  {canManage && <TableHead className="w-16 text-end">Edit</TableHead>}
+                  {canManage && (
+                    <TableHead className="w-16 text-end">Edit</TableHead>
+                  )}
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -235,8 +275,12 @@ function RoomsTab({
                           {hostelKindLabel(room.hostelKind, t)}
                         </span>
                       </TableCell>
-                      <TableCell className="font-mono font-medium">{room.roomNumber}</TableCell>
-                      <TableCell className="text-muted-foreground">{room.floor ?? "—"}</TableCell>
+                      <TableCell className="font-mono font-medium">
+                        {room.roomNumber}
+                      </TableCell>
+                      <TableCell className="text-muted-foreground">
+                        {room.floor ?? "—"}
+                      </TableCell>
                       <TableCell>
                         {/* Text carries the meaning; the variant only echoes it. */}
                         <Badge
@@ -252,10 +296,14 @@ function RoomsTab({
                         </Badge>
                       </TableCell>
                       <TableCell className="text-end font-mono tabular-nums">
-                        {room.monthlyFare > 0 ? formatCurrency(room.monthlyFare) : "Free"}
+                        {room.monthlyFare > 0
+                          ? formatCurrency(room.monthlyFare)
+                          : "Free"}
                       </TableCell>
                       <TableCell>
-                        <Badge variant={room.isActive ? "outline" : "secondary"}>
+                        <Badge
+                          variant={room.isActive ? "outline" : "secondary"}
+                        >
                           {room.isActive ? "In use" : "Out of use"}
                         </Badge>
                       </TableCell>
@@ -268,7 +316,9 @@ function RoomsTab({
                             onClick={() => onEdit(room)}
                           >
                             <Pencil className="size-4" aria-hidden="true" />
-                            <span className="sr-only">Edit room {room.roomNumber}</span>
+                            <span className="sr-only">
+                              Edit room {room.roomNumber}
+                            </span>
                           </Button>
                         </TableCell>
                       )}
@@ -302,8 +352,8 @@ function HousesTab({
         <div>
           <CardTitle>Boarding houses</CardTitle>
           <CardDescription className="max-w-2xl">
-            A house that takes only boys or only girls enforces it when a child is placed. A mixed
-            house is a real answer, not a fallback.
+            A house that takes only boys or only girls enforces it when a child
+            is placed. A mixed house is a real answer, not a fallback.
           </CardDescription>
         </div>
         {canManage && (
@@ -316,7 +366,12 @@ function HousesTab({
       <CardContent>
         {hostels.length === 0 ? (
           <EmptyState
-            icon={<Building2 className="size-6 text-muted-foreground" aria-hidden="true" />}
+            icon={
+              <Building2
+                className="size-6 text-muted-foreground"
+                aria-hidden="true"
+              />
+            }
             title="No boarding houses"
             body="Add one, give it rooms with fares, and children can be placed in them."
           />
@@ -331,7 +386,9 @@ function HousesTab({
                   <TableHead className="text-end">Rooms</TableHead>
                   <TableHead>Beds</TableHead>
                   <TableHead>Status</TableHead>
-                  {canManage && <TableHead className="w-16 text-end">Edit</TableHead>}
+                  {canManage && (
+                    <TableHead className="w-16 text-end">Edit</TableHead>
+                  )}
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -358,7 +415,9 @@ function HousesTab({
                       {hostel.occupied} / {hostel.beds}
                     </TableCell>
                     <TableCell>
-                      <Badge variant={hostel.isActive ? "outline" : "secondary"}>
+                      <Badge
+                        variant={hostel.isActive ? "outline" : "secondary"}
+                      >
                         {hostel.isActive ? "Open" : "Closed"}
                       </Badge>
                     </TableCell>
@@ -413,7 +472,9 @@ function AllocateCard({ rooms }: { rooms: RoomRow[] }) {
   // The gender rule mirrored from `hostel_allocate`, so a clerk is told before
   // choosing rather than after submitting. The database is still the gate.
   const genderClash =
-    chosen && student ? !genderAllowed(chosen.hostelKind, student.gender) : false;
+    chosen && student
+      ? !genderAllowed(chosen.hostelKind, student.gender)
+      : false;
   const full = chosen ? chosen.bedsFree <= 0 : false;
 
   function submit() {
@@ -432,7 +493,9 @@ function AllocateCard({ rooms }: { rooms: RoomRow[] }) {
         setError(result.error);
         return;
       }
-      toast.success(`${student.fullName} is in ${chosen?.hostelName} ${chosen?.roomNumber}.`);
+      toast.success(
+        `${student.fullName} is in ${chosen?.hostelName} ${chosen?.roomNumber}.`,
+      );
       setStudent(null);
       setTerm("");
       setDebounced("");
@@ -447,8 +510,8 @@ function AllocateCard({ rooms }: { rooms: RoomRow[] }) {
       <CardHeader>
         <CardTitle>Place a child</CardTitle>
         <CardDescription className="max-w-2xl">
-          The fare comes from the room and is copied onto the stay, so revising a room&apos;s rate
-          later does not restate a bill already raised.
+          The fare comes from the room and is copied onto the stay, so revising
+          a room&apos;s rate later does not restate a bill already raised.
         </CardDescription>
       </CardHeader>
       <CardContent className="flex max-w-xl flex-col gap-4">
@@ -461,7 +524,9 @@ function AllocateCard({ rooms }: { rooms: RoomRow[] }) {
                 <p className="text-xs text-muted-foreground">
                   {student.admissionNumber ?? "No admission number"}
                   {student.sectionLabel ? ` · ${student.sectionLabel}` : ""}
-                  {student.gender ? ` · ${student.gender}` : " · gender not recorded"}
+                  {student.gender
+                    ? ` · ${student.gender}`
+                    : " · gender not recorded"}
                 </p>
                 {student.currentRoom && (
                   <p className="mt-1 text-xs font-medium text-[color:var(--color-accent)]">
@@ -512,11 +577,15 @@ function AllocateCard({ rooms }: { rooms: RoomRow[] }) {
                         onClick={() => setStudent(hit)}
                         className="flex w-full cursor-pointer flex-col items-start gap-0.5 border-b border-border p-2 text-start transition-colors duration-200 last:border-0 hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                       >
-                        <span className="text-sm font-medium">{hit.fullName}</span>
+                        <span className="text-sm font-medium">
+                          {hit.fullName}
+                        </span>
                         <span className="text-xs text-muted-foreground">
                           {hit.admissionNumber ?? "—"}
                           {hit.sectionLabel ? ` · ${hit.sectionLabel}` : ""}
-                          {hit.currentRoom ? ` · already in ${hit.currentRoom}` : ""}
+                          {hit.currentRoom
+                            ? ` · already in ${hit.currentRoom}`
+                            : ""}
                         </span>
                       </button>
                     </li>
@@ -537,8 +606,13 @@ function AllocateCard({ rooms }: { rooms: RoomRow[] }) {
               {rooms
                 .filter((r) => r.isActive)
                 .map((r) => (
-                  <SelectItem key={r.roomId} value={r.roomId} className="cursor-pointer">
-                    {r.hostelName} {r.roomNumber} — {formatCurrency(r.monthlyFare)}
+                  <SelectItem
+                    key={r.roomId}
+                    value={r.roomId}
+                    className="cursor-pointer"
+                  >
+                    {r.hostelName} {r.roomNumber} —{" "}
+                    {formatCurrency(r.monthlyFare)}
                     {r.bedsFree <= 0 ? " (full)" : ` (${r.bedsFree} free)`}
                   </SelectItem>
                 ))}
@@ -546,8 +620,8 @@ function AllocateCard({ rooms }: { rooms: RoomRow[] }) {
           </Select>
           {genderClash && (
             <p role="alert" className="text-sm font-medium text-destructive">
-              {chosen?.hostelName} is a {chosen?.hostelKind} house, so this child cannot be placed
-              there.
+              {chosen?.hostelName} is a {chosen?.hostelKind} house, so this
+              child cannot be placed there.
             </p>
           )}
         </div>
@@ -560,7 +634,9 @@ function AllocateCard({ rooms }: { rooms: RoomRow[] }) {
             value={startsOn}
             onChange={(event) => setStartsOn(event.target.value)}
           />
-          <p className="text-xs text-muted-foreground">Leave blank for today.</p>
+          <p className="text-xs text-muted-foreground">
+            Leave blank for today.
+          </p>
         </div>
 
         <p aria-live="assertive" className="min-h-5">
@@ -588,290 +664,6 @@ function AllocateCard({ rooms }: { rooms: RoomRow[] }) {
         </div>
       </CardContent>
     </Card>
-  );
-}
-
-function HostelDialog({
-  open,
-  onOpenChange,
-  hostel,
-  feeHeads,
-  staff,
-}: {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  hostel: HostelRow | null;
-  feeHeads: { id: string; label: string }[];
-  staff: { id: string; label: string }[];
-}) {
-  const router = useRouter();
-  const [pending, startTransition] = useTransition();
-
-  const form = useForm<HostelInput>({
-    resolver: zodResolver(hostelSchema),
-    values: {
-      name: hostel?.name ?? "",
-      kind: (hostel?.kind ?? "mixed") as HostelInput["kind"],
-      wardenStaffId: hostel?.wardenStaffId ?? "",
-      feeHeadId: hostel?.feeHeadId ?? "",
-      address: hostel?.address ?? "",
-      isActive: hostel?.isActive ?? true,
-    },
-  });
-
-  function onSubmit(values: HostelInput) {
-    startTransition(async () => {
-      const result = await saveHostel(values, hostel?.id);
-      if (!result.ok) {
-        toast.error(result.error);
-        return;
-      }
-      toast.success(hostel ? "House updated." : "House added.");
-      onOpenChange(false);
-      router.refresh();
-    });
-  }
-
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[90svh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>{hostel ? "Edit house" : "New boarding house"}</DialogTitle>
-          <DialogDescription>
-            Give it a fee head so its room fares reach the bill, and a warden so the register has
-            somebody&apos;s name on it.
-          </DialogDescription>
-        </DialogHeader>
-
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col gap-4" noValidate>
-            <ErrorSummary errors={form.formState.errors} submitCount={form.formState.submitCount} />
-
-            <TextField control={form.control} name="name" label="Name" required />
-            <SelectField
-              control={form.control}
-              name="kind"
-              label="Takes"
-              options={HOSTEL_KINDS.map((k) => ({ value: k.value, label: k.label }))}
-              description="A gendered house refuses a placement that does not match — unless the child's gender is not recorded, which is not a refusal."
-            />
-            <SelectField
-              control={form.control}
-              name="wardenStaffId"
-              label="Warden"
-              options={[
-                { value: "", label: "Not recorded" },
-                ...staff.map((s) => ({ value: s.id, label: s.label })),
-              ]}
-            />
-            <SelectField
-              control={form.control}
-              name="feeHeadId"
-              label="Fee head"
-              options={[
-                { value: "", label: "Do not charge for this house" },
-                ...feeHeads.map((h) => ({ value: h.id, label: h.label })),
-              ]}
-              description="Which head a room's fare posts to on the invoice."
-            />
-            <TextareaField control={form.control} name="address" label="Address" rows={2} />
-
-            <div className="flex items-center justify-between rounded-md border p-3">
-              <div>
-                <Label htmlFor="hostel-active">Open</Label>
-                <p className="max-w-sm text-xs text-muted-foreground">
-                  A closed house keeps its boarders and its history; nobody new can be placed.
-                </p>
-              </div>
-              <Switch
-                id="hostel-active"
-                checked={form.watch("isActive")}
-                onCheckedChange={(checked) => form.setValue("isActive", checked)}
-                className="cursor-pointer"
-              />
-            </div>
-
-            <DialogFooter>
-              <Button
-                type="button"
-                variant="outline"
-                className="cursor-pointer"
-                onClick={() => onOpenChange(false)}
-              >
-                Cancel
-              </Button>
-              <Button type="submit" disabled={pending} className="cursor-pointer">
-                {pending && <Loader2 className="size-4 animate-spin" aria-hidden="true" />}
-                {hostel ? "Save house" : "Add house"}
-              </Button>
-            </DialogFooter>
-          </form>
-        </Form>
-      </DialogContent>
-    </Dialog>
-  );
-}
-
-function RoomDialog({
-  open,
-  onOpenChange,
-  hostelId,
-  room,
-}: {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  hostelId: string;
-  room: RoomRow | null;
-}) {
-  const router = useRouter();
-  const [pending, startTransition] = useTransition();
-
-  const form = useForm<RoomInput>({
-    resolver: zodResolver(roomSchema),
-    values: {
-      roomNumber: room?.roomNumber ?? "",
-      floor: room?.floor ?? "",
-      beds: room?.beds ?? 4,
-      monthlyFare: room?.monthlyFare ?? 0,
-      isActive: room?.isActive ?? true,
-      notes: "",
-    },
-  });
-
-  function onSubmit(values: RoomInput) {
-    startTransition(async () => {
-      const result = await saveRoom(room?.hostelId ?? hostelId, values, room?.roomId);
-      if (!result.ok) {
-        toast.error(result.error);
-        return;
-      }
-      toast.success(room ? "Room updated." : "Room added.");
-      onOpenChange(false);
-      router.refresh();
-    });
-  }
-
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[90svh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>{room ? "Edit room" : "New room"}</DialogTitle>
-          <DialogDescription>
-            Changing a fare here does not restate a bill already raised: a stay keeps the fare it
-            was made at. Lowering the bed count below the children already in the room is not
-            refused — the room simply reads as over its capacity until somebody moves them.
-          </DialogDescription>
-        </DialogHeader>
-
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col gap-4" noValidate>
-            <ErrorSummary errors={form.formState.errors} submitCount={form.formState.submitCount} />
-
-            <TextField control={form.control} name="roomNumber" label="Room number" required />
-            <TextField control={form.control} name="floor" label="Floor" />
-
-            <div className="grid gap-4 sm:grid-cols-2">
-              <NumberBox
-                id="room-beds"
-                label="Beds"
-                required
-                value={form.watch("beds")}
-                error={form.formState.errors.beds?.message}
-                onChange={(n) => form.setValue("beds", n, { shouldValidate: true })}
-              />
-              <NumberBox
-                id="room-fare"
-                label="Monthly fare"
-                required
-                step="0.01"
-                value={form.watch("monthlyFare")}
-                error={form.formState.errors.monthlyFare?.message}
-                onChange={(n) => form.setValue("monthlyFare", n, { shouldValidate: true })}
-              />
-            </div>
-
-            <div className="flex items-center justify-between rounded-md border p-3">
-              <div>
-                <Label htmlFor="room-active">In use</Label>
-                <p className="max-w-sm text-xs text-muted-foreground">
-                  Turn this off while a room is being repaired.
-                </p>
-              </div>
-              <Switch
-                id="room-active"
-                checked={form.watch("isActive")}
-                onCheckedChange={(checked) => form.setValue("isActive", checked)}
-                className="cursor-pointer"
-              />
-            </div>
-
-            <DialogFooter>
-              <Button
-                type="button"
-                variant="outline"
-                className="cursor-pointer"
-                onClick={() => onOpenChange(false)}
-              >
-                Cancel
-              </Button>
-              <Button type="submit" disabled={pending} className="cursor-pointer">
-                {pending && <Loader2 className="size-4 animate-spin" aria-hidden="true" />}
-                {room ? "Save room" : "Add room"}
-              </Button>
-            </DialogFooter>
-          </form>
-        </Form>
-      </DialogContent>
-    </Dialog>
-  );
-}
-
-function NumberBox({
-  id,
-  label,
-  value,
-  onChange,
-  error,
-  required,
-  step,
-}: {
-  id: string;
-  label: string;
-  value: number;
-  onChange: (value: number) => void;
-  error?: string;
-  required?: boolean;
-  step?: string;
-}) {
-  return (
-    <div className="flex flex-col gap-1.5">
-      <Label htmlFor={id}>
-        {label}
-        {required && (
-          <span aria-hidden="true" className="text-destructive">
-            {" "}
-            *
-          </span>
-        )}
-      </Label>
-      <input
-        id={id}
-        type="number"
-        step={step}
-        min={0}
-        inputMode="decimal"
-        className="h-9 rounded-md border border-input bg-transparent px-3 py-1 font-mono text-sm shadow-xs transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-        aria-invalid={error ? true : undefined}
-        aria-describedby={error ? `${id}-error` : undefined}
-        value={Number.isNaN(value) ? "" : value}
-        onChange={(event) => onChange(event.target.value === "" ? NaN : Number(event.target.value))}
-      />
-      {error && (
-        <p id={`${id}-error`} role="alert" className="text-sm text-destructive">
-          {error}
-        </p>
-      )}
-    </div>
   );
 }
 

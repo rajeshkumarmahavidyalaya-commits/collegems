@@ -3,6 +3,7 @@ import { Fira_Sans, Fira_Code } from "next/font/google";
 import { ThemeProvider } from "@/components/providers/theme-provider";
 import { I18nProvider } from "@/components/providers/i18n-provider";
 import { getLocale } from "@/lib/i18n/server";
+import { clientMessagesFor } from "@/lib/i18n/translate";
 import { directionOf } from "@/lib/i18n/config";
 import { QueryProvider } from "@/components/providers/query-provider";
 import { Toaster } from "@/components/ui/sonner";
@@ -54,7 +55,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
       <body className="min-h-full flex flex-col font-sans">
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
           <QueryProvider>
-            <I18nProvider locale={locale}>
+            <I18nProvider locale={locale} messages={clientMessagesFor(locale)}>
               {children}
               {/* The toast rail follows the reading direction: a message that
                   appears in the corner your eye does not start from is a

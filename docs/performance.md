@@ -506,3 +506,68 @@ independently here at 5.9 s and 744 kB, which is the same number twice.
 - **The platform's own response ceiling.** What Vercel will return is a fact
   about the deployment and was not established here, so nothing in this file
   claims 24 MB is safe to send — only that 24 MB of photographs is a 24 MB file.
+
+## Lazy loading: the catalogue and the dialogs
+
+Measured first with `npm run build` and `.next/app-build-manifest.json`. The
+heaviest routes carried 230–262 kB of First Load JS against a 103 kB shared
+base. Two shared chunks made most of the difference:
+
+| chunk | raw | routes | what it was |
+|---|---|---|---|
+| `6174` | 101.6 kB | 64 | the i18n catalogue: English, Hindi **and** Urdu |
+| `9705` | 90.6 kB | 55 | Zod |
+
+### The catalogue: one locale, as a prop
+
+`i18n-provider.tsx` imported `translate.ts`, which imports all three
+catalogues, so every route using a translation in the browser shipped three
+languages to show one. The translator now lives in `translator.ts`, which
+imports no catalogue. The root layout passes the provider this locale's
+messages with English filled in underneath (`clientMessagesFor`), so the page
+still renders in the reader's language on the server, and nothing flickers.
+
+- **66 routes dropped 27–28 kB each** (gzipped, as Next reports). None went up.
+- **The cost:** 8.0 kB (English), 9.9 kB (Hindi) or 9.5 kB (Urdu) of gzipped
+  JSON on a full page load. It arrives once, is not re-sent on client-side
+  navigation, and is data rather than script, so nothing parses or runs it.
+- `tests/i18n/catalogue-stays-on-the-server.test.ts` fails if any client module
+  imports a catalogue by value. It was verified by planting one, and a
+  type-only import passes, as it should. The same test checks that the
+  browser's translator answers every key exactly as the server's does, in all
+  three locales.
+
+### The dialogs: loaded on the click that opens them
+
+The heaviest admin pages kept their add/edit dialogs, with Zod and
+react-hook-form, in the page's own file, and rendered them even when closed.
+**A conditional render is not a conditional load**, and an unconditional
+render is not even conditional. Each page now:
+
+1. moves its dialogs into a sibling module loaded with `next/dynamic`, and
+   renders each only while it is open (`{open ? <Dialog …/> : null}`), so the
+   code is fetched on the click that opens it;
+2. imports its badges and labels from a **no-Zod** `*-display.ts`. The original
+   `*.ts` keeps the schemas and re-exports the display module, so every
+   existing importer, server routes included, is unchanged.
+
+| route | before | after |
+|---|---|---|
+| `/transport` | 243 kB | **134 kB** |
+| `/exams/[examId]` | 262 kB | **188 kB** |
+| `/hostel` | 253 kB | **181 kB** |
+| `/homework` | 244 kB | **201 kB** |
+
+Both changes together: **20,781 → 18,823 kB** summed over all 114 routes, 73
+routes lighter. Five routes report +1 kB, which is the build-to-build chunk
+noise already recorded above, not a regression.
+
+Checked in a browser, not only in the build: on `/transport` the page loads
+with no dialog in the DOM and without chunk `9705`. Clicking *New route*
+fetches 7 chunks, Zod among them, and opens the dialog; Escape closes it.
+
+**Not done yet, in order of weight:** `/notifications/log` (234 kB),
+`/inventory` (225), `/fees/counter` (224), `/academics`, `/fees/setup`,
+`/promotion/[runId]` (219 each), `/exams` and `/front-office` (217). Each is
+the same two steps. `/fees/counter` is the exception: its forms are the page
+rather than dialogs, so there is nothing to defer.

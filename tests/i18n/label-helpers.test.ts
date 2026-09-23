@@ -38,9 +38,9 @@ const LOCALE_AWARE = new Set([
   "student-leave.kindLabel",
   "student-leave.statusLabel",
   "exams.examKindLabel",
-  "exams.resultLabel",
-  "homework.submissionStatusLabel",
-  "homework.materialKindLabel",
+  "exams-display.resultLabel",
+  "homework-display.submissionStatusLabel",
+  "homework-display.materialKindLabel",
   "fees-display.entryTypeLabel",
   "fees-display.methodLabel",
   // The rest of the family's menu: the inbox, and the days of the week.
@@ -63,7 +63,7 @@ const LOCALE_AWARE = new Set([
   // modules -- `hr.PAYMENT_METHODS` is four ways to pay a teacher and
   // `fees-display.PAYMENT_METHODS` is seven ways to take a fee -- which is why
   // each has its own key prefix rather than a shared one.
-  "homework.dueLabel",
+  "homework-display.dueLabel",
   "hr.paymentMethodLabel",
   "hr.attendanceLabel",
   "hr.leaveStatusLabel",
@@ -85,12 +85,12 @@ const LOCALE_AWARE = new Set([
   "checks.checkStatusLabel",
   "front-office.sourceLabel",
   "front-office.stageLabel",
-  "hostel.hostelKindLabel",
+  "hostel-display.hostelKindLabel",
   "promotion.decisionLabel",
   "promotion.leftBehindLabel",
   "renewals.renewalKindLabel",
   "schedules.kindLabel",
-  "transport.directionLabel",
+  "transport-display.directionLabel",
 ]);
 
 /**

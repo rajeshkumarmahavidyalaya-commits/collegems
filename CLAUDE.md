@@ -4077,6 +4077,17 @@ dashboard the heaviest route in the product at 235 kB. It is 117 kB now.
   all** — one `import { z }` and it silently becomes the thing it was extracted
   from.
 
+**And a provider is imported by every page that uses it.** `i18n-provider.tsx`
+imported `translate.ts`, which imports all three catalogues, so 64 routes
+shipped English, Hindi and Urdu (101.6 kB) to show one language. The
+provider now takes one locale's messages as a prop from the root layout, and
+imports `translator.ts`, which imports no catalogue: **−27–28 kB on 66
+routes**, for 8–10 kB of gzipped JSON once per full page load.
+`tests/i18n/catalogue-stays-on-the-server.test.ts` keeps any client module
+from importing a catalogue by value again. The dialog half is the same rule
+applied page by page: `/transport` 243 → 134 kB, `/exams/[examId]` 262 → 188
+kB. See `docs/performance.md`.
+
 **Measure before and after, and say the number.** `npm run build` prints First
 Load JS per route, `ls -S .next/static/chunks` says what is actually big, and
 `.next/app-build-manifest.json` says which routes carry it — which is the

@@ -65,11 +65,9 @@ export const RANK_METHODS = [
   },
 ] as const;
 
-export const RESULT_STATES = [
-  { value: "pass", label: "Pass", tone: "success" },
-  { value: "fail", label: "Fail", tone: "danger" },
-  { value: "incomplete", label: "Incomplete", tone: "warning" },
-] as const;
+// Moved to `exams-display.ts` so a screen that only draws a result badge does
+// not ship Zod; re-exported here so every existing import keeps working.
+export { RESULT_STATES, resultLabel, resultTone, formatPercent } from "./exams-display";
 
 const isoDate = z
   .string()
@@ -308,21 +306,6 @@ export function examKindLabel(value: string, t: Translator) {
 
 export function examKindOptions(t: Translator) {
   return optionsFor(EXAM_KINDS, "exams.kind", t);
-}
-
-export function resultLabel(value: string, t: Translator) {
-  const found = RESULT_STATES.find((r) => r.value === value);
-  return found ? labelFor(`exams.result.${value}`, found.label, t) : value;
-}
-
-export function resultTone(value: string) {
-  return RESULT_STATES.find((r) => r.value === value)?.tone ?? "muted";
-}
-
-/** `61.5` → `"61.5%"`, and a missing aggregate → an em dash rather than `NaN%`. */
-export function formatPercent(value: number | null | undefined) {
-  if (value === null || value === undefined) return "—";
-  return `${Number(value).toFixed(1)}%`;
 }
 
 /**

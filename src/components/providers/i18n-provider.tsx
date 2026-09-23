@@ -2,7 +2,7 @@
 
 import { createContext, useContext, useMemo } from "react";
 import { directionOf, type Direction, type Locale } from "@/lib/i18n/config";
-import { createTranslator, type Translator } from "@/lib/i18n/translate";
+import { translatorFrom, type ClientMessages, type Translator } from "@/lib/i18n/translator";
 import {
   formatCurrency,
   formatDate,
@@ -36,19 +36,27 @@ const I18nContext = createContext<I18nValue | null>(null);
  * already follow, and for the same reason: two places that answer "who is this
  * and what do they read" will eventually answer differently.
  *
- * The catalogues travel in the bundle rather than over the wire. They are a few
- * kilobytes of text and the alternative — fetching messages after mount — is a
- * screen that renders in English and then flickers into Hindi.
+ * **One catalogue arrives, as a prop.** The root layout passes this locale's
+ * messages with English filled in underneath (`clientMessagesFor`), so the page
+ * renders in the reader's language on the server and nothing flickers -- the
+ * reason fetching after mount was refused. What changed is where they travel:
+ * this file used to import `translate.ts`, which imports all three catalogues,
+ * so every route using a translation in the browser shipped English, Hindi and
+ * Urdu (one 101.6 kB chunk on 64 routes) to show one. Now it imports only
+ * `translator.ts`, which imports no catalogue, and the one locale rides in the
+ * layout's payload once per full page load.
  */
 export function I18nProvider({
   locale,
+  messages,
   children,
 }: {
   locale: Locale;
+  messages: ClientMessages;
   children: React.ReactNode;
 }) {
   const value = useMemo<I18nValue>(() => {
-    const t = createTranslator(locale);
+    const t = translatorFrom(locale, messages);
     return {
       locale,
       direction: directionOf(locale),
@@ -62,7 +70,7 @@ export function I18nProvider({
       formatQuantity: (v, decimals) => formatQuantity(v, locale, decimals),
       formatWeekday: (d, style) => formatWeekday(d, locale, style),
     };
-  }, [locale]);
+  }, [locale, messages]);
 
   return <I18nContext.Provider value={value}>{children}</I18nContext.Provider>;
 }

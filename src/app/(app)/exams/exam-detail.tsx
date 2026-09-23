@@ -1,11 +1,13 @@
 "use client";
 
 import { useMemo, useState, useTransition } from "react";
+
 import { useT } from "@/components/providers/i18n-provider";
+
 import Link from "next/link";
+
 import { useRouter } from "next/navigation";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
+
 import {
   AlertTriangle,
   CheckCircle2,
@@ -19,22 +21,27 @@ import {
   SplitSquareHorizontal,
   Trash2,
 } from "lucide-react";
+
 import { toast } from "sonner";
+
 import { cn } from "@/lib/utils";
+
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+
 import { Badge } from "@/components/ui/badge";
+
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import { Form } from "@/components/ui/form";
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+
 import { Label } from "@/components/ui/label";
+
 import {
   Select,
   SelectContent,
@@ -42,7 +49,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Switch } from "@/components/ui/switch";
+
 import {
   Table,
   TableBody,
@@ -51,27 +58,38 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+
 import { exportRowsToCsv } from "@/components/data-table/data-table";
-import { ErrorSummary } from "@/components/forms/error-summary";
-import { SelectField, TextField } from "@/components/forms/form-fields";
+
 import {
-  examPaperSchema,
   formatPercent,
   resultLabel,
   resultTone,
-  type ExamPaperInput,
-} from "@/lib/validations/exams";
+} from "@/lib/validations/exams-display";
+
 import {
   deletePaper,
   publishExam,
-  savePaper,
   unpublishExam,
   type ExamRow,
   type PaperRow,
   type ResultRow,
 } from "./actions";
-import { ComponentsDialog } from "./components-dialog";
+import dynamic from "next/dynamic";
+
+
+// Both dialogs are loaded on the click that opens them and rendered only while
+// open: they hold this page's Zod and form code, and a conditional render is
+// not a conditional load (see `fees-table.tsx`). Measured on this route before
+// and after -- see docs/performance.md.
+const PaperDialog = dynamic(() =>
+  import("./paper-dialog").then((m) => m.PaperDialog),
+);
+const ComponentsDialog = dynamic(() =>
+  import("./components-dialog").then((m) => m.ComponentsDialog),
+);
 
 type Props = {
   exam: ExamRow;
@@ -142,21 +160,25 @@ export function ExamDetail({
         />
       </TabsContent>
 
-      <PaperDialog
-        open={paperOpen}
-        onOpenChange={setPaperOpen}
-        examId={exam.id}
-        paper={editing}
-        sections={sections}
-        subjects={subjects}
-      />
+      {paperOpen ? (
+        <PaperDialog
+          open={paperOpen}
+          onOpenChange={setPaperOpen}
+          examId={exam.id}
+          paper={editing}
+          sections={sections}
+          subjects={subjects}
+        />
+      ) : null}
 
-      <ComponentsDialog
-        paper={splitting}
-        open={splitting !== null}
-        onOpenChange={(open) => !open && setSplitting(null)}
-        isPublished={published}
-      />
+      {splitting ? (
+        <ComponentsDialog
+          paper={splitting}
+          open={splitting !== null}
+          onOpenChange={(open) => !open && setSplitting(null)}
+          isPublished={published}
+        />
+      ) : null}
     </Tabs>
   );
 }
@@ -211,8 +233,9 @@ function PapersTab({
         <div>
           <CardTitle>Papers</CardTitle>
           <CardDescription className="max-w-2xl">
-            One row per class per subject. A subject can only be examined for a class that already
-            has it on the curriculum — the database refuses anything else.
+            One row per class per subject. A subject can only be examined for a
+            class that already has it on the curriculum — the database refuses
+            anything else.
           </CardDescription>
         </div>
         {canManage && exam.status === "draft" && (
@@ -229,7 +252,9 @@ function PapersTab({
           <Alert>
             <AlertTriangle className="size-4" aria-hidden="true" />
             <AlertTitle>
-              {problems.length === 1 ? "One thing to look at" : `${problems.length} things to look at`}
+              {problems.length === 1
+                ? "One thing to look at"
+                : `${problems.length} things to look at`}
             </AlertTitle>
             <AlertDescription>
               <ul className="list-inside list-disc">
@@ -243,13 +268,16 @@ function PapersTab({
         {papers.length === 0 ? (
           <div className="flex flex-col items-center gap-3 py-14 text-center">
             <span className="rounded-full bg-muted p-3">
-              <FileWarning className="size-6 text-muted-foreground" aria-hidden="true" />
+              <FileWarning
+                className="size-6 text-muted-foreground"
+                aria-hidden="true"
+              />
             </span>
             <div>
               <p className="font-medium">No papers yet</p>
               <p className="mt-1 max-w-md text-sm text-muted-foreground">
-                An exam with no papers has nothing to mark and nothing to publish. Add the first
-                one.
+                An exam with no papers has nothing to mark and nothing to
+                publish. Add the first one.
               </p>
             </div>
             {canManage && (
@@ -277,10 +305,13 @@ function PapersTab({
               <TableBody>
                 {papers.map((paper) => {
                   const complete =
-                    paper.studentCount > 0 && paper.markedCount >= paper.studentCount;
+                    paper.studentCount > 0 &&
+                    paper.markedCount >= paper.studentCount;
                   return (
                     <TableRow key={paper.id}>
-                      <TableCell className="font-medium">{paper.sectionLabel}</TableCell>
+                      <TableCell className="font-medium">
+                        {paper.sectionLabel}
+                      </TableCell>
                       <TableCell>
                         <span className="flex flex-wrap items-center gap-1.5">
                           {paper.subjectName}
@@ -302,7 +333,9 @@ function PapersTab({
                       </TableCell>
                       <TableCell>
                         {paper.components.length === 0 ? (
-                          <span className="text-sm text-muted-foreground">One paper</span>
+                          <span className="text-sm text-muted-foreground">
+                            One paper
+                          </span>
                         ) : (
                           <span className="flex flex-wrap gap-1">
                             {paper.components.map((component) => (
@@ -313,7 +346,8 @@ function PapersTab({
                                 title={component.name}
                               >
                                 {component.name} {component.maxMarks}
-                                {component.passMarks > 0 && ` · min ${component.passMarks}`}
+                                {component.passMarks > 0 &&
+                                  ` · min ${component.passMarks}`}
                               </Badge>
                             ))}
                           </span>
@@ -344,7 +378,11 @@ function PapersTab({
                         <div className="flex justify-end gap-1">
                           {canGrade && (
                             <Button asChild variant="ghost" size="sm">
-                              <Link href={`/exams/${exam.id}/marks/${paper.id}`}>Marks</Link>
+                              <Link
+                                href={`/exams/${exam.id}/marks/${paper.id}`}
+                              >
+                                Marks
+                              </Link>
                             </Button>
                           )}
                           {canManage && exam.status === "draft" && (
@@ -355,7 +393,10 @@ function PapersTab({
                                 onClick={() => onSplit(paper)}
                                 aria-label={`Split ${paper.sectionLabel} ${paper.subjectName} into parts`}
                               >
-                                <SplitSquareHorizontal className="size-4" aria-hidden="true" />
+                                <SplitSquareHorizontal
+                                  className="size-4"
+                                  aria-hidden="true"
+                                />
                               </Button>
                               <Button
                                 variant="ghost"
@@ -390,179 +431,6 @@ function PapersTab({
   );
 }
 
-function PaperDialog({
-  open,
-  onOpenChange,
-  examId,
-  paper,
-  sections,
-  subjects,
-}: {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  examId: string;
-  paper: PaperRow | null;
-  sections: { id: string; label: string }[];
-  subjects: { id: string; label: string }[];
-}) {
-  const router = useRouter();
-  const [pending, startTransition] = useTransition();
-
-  const form = useForm<ExamPaperInput>({
-    resolver: zodResolver(examPaperSchema),
-    values: {
-      sectionId: paper?.sectionId ?? sections[0]?.id ?? "",
-      subjectId: paper?.subjectId ?? subjects[0]?.id ?? "",
-      maxMarks: paper?.maxMarks ?? 100,
-      passMarks: paper?.passMarks ?? 33,
-      weight: paper?.weight ?? 1,
-      isOptional: paper?.isOptional ?? false,
-      examDate: paper?.examDate ?? "",
-    },
-  });
-
-  function onSubmit(input: ExamPaperInput) {
-    startTransition(async () => {
-      const result = await savePaper(examId, input, paper?.id);
-      if (!result.ok) {
-        if (result.fieldErrors) {
-          for (const [field, messages] of Object.entries(result.fieldErrors)) {
-            form.setError(field as keyof ExamPaperInput, { message: messages[0] });
-          }
-        }
-        toast.error(result.error);
-        return;
-      }
-      toast.success(paper ? "Paper updated." : "Paper added.");
-      onOpenChange(false);
-      router.refresh();
-    });
-  }
-
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[90svh] overflow-y-auto sm:max-w-lg">
-        <DialogHeader>
-          <DialogTitle>{paper ? "Edit paper" : "Add a paper"}</DialogTitle>
-          <DialogDescription>
-            Weight decides how much this subject counts in the aggregate. Leave every weight at 1
-            for a straight mean.
-          </DialogDescription>
-        </DialogHeader>
-
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col gap-4" noValidate>
-            <ErrorSummary errors={form.formState.errors} submitCount={form.formState.submitCount} />
-
-            <div className="grid gap-4 sm:grid-cols-2">
-              <SelectField
-                control={form.control}
-                name="sectionId"
-                label="Class"
-                required
-                options={sections.map((s) => ({ value: s.id, label: s.label }))}
-              />
-              <SelectField
-                control={form.control}
-                name="subjectId"
-                label="Subject"
-                required
-                options={subjects.map((s) => ({ value: s.id, label: s.label }))}
-              />
-            </div>
-
-            <div className="grid gap-4 sm:grid-cols-3">
-              <NumberField form={form} name="maxMarks" label="Maximum" />
-              <NumberField form={form} name="passMarks" label="Pass mark" />
-              <NumberField form={form} name="weight" label="Weight" step="0.1" />
-            </div>
-
-            <TextField control={form.control} name="examDate" label="Date" type="date" />
-
-            <div className="flex items-center justify-between rounded-md border p-3">
-              <div>
-                <Label htmlFor="paper-optional">An additional subject</Label>
-                <p className="max-w-sm text-xs text-muted-foreground">
-                  Excluded from the aggregate unless the grading scheme lets it stand in for a
-                  failed compulsory subject.
-                </p>
-              </div>
-              <Switch
-                id="paper-optional"
-                checked={form.watch("isOptional")}
-                onCheckedChange={(checked) =>
-                  form.setValue("isOptional", checked, { shouldDirty: true })
-                }
-              />
-            </div>
-
-            <DialogFooter>
-              <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-                Cancel
-              </Button>
-              <Button type="submit" disabled={pending}>
-                {pending && <Loader2 className="size-4 animate-spin" aria-hidden="true" />}
-                {paper ? "Save changes" : "Add paper"}
-              </Button>
-            </DialogFooter>
-          </form>
-        </Form>
-      </DialogContent>
-    </Dialog>
-  );
-}
-
-/**
- * A number input bound to react-hook-form without `z.coerce`, which would split
- * the schema's input and output types and break the resolver. The conversion
- * happens in the field, per the project conventions.
- */
-function NumberField({
-  form,
-  name,
-  label,
-  step = "1",
-}: {
-  form: ReturnType<typeof useForm<ExamPaperInput>>;
-  name: "maxMarks" | "passMarks" | "weight";
-  label: string;
-  step?: string;
-}) {
-  const error = form.formState.errors[name];
-  return (
-    <div className="flex flex-col gap-1.5">
-      <Label htmlFor={`paper-${name}`}>
-        {label}
-        <span aria-hidden="true" className="text-destructive">
-          {" "}
-          *
-        </span>
-      </Label>
-      <input
-        id={`paper-${name}`}
-        type="number"
-        step={step}
-        min={0}
-        value={String(form.watch(name) ?? "")}
-        onChange={(e) =>
-          form.setValue(name, e.target.value === "" ? Number.NaN : Number(e.target.value), {
-            shouldDirty: true,
-            shouldValidate: true,
-          })
-        }
-        aria-invalid={error ? true : undefined}
-        className={cn(
-          "flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 font-mono text-sm shadow-xs tabular-nums transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
-          error && "border-destructive",
-        )}
-      />
-      {error && <p className="text-sm text-destructive">{error.message}</p>}
-    </div>
-  );
-}
-
-// ---------------------------------------------------------------------------
-// Results
 // ---------------------------------------------------------------------------
 
 function ResultsTab({
@@ -598,7 +466,10 @@ function ResultsTab({
     [results],
   );
   const rows = useMemo(
-    () => (section === "all" ? results : results.filter((r) => r.sectionLabel === section)),
+    () =>
+      section === "all"
+        ? results
+        : results.filter((r) => r.sectionLabel === section),
     [results, section],
   );
 
@@ -694,9 +565,10 @@ function ResultsTab({
           <Lock className="size-4" aria-hidden="true" />
           <AlertTitle>Published and frozen</AlertTitle>
           <AlertDescription>
-            These are the numbers stored at publish time, together with the grading rules as they
-            stood. Editing a scheme now does not change them — which is what makes a reprinted
-            report card match the original.
+            These are the numbers stored at publish time, together with the
+            grading rules as they stood. Editing a scheme now does not change
+            them — which is what makes a reprinted report card match the
+            original.
           </AlertDescription>
         </Alert>
       ) : (
@@ -704,9 +576,10 @@ function ResultsTab({
           <AlertTriangle className="size-4" aria-hidden="true" />
           <AlertTitle>Draft — computed live</AlertTitle>
           <AlertDescription>
-            Every number here is recomputed from the marks and the grading scheme as you look at it,
-            so changing either changes the whole cohort. Nothing is visible to students or parents
-            until it is published.
+            Every number here is recomputed from the marks and the grading
+            scheme as you look at it, so changing either changes the whole
+            cohort. Nothing is visible to students or parents until it is
+            published.
             {unmarked > 0 && ` ${unmarked} papers are still unmarked.`}
           </AlertDescription>
         </Alert>
@@ -714,7 +587,10 @@ function ResultsTab({
 
       <div className="flex flex-wrap items-center gap-3" data-print="hide">
         <div className="flex items-center gap-2">
-          <Label htmlFor="result-section" className="text-sm text-muted-foreground">
+          <Label
+            htmlFor="result-section"
+            className="text-sm text-muted-foreground"
+          >
             Class
           </Label>
           <Select value={section} onValueChange={setSection}>
@@ -733,25 +609,44 @@ function ResultsTab({
         </div>
 
         <p className="text-sm text-muted-foreground" aria-live="polite">
-          <span className="font-mono tabular-nums text-foreground">{summary.pass}</span> passed ·{" "}
-          <span className="font-mono tabular-nums text-foreground">{summary.fail}</span> failed
+          <span className="font-mono tabular-nums text-foreground">
+            {summary.pass}
+          </span>{" "}
+          passed ·{" "}
+          <span className="font-mono tabular-nums text-foreground">
+            {summary.fail}
+          </span>{" "}
+          failed
           {summary.incomplete > 0 && (
             <>
               {" "}
-              · <span className="font-mono tabular-nums text-foreground">{summary.incomplete}</span>{" "}
+              ·{" "}
+              <span className="font-mono tabular-nums text-foreground">
+                {summary.incomplete}
+              </span>{" "}
               incomplete
             </>
           )}
         </p>
 
         <div className="ms-auto flex flex-wrap gap-2">
-          <Button variant="outline" size="sm" onClick={exportCsv} disabled={rows.length === 0}>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={exportCsv}
+            disabled={rows.length === 0}
+          >
             <Download className="size-4" aria-hidden="true" />
             CSV
           </Button>
           {canPublish &&
             (published ? (
-              <Button variant="outline" size="sm" onClick={unpublish} disabled={pending}>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={unpublish}
+                disabled={pending}
+              >
                 {pending ? (
                   <Loader2 className="size-4 animate-spin" aria-hidden="true" />
                 ) : (
@@ -760,7 +655,11 @@ function ResultsTab({
                 Unpublish
               </Button>
             ) : (
-              <Button size="sm" onClick={publish} disabled={pending || results.length === 0}>
+              <Button
+                size="sm"
+                onClick={publish}
+                disabled={pending || results.length === 0}
+              >
                 {pending ? (
                   <Loader2 className="size-4 animate-spin" aria-hidden="true" />
                 ) : (
@@ -776,13 +675,16 @@ function ResultsTab({
         <Card>
           <CardContent className="flex flex-col items-center gap-3 py-14 text-center">
             <span className="rounded-full bg-muted p-3">
-              <FileWarning className="size-6 text-muted-foreground" aria-hidden="true" />
+              <FileWarning
+                className="size-6 text-muted-foreground"
+                aria-hidden="true"
+              />
             </span>
             <div>
               <p className="font-medium">Nothing to show yet</p>
               <p className="mt-1 max-w-md text-sm text-muted-foreground">
-                Results appear once this exam has papers and the classes sitting them have enrolled
-                students.
+                Results appear once this exam has papers and the classes sitting
+                them have enrolled students.
               </p>
             </div>
           </CardContent>
@@ -808,8 +710,12 @@ function ResultsTab({
                   <TableCell className="font-mono text-xs text-muted-foreground">
                     {row.rollNumber ?? "—"}
                   </TableCell>
-                  <TableCell className="font-medium">{row.studentName}</TableCell>
-                  <TableCell className="text-muted-foreground">{row.sectionLabel}</TableCell>
+                  <TableCell className="font-medium">
+                    {row.studentName}
+                  </TableCell>
+                  <TableCell className="text-muted-foreground">
+                    {row.sectionLabel}
+                  </TableCell>
                   <TableCell className="text-end font-mono tabular-nums">
                     {row.totalMarks} / {row.maxMarks}
                   </TableCell>
@@ -828,7 +734,9 @@ function ResultsTab({
                   <TableCell>
                     {/* The word carries the meaning; the colour only reinforces it. */}
                     <Badge
-                      variant={row.result === "fail" ? "destructive" : "outline"}
+                      variant={
+                        row.result === "fail" ? "destructive" : "outline"
+                      }
                       className={cn(
                         "font-normal",
                         resultTone(row.result) === "success" &&
