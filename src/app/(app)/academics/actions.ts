@@ -8,6 +8,7 @@ import {
   holidaySchema,
   sectionSubjectSchema,
   subjectSchema,
+  newSubjectSchema,
   timeSlotSchema,
 } from "@/lib/validations/academics";
 import type { ActionResult } from "../library/actions";
@@ -73,13 +74,37 @@ export async function listSubjects(): Promise<SubjectRow[]> {
 }
 
 export async function saveSubject(input: unknown, id?: string): Promise<ActionResult<{ id: string }>> {
-  const parsed = subjectSchema.safeParse(input);
+  // A new subject names its classes; an edit does not (they are edited on
+  // *Who teaches what*), so only creation requires them.
+  const parsed = (id ? subjectSchema : newSubjectSchema).safeParse(input);
   if (!parsed.success) return invalid(parsed.error);
 
   const ctx = await getUserContext();
   if (!ctx) return fail("Not signed in.");
 
   const supabase = await createClient();
+
+  if (!id) {
+    // One transaction: the subject and its classes arrive together or not at
+    // all (migration 0275). The year comes from the database, never from here.
+    const { data, error } = await supabase.rpc("academics_add_subject", {
+      p_name: parsed.data.name,
+      p_code: parsed.data.code,
+      p_kind: parsed.data.kind,
+      p_is_active: parsed.data.isActive,
+      p_section_ids: parsed.data.sectionIds,
+    });
+    if (error) {
+      if (error.code === "23505") return duplicate("code", "Another subject already uses that code.");
+      if (error.code === "22023") {
+        return { ok: false, error: error.message, fieldErrors: { sectionIds: [error.message] } };
+      }
+      return fail(error.message);
+    }
+    revalidatePath("/academics");
+    return { ok: true, data: { id: data } };
+  }
+
   const payload = {
     tenant_id: ctx.tenantId,
     name: parsed.data.name,
@@ -88,9 +113,7 @@ export async function saveSubject(input: unknown, id?: string): Promise<ActionRe
     is_active: parsed.data.isActive,
   };
 
-  const { data, error } = id
-    ? await supabase.from("subjects").update(payload).eq("id", id).select("id").single()
-    : await supabase.from("subjects").insert(payload).select("id").single();
+  const { data, error } = await supabase.from("subjects").update(payload).eq("id", id).select("id").single();
 
   if (error) {
     if (error.code === "23505") return duplicate("code", "Another subject already uses that code.");

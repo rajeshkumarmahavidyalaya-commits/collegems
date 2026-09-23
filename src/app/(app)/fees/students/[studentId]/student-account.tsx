@@ -383,7 +383,21 @@ export function StudentAccountView({
                         )}
                       </td>
                       <td className="px-3 py-2 font-mono text-xs whitespace-nowrap">
-                        {entry.receiptNumber ?? "—"}
+                        {/* A receipt number opens the receipt, so a family asking
+                            for a duplicate is one click from the paper. Only
+                            payments and refunds carry one; the page refuses the
+                            rest, so the link is drawn for exactly those. */}
+                        {entry.receiptNumber &&
+                        (entry.entryType === "payment" || entry.entryType === "refund") ? (
+                          <Link
+                            href={`/fees/receipts/${entry.id}`}
+                            className="underline-offset-2 hover:underline"
+                          >
+                            {entry.receiptNumber}
+                          </Link>
+                        ) : (
+                          (entry.receiptNumber ?? "—")
+                        )}
                       </td>
                       <td className="px-3 py-2 whitespace-nowrap">
                         {methodLabel(entry.method, t)}

@@ -98,6 +98,40 @@ names how many of its subjects still have no teacher.
 | 3.2 Online exams | `subjects` |
 | 4.3 Homework | `section_subjects` |
 
+## Adding a subject names its classes (0275)
+
+A subject is on the college's catalogue, and `section_subjects` is what puts it
+in front of a class for a year. The two used to be written from two tabs. A
+subject added and never assigned on *Who teaches what* was on no timetable,
+register, mark sheet or syllabus, and nothing said so.
+
+So **Add a subject** now requires at least one class (this year's), with
+*Select all*. `academics_add_subject` writes the subject and its class links in
+one transaction:
+
+- **INVOKER.** The admins-manage policies on both tables stay the boundary. The
+  role check at the top is for the message: a failed INSERT policy raises
+  `new row violates row-level security policy`, which is not a sentence.
+- **The year is the database's** (`current_session_id()`, rule 2). A class from
+  another year is refused by name, never filed under this one.
+- **The teacher is left empty** (the column has always been nullable for this),
+  and is chosen per class on *Who teaches what*.
+
+Editing a subject does not ask again. Removing a class from a subject is also a
+decision about its teacher, timetable and marks, so it stays on *Who teaches
+what*.
+
+Probed in a rolled-back transaction on the demo college:
+
+| case | result |
+|---|---|
+| administrator, two classes (one sent twice) | 1 subject, code upper-cased, **2** links, no teacher |
+| no classes | `22023` *Choose at least one class that studies this subject.* |
+| a class from last year | `22023`, refused by name |
+| a code already in use | `23505`, which the action turns into *Another subject already uses that code.* |
+| subjects left behind by those refusals | **0** |
+| teacher | `42501` *Only an administrator can add a subject.* |
+
 ## Known, deliberate gaps
 
 - **The Base Setup lookups are not built** — `genders`, `blood_groups`,

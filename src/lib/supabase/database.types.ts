@@ -7630,6 +7630,16 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      academics_add_subject: {
+        Args: {
+          p_code: string
+          p_is_active: boolean
+          p_kind: string
+          p_name: string
+          p_section_ids: string[]
+        }
+        Returns: string
+      }
       academics_filing_problems: {
         Args: never
         Returns: {

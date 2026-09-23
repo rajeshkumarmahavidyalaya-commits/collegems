@@ -13,6 +13,7 @@ import {
   FilePlus2,
   IndianRupee,
   Loader2,
+  Printer,
   Search,
   Undo2,
   UserRound,
@@ -60,7 +61,14 @@ function inDays(days: number) {
 // translator as a parameter instead — rule 15's third shape, the one the
 // formatter pass already named.
 
-type Done = { kind: "receipt" | "charge"; number: string | null; amount: number; student: string };
+type Done = {
+  kind: "receipt" | "charge";
+  number: string | null;
+  amount: number;
+  student: string;
+  /** The ledger row behind a receipt, so it can be printed from here. */
+  entryId?: string | null;
+};
 
 export function FeeCounter({
   feeHeads,
@@ -298,7 +306,21 @@ export function FeeCounter({
               )}
             </p>
             <div className="flex flex-wrap gap-2">
-              <Button size="sm" onClick={clear}>
+              {/* The receipt is printed the moment the money is taken, in a new
+                  tab, so the counter keeps its place for the next family. */}
+              {done.kind === "receipt" && done.entryId && (
+                <Button size="sm" asChild>
+                  <a href={`/fees/receipts/${done.entryId}?print=1`} target="_blank" rel="noopener">
+                    <Printer className="size-4" aria-hidden="true" />
+                    Print receipt
+                  </a>
+                </Button>
+              )}
+              <Button
+                size="sm"
+                variant={done.kind === "receipt" && done.entryId ? "outline" : "default"}
+                onClick={clear}
+              >
                 <UserRound className="size-4" aria-hidden="true" />
                 Next student
               </Button>
@@ -332,12 +354,13 @@ export function FeeCounter({
                     id: i.id,
                     label: `${i.invoiceNumber} · ${formatCurrency(i.total)} · due ${i.dueDate}`,
                   }))}
-                  onDone={(amount, receipt) =>
+                  onDone={(amount, receipt, entryId) =>
                     finish({
                       kind: "receipt",
                       number: receipt,
                       amount,
                       student: selected.fullName,
+                      entryId,
                     })
                   }
                 />
@@ -371,12 +394,13 @@ export function FeeCounter({
                 <RefundForm
                   student={selected}
                   balance={balance}
-                  onDone={(amount, receipt) =>
+                  onDone={(amount, receipt, entryId) =>
                     finish({
                       kind: "receipt",
                       number: receipt,
                       amount: -amount,
                       student: selected.fullName,
+                      entryId,
                     })
                   }
                 />
@@ -530,7 +554,7 @@ function ReceiveForm({
   student: CounterHit;
   balance: number;
   invoices: { id: string; label: string }[];
-  onDone: (amount: number, receipt: string | null) => void;
+  onDone: (amount: number, receipt: string | null, entryId: string | null) => void;
 }) {
   const { t } = useI18n();
   const { formatCurrency } = useI18n();
@@ -575,7 +599,7 @@ function ReceiveForm({
     toast.success(
       result.data.receiptNumber ? `Receipt ${result.data.receiptNumber}` : "Payment recorded",
     );
-    onDone(parsed.data.amount, result.data.receiptNumber);
+    onDone(parsed.data.amount, result.data.receiptNumber, result.data.entryId);
   }
 
   const shortcut = useSubmitShortcut(() => void form.handleSubmit(onSubmit)());
@@ -815,7 +839,7 @@ function RefundForm({
 }: {
   student: CounterHit;
   balance: number;
-  onDone: (amount: number, receipt: string | null) => void;
+  onDone: (amount: number, receipt: string | null, entryId: string | null) => void;
 }) {
   const { t } = useI18n();
   const { formatCurrency } = useI18n();
@@ -841,7 +865,7 @@ function RefundForm({
       return;
     }
     toast.success(result.data.receiptNumber ? `Refund ${result.data.receiptNumber}` : "Refund recorded");
-    onDone(values.amount, result.data.receiptNumber);
+    onDone(values.amount, result.data.receiptNumber, result.data.entryId);
   }
 
   const shortcut = useSubmitShortcut(() => void form.handleSubmit(onSubmit)());

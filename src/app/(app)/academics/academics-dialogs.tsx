@@ -22,7 +22,8 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 
-import { Form } from "@/components/ui/form";
+import { Form, FormField, FormItem, FormMessage } from "@/components/ui/form";
+import { Checkbox } from "@/components/ui/checkbox";
 
 import {
   SelectField,
@@ -39,6 +40,7 @@ import {
   holidaySchema,
   sectionSubjectSchema,
   subjectSchema,
+  newSubjectSchema,
   timeSlotSchema,
   toClockTime,
   type ClassRoomInput,
@@ -86,23 +88,29 @@ export function ServerError({ message }: { message: string | null }) {
 export function SubjectDialog({
   open,
   subject,
+  sections,
   onOpenChange,
   onDone,
 }: {
   open: boolean;
   subject: SubjectRow | null;
+  /** This year's classes; a new subject must be taught to at least one. */
+  sections: { id: string; label: string }[];
   onOpenChange: (open: boolean) => void;
   onDone: () => void;
 }) {
   const [serverError, setServerError] = useState<string | null>(null);
 
   const form = useForm<SubjectInput>({
-    resolver: zodResolver(subjectSchema),
+    // Only a new subject asks for its classes: after that, which classes study
+    // it (and who teaches each) is edited on "Who teaches what".
+    resolver: zodResolver(subject ? subjectSchema : newSubjectSchema),
     values: {
       name: subject?.name ?? "",
       code: subject?.code ?? "",
       kind: (subject?.kind as "theory" | "practical") ?? "theory",
       isActive: subject?.isActive ?? true,
+      sectionIds: [],
     },
   });
 
@@ -119,7 +127,11 @@ export function SubjectDialog({
       }
       return;
     }
-    toast.success(subject ? "Subject updated" : "Subject added");
+    toast.success(
+      subject
+        ? "Subject updated"
+        : `Subject added to ${values.sectionIds.length} ${values.sectionIds.length === 1 ? "class" : "classes"}`,
+    );
     onOpenChange(false);
     onDone();
   }
@@ -172,6 +184,75 @@ export function SubjectDialog({
                 }))}
               />
             </div>
+            {!subject && (
+              <FormField
+                control={form.control}
+                name="sectionIds"
+                render={({ field, fieldState }) => {
+                  const chosen = new Set(field.value);
+                  const all = sections.length > 0 && chosen.size === sections.length;
+                  return (
+                    <FormItem>
+                      {/* `name` and `tabIndex` let the error summary move focus
+                          here, as it does to every other field. */}
+                      <fieldset
+                        name="sectionIds"
+                        tabIndex={-1}
+                        aria-invalid={fieldState.invalid || undefined}
+                        className="flex flex-col gap-2 outline-none"
+                      >
+                        <div className="flex flex-wrap items-center justify-between gap-2">
+                          <legend className="text-sm font-medium">
+                            Classes <span className="text-destructive">*</span>
+                          </legend>
+                          {sections.length > 1 && (
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => field.onChange(all ? [] : sections.map((s) => s.id))}
+                            >
+                              {all ? "Clear all" : "Select all"}
+                            </Button>
+                          )}
+                        </div>
+                        {sections.length === 0 ? (
+                          <p className="text-sm text-muted-foreground">
+                            This year has no classes yet. Add them under Academic years first.
+                          </p>
+                        ) : (
+                          <div className="grid max-h-56 gap-1 overflow-y-auto rounded-md border border-border p-2 sm:grid-cols-2">
+                            {sections.map((s) => (
+                              <label
+                                key={s.id}
+                                className="flex cursor-pointer items-center gap-2 rounded px-2 py-1.5 text-sm hover:bg-accent"
+                              >
+                                <Checkbox
+                                  checked={chosen.has(s.id)}
+                                  onCheckedChange={(on) =>
+                                    field.onChange(
+                                      on
+                                        ? [...field.value, s.id]
+                                        : field.value.filter((id) => id !== s.id),
+                                    )
+                                  }
+                                />
+                                <span className="min-w-0 break-words">{s.label}</span>
+                              </label>
+                            ))}
+                          </div>
+                        )}
+                        <p className="text-xs text-muted-foreground">
+                          The subject is added to these classes for this year. Choose who teaches
+                          each on the Who teaches what tab.
+                        </p>
+                      </fieldset>
+                      <FormMessage />
+                    </FormItem>
+                  );
+                }}
+              />
+            )}
             <DialogFooter>
               <Button
                 type="button"

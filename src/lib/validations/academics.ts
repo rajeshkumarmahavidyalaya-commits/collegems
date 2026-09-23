@@ -22,9 +22,25 @@ export const subjectSchema = z.object({
     .regex(/^[A-Za-z0-9_-]+$/, "Letters, numbers, dashes and underscores only"),
   kind: z.enum(["theory", "practical"]),
   isActive: z.boolean(),
+  /**
+   * The classes that study it. Asked only when the subject is new: after that,
+   * which classes study it (and who teaches each) is edited on *Who teaches
+   * what*, where removing a class is a decision about a teacher too.
+   */
+  sectionIds: z.array(z.string().uuid()),
 });
 
 export type SubjectInput = z.infer<typeof subjectSchema>;
+
+/**
+ * A new subject must name at least one class. A subject on no class is on no
+ * timetable, register, mark sheet or syllabus, which is why migration 0275
+ * made adding it and assigning it one write.
+ */
+export const newSubjectSchema = subjectSchema.refine((v) => v.sectionIds.length > 0, {
+  path: ["sectionIds"],
+  message: "Choose at least one class that studies this subject",
+});
 
 export const classRoomSchema = z.object({
   name: z.string().min(1, "A name is required").max(100),

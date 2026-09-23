@@ -47,12 +47,13 @@ const nextConfig: NextConfig = {
    *
    * So the omission is guarded rather than the list: `tests/pdf/document.test.ts`
    * reads every route handler importing `@/lib/pdf` and fails when one is not
-   * named here. Adding a ninth PDF route is a line somebody writes on purpose.
+   * named here. Adding another PDF route is a line somebody writes on purpose.
    */
   outputFileTracingIncludes: {
     "/(app)/certificates/[id]/pdf": ["./src/lib/pdf/fonts/**"],
     "/(app)/exams/[examId]/report-cards/pdf": ["./src/lib/pdf/fonts/**"],
     "/(app)/fees/invoices/[invoiceId]/pdf": ["./src/lib/pdf/fonts/**"],
+    "/(app)/fees/receipts/[entryId]/pdf": ["./src/lib/pdf/fonts/**"],
     "/(app)/report-card/[studentId]/[examId]/pdf": ["./src/lib/pdf/fonts/**"],
     "/(app)/staff/[id]/id-card/pdf": ["./src/lib/pdf/fonts/**"],
     "/(app)/staff/id-cards/pdf": ["./src/lib/pdf/fonts/**"],

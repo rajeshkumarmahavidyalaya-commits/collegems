@@ -132,7 +132,7 @@ export function AcademicsSettings(props: Props) {
       </TabsList>
 
       <TabsContent value="subjects" className="mt-4">
-        <SubjectsTab subjects={props.subjects} canManage={canManage} />
+        <SubjectsTab subjects={props.subjects} sections={props.sections} canManage={canManage} />
       </TabsContent>
       <TabsContent value="assignments" className="mt-4">
         <AssignmentsTab
@@ -228,9 +228,11 @@ function ConfirmDelete({
 
 function SubjectsTab({
   subjects,
+  sections,
   canManage,
 }: {
   subjects: SubjectRow[];
+  sections: { id: string; label: string }[];
   canManage: boolean;
 }) {
   const router = useRouter();
@@ -339,6 +341,7 @@ function SubjectsTab({
         <SubjectDialog
           open={creating || editing !== null}
           subject={editing}
+          sections={sections}
           onOpenChange={(open) => {
             if (!open) {
               setCreating(false);

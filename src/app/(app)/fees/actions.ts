@@ -499,7 +499,9 @@ async function announce(
   if (error) console.error(`[fees] ${fn} did not go out:`, error.message);
 }
 
-export async function recordPayment(input: unknown): Promise<ActionResult<{ receiptNumber: string | null }>> {
+export async function recordPayment(
+  input: unknown,
+): Promise<ActionResult<{ receiptNumber: string | null; entryId: string | null }>> {
   const parsed = paymentSchema.safeParse(input);
   if (!parsed.success) {
     return { ok: false, error: "Check the highlighted fields.", fieldErrors: parsed.error.flatten().fieldErrors };
@@ -525,10 +527,12 @@ export async function recordPayment(input: unknown): Promise<ActionResult<{ rece
 
   revalidatePath("/fees");
   revalidatePath(`/fees/students/${parsed.data.studentId}`);
-  return { ok: true, data: { receiptNumber: data?.receipt_number ?? null } };
+  return { ok: true, data: { receiptNumber: data?.receipt_number ?? null, entryId: (data?.id as string) ?? null } };
 }
 
-export async function recordRefund(input: unknown): Promise<ActionResult<{ receiptNumber: string | null }>> {
+export async function recordRefund(
+  input: unknown,
+): Promise<ActionResult<{ receiptNumber: string | null; entryId: string | null }>> {
   const parsed = refundSchema.safeParse(input);
   if (!parsed.success) {
     return { ok: false, error: "Check the highlighted fields.", fieldErrors: parsed.error.flatten().fieldErrors };
@@ -547,7 +551,7 @@ export async function recordRefund(input: unknown): Promise<ActionResult<{ recei
   if (error) return fail(error.message);
 
   revalidatePath(`/fees/students/${parsed.data.studentId}`);
-  return { ok: true, data: { receiptNumber: data?.receipt_number ?? null } };
+  return { ok: true, data: { receiptNumber: data?.receipt_number ?? null, entryId: (data?.id as string) ?? null } };
 }
 
 export async function recordAdjustment(input: unknown): Promise<ActionResult<{ id: string }>> {
@@ -1170,7 +1174,7 @@ export async function getInvoiceDocument(invoiceId: string): Promise<InvoiceDocu
 
   // Single-column keys only -- see the note in getStudentAccount about not
   // embedding across the composite foreign keys added in 0024.
-  const [linesRes, paymentsRes, studentRes, profileRes] = await Promise.all([
+  const [linesRes, paymentsRes, parties] = await Promise.all([
     supabase
       .from("invoice_lines")
       .select("id, description, amount")
@@ -1182,17 +1186,7 @@ export async function getInvoiceDocument(invoiceId: string): Promise<InvoiceDocu
       .eq("invoice_id", invoiceId)
       .eq("entry_type", "payment")
       .order("occurred_at"),
-    supabase
-      .from("students")
-      .select(
-        `id, admission_number,
-         people:person_id ( first_name, last_name ),
-         enrolments ( roll_number, sections ( name, class_levels ( name ) ) ),
-         guardian_student ( is_primary, guardians ( people:person_id ( first_name, last_name, phone ) ) )`,
-      )
-      .eq("id", invoice.student_id)
-      .maybeSingle(),
-    supabase.from("settings").select("value").eq("key", "school.profile").maybeSingle(),
+    documentParties(supabase, invoice.student_id, ctx?.tenantName ?? ""),
   ]);
 
   if (linesRes.error) throw new Error(linesRes.error.message);
@@ -1215,15 +1209,6 @@ export async function getInvoiceDocument(invoiceId: string): Promise<InvoiceDocu
     isReversal: p.reverses_entry_id !== null,
   }));
 
-  const s = studentRes.data;
-  const person = s?.people;
-  const enrolment = Array.isArray(s?.enrolments) ? s.enrolments[0] : s?.enrolments;
-  const links = Array.isArray(s?.guardian_student) ? s.guardian_student : [];
-  const primary = links.find((l) => l.is_primary) ?? links[0];
-  const guardianPerson = primary?.guardians?.people;
-
-  const profile = (profileRes.data?.value ?? {}) as Record<string, string | null>;
-
   const total = lines.reduce((sum, l) => sum + l.amount, 0);
   // A reversed payment nets itself out, because both rows are here.
   const paid = payments.reduce((sum, p) => sum + p.amount, 0);
@@ -1238,8 +1223,52 @@ export async function getInvoiceDocument(invoiceId: string): Promise<InvoiceDocu
       notes: invoice.notes,
       cancelReason: invoice.cancel_reason,
     },
+    ...parties,
+    lines,
+    payments,
+    total,
+    paid,
+    outstanding: total - paid,
+    sessionName: ctx?.currentSessionName ?? null,
+  };
+}
+
+/**
+ * The letterhead and the "billed to" block, shared by every fee document: an
+ * invoice and a receipt must not describe the same school or the same child
+ * two different ways.
+ */
+async function documentParties(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  studentId: string,
+  schoolName: string,
+): Promise<{ school: InvoiceDocument["school"]; student: InvoiceDocument["student"] }> {
+  const [studentRes, profileRes] = await Promise.all([
+    supabase
+      .from("students")
+      .select(
+        `id, admission_number,
+         people:person_id ( first_name, last_name ),
+         enrolments ( roll_number, sections ( name, class_levels ( name ) ) ),
+         guardian_student ( is_primary, guardians ( people:person_id ( first_name, last_name, phone ) ) )`,
+      )
+      .eq("id", studentId)
+      .maybeSingle(),
+    supabase.from("settings").select("value").eq("key", "school.profile").maybeSingle(),
+  ]);
+
+  const s = studentRes.data;
+  const person = s?.people;
+  const enrolment = Array.isArray(s?.enrolments) ? s.enrolments[0] : s?.enrolments;
+  const links = Array.isArray(s?.guardian_student) ? s.guardian_student : [];
+  const primary = links.find((l) => l.is_primary) ?? links[0];
+  const guardianPerson = primary?.guardians?.people;
+
+  const profile = (profileRes.data?.value ?? {}) as Record<string, string | null>;
+
+  return {
     school: {
-      name: ctx?.tenantName ?? "",
+      name: schoolName,
       addressLine1: profile.address_line1 ?? null,
       addressLine2: profile.address_line2 ?? null,
       city: profile.city ?? null,
@@ -1265,12 +1294,96 @@ export async function getInvoiceDocument(invoiceId: string): Promise<InvoiceDocu
           guardianPhone: guardianPerson?.phone ?? null,
         }
       : null,
-    lines,
-    payments,
-    total,
-    paid,
-    outstanding: total - paid,
-    sessionName: ctx?.currentSessionName ?? null,
+  };
+}
+
+export type ReceiptDocument = {
+  receipt: {
+    id: string;
+    number: string;
+    kind: "payment" | "refund";
+    occurredAt: string;
+    method: string | null;
+    reference: string | null;
+    note: string | null;
+    /** Always positive: what crossed the counter, in the direction `kind` says. */
+    amount: number;
+  };
+  /** The invoice this payment was settled against, or null for money on account. */
+  invoice: { id: string; number: string } | null;
+  /**
+   * Set when a reversing entry cancels this one. The receipt is still shown --
+   * rule 6: a correction is a row, and a family holding the paper is owed the
+   * fact that it no longer stands.
+   */
+  reversedOn: string | null;
+  school: InvoiceDocument["school"];
+  student: InvoiceDocument["student"];
+  /** The year whose account this money moved (rule 6), not today's year. */
+  sessionName: string | null;
+  /** The college's clock: the server runs in UTC, the counter does not. */
+  timezone: string;
+};
+
+/**
+ * One receipt, for printing at the counter the moment the money is taken.
+ *
+ * Everything on it is read from a single immutable ledger row, so unlike an
+ * invoice it cannot go out of date: printing it again next year prints the
+ * same receipt. The only thing that can change is whether it was reversed,
+ * and that is itself a row. RLS decides who may read it, so a family reaches
+ * their own child's receipts and nobody else's.
+ */
+export async function getReceiptDocument(entryId: string): Promise<ReceiptDocument | null> {
+  const ctx = await getUserContext();
+  const supabase = await createClient();
+
+  const { data: entry, error } = await supabase
+    .from("ledger_entries")
+    .select("id, entry_type, receipt_number, occurred_at, method, reference, note, amount, student_id, invoice_id, session_id")
+    .eq("id", entryId)
+    .maybeSingle();
+
+  if (error) throw new Error(error.message);
+  // Only money that crossed the counter carries a receipt.
+  if (!entry || !entry.receipt_number) return null;
+  if (entry.entry_type !== "payment" && entry.entry_type !== "refund") return null;
+
+  const [invoiceRes, reversalRes, sessionRes, tenantRes, parties] = await Promise.all([
+    entry.invoice_id
+      ? supabase.from("invoices").select("id, invoice_number").eq("id", entry.invoice_id).maybeSingle()
+      : Promise.resolve({ data: null, error: null }),
+    supabase
+      .from("ledger_entries")
+      .select("occurred_at")
+      .eq("reverses_entry_id", entry.id)
+      .order("occurred_at")
+      .limit(1)
+      .maybeSingle(),
+    supabase.from("academic_sessions").select("name").eq("id", entry.session_id).maybeSingle(),
+    supabase.from("tenants").select("timezone").maybeSingle(),
+    documentParties(supabase, entry.student_id, ctx?.tenantName ?? ""),
+  ]);
+
+  if (invoiceRes.error) throw new Error(invoiceRes.error.message);
+  if (reversalRes.error) throw new Error(reversalRes.error.message);
+
+  return {
+    receipt: {
+      id: entry.id,
+      number: entry.receipt_number,
+      kind: entry.entry_type,
+      occurredAt: entry.occurred_at,
+      method: entry.method,
+      reference: entry.reference,
+      note: entry.note,
+      amount: Math.abs(Number(entry.amount)),
+    },
+    invoice: invoiceRes.data ? { id: invoiceRes.data.id, number: invoiceRes.data.invoice_number } : null,
+    reversedOn: reversalRes.data?.occurred_at ?? null,
+    ...parties,
+    sessionName: sessionRes.data?.name ?? null,
+    timezone: tenantRes.data?.timezone ?? "Asia/Kolkata",
   };
 }
 

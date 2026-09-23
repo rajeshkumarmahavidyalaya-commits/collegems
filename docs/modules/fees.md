@@ -663,6 +663,43 @@ the wrong year anyway.
 
 ---
 
+## The receipt document
+
+`/fees/receipts/[entryId]`, `/fees/receipts/[entryId]/pdf`.
+
+Taking a payment always produced a gapless receipt number, but no paper. The
+cashier read the number aloud and the family left with nothing. Now the
+counter's confirmation offers **Print receipt**. It opens the receipt in a new
+tab with the print dialog already up (`?print=1`), so the counter keeps its
+place for the next family. Refunds get the same button. On a student's fee
+account, every receipt number links to its receipt, so a duplicate is one click
+away.
+
+Three decisions:
+
+- **Everything on it is one immutable ledger row** (rule 6), so a reprint next
+  year is the same receipt. The one fact that can change is whether a reversing
+  entry cancelled it. That is printed at the top, not hidden: a family holding
+  the paper is owed the fact that it no longer stands.
+- **It carries no balance.** What the family owes moves with every later charge,
+  so a balance on a receipt would be true on the day and wrong on every reprint
+  (rule 12). The invoice and the account are where the balance lives.
+  `tests/fees/receipt.test.ts` fails if a balance field is added. It was proven
+  by planting one.
+- **The time is the college's.** The server runs in UTC, so a receipt taken at
+  09:14 in Ballia would otherwise print 03:44. `tenants.timezone` goes on the
+  document.
+
+The year printed is the ledger row's `session_id`, the year the money settled
+(the section below), not today's year. The letterhead and "received from" block
+come from the same helper as the invoice's (`documentParties`), so the two
+documents cannot describe one child two ways. RLS is the only gate. A family
+reaches their own child's receipts, and the 404 claims nothing either way.
+
+The PDF follows the invoice's limits: English strings only (`pdf.receipt.*`),
+and a Hindi or Urdu reader gets the 422 that points at printing instead, because
+the document font is Latin-only.
+
 ## Known, deliberate gaps
 
 - **The gateway path has never run end to end.** Every guarantee around it is
