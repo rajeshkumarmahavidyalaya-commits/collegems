@@ -1,6 +1,9 @@
 import { z } from "zod";
-import { labelFor, optionsFor } from "./labels";
+
+import { labelFor } from "./labels";
 import type { Translator } from "@/lib/i18n/translate";
+import { FEE_FREQUENCIES } from "./fees-display";
+
 
 // The vocabulary and the display helpers live in a Zod-free module so that a
 // component wanting only `formatMoney` does not pull 91 kB of schema library
@@ -11,6 +14,9 @@ export {
   PAYMENT_METHODS,
   entryTypeLabel,
   methodLabel,
+  FEE_CATEGORIES,
+  FEE_FREQUENCIES,
+  frequencyOptions,
 } from "./fees-display";
 export type { EntryType } from "./fees-display";
 
@@ -22,30 +28,6 @@ export type { EntryType } from "./fees-display";
  * amount and the RPCs do the signing. Every form here takes a positive number,
  * the way a person types it at a cash desk.
  */
-
-export const FEE_CATEGORIES = [
-  { value: "tuition", label: "Tuition" },
-  { value: "transport", label: "Transport" },
-  { value: "hostel", label: "Hostel" },
-  { value: "exam", label: "Exam" },
-  { value: "library", label: "Library" },
-  { value: "activity", label: "Activity" },
-  { value: "other", label: "Other" },
-] as const;
-
-/**
- * How often a fee head is charged — and, since instalments arrived, also the
- * vocabulary a billing period uses to say what it `collects`. The two are the
- * same list on purpose: if they could drift, a school could configure a period
- * collecting a frequency no fee ever carries and wonder why the run bills
- * nothing.
- */
-export const FEE_FREQUENCIES = [
-  { value: "one_time", label: "One time", hint: "Admission or deposit — charged once in the year." },
-  { value: "monthly", label: "Monthly", hint: "Recurs every period. A transport fare is always this." },
-  { value: "quarterly", label: "Quarterly", hint: "Charged in the periods the school nominates." },
-  { value: "annual", label: "Annual", hint: "The year's charge, collected in one period." },
-] as const;
 
 const isoDate = z
   .string()
@@ -67,7 +49,15 @@ const money = z
 export const paymentSchema = z.object({
   studentId: z.string().uuid(),
   amount: money,
-  method: z.enum(["cash", "cheque", "card", "upi", "netbanking", "bank_transfer", "online"]),
+  method: z.enum([
+    "cash",
+    "cheque",
+    "card",
+    "upi",
+    "netbanking",
+    "bank_transfer",
+    "online",
+  ]),
   occurredAt: isoDate,
   reference: z.string().max(100).optional(),
   invoiceId: z.union([z.string().uuid(), z.literal("")]).optional(),
@@ -78,7 +68,15 @@ export type PaymentInput = z.infer<typeof paymentSchema>;
 export const refundSchema = z.object({
   studentId: z.string().uuid(),
   amount: money,
-  method: z.enum(["cash", "cheque", "card", "upi", "netbanking", "bank_transfer", "online"]),
+  method: z.enum([
+    "cash",
+    "cheque",
+    "card",
+    "upi",
+    "netbanking",
+    "bank_transfer",
+    "online",
+  ]),
   occurredAt: isoDate,
   reference: z.string().max(100).optional(),
   note: z.string().max(300).optional(),
@@ -108,7 +106,15 @@ export const feeHeadSchema = z.object({
     .regex(/^[A-Za-z0-9_-]+$/, "Letters, numbers, dashes and underscores only"),
   name: z.string().min(1, "A name is required").max(100),
   description: z.string().max(300).optional(),
-  category: z.enum(["tuition", "transport", "hostel", "exam", "library", "activity", "other"]),
+  category: z.enum([
+    "tuition",
+    "transport",
+    "hostel",
+    "exam",
+    "library",
+    "activity",
+    "other",
+  ]),
   isActive: z.boolean(),
 });
 export type FeeHeadInput = z.infer<typeof feeHeadSchema>;
@@ -157,10 +163,13 @@ export const instalmentSchema = z
       .min(1, "A period that collects nothing would bill nobody"),
     isActive: z.boolean(),
   })
-  .refine((v) => !v.periodStart || !v.periodEnd || v.periodEnd >= v.periodStart, {
-    message: "The period cannot end before it starts",
-    path: ["periodEnd"],
-  });
+  .refine(
+    (v) => !v.periodStart || !v.periodEnd || v.periodEnd >= v.periodStart,
+    {
+      message: "The period cannot end before it starts",
+      path: ["periodEnd"],
+    },
+  );
 export type InstalmentInput = z.infer<typeof instalmentSchema>;
 
 export const runInstalmentSchema = z.object({
@@ -173,17 +182,15 @@ export function frequencyLabel(value: string, t: Translator) {
   return found ? labelFor(`fees.frequency.${value}`, found.label, t) : value;
 }
 
-export function frequencyOptions(t: Translator) {
-  return optionsFor(FEE_FREQUENCIES, "fees.frequency", t);
-}
-
 /**
  * "Monthly and annual", "One-time, monthly and annual" — the list a person
  * reads, in the order the constant declares rather than the order the array
  * happens to arrive in.
  */
 export function collectsSentence(collects: string[]): string {
-  const ordered = FEE_FREQUENCIES.filter((f) => collects.includes(f.value)).map((f) => f.label);
+  const ordered = FEE_FREQUENCIES.filter((f) => collects.includes(f.value)).map(
+    (f) => f.label,
+  );
   if (ordered.length === 0) return "Nothing";
   if (ordered.length === 1) return ordered[0];
   return `${ordered.slice(0, -1).join(", ")} and ${ordered[ordered.length - 1].toLowerCase()}`;
@@ -198,7 +205,9 @@ export function uncollectedFrequencies(
   periods: { collects: string[]; isActive: boolean }[],
   used: string[],
 ): string[] {
-  const covered = new Set(periods.filter((p) => p.isActive).flatMap((p) => p.collects));
+  const covered = new Set(
+    periods.filter((p) => p.isActive).flatMap((p) => p.collects),
+  );
   return used.filter((f) => !covered.has(f));
 }
 

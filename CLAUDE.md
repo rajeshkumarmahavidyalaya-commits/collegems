@@ -2615,7 +2615,7 @@ tree:
    from *tried and found nothing*; a screen that conflates them tells a school
    its email is broken when nothing has ever run.
 
-`channelState(status)` in `src/lib/validations/notifications.ts` is the single
+`channelState(status)` in `src/lib/validations/notifications-display.ts` is the single
 place those three are combined, every surface offering a channel goes through
 it, and the test pins the **shape** of the answer rather than today's values —
 a channel with no driver can never claim to send, however it is configured.
@@ -4085,8 +4085,11 @@ imports `translator.ts`, which imports no catalogue: **−27–28 kB on 66
 routes**, for 8–10 kB of gzipped JSON once per full page load.
 `tests/i18n/catalogue-stays-on-the-server.test.ts` keeps any client module
 from importing a catalogue by value again. The dialog half is the same rule
-applied page by page: `/transport` 243 → 134 kB, `/exams/[examId]` 262 → 188
-kB. See `docs/performance.md`.
+applied page by page. It is now on eleven pages, `/inventory` 253 → 135 kB and
+`/transport` 243 → 134 kB among them. **An import charges for the module, not
+for the one export:** `/promotion/[runId]` had no dialog at all and dropped 32
+kB when `DecisionBadge` stopped being imported from the planner's form module.
+See `docs/performance.md`.
 
 **Measure before and after, and say the number.** `npm run build` prints First
 Load JS per route, `ls -S .next/static/chunks` says what is actually big, and

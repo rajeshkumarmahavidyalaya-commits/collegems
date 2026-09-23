@@ -1,6 +1,20 @@
 import { z } from "zod";
-import { labelFor, optionsFor } from "./labels";
-import type { Translator } from "@/lib/i18n/translate";
+
+
+// Moved to `exams-display.ts` so a screen that only draws a badge or fills a
+// select does not ship Zod; re-exported here so every existing import keeps
+// working.
+export {
+  EXAM_KINDS,
+  RANK_SCOPES,
+  RANK_METHODS,
+  examKindLabel,
+  examKindOptions,
+  RESULT_STATES,
+  resultLabel,
+  resultTone,
+  formatPercent,
+} from "./exams-display";
 
 /**
  * Phase 3.1 — exams, marks, and grading rules as data.
@@ -11,15 +25,6 @@ import type { Translator } from "@/lib/i18n/translate";
  * thing that criticises them must never drift apart, and only one of them can
  * live next to the evaluation order.
  */
-
-export const EXAM_KINDS = [
-  { value: "unit", label: "Unit test" },
-  { value: "term", label: "Term exam" },
-  { value: "half_yearly", label: "Half-yearly" },
-  { value: "annual", label: "Annual" },
-  { value: "practical", label: "Practical" },
-  { value: "other", label: "Other" },
-] as const;
 
 export const AGGREGATE_METHODS = [
   {
@@ -34,41 +39,6 @@ export const AGGREGATE_METHODS = [
   },
 ] as const;
 
-export const RANK_SCOPES = [
-  {
-    value: "section",
-    label: "Within the section",
-    hint: "Position among the children in the same class and section.",
-  },
-  {
-    value: "class_level",
-    label: "Within the class",
-    hint: "Position across every section of the class level.",
-  },
-  {
-    value: "school",
-    label: "Across the school",
-    hint: "One position per student across every class sitting the exam.",
-  },
-] as const;
-
-export const RANK_METHODS = [
-  {
-    value: "competition",
-    label: "Standard (1, 2, 2, 4)",
-    hint: "Two students tied for second are both second, and the next is fourth.",
-  },
-  {
-    value: "dense",
-    label: "Dense (1, 2, 2, 3)",
-    hint: "Two students tied for second are both second, and the next is third.",
-  },
-] as const;
-
-// Moved to `exams-display.ts` so a screen that only draws a result badge does
-// not ship Zod; re-exported here so every existing import keeps working.
-export { RESULT_STATES, resultLabel, resultTone, formatPercent } from "./exams-display";
-
 const isoDate = z
   .string()
   .regex(/^\d{4}-\d{2}-\d{2}$/, "Pick a date")
@@ -77,7 +47,14 @@ const isoDate = z
 export const examSchema = z
   .object({
     name: z.string().min(1, "An exam needs a name").max(120),
-    kind: z.enum(["unit", "term", "half_yearly", "annual", "practical", "other"]),
+    kind: z.enum([
+      "unit",
+      "term",
+      "half_yearly",
+      "annual",
+      "practical",
+      "other",
+    ]),
     startsOn: z.union([isoDate, z.literal("")]).optional(),
     endsOn: z.union([isoDate, z.literal("")]).optional(),
     gradingSchemeId: z.union([z.string().uuid(), z.literal("")]).optional(),
@@ -96,8 +73,12 @@ export const examPaperSchema = z
       .number({ message: "Enter the maximum marks" })
       .positive("The maximum must be above zero")
       .max(1000, "That is higher than any paper this system will mark"),
-    passMarks: z.number({ message: "Enter the pass mark" }).min(0, "Cannot be negative"),
-    weight: z.number({ message: "Enter a weight" }).positive("A weight must be above zero"),
+    passMarks: z
+      .number({ message: "Enter the pass mark" })
+      .min(0, "Cannot be negative"),
+    weight: z
+      .number({ message: "Enter a weight" })
+      .positive("A weight must be above zero"),
     isOptional: z.boolean(),
     examDate: z.union([isoDate, z.literal("")]).optional(),
   })
@@ -116,13 +97,18 @@ export type ExamPaperInput = z.infer<typeof examPaperSchema>;
  */
 export const examComponentSchema = z
   .object({
-    code: z.string().min(1, "A part needs a short code").max(8, "Eight characters at most"),
+    code: z
+      .string()
+      .min(1, "A part needs a short code")
+      .max(8, "Eight characters at most"),
     name: z.string().min(1, "A part needs a name").max(60),
     maxMarks: z
       .number({ message: "Enter the maximum for this part" })
       .positive("The maximum must be above zero")
       .max(1000, "That is higher than any paper this system will mark"),
-    passMarks: z.number({ message: "Enter the minimum" }).min(0, "Cannot be negative"),
+    passMarks: z
+      .number({ message: "Enter the minimum" })
+      .min(0, "Cannot be negative"),
   })
   .refine((v) => v.passMarks <= v.maxMarks, {
     message: "The minimum cannot exceed this part's maximum",
@@ -138,14 +124,18 @@ export type ExamComponentInput = z.infer<typeof examComponentSchema>;
 export const examComponentSetSchema = z
   .object({
     examSubjectId: z.string().uuid(),
-    components: z.array(examComponentSchema).max(8, "Eight parts is more than any paper needs"),
+    components: z
+      .array(examComponentSchema)
+      .max(8, "Eight parts is more than any paper needs"),
   })
   .refine((v) => v.components.length !== 1, {
     message: "Give the paper two or more parts, or none at all",
     path: ["components"],
   })
   .refine(
-    (v) => new Set(v.components.map((c) => c.code.trim().toLowerCase())).size === v.components.length,
+    (v) =>
+      new Set(v.components.map((c) => c.code.trim().toLowerCase())).size ===
+      v.components.length,
     { message: "Two parts share a code", path: ["components"] },
   );
 export type ExamComponentSetInput = z.infer<typeof examComponentSetSchema>;
@@ -156,7 +146,10 @@ export type ExamComponentSetInput = z.infer<typeof examComponentSetSchema>;
  * still enforces it; this only means nobody presses Save to find out.
  */
 export function componentTotal(components: { maxMarks: number }[]) {
-  return components.reduce((sum, c) => sum + (Number.isFinite(c.maxMarks) ? c.maxMarks : 0), 0);
+  return components.reduce(
+    (sum, c) => sum + (Number.isFinite(c.maxMarks) ? c.maxMarks : 0),
+    0,
+  );
 }
 
 export function componentTotalProblem(
@@ -200,7 +193,10 @@ export type MarkSheetInput = z.infer<typeof markSheetSchema>;
 
 export const gradeBandSchema = z.object({
   code: z.string().min(1, "A grade needs a code").max(8),
-  min_percent: z.number().min(0, "Cannot be below 0").max(100, "Cannot be above 100"),
+  min_percent: z
+    .number()
+    .min(0, "Cannot be below 0")
+    .max(100, "Cannot be above 100"),
   point: z.number().min(0).max(10).optional(),
   description: z.string().max(60).optional(),
   is_fail: z.boolean().optional(),
@@ -209,7 +205,9 @@ export type GradeBand = z.infer<typeof gradeBandSchema>;
 
 export const gradingRulesSchema = z.object({
   grades: z.array(gradeBandSchema).default([]),
-  pass: z.object({ aggregate_min_percent: z.number().min(0).max(100) }).optional(),
+  pass: z
+    .object({ aggregate_min_percent: z.number().min(0).max(100) })
+    .optional(),
   grace: z
     .object({
       max_marks: z.number().min(0).max(100),
@@ -275,12 +273,17 @@ export type GradingSchemeInput = z.infer<typeof gradingSchemeSchema>;
  * deeper question — whether the rules will behave sensibly — belongs to
  * Postgres.
  */
-export function parseRules(text: string): { ok: true; rules: unknown } | { ok: false; error: string } {
+export function parseRules(
+  text: string,
+): { ok: true; rules: unknown } | { ok: false; error: string } {
   let parsed: unknown;
   try {
     parsed = JSON.parse(text);
   } catch (error) {
-    return { ok: false, error: error instanceof Error ? error.message : "That is not valid JSON." };
+    return {
+      ok: false,
+      error: error instanceof Error ? error.message : "That is not valid JSON.",
+    };
   }
 
   const result = gradingRulesSchema.safeParse(parsed);
@@ -299,21 +302,15 @@ export function parseRules(text: string): { ok: true; rules: unknown } | { ok: f
 // Display helpers
 // ---------------------------------------------------------------------------
 
-export function examKindLabel(value: string, t: Translator) {
-  const found = EXAM_KINDS.find((k) => k.value === value);
-  return found ? labelFor(`exams.kind.${value}`, found.label, t) : value;
-}
-
-export function examKindOptions(t: Translator) {
-  return optionsFor(EXAM_KINDS, "exams.kind", t);
-}
-
 /**
  * A mark for display. `null` is "not entered", which must never render as `0` —
  * the difference between an unmarked paper and a zero is the difference between
  * an incomplete result and a failed one.
  */
-export function formatMark(value: number | null | undefined, isAbsent: boolean) {
+export function formatMark(
+  value: number | null | undefined,
+  isAbsent: boolean,
+) {
   if (isAbsent) return "AB";
   if (value === null || value === undefined) return "—";
   return String(Number(value));
@@ -344,9 +341,11 @@ export function parseMarkCell(raw: string, maxMarks: number): MarkCell {
   if (ABSENT_TOKENS.has(text.toLowerCase())) return { kind: "absent" };
 
   const value = Number(text);
-  if (!Number.isFinite(value)) return { kind: "problem", message: "A mark, or AB for absent" };
+  if (!Number.isFinite(value))
+    return { kind: "problem", message: "A mark, or AB for absent" };
   if (value < 0) return { kind: "problem", message: "Cannot be negative" };
-  if (value > maxMarks) return { kind: "problem", message: `Above the maximum of ${maxMarks}` };
+  if (value > maxMarks)
+    return { kind: "problem", message: `Above the maximum of ${maxMarks}` };
   return { kind: "value", value };
 }
 
@@ -361,6 +360,8 @@ export function markProblem(raw: string, maxMarks: number): string | null {
  *  every part, because a paper with the practical still to mark is not marked. */
 export function enteredCount(rows: { cells: string[] }[], maxima: number[]) {
   return rows.filter((row) =>
-    row.cells.every((cell, i) => parseMarkCell(cell, maxima[i] ?? 0).kind !== "empty"),
+    row.cells.every(
+      (cell, i) => parseMarkCell(cell, maxima[i] ?? 0).kind !== "empty",
+    ),
   ).length;
 }

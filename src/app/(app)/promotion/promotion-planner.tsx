@@ -1,13 +1,15 @@
 "use client";
 
 import { useState, useTransition } from "react";
+
 import Link from "next/link";
+
 import { useRouter } from "next/navigation";
+
 import {
   AlertTriangle,
   ArrowRight,
   CalendarPlus,
-  CheckCircle2,
   CopyPlus,
   Info,
   Loader2,
@@ -15,15 +17,31 @@ import {
   Users,
 } from "lucide-react";
 import { toast } from "sonner";
-import { cn } from "@/lib/utils";
+
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+
 import { Badge } from "@/components/ui/badge";
+
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+
 import { Checkbox } from "@/components/ui/checkbox";
+
 import { Input } from "@/components/ui/input";
+
 import { Label } from "@/components/ui/label";
+
 import { useI18n } from "@/components/providers/i18n-provider";
+
+import { DecisionBadge } from "./decision-badge";
+
 import {
   Select,
   SelectContent,
@@ -37,8 +55,6 @@ import {
   EVALUATION_ORDER,
   EXAM_KINDS_FOR_PROMOTION,
   ON_MISSING_RESULT,
-  decisionLabel,
-  decisionTone,
   type PromotionFormInput,
   tallySentence,
 } from "@/lib/validations/promotion";
@@ -81,10 +97,14 @@ export function PromotionPlanner({ sessions, runs }: Props) {
   const liveRun = runs.find(
     (r) =>
       r.status === "draft" &&
-      r.fromSessionName === sessions.find((s) => s.id === form.fromSessionId)?.name,
+      r.fromSessionName ===
+        sessions.find((s) => s.id === form.fromSessionId)?.name,
   );
 
-  function set<K extends keyof PromotionFormInput>(key: K, value: PromotionFormInput[K]) {
+  function set<K extends keyof PromotionFormInput>(
+    key: K,
+    value: PromotionFormInput[K],
+  ) {
     setForm((prev) => ({ ...prev, [key]: value }));
     setPreview(null);
   }
@@ -115,7 +135,10 @@ export function PromotionPlanner({ sessions, runs }: Props) {
 
   function copySections() {
     startTransition(async () => {
-      const result = await rollForwardSections(form.fromSessionId, form.toSessionId);
+      const result = await rollForwardSections(
+        form.fromSessionId,
+        form.toSessionId,
+      );
       if (!result.ok) {
         toast.error(result.error);
         return;
@@ -134,13 +157,17 @@ export function PromotionPlanner({ sessions, runs }: Props) {
       <Card>
         <CardContent className="flex flex-col items-center gap-3 py-14 text-center">
           <span className="rounded-full bg-muted p-3">
-            <CalendarPlus className="size-6 text-muted-foreground" aria-hidden="true" />
+            <CalendarPlus
+              className="size-6 text-muted-foreground"
+              aria-hidden="true"
+            />
           </span>
           <div>
             <p className="font-medium">There is only one academic session</p>
             <p className="mt-1 max-w-md text-sm text-muted-foreground">
-              A promotion run moves students from one session into another, so the receiving year
-              has to exist first. Create it under Academics, then come back.
+              A promotion run moves students from one session into another, so
+              the receiving year has to exist first. Create it under Academics,
+              then come back.
             </p>
           </div>
         </CardContent>
@@ -171,7 +198,10 @@ export function PromotionPlanner({ sessions, runs }: Props) {
           <CardContent className="flex flex-col gap-4">
             <div className="flex flex-col gap-1.5">
               <Label htmlFor="from-session">Promote from</Label>
-              <Select value={form.fromSessionId} onValueChange={(v) => set("fromSessionId", v)}>
+              <Select
+                value={form.fromSessionId}
+                onValueChange={(v) => set("fromSessionId", v)}
+              >
                 <SelectTrigger id="from-session">
                   <SelectValue />
                 </SelectTrigger>
@@ -188,7 +218,10 @@ export function PromotionPlanner({ sessions, runs }: Props) {
 
             <div className="flex flex-col gap-1.5">
               <Label htmlFor="to-session">Promote into</Label>
-              <Select value={form.toSessionId} onValueChange={(v) => set("toSessionId", v)}>
+              <Select
+                value={form.toSessionId}
+                onValueChange={(v) => set("toSessionId", v)}
+              >
                 <SelectTrigger id="to-session">
                   <SelectValue placeholder="Choose the receiving year" />
                 </SelectTrigger>
@@ -210,9 +243,14 @@ export function PromotionPlanner({ sessions, runs }: Props) {
                 <AlertTriangle className="size-4" aria-hidden="true" />
                 <AlertTitle>The receiving year has no classes</AlertTitle>
                 <AlertDescription className="flex flex-col items-start gap-2">
-                  Classes are per-year, so next year&rsquo;s 6B is a different record. Without them
-                  every student would be held.
-                  <Button variant="outline" size="sm" onClick={copySections} disabled={pending}>
+                  Classes are per-year, so next year&rsquo;s 6B is a different
+                  record. Without them every student would be held.
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={copySections}
+                    disabled={pending}
+                  >
                     <CopyPlus className="size-4" aria-hidden="true" />
                     Copy this year&rsquo;s classes across
                   </Button>
@@ -226,7 +264,8 @@ export function PromotionPlanner({ sessions, runs }: Props) {
           <CardHeader>
             <CardTitle className="text-base">The rules</CardTitle>
             <CardDescription>
-              Consulted in this order, which is why a child can be promoted despite failing.
+              Consulted in this order, which is why a child can be promoted
+              despite failing.
             </CardDescription>
           </CardHeader>
           <CardContent className="flex flex-col gap-4">
@@ -237,7 +276,9 @@ export function PromotionPlanner({ sessions, runs }: Props) {
             </ol>
 
             <div className="flex flex-col gap-1.5">
-              <Label htmlFor="no-detention">No-detention up to class sequence</Label>
+              <Label htmlFor="no-detention">
+                No-detention up to class sequence
+              </Label>
               <Input
                 id="no-detention"
                 type="number"
@@ -252,13 +293,17 @@ export function PromotionPlanner({ sessions, runs }: Props) {
               <Checkbox
                 id="require-pass"
                 checked={form.requireExamPass}
-                onCheckedChange={(state) => set("requireExamPass", state === true)}
+                onCheckedChange={(state) =>
+                  set("requireExamPass", state === true)
+                }
               />
               <div className="grid gap-0.5 leading-tight">
-                <Label htmlFor="require-pass">Promotion depends on an examination</Label>
+                <Label htmlFor="require-pass">
+                  Promotion depends on an examination
+                </Label>
                 <span className="text-xs text-muted-foreground">
-                  Only a <span className="font-medium">published</span> result counts — a draft is a
-                  number still being argued about.
+                  Only a <span className="font-medium">published</span> result
+                  counts — a draft is a number still being argued about.
                 </span>
               </div>
             </div>
@@ -267,7 +312,10 @@ export function PromotionPlanner({ sessions, runs }: Props) {
               <>
                 <div className="flex flex-col gap-1.5">
                   <Label htmlFor="exam-kind">Which examination decides</Label>
-                  <Select value={form.examKind} onValueChange={(v) => set("examKind", v)}>
+                  <Select
+                    value={form.examKind}
+                    onValueChange={(v) => set("examKind", v)}
+                  >
                     <SelectTrigger id="exam-kind">
                       <SelectValue />
                     </SelectTrigger>
@@ -282,7 +330,9 @@ export function PromotionPlanner({ sessions, runs }: Props) {
                 </div>
 
                 <div className="flex flex-col gap-1.5">
-                  <Label htmlFor="max-failed">Failed subjects still allowed through</Label>
+                  <Label htmlFor="max-failed">
+                    Failed subjects still allowed through
+                  </Label>
                   <Input
                     id="max-failed"
                     type="number"
@@ -311,7 +361,12 @@ export function PromotionPlanner({ sessions, runs }: Props) {
               <Label htmlFor="on-missing">When there is no result</Label>
               <Select
                 value={form.onMissingResult}
-                onValueChange={(v) => set("onMissingResult", v as PromotionFormInput["onMissingResult"])}
+                onValueChange={(v) =>
+                  set(
+                    "onMissingResult",
+                    v as PromotionFormInput["onMissingResult"],
+                  )
+                }
               >
                 <SelectTrigger id="on-missing">
                   <SelectValue />
@@ -325,7 +380,11 @@ export function PromotionPlanner({ sessions, runs }: Props) {
                 </SelectContent>
               </Select>
               <p className="text-xs text-muted-foreground">
-                {ON_MISSING_RESULT.find((o) => o.value === form.onMissingResult)?.hint}
+                {
+                  ON_MISSING_RESULT.find(
+                    (o) => o.value === form.onMissingResult,
+                  )?.hint
+                }
               </p>
             </div>
 
@@ -333,18 +392,25 @@ export function PromotionPlanner({ sessions, runs }: Props) {
               <Checkbox
                 id="carry-fees"
                 checked={form.carryForwardFees}
-                onCheckedChange={(state) => set("carryForwardFees", state === true)}
+                onCheckedChange={(state) =>
+                  set("carryForwardFees", state === true)
+                }
               />
               <div className="grid gap-0.5 leading-tight">
-                <Label htmlFor="carry-fees">Carry unpaid balances forward</Label>
+                <Label htmlFor="carry-fees">
+                  Carry unpaid balances forward
+                </Label>
                 <span className="text-xs text-muted-foreground">
-                  Raises an opening invoice in the receiving year, so the debt arrives as a document
-                  rather than a number.
+                  Raises an opening invoice in the receiving year, so the debt
+                  arrives as a document rather than a number.
                 </span>
               </div>
             </div>
 
-            <Button onClick={runPreview} disabled={pending || !form.toSessionId}>
+            <Button
+              onClick={runPreview}
+              disabled={pending || !form.toSessionId}
+            >
               {pending ? (
                 <Loader2 className="size-4 animate-spin" aria-hidden="true" />
               ) : (
@@ -376,18 +442,23 @@ export function PromotionPlanner({ sessions, runs }: Props) {
             <CardHeader>
               <CardTitle>Dry run</CardTitle>
               <CardDescription>
-                Nothing has been written. {preview.rows.length} students in the outgoing year.
+                Nothing has been written. {preview.rows.length} students in the
+                outgoing year.
               </CardDescription>
             </CardHeader>
             <CardContent className="flex flex-col gap-4">
               <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
                 {summary.map((d) => (
                   <div key={d.value} className="rounded-lg border p-3">
-                    <p className="font-mono text-2xl font-semibold tabular-nums">{d.count}</p>
+                    <p className="font-mono text-2xl font-semibold tabular-nums">
+                      {d.count}
+                    </p>
                     {/* The word, always — a count under a colour swatch is not a
                         label anybody can read aloud. */}
                     <p className="text-sm font-medium">{d.label}</p>
-                    <p className="mt-0.5 text-xs text-muted-foreground">{d.hint}</p>
+                    <p className="mt-0.5 text-xs text-muted-foreground">
+                      {d.hint}
+                    </p>
                   </div>
                 ))}
               </div>
@@ -396,12 +467,15 @@ export function PromotionPlanner({ sessions, runs }: Props) {
                 <Alert>
                   <Info className="size-4" aria-hidden="true" />
                   <AlertTitle>
-                    {formatCurrency(leaversOwing)} is owed by students who are leaving
+                    {formatCurrency(leaversOwing)} is owed by students who are
+                    leaving
                   </AlertTitle>
                   <AlertDescription>
-                    A graduate gets no enrolment in the receiving year, so there is nothing to carry
-                    a balance onto. That debt stays on the outgoing year&rsquo;s ledger and is not
-                    written off — collecting it is a decision somebody has to make deliberately.
+                    A graduate gets no enrolment in the receiving year, so there
+                    is nothing to carry a balance onto. That debt stays on the
+                    outgoing year&rsquo;s ledger and is not written off —
+                    collecting it is a decision somebody has to make
+                    deliberately.
                   </AlertDescription>
                 </Alert>
               )}
@@ -411,16 +485,29 @@ export function PromotionPlanner({ sessions, runs }: Props) {
                   <caption className="sr-only">Promotion dry run</caption>
                   <thead>
                     <tr className="border-b bg-muted/40 text-start">
-                      <th scope="col" className="px-3 py-2 font-medium">Student</th>
-                      <th scope="col" className="px-3 py-2 font-medium">From</th>
-                      <th scope="col" className="px-3 py-2 font-medium">Decision</th>
-                      <th scope="col" className="px-3 py-2 font-medium">Into</th>
-                      <th scope="col" className="px-3 py-2 font-medium">Why</th>
+                      <th scope="col" className="px-3 py-2 font-medium">
+                        Student
+                      </th>
+                      <th scope="col" className="px-3 py-2 font-medium">
+                        From
+                      </th>
+                      <th scope="col" className="px-3 py-2 font-medium">
+                        Decision
+                      </th>
+                      <th scope="col" className="px-3 py-2 font-medium">
+                        Into
+                      </th>
+                      <th scope="col" className="px-3 py-2 font-medium">
+                        Why
+                      </th>
                     </tr>
                   </thead>
                   <tbody>
                     {preview.rows.slice(0, 40).map((row) => (
-                      <tr key={row.studentId} className="border-b last:border-0">
+                      <tr
+                        key={row.studentId}
+                        className="border-b last:border-0"
+                      >
                         <td className="px-3 py-1.5">
                           <span className="font-medium">{row.studentName}</span>
                           <span className="block font-mono text-xs text-muted-foreground">
@@ -455,19 +542,28 @@ export function PromotionPlanner({ sessions, runs }: Props) {
               {liveRun ? (
                 <Alert>
                   <Info className="size-4" aria-hidden="true" />
-                  <AlertTitle>There is already a run for this rollover</AlertTitle>
+                  <AlertTitle>
+                    There is already a run for this rollover
+                  </AlertTitle>
                   <AlertDescription className="flex flex-col items-start gap-2">
-                    Two half-built previews of the same rollover would disagree, and whichever was
-                    applied second would silently win.
+                    Two half-built previews of the same rollover would disagree,
+                    and whichever was applied second would silently win.
                     <Button asChild variant="outline" size="sm">
                       <Link href={`/promotion/${liveRun.id}`}>Open it</Link>
                     </Button>
                   </AlertDescription>
                 </Alert>
               ) : (
-                <Button onClick={createRun} disabled={pending} className="self-start">
+                <Button
+                  onClick={createRun}
+                  disabled={pending}
+                  className="self-start"
+                >
                   {pending ? (
-                    <Loader2 className="size-4 animate-spin" aria-hidden="true" />
+                    <Loader2
+                      className="size-4 animate-spin"
+                      aria-hidden="true"
+                    />
                   ) : (
                     <ArrowRight className="size-4" aria-hidden="true" />
                   )}
@@ -480,13 +576,17 @@ export function PromotionPlanner({ sessions, runs }: Props) {
           <Card>
             <CardContent className="flex flex-col items-center gap-3 py-14 text-center">
               <span className="rounded-full bg-muted p-3">
-                <Users className="size-6 text-muted-foreground" aria-hidden="true" />
+                <Users
+                  className="size-6 text-muted-foreground"
+                  aria-hidden="true"
+                />
               </span>
               <div>
                 <p className="font-medium">Nothing previewed yet</p>
                 <p className="mt-1 max-w-md text-sm text-muted-foreground">
-                  Set the rules and press Preview. Nothing is written until you start a run, and a
-                  run is not applied until you say so — so this is safe to experiment with.
+                  Set the rules and press Preview. Nothing is written until you
+                  start a run, and a run is not applied until you say so — so
+                  this is safe to experiment with.
                 </p>
               </div>
             </CardContent>
@@ -497,7 +597,9 @@ export function PromotionPlanner({ sessions, runs }: Props) {
           <Card>
             <CardHeader>
               <CardTitle>Runs</CardTitle>
-              <CardDescription>An applied run is history and cannot be undone here.</CardDescription>
+              <CardDescription>
+                An applied run is history and cannot be undone here.
+              </CardDescription>
             </CardHeader>
             <CardContent className="flex flex-col gap-2">
               {runs.map((run) => (
@@ -509,7 +611,9 @@ export function PromotionPlanner({ sessions, runs }: Props) {
                   <span className="font-medium">
                     {run.fromSessionName} → {run.toSessionName}
                   </span>
-                  <Badge variant={run.status === "applied" ? "default" : "outline"}>
+                  <Badge
+                    variant={run.status === "applied" ? "default" : "outline"}
+                  >
                     {run.status === "applied" ? "Applied" : "Draft"}
                   </Badge>
                   <span className="text-xs text-muted-foreground">
@@ -529,24 +633,5 @@ export function PromotionPlanner({ sessions, runs }: Props) {
         )}
       </div>
     </div>
-  );
-}
-
-export function DecisionBadge({ decision }: { decision: string }) {
-  const { t } = useI18n();
-  const tone = decisionTone(decision);
-  return (
-    <Badge
-      variant="outline"
-      className={cn(
-        "font-normal",
-        tone === "success" && "border-emerald-600/40 text-emerald-700 dark:text-emerald-400",
-        tone === "warning" && "border-amber-600/40 text-amber-700 dark:text-amber-400",
-        tone === "info" && "border-sky-600/40 text-sky-700 dark:text-sky-400",
-      )}
-    >
-      {decision === "promote" && <CheckCircle2 className="size-3" aria-hidden="true" />}
-      {decisionLabel(decision, t)}
-    </Badge>
   );
 }

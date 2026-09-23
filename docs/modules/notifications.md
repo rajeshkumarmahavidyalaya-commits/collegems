@@ -24,7 +24,7 @@ carries the answer:
 
 | Part | Where it lives | What it means |
 |---|---|---|
-| a driver | `CHANNELS[].driver` in `src/lib/validations/notifications.ts` | this *build* knows how to send on the channel |
+| a driver | `CHANNELS[].driver` in `src/lib/validations/notifications-display.ts` | this *build* knows how to send on the channel |
 | the school's decision | `notification_channel_settings.is_enabled`, `from_address` | this *school* has turned it on and said who it comes from |
 | credentials | `notification_channel_settings.provider_configured` | the dispatcher looked for its API key and found one |
 

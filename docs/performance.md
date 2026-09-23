@@ -553,21 +553,45 @@ render is not even conditional. Each page now:
 
 | route | before | after |
 |---|---|---|
+| `/inventory` | 253 kB | **135 kB** |
 | `/transport` | 243 kB | **134 kB** |
+| `/exams` | 245 kB | **145 kB** |
+| `/front-office` | 244 kB | **146 kB** |
+| `/fees/setup` | 245 kB | **158 kB** |
 | `/exams/[examId]` | 262 kB | **188 kB** |
 | `/hostel` | 253 kB | **181 kB** |
+| `/notifications/log` | 261 kB | **189 kB** |
+| `/academics` | 246 kB | **177 kB** |
+| `/promotion/[runId]` | 246 kB | **187 kB** |
 | `/homework` | 244 kB | **201 kB** |
 
-Both changes together: **20,781 → 18,823 kB** summed over all 114 routes, 73
-routes lighter. Five routes report +1 kB, which is the build-to-build chunk
-noise already recorded above, not a regression.
+"Before" is the build before either change, so each row includes the
+catalogue's 27–28 kB. The first four pages went in one commit and the other
+seven in the next.
 
-Checked in a browser, not only in the build: on `/transport` the page loads
-with no dialog in the DOM and without chunk `9705`. Clicking *New route*
-fetches 7 chunks, Zod among them, and opens the dialog; Escape closes it.
+All of it together: **20,781 → 18,425 kB** summed over all 114 routes, 66 of
+them lighter. Thirteen report +1 kB against that baseline. Against the commit
+before the second batch, sixteen do. That is more than the three a rebuild of
+the *same* commit moves, so some of it is probably real: seven new display
+modules are seven more module boundaries in shared chunks. It is at most 1 kB
+a route and is not claimed as noise.
 
-**Not done yet, in order of weight:** `/notifications/log` (234 kB),
-`/inventory` (225), `/fees/counter` (224), `/academics`, `/fees/setup`,
-`/promotion/[runId]` (219 each), `/exams` and `/front-office` (217). Each is
-the same two steps. `/fees/counter` is the exception: its forms are the page
-rather than dialogs, so there is nothing to defer.
+`/promotion/[runId]` had no dialog to defer. It imported `DecisionBadge` from
+`../promotion-planner`, the planner's form module, and **an import charges for
+the module, not for the one export**. The badge has its own file now, and the
+route dropped 32 kB with no other change.
+
+Checked in a browser, not only in the build, once per batch:
+
+- on `/transport` the page loads with no dialog in the DOM and without chunk
+  `9705`. Clicking *New route* fetches 7 chunks, Zod among them, and opens the
+  dialog; Escape closes it.
+- on `/inventory` the same: no dialog and no `9705` on load, then 9 chunks,
+  Zod among them, on *New item*. Escape removes it from the DOM.
+
+**What is left, and why it is not the same job.** The heaviest route is now
+`/fees/counter` at 225 kB, and it has no dialog: its forms *are* the page, so
+Zod is needed on arrival and there is nothing to defer. The next ones —
+`/accounts` (217), `/students` and `/transport/[routeId]` (214), `/hr/salary`
+and `/timetable` (213) — each need measuring before anybody assumes they are
+this shape. A route whose weight is its own form is already correct.

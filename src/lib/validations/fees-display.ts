@@ -36,17 +36,43 @@ import { labelFor, optionsFor } from "./labels";
 import type { Translator } from "@/lib/i18n/translate";
 
 export const ENTRY_TYPES = [
-  { value: "payment", label: "Payment", sign: "credit", description: "Money received" },
-  { value: "discount", label: "Discount", sign: "credit", description: "A concession granted" },
-  { value: "write_off", label: "Write-off", sign: "credit", description: "Debt the school will not pursue" },
-  { value: "fine", label: "Fine", sign: "charge", description: "An extra amount owed" },
-  { value: "refund", label: "Refund", sign: "charge", description: "Money paid back out" },
+  {
+    value: "payment",
+    label: "Payment",
+    sign: "credit",
+    description: "Money received",
+  },
+  {
+    value: "discount",
+    label: "Discount",
+    sign: "credit",
+    description: "A concession granted",
+  },
+  {
+    value: "write_off",
+    label: "Write-off",
+    sign: "credit",
+    description: "Debt the school will not pursue",
+  },
+  {
+    value: "fine",
+    label: "Fine",
+    sign: "charge",
+    description: "An extra amount owed",
+  },
+  {
+    value: "refund",
+    label: "Refund",
+    sign: "charge",
+    description: "Money paid back out",
+  },
 ] as const;
 
 export type EntryType = (typeof ENTRY_TYPES)[number]["value"];
 
 export const ADJUSTMENT_TYPES = ENTRY_TYPES.filter(
-  (t) => t.value === "discount" || t.value === "fine" || t.value === "write_off",
+  (t) =>
+    t.value === "discount" || t.value === "fine" || t.value === "write_off",
 );
 
 export const PAYMENT_METHODS = [
@@ -81,4 +107,48 @@ export function paymentMethodOptions(t: Translator) {
 /** The subset a counter clerk may raise by hand. Same keys, fewer values. */
 export function adjustmentTypeOptions(t: Translator) {
   return optionsFor(ADJUSTMENT_TYPES, "fees.entryType", t);
+}
+
+export const FEE_CATEGORIES = [
+  { value: "tuition", label: "Tuition" },
+  { value: "transport", label: "Transport" },
+  { value: "hostel", label: "Hostel" },
+  { value: "exam", label: "Exam" },
+  { value: "library", label: "Library" },
+  { value: "activity", label: "Activity" },
+  { value: "other", label: "Other" },
+] as const;
+
+/**
+ * How often a fee head is charged — and, since instalments arrived, also the
+ * vocabulary a billing period uses to say what it `collects`. The two are the
+ * same list on purpose: if they could drift, a school could configure a period
+ * collecting a frequency no fee ever carries and wonder why the run bills
+ * nothing.
+ */
+export const FEE_FREQUENCIES = [
+  {
+    value: "one_time",
+    label: "One time",
+    hint: "Admission or deposit — charged once in the year.",
+  },
+  {
+    value: "monthly",
+    label: "Monthly",
+    hint: "Recurs every period. A transport fare is always this.",
+  },
+  {
+    value: "quarterly",
+    label: "Quarterly",
+    hint: "Charged in the periods the school nominates.",
+  },
+  {
+    value: "annual",
+    label: "Annual",
+    hint: "The year's charge, collected in one period.",
+  },
+] as const;
+
+export function frequencyOptions(t: Translator) {
+  return optionsFor(FEE_FREQUENCIES, "fees.frequency", t);
 }

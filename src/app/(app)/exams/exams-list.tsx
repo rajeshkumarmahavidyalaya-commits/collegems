@@ -1,15 +1,15 @@
 "use client";
 
 import { useState, useTransition } from "react";
+
 import Link from "next/link";
+
 import { useRouter } from "next/navigation";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
+
 import {
   AlertTriangle,
   CheckCircle2,
   ClipboardList,
-  Loader2,
   Pencil,
   Plus,
   Scale,
@@ -17,22 +17,21 @@ import {
   Trash2,
 } from "lucide-react";
 import { toast } from "sonner";
+
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+
 import { Badge } from "@/components/ui/badge";
+
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import { Form } from "@/components/ui/form";
-import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
-import { Textarea } from "@/components/ui/textarea";
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+
 import {
   Table,
   TableBody,
@@ -41,26 +40,29 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ErrorSummary } from "@/components/forms/error-summary";
-import { SelectField, TextField, TextareaField } from "@/components/forms/form-fields";
+
 import { useI18n } from "@/components/providers/i18n-provider";
-import {
-  examKindLabel,
-  examSchema,
-  gradingSchemeSchema,
-  RANK_METHODS,
-  RANK_SCOPES,
-  type ExamInput,
-  type GradingSchemeInput, examKindOptions } from "@/lib/validations/exams";
+
+import { examKindLabel } from "@/lib/validations/exams-display";
 import {
   deleteExam,
   deleteScheme,
-  saveExam,
-  saveScheme,
   type ExamRow,
   type SchemeRow,
 } from "./actions";
+import dynamic from "next/dynamic";
+
+// Loaded on the click that opens them and rendered only while open: they
+// hold this page's Zod and form code, and a conditional render is not a
+// conditional load (see `fees-table.tsx` and docs/performance.md).
+const ExamDialog = dynamic(() =>
+  import("./exams-dialogs").then((m) => m.ExamDialog),
+);
+const SchemeDialog = dynamic(() =>
+  import("./exams-dialogs").then((m) => m.SchemeDialog),
+);
 
 type Props = {
   exams: ExamRow[];
@@ -111,13 +113,21 @@ export function ExamsList({ exams, schemes, canManage }: Props) {
         />
       </TabsContent>
 
-      <ExamDialog
-        open={examOpen}
-        onOpenChange={setExamOpen}
-        exam={editingExam}
-        schemes={schemes}
-      />
-      <SchemeDialog open={schemeOpen} onOpenChange={setSchemeOpen} scheme={editingScheme} />
+      {examOpen ? (
+        <ExamDialog
+          open={examOpen}
+          onOpenChange={setExamOpen}
+          exam={editingExam}
+          schemes={schemes}
+        />
+      ) : null}
+      {schemeOpen ? (
+        <SchemeDialog
+          open={schemeOpen}
+          onOpenChange={setSchemeOpen}
+          scheme={editingScheme}
+        />
+      ) : null}
     </Tabs>
   );
 }
@@ -162,8 +172,9 @@ function ExamsTab({
         <div>
           <CardTitle>Exams</CardTitle>
           <CardDescription className="max-w-2xl">
-            While an exam is a draft its results are recomputed live from the marks and the grading
-            scheme. Publishing freezes them and makes them visible to families.
+            While an exam is a draft its results are recomputed live from the
+            marks and the grading scheme. Publishing freezes them and makes them
+            visible to families.
           </CardDescription>
         </div>
         {canManage && (
@@ -177,13 +188,16 @@ function ExamsTab({
         {exams.length === 0 ? (
           <div className="flex flex-col items-center gap-3 py-14 text-center">
             <span className="rounded-full bg-muted p-3">
-              <ClipboardList className="size-6 text-muted-foreground" aria-hidden="true" />
+              <ClipboardList
+                className="size-6 text-muted-foreground"
+                aria-hidden="true"
+              />
             </span>
             <div>
               <p className="font-medium">No exams this session</p>
               <p className="mt-1 max-w-md text-sm text-muted-foreground">
-                An exam is a set of papers with a grading scheme. Create one, add its papers, and
-                the marks screens follow.
+                An exam is a set of papers with a grading scheme. Create one,
+                add its papers, and the marks screens follow.
               </p>
             </div>
             {canManage && (
@@ -232,7 +246,11 @@ function ExamsTab({
                       {exam.paperCount}
                     </TableCell>
                     <TableCell>
-                      <Badge variant={exam.status === "published" ? "default" : "outline"}>
+                      <Badge
+                        variant={
+                          exam.status === "published" ? "default" : "outline"
+                        }
+                      >
                         {exam.status === "published" ? "Published" : "Draft"}
                       </Badge>
                     </TableCell>
@@ -267,107 +285,6 @@ function ExamsTab({
         )}
       </CardContent>
     </Card>
-  );
-}
-
-function ExamDialog({
-  open,
-  onOpenChange,
-  exam,
-  schemes,
-}: {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  exam: ExamRow | null;
-  schemes: SchemeRow[];
-}) {
-  const { t } = useI18n();
-  const router = useRouter();
-  const [pending, startTransition] = useTransition();
-
-  const form = useForm<ExamInput>({
-    resolver: zodResolver(examSchema),
-    values: {
-      name: exam?.name ?? "",
-      kind: (exam?.kind ?? "term") as ExamInput["kind"],
-      startsOn: exam?.startsOn ?? "",
-      endsOn: exam?.endsOn ?? "",
-      gradingSchemeId: exam?.gradingSchemeId ?? "",
-    },
-  });
-
-  function onSubmit(input: ExamInput) {
-    startTransition(async () => {
-      const result = await saveExam(input, exam?.id);
-      if (!result.ok) {
-        if (result.fieldErrors) {
-          for (const [field, messages] of Object.entries(result.fieldErrors)) {
-            form.setError(field as keyof ExamInput, { message: messages[0] });
-          }
-        }
-        toast.error(result.error);
-        return;
-      }
-      toast.success(exam ? "Exam updated." : "Exam created.");
-      onOpenChange(false);
-      router.refresh();
-    });
-  }
-
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[90svh] overflow-y-auto sm:max-w-lg">
-        <DialogHeader>
-          <DialogTitle>{exam ? "Edit exam" : "New exam"}</DialogTitle>
-          <DialogDescription>
-            Leaving the scheme empty uses whichever scheme the school has marked as its default, so
-            changing that default moves every exam that never chose one.
-          </DialogDescription>
-        </DialogHeader>
-
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col gap-4" noValidate>
-            <ErrorSummary errors={form.formState.errors} submitCount={form.formState.submitCount} />
-
-            <TextField control={form.control} name="name" label="Name" required />
-
-            <div className="grid gap-4 sm:grid-cols-2">
-              <SelectField
-                control={form.control}
-                name="kind"
-                label="Kind"
-                required
-                options={examKindOptions(t).map((k) => ({ value: k.value, label: k.label }))}
-              />
-              <SelectField
-                control={form.control}
-                name="gradingSchemeId"
-                label="Grading scheme"
-                options={[
-                  { value: "", label: "The school's default" },
-                  ...schemes.map((s) => ({ value: s.id, label: s.name })),
-                ]}
-              />
-            </div>
-
-            <div className="grid gap-4 sm:grid-cols-2">
-              <TextField control={form.control} name="startsOn" label="First day" type="date" />
-              <TextField control={form.control} name="endsOn" label="Last day" type="date" />
-            </div>
-
-            <DialogFooter>
-              <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-                Cancel
-              </Button>
-              <Button type="submit" disabled={pending}>
-                {pending && <Loader2 className="size-4 animate-spin" aria-hidden="true" />}
-                {exam ? "Save changes" : "Create exam"}
-              </Button>
-            </DialogFooter>
-          </form>
-        </Form>
-      </DialogContent>
-    </Dialog>
   );
 }
 
@@ -407,9 +324,10 @@ function SchemesTab({
         <Scale className="size-4" aria-hidden="true" />
         <AlertTitle>The rules are data, not code</AlertTitle>
         <AlertDescription>
-          Grade bands, grace marks, best-of-N and whether an additional subject can stand in for a
-          failed one all live in a scheme. Two exams over the same marks with different schemes give
-          different results — which is what lets a second school join without a release.
+          Grade bands, grace marks, best-of-N and whether an additional subject
+          can stand in for a failed one all live in a scheme. Two exams over the
+          same marks with different schemes give different results — which is
+          what lets a second school join without a release.
         </AlertDescription>
       </Alert>
 
@@ -418,7 +336,8 @@ function SchemesTab({
           <div>
             <CardTitle>Grading schemes</CardTitle>
             <CardDescription>
-              Exactly one scheme is the school default, used by any exam that does not name its own.
+              Exactly one scheme is the school default, used by any exam that
+              does not name its own.
             </CardDescription>
           </div>
           {canManage && (
@@ -432,13 +351,16 @@ function SchemesTab({
           {schemes.length === 0 ? (
             <div className="flex flex-col items-center gap-3 py-14 text-center">
               <span className="rounded-full bg-muted p-3">
-                <Scale className="size-6 text-muted-foreground" aria-hidden="true" />
+                <Scale
+                  className="size-6 text-muted-foreground"
+                  aria-hidden="true"
+                />
               </span>
               <div>
                 <p className="font-medium">No grading schemes yet</p>
                 <p className="mt-1 max-w-md text-sm text-muted-foreground">
-                  Without one, results carry marks and percentages but no grade. That is a valid
-                  configuration, not an error.
+                  Without one, results carry marks and percentages but no grade.
+                  That is a valid configuration, not an error.
                 </p>
               </div>
             </div>
@@ -464,7 +386,9 @@ function SchemesTab({
                         )}
                       </p>
                       {scheme.description && (
-                        <p className="mt-0.5 text-sm text-muted-foreground">{scheme.description}</p>
+                        <p className="mt-0.5 text-sm text-muted-foreground">
+                          {scheme.description}
+                        </p>
                       )}
                     </div>
                     {canManage && (
@@ -500,7 +424,10 @@ function SchemesTab({
                           key={problem}
                           className="flex items-start gap-2 text-sm text-amber-700 dark:text-amber-400"
                         >
-                          <AlertTriangle className="mt-0.5 size-3.5 shrink-0" aria-hidden="true" />
+                          <AlertTriangle
+                            className="mt-0.5 size-3.5 shrink-0"
+                            aria-hidden="true"
+                          />
                           {problem}
                         </li>
                       ))}
@@ -521,200 +448,5 @@ function SchemesTab({
         </CardContent>
       </Card>
     </div>
-  );
-}
-
-function SchemeDialog({
-  open,
-  onOpenChange,
-  scheme,
-}: {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  scheme: SchemeRow | null;
-}) {
-  const router = useRouter();
-  const [pending, startTransition] = useTransition();
-
-  const form = useForm<GradingSchemeInput>({
-    resolver: zodResolver(gradingSchemeSchema),
-    values: {
-      name: scheme?.name ?? "",
-      description: scheme?.description ?? "",
-      isDefault: scheme?.isDefault ?? false,
-      rules: JSON.stringify(
-        scheme?.rules ?? {
-          grades: [
-            { code: "A", min_percent: 75, point: 9 },
-            { code: "B", min_percent: 50, point: 7 },
-            { code: "F", min_percent: 0, point: 0, is_fail: true },
-          ],
-          pass: { aggregate_min_percent: 33 },
-          aggregate: { method: "weighted" },
-        },
-        null,
-        2,
-      ),
-    },
-  });
-
-  function onSubmit(input: GradingSchemeInput) {
-    startTransition(async () => {
-      const result = await saveScheme(input, scheme?.id);
-      if (!result.ok) {
-        if (result.fieldErrors) {
-          for (const [field, messages] of Object.entries(result.fieldErrors)) {
-            form.setError(field as keyof GradingSchemeInput, { message: messages[0] });
-          }
-        }
-        toast.error(result.error);
-        return;
-      }
-
-      if (result.data.problems.length > 0) {
-        // Saved, but not silently: a scheme with problems is savable on purpose
-        // — an administrator building grade bands one at a time should not be
-        // refused at every step — and must not be mistaken for a finished one.
-        toast.warning(
-          `Saved with ${result.data.problems.length} ${result.data.problems.length === 1 ? "problem" : "problems"} to look at.`,
-        );
-      } else {
-        toast.success(scheme ? "Scheme updated." : "Scheme created.");
-      }
-
-      onOpenChange(false);
-      router.refresh();
-    });
-  }
-
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[90svh] overflow-y-auto sm:max-w-2xl">
-        <DialogHeader>
-          <DialogTitle>{scheme ? "Edit scheme" : "New grading scheme"}</DialogTitle>
-          <DialogDescription>
-            The rules are a JSON document. Everything in it is optional — an empty{" "}
-            <code className="font-mono">{"{}"}</code> gives a straight weighted mean with no grace,
-            no substitution and no grade, which is a coherent scheme rather than an error.
-          </DialogDescription>
-        </DialogHeader>
-
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col gap-4" noValidate>
-            <ErrorSummary errors={form.formState.errors} submitCount={form.formState.submitCount} />
-
-            <TextField control={form.control} name="name" label="Name" required />
-            <TextareaField
-              control={form.control}
-              name="description"
-              label="Description"
-              rows={2}
-              description="What makes this scheme different from the others."
-            />
-
-            <div className="flex flex-col gap-1.5">
-              <Label htmlFor="scheme-rules">
-                Rules
-                <span aria-hidden="true" className="text-destructive">
-                  {" "}
-                  *
-                </span>
-              </Label>
-              <Textarea
-                id="scheme-rules"
-                rows={16}
-                spellCheck={false}
-                className="font-mono text-xs"
-                aria-invalid={form.formState.errors.rules ? true : undefined}
-                {...form.register("rules")}
-              />
-              {form.formState.errors.rules && (
-                <p className="text-sm text-destructive">{form.formState.errors.rules.message}</p>
-              )}
-              <p className="text-xs text-muted-foreground">
-                Keys: <code className="font-mono">grades</code>,{" "}
-                <code className="font-mono">pass</code>, <code className="font-mono">grace</code>,{" "}
-                <code className="font-mono">aggregate</code>,{" "}
-                <code className="font-mono">optional_subject</code>,{" "}
-                <code className="font-mono">rank</code>. The order they are applied in is
-                documented in <code className="font-mono">docs/modules/exams.md</code>.
-              </p>
-
-              {/* Ranking is the one key whose absence is a decision rather than
-                  an omission, so the editor says so rather than leaving a
-                  school to discover it from a printed card. */}
-              <details className="rounded-md border border-border p-3">
-                <summary className="cursor-pointer text-xs font-medium">
-                  Class position (the <code className="font-mono">rank</code> key)
-                </summary>
-                <div className="mt-2 flex flex-col gap-2 text-xs text-muted-foreground">
-                  <p>
-                    Leave <code className="font-mono">rank</code> out entirely and no position is
-                    worked out — which is a real choice, not an omission. When it is present, the
-                    position is frozen onto each result at publish, together with the number of
-                    students it was taken over.
-                  </p>
-                  <dl className="flex flex-col gap-1">
-                    <dt className="font-medium text-foreground">
-                      <code className="font-mono">scope</code>
-                    </dt>
-                    {RANK_SCOPES.map((scope) => (
-                      <dd key={scope.value}>
-                        <code className="font-mono">{scope.value}</code> — {scope.hint}
-                      </dd>
-                    ))}
-                    <dt className="mt-1 font-medium text-foreground">
-                      <code className="font-mono">method</code>
-                    </dt>
-                    {RANK_METHODS.map((method) => (
-                      <dd key={method.value}>
-                        <code className="font-mono">{method.value}</code> — {method.hint}
-                      </dd>
-                    ))}
-                    <dt className="mt-1 font-medium text-foreground">
-                      <code className="font-mono">include</code>
-                    </dt>
-                    <dd>
-                      <code className="font-mono">all</code> — a failed result still takes a
-                      position.
-                    </dd>
-                    <dd>
-                      <code className="font-mono">passed</code> — only passing students are ranked.
-                    </dd>
-                  </dl>
-                </div>
-              </details>
-            </div>
-
-            <div className="flex items-center justify-between rounded-md border p-3">
-              <div>
-                <Label htmlFor="scheme-default">The school default</Label>
-                <p className="max-w-sm text-xs text-muted-foreground">
-                  Used by every exam that does not name its own scheme. Turning this on takes it
-                  away from whichever scheme has it now.
-                </p>
-              </div>
-              <Switch
-                id="scheme-default"
-                checked={form.watch("isDefault")}
-                onCheckedChange={(checked) =>
-                  form.setValue("isDefault", checked, { shouldDirty: true })
-                }
-              />
-            </div>
-
-            <DialogFooter>
-              <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-                Cancel
-              </Button>
-              <Button type="submit" disabled={pending}>
-                {pending && <Loader2 className="size-4 animate-spin" aria-hidden="true" />}
-                {scheme ? "Save changes" : "Create scheme"}
-              </Button>
-            </DialogFooter>
-          </form>
-        </Form>
-      </DialogContent>
-    </Dialog>
   );
 }

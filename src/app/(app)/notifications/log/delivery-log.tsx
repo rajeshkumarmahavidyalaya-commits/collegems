@@ -1,9 +1,9 @@
 "use client";
 
 import { useMemo, useState, useTransition } from "react";
+
 import { useRouter } from "next/navigation";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
+
 import {
   AlertTriangle,
   ChevronDown,
@@ -15,23 +15,27 @@ import {
   Send,
   Trash2,
 } from "lucide-react";
+
 import { toast } from "sonner";
+
 import { cn } from "@/lib/utils";
+
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+
 import { Badge } from "@/components/ui/badge";
+
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import { Form } from "@/components/ui/form";
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+
 import { Label } from "@/components/ui/label";
+
 import {
   Select,
   SelectContent,
@@ -39,34 +43,47 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Switch } from "@/components/ui/switch";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { exportRowsToCsv } from "@/components/data-table/data-table";
-import { ErrorSummary } from "@/components/forms/error-summary";
-import { SelectField, TextField, TextareaField } from "@/components/forms/form-fields";
-import { useI18n } from "@/components/providers/i18n-provider";
+
 import {
-  CHANNELS,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+
+import { exportRowsToCsv } from "@/components/data-table/data-table";
+
+import { useI18n } from "@/components/providers/i18n-provider";
+
+import {
   audienceKindLabel,
   channelHasDriver,
   channelLabel,
   relativeTime,
   statusLabel,
-  templateSchema,
   templateVariables,
-  type TemplateInput,
-} from "@/lib/validations/notifications";
+} from "@/lib/validations/notifications-display";
 import type { Translator } from "@/lib/i18n/translate";
 import {
   deleteTemplate,
   listDeliveries,
-  saveTemplate,
   type DeliveryRow,
   type EventType,
   type OutboxRow,
   type TemplateRow,
 } from "../actions";
+import dynamic from "next/dynamic";
+
+// Loaded on the click that opens them and rendered only while open: they
+// hold this page's Zod and form code, and a conditional render is not a
+// conditional load (see `fees-table.tsx` and docs/performance.md).
+const TemplateDialog = dynamic(() =>
+  import("./template-dialog").then((m) => m.TemplateDialog),
+);
 
 type Props = {
   outbox: OutboxRow[];
@@ -75,7 +92,12 @@ type Props = {
   canManage: boolean;
 };
 
-export function DeliveryLog({ outbox, templates, eventTypes, canManage }: Props) {
+export function DeliveryLog({
+  outbox,
+  templates,
+  eventTypes,
+  canManage,
+}: Props) {
   return (
     <Tabs defaultValue="sent">
       <TabsList>
@@ -88,7 +110,11 @@ export function DeliveryLog({ outbox, templates, eventTypes, canManage }: Props)
       </TabsContent>
 
       <TabsContent value="templates" className="mt-4">
-        <TemplatesTab templates={templates} eventTypes={eventTypes} canManage={canManage} />
+        <TemplatesTab
+          templates={templates}
+          eventTypes={eventTypes}
+          canManage={canManage}
+        />
       </TabsContent>
     </Tabs>
   );
@@ -98,13 +124,22 @@ export function DeliveryLog({ outbox, templates, eventTypes, canManage }: Props)
 // Sent
 // ---------------------------------------------------------------------------
 
-function SentTab({ outbox, eventTypes }: { outbox: OutboxRow[]; eventTypes: EventType[] }) {
+function SentTab({
+  outbox,
+  eventTypes,
+}: {
+  outbox: OutboxRow[];
+  eventTypes: EventType[];
+}) {
   const { t, formatDateTime } = useI18n();
   const [eventFilter, setEventFilter] = useState("all");
   const [expanded, setExpanded] = useState<string | null>(null);
 
   const rows = useMemo(
-    () => (eventFilter === "all" ? outbox : outbox.filter((r) => r.eventKey === eventFilter)),
+    () =>
+      eventFilter === "all"
+        ? outbox
+        : outbox.filter((r) => r.eventKey === eventFilter),
     [outbox, eventFilter],
   );
 
@@ -158,7 +193,10 @@ function SentTab({ outbox, eventTypes }: { outbox: OutboxRow[]; eventTypes: Even
     <div className="flex flex-col gap-4">
       <div className="flex flex-wrap items-center gap-3">
         <div className="flex items-center gap-2">
-          <Label htmlFor="event-filter" className="text-sm text-muted-foreground">
+          <Label
+            htmlFor="event-filter"
+            className="text-sm text-muted-foreground"
+          >
             Event
           </Label>
           <Select value={eventFilter} onValueChange={setEventFilter}>
@@ -192,25 +230,31 @@ function SentTab({ outbox, eventTypes }: { outbox: OutboxRow[]; eventTypes: Even
         <Alert>
           <AlertTriangle className="size-4" aria-hidden="true" />
           <AlertTitle>
-            {totals.queued} {totals.queued === 1 ? "delivery is" : "deliveries are"} waiting on a
-            provider
+            {totals.queued}{" "}
+            {totals.queued === 1 ? "delivery is" : "deliveries are"} waiting on
+            a provider
           </AlertTitle>
           <AlertDescription>
-            Email, SMS and WhatsApp deliveries are recorded and queued, but no driver is connected
-            yet, so nothing has actually been sent on those channels. In-app messages have
-            arrived.
+            Email, SMS and WhatsApp deliveries are recorded and queued, but no
+            driver is connected yet, so nothing has actually been sent on those
+            channels. In-app messages have arrived.
           </AlertDescription>
         </Alert>
       )}
 
       <p aria-live="polite" className="sr-only">
-        {rows.length} {rows.length === 1 ? "notification" : "notifications"} listed.
+        {rows.length} {rows.length === 1 ? "notification" : "notifications"}{" "}
+        listed.
       </p>
 
       {rows.length === 0 ? (
         <EmptyState
           icon={Send}
-          title={eventFilter === "all" ? "Nothing has been sent yet" : "Nothing of that kind yet"}
+          title={
+            eventFilter === "all"
+              ? "Nothing has been sent yet"
+              : "Nothing of that kind yet"
+          }
           description={
             eventFilter === "all"
               ? "Messages sent from this school — by a person or by a module — will be listed here with their delivery outcomes."
@@ -224,7 +268,9 @@ function SentTab({ outbox, eventTypes }: { outbox: OutboxRow[]; eventTypes: Even
               key={row.id}
               row={row}
               isOpen={expanded === row.id}
-              onToggle={() => setExpanded((c) => (c === row.id ? null : row.id))}
+              onToggle={() =>
+                setExpanded((c) => (c === row.id ? null : row.id))
+              }
             />
           ))}
         </ul>
@@ -284,30 +330,43 @@ function OutboxCard({
                 {describeAudience(row.audience, t)}
               </span>
               <span className="ms-auto flex items-center gap-2 text-xs text-muted-foreground">
-                <time dateTime={row.createdAt} title={formatDateTime(row.createdAt)}>
+                <time
+                  dateTime={row.createdAt}
+                  title={formatDateTime(row.createdAt)}
+                >
                   {relativeTime(row.createdAt, locale)}
                 </time>
                 <ChevronDown
-                  className={cn("size-4 transition-transform", isOpen && "rotate-180")}
+                  className={cn(
+                    "size-4 transition-transform",
+                    isOpen && "rotate-180",
+                  )}
                   aria-hidden="true"
                 />
               </span>
             </div>
 
-            {row.subject && <p className="text-sm font-medium">{row.subject}</p>}
-            <p className="line-clamp-2 text-sm text-muted-foreground">{row.body}</p>
+            {row.subject && (
+              <p className="text-sm font-medium">{row.subject}</p>
+            )}
+            <p className="line-clamp-2 text-sm text-muted-foreground">
+              {row.body}
+            </p>
 
             <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs">
               <span className="text-muted-foreground">
                 {row.recipients} {row.recipients === 1 ? "person" : "people"} ·{" "}
-                {row.deliveries} {row.deliveries === 1 ? "delivery" : "deliveries"}
+                {row.deliveries}{" "}
+                {row.deliveries === 1 ? "delivery" : "deliveries"}
               </span>
               <CountChip label="Delivered" count={row.sent} tone="success" />
               <CountChip label="Queued" count={row.queued} tone="muted" />
               <CountChip label="Failed" count={row.failed} tone="danger" />
               <CountChip label="Skipped" count={row.skipped} tone="warning" />
               {row.createdByName && (
-                <span className="ms-auto text-muted-foreground">by {row.createdByName}</span>
+                <span className="ms-auto text-muted-foreground">
+                  by {row.createdByName}
+                </span>
               )}
             </div>
           </button>
@@ -321,15 +380,21 @@ function OutboxCard({
                 </p>
               ) : loadError ? (
                 <div className="flex flex-wrap items-center gap-3 py-4">
-                  <p className="text-sm text-destructive">These deliveries could not be loaded.</p>
-                  <Button variant="outline" size="sm" onClick={() => void load()}>
+                  <p className="text-sm text-destructive">
+                    These deliveries could not be loaded.
+                  </p>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => void load()}
+                  >
                     Try again
                   </Button>
                 </div>
               ) : !deliveries?.length ? (
                 <p className="py-4 text-sm text-muted-foreground">
-                  This message reached nobody — the audience matched no account at the time it was
-                  sent.
+                  This message reached nobody — the audience matched no account
+                  at the time it was sent.
                 </p>
               ) : (
                 <div className="overflow-x-auto">
@@ -346,7 +411,9 @@ function OutboxCard({
                     <TableBody>
                       {deliveries.map((d) => (
                         <TableRow key={d.id}>
-                          <TableCell className="font-medium">{d.recipient}</TableCell>
+                          <TableCell className="font-medium">
+                            {d.recipient}
+                          </TableCell>
                           <TableCell>
                             <span className="flex items-center gap-1.5">
                               {channelLabel(d.channel, t)}
@@ -356,7 +423,10 @@ function OutboxCard({
                                   column — this badge is only for the channels
                                   nothing in this build could ever send. */}
                               {!channelHasDriver(d.channel) && (
-                                <Badge variant="outline" className="font-normal">
+                                <Badge
+                                  variant="outline"
+                                  className="font-normal"
+                                >
                                   no driver
                                 </Badge>
                               )}
@@ -407,9 +477,11 @@ function CountChip({
     <span
       className={cn(
         "inline-flex items-center gap-1 rounded-full border px-2 py-0.5",
-        tone === "success" && "border-emerald-600/30 text-emerald-700 dark:text-emerald-400",
+        tone === "success" &&
+          "border-emerald-600/30 text-emerald-700 dark:text-emerald-400",
         tone === "danger" && "border-destructive/40 text-destructive",
-        tone === "warning" && "border-amber-600/30 text-amber-700 dark:text-amber-400",
+        tone === "warning" &&
+          "border-amber-600/30 text-amber-700 dark:text-amber-400",
         tone === "muted" && "text-muted-foreground",
       )}
     >
@@ -444,7 +516,10 @@ function StatusBadge({ status }: { status: string }) {
  * anything built before render takes the formatter as a parameter. eslint's
  * rules-of-hooks caught the first attempt, which is the guard working.
  */
-function describeAudience(audience: Record<string, unknown>, t: Translator): string {
+function describeAudience(
+  audience: Record<string, unknown>,
+  t: Translator,
+): string {
   const kind = typeof audience.kind === "string" ? audience.kind : "";
 
   switch (kind) {
@@ -464,7 +539,9 @@ function describeAudience(audience: Record<string, unknown>, t: Translator): str
       });
     }
     case "users": {
-      const ids = Array.isArray(audience.user_ids) ? audience.user_ids.length : 0;
+      const ids = Array.isArray(audience.user_ids)
+        ? audience.user_ids.length
+        : 0;
       // The count and the noun are one sentence, so `t.plural` picks both --
       // English plurals are not derivable and neither are anybody else's.
       return t.plural("audience.namedPeople", ids);
@@ -493,7 +570,8 @@ function TemplatesTab({
   const [open, setOpen] = useState(false);
   const [pending, startTransition] = useTransition();
 
-  const eventName = (key: string) => eventTypes.find((e) => e.key === key)?.name ?? key;
+  const eventName = (key: string) =>
+    eventTypes.find((e) => e.key === key)?.name ?? key;
 
   function add() {
     setEditing(null);
@@ -531,10 +609,12 @@ function TemplatesTab({
           <div>
             <CardTitle>Templates</CardTitle>
             <CardDescription className="max-w-2xl">
-              Standing text for the messages modules send on their own — an absence notice, a
-              payment receipt. Write <code className="font-mono">{"{{name}}"}</code> where a value
-              should be substituted. Without a template, the sending module&rsquo;s own wording is
-              used, so these are an override, not a requirement.
+              Standing text for the messages modules send on their own — an
+              absence notice, a payment receipt. Write{" "}
+              <code className="font-mono">{"{{name}}"}</code> where a value
+              should be substituted. Without a template, the sending
+              module&rsquo;s own wording is used, so these are an override, not
+              a requirement.
             </CardDescription>
           </div>
           {canManage && (
@@ -568,19 +648,33 @@ function TemplatesTab({
                     <TableHead>Channel</TableHead>
                     <TableHead>Text</TableHead>
                     <TableHead>Status</TableHead>
-                    {canManage && <TableHead className="w-24 text-end">Actions</TableHead>}
+                    {canManage && (
+                      <TableHead className="w-24 text-end">Actions</TableHead>
+                    )}
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {templates.map((template) => {
-                    const variables = templateVariables(`${template.subject ?? ""} ${template.body}`);
+                    const variables = templateVariables(
+                      `${template.subject ?? ""} ${template.body}`,
+                    );
                     return (
                       <TableRow key={template.id}>
-                        <TableCell className="font-medium">{eventName(template.eventKey)}</TableCell>
-                        <TableCell>{channelLabel(template.channel, t)}</TableCell>
+                        <TableCell className="font-medium">
+                          {eventName(template.eventKey)}
+                        </TableCell>
+                        <TableCell>
+                          {channelLabel(template.channel, t)}
+                        </TableCell>
                         <TableCell className="max-w-md">
-                          {template.subject && <p className="text-sm font-medium">{template.subject}</p>}
-                          <p className="line-clamp-2 text-sm text-muted-foreground">{template.body}</p>
+                          {template.subject && (
+                            <p className="text-sm font-medium">
+                              {template.subject}
+                            </p>
+                          )}
+                          <p className="line-clamp-2 text-sm text-muted-foreground">
+                            {template.body}
+                          </p>
                           {variables.length > 0 && (
                             <p className="mt-1 flex flex-wrap gap-1">
                               {variables.map((v) => (
@@ -595,7 +689,10 @@ function TemplatesTab({
                           )}
                         </TableCell>
                         <TableCell>
-                          <Badge variant={template.isActive ? "default" : "outline"} className="font-normal">
+                          <Badge
+                            variant={template.isActive ? "default" : "outline"}
+                            className="font-normal"
+                          >
                             {template.isActive ? "In use" : "Inactive"}
                           </Badge>
                         </TableCell>
@@ -632,207 +729,15 @@ function TemplatesTab({
         </CardContent>
       </Card>
 
-      <TemplateDialog
-        open={open}
-        onOpenChange={setOpen}
-        template={editing}
-        eventTypes={eventTypes}
-      />
+      {open ? (
+        <TemplateDialog
+          open={open}
+          onOpenChange={setOpen}
+          template={editing}
+          eventTypes={eventTypes}
+        />
+      ) : null}
     </div>
-  );
-}
-
-function TemplateDialog({
-  open,
-  onOpenChange,
-  template,
-  eventTypes,
-}: {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  template: TemplateRow | null;
-  eventTypes: EventType[];
-}) {
-  const router = useRouter();
-  const [pending, startTransition] = useTransition();
-
-  const form = useForm<TemplateInput>({
-    resolver: zodResolver(templateSchema),
-    values: {
-      eventKey: template?.eventKey ?? eventTypes[0]?.key ?? "",
-      channel: (template?.channel ?? "in_app") as TemplateInput["channel"],
-      subject: template?.subject ?? "",
-      body: template?.body ?? "",
-      isActive: template?.isActive ?? true,
-      providerTemplateName: template?.providerTemplateName ?? "",
-      providerTemplateLocale: template?.providerTemplateLocale ?? "en",
-      providerTemplateParams: template?.providerTemplateParams ?? [],
-    },
-  });
-
-  const body = form.watch("body");
-  const subject = form.watch("subject");
-  const channel = form.watch("channel");
-  const variables = templateVariables(`${subject ?? ""} ${body ?? ""}`);
-  // WhatsApp is the one channel where the text below is *not* what gets sent.
-  const isWhatsApp = channel === "whatsapp";
-
-  function onSubmit(input: TemplateInput) {
-    startTransition(async () => {
-      const result = await saveTemplate(input, template?.id);
-      if (!result.ok) {
-        if (result.fieldErrors) {
-          for (const [field, messages] of Object.entries(result.fieldErrors)) {
-            form.setError(field as keyof TemplateInput, { message: messages[0] });
-          }
-        }
-        toast.error(result.error);
-        return;
-      }
-
-      toast.success(template ? "Template updated." : "Template created.");
-      onOpenChange(false);
-      router.refresh();
-    });
-  }
-
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[90svh] overflow-y-auto sm:max-w-xl">
-        <DialogHeader>
-          <DialogTitle>{template ? "Edit template" : "New template"}</DialogTitle>
-          <DialogDescription>
-            One template per event per channel. An SMS and an email for the same event are
-            different texts, which is why the channel is part of the key.
-          </DialogDescription>
-        </DialogHeader>
-
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col gap-4" noValidate>
-            <ErrorSummary errors={form.formState.errors} submitCount={form.formState.submitCount} />
-
-            <div className="grid gap-4 sm:grid-cols-2">
-              <SelectField
-                control={form.control}
-                name="eventKey"
-                label="Event"
-                required
-                options={eventTypes.map((e) => ({ value: e.key, label: e.name }))}
-              />
-              <SelectField
-                control={form.control}
-                name="channel"
-                label="Channel"
-                required
-                options={CHANNELS.map((c) => ({ value: c.value, label: c.label }))}
-              />
-            </div>
-
-            <TextField
-              control={form.control}
-              name="subject"
-              label="Subject"
-              description="Ignored by SMS, which has no subject line."
-            />
-            <TextareaField
-              control={form.control}
-              name="body"
-              label="Body"
-              required
-              rows={6}
-              description={
-                isWhatsApp
-                  ? "What the delivery log will show. WhatsApp sends Meta's approved copy of the template below, not this text — keep them saying the same thing."
-                  : "Use {{variable}} for values the sending module supplies."
-              }
-            />
-
-            {isWhatsApp && (
-              <div className="flex flex-col gap-4 rounded-md border border-dashed p-3">
-                <div>
-                  <p className="text-sm font-medium">Meta&rsquo;s approved template</p>
-                  <p className="mt-1 text-xs text-muted-foreground">
-                    WhatsApp does not accept free text: outside a conversation the recipient
-                    started, only templates registered and approved in advance can be sent. This
-                    system never sees that text — it refers to it by name, and fills its
-                    placeholders in the order below.
-                  </p>
-                </div>
-
-                <div className="grid gap-4 sm:grid-cols-2">
-                  <TextField
-                    control={form.control}
-                    name="providerTemplateName"
-                    label="Template name"
-                    description="Exactly as registered with Meta."
-                  />
-                  <TextField
-                    control={form.control}
-                    name="providerTemplateLocale"
-                    label="Template language"
-                    description="Meta stores one copy per language and refuses the wrong code."
-                  />
-                </div>
-
-                <TemplateParameters
-                  value={form.watch("providerTemplateParams") ?? []}
-                  variables={variables}
-                  onChange={(next: string[]) =>
-                    form.setValue("providerTemplateParams", next, { shouldDirty: true })
-                  }
-                />
-              </div>
-            )}
-
-            <div className="rounded-md border bg-muted/40 p-3">
-              <p className="text-xs font-medium">Variables this template uses</p>
-              {variables.length === 0 ? (
-                <p className="mt-1 text-xs text-muted-foreground">
-                  None yet — this text will be sent exactly as written.
-                </p>
-              ) : (
-                <p className="mt-1 flex flex-wrap gap-1">
-                  {variables.map((v) => (
-                    <code key={v} className="rounded bg-background px-1.5 py-0.5 font-mono text-xs">
-                      {v}
-                    </code>
-                  ))}
-                </p>
-              )}
-              <p className="mt-2 text-xs text-muted-foreground">
-                A variable the sending module does not supply is left in place rather than blanked,
-                so a typo is visible in the message instead of silently swallowing the value.
-              </p>
-            </div>
-
-            <div className="flex items-center justify-between rounded-md border p-3">
-              <div>
-                <Label htmlFor="template-active">In use</Label>
-                <p className="text-xs text-muted-foreground">
-                  Turn this off to fall back to the sending module&rsquo;s own wording without
-                  losing the text.
-                </p>
-              </div>
-              <Switch
-                id="template-active"
-                checked={form.watch("isActive")}
-                onCheckedChange={(checked) => form.setValue("isActive", checked, { shouldDirty: true })}
-              />
-            </div>
-
-            <DialogFooter>
-              <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-                Cancel
-              </Button>
-              <Button type="submit" disabled={pending}>
-                {pending && <Loader2 className="size-4 animate-spin" aria-hidden="true" />}
-                {template ? "Save changes" : "Create template"}
-              </Button>
-            </DialogFooter>
-          </form>
-        </Form>
-      </DialogContent>
-    </Dialog>
   );
 }
 
@@ -854,87 +759,11 @@ function EmptyState({
       </span>
       <div>
         <p className="font-medium">{title}</p>
-        <p className="mt-1 max-w-md text-sm text-muted-foreground">{description}</p>
+        <p className="mt-1 max-w-md text-sm text-muted-foreground">
+          {description}
+        </p>
       </div>
       {action}
-    </div>
-  );
-}
-
-/**
- * The ordered list of payload keys that fill Meta's {{1}}, {{2}}, {{3}}.
- *
- * Positional, because that is what Meta's API takes — and named here, because
- * `{{2}}` in a configuration screen is unreadable and gets filled in wrong. The
- * variables the body already uses are offered as suggestions, since in practice
- * they are the same values in the same order.
- */
-function TemplateParameters({
-  value,
-  variables,
-  onChange,
-}: {
-  value: string[];
-  variables: string[];
-  onChange: (next: string[]) => void;
-}) {
-  const unused = variables.filter((v) => !value.includes(v));
-
-  return (
-    <div className="flex flex-col gap-2">
-      <p className="text-sm font-medium">Placeholders, in order</p>
-
-      {value.length === 0 ? (
-        <p className="text-xs text-muted-foreground">
-          None. If Meta&rsquo;s copy has placeholders, they will arrive empty.
-        </p>
-      ) : (
-        <ol className="flex flex-col gap-2">
-          {value.map((key, index) => (
-            <li key={index} className="flex items-center gap-2">
-              <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">
-                {`{{${index + 1}}}`}
-              </code>
-              <Input
-                value={key}
-                onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                  onChange(value.map((v, i) => (i === index ? e.target.value : v)))
-                }
-                className="h-8 font-mono"
-                aria-label={`The value for placeholder ${index + 1}`}
-              />
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon"
-                onClick={() => onChange(value.filter((_, i) => i !== index))}
-                aria-label={`Remove placeholder ${index + 1}`}
-              >
-                <Trash2 className="size-4" aria-hidden="true" />
-              </Button>
-            </li>
-          ))}
-        </ol>
-      )}
-
-      <div className="flex flex-wrap items-center gap-2">
-        <Button type="button" variant="outline" size="sm" onClick={() => onChange([...value, ""])}>
-          <Plus className="size-4" aria-hidden="true" />
-          Add a placeholder
-        </Button>
-        {unused.map((v) => (
-          <Button
-            key={v}
-            type="button"
-            variant="ghost"
-            size="sm"
-            className="font-mono text-xs"
-            onClick={() => onChange([...value, v])}
-          >
-            + {v}
-          </Button>
-        ))}
-      </div>
     </div>
   );
 }

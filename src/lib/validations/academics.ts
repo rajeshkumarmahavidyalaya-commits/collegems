@@ -1,42 +1,7 @@
 import { z } from "zod";
-import type { Translator } from "@/lib/i18n/translate";
-import { labelFor } from "./labels";
 
-/**
- * The academic structure the rest of Phase 1 and 3 stand on: what is taught,
- * by whom, where, when, and on which days the school is open.
- */
-
-export const SUBJECT_KINDS = [
-  { value: "theory", label: "Theory" },
-  { value: "practical", label: "Practical" },
-] as const;
-
-export const SLOT_KINDS = [
-  { value: "class", label: "Class periods" },
-  { value: "exam", label: "Exam periods" },
-] as const;
-
-/**
- * ISO weekday numbering (1 = Monday … 7 = Sunday), matching
- * `extract(isodow …)` so the app, the RPCs and every calendar query agree
- * without a translation table in someone's head.
- */
-/**
- * The seven days, as **values**. `label` and `short` are the English fallback
- * for a runtime with no ICU data, not the thing to render — `formatWeekday`
- * asks `Intl` instead, because twenty-one weekday names in three catalogues
- * would be storing what every JavaScript runtime already ships.
- */
-export const WEEKDAYS = [
-  { value: 1, label: "Monday", short: "Mon" },
-  { value: 2, label: "Tuesday", short: "Tue" },
-  { value: 3, label: "Wednesday", short: "Wed" },
-  { value: 4, label: "Thursday", short: "Thu" },
-  { value: 5, label: "Friday", short: "Fri" },
-  { value: 6, label: "Saturday", short: "Sat" },
-  { value: 7, label: "Sunday", short: "Sun" },
-] as const;
+// Everything that is not a schema lives in `academics-display.ts` (no Zod).
+export * from "./academics-display";
 
 const isoDate = z
   .string()
@@ -44,7 +9,9 @@ const isoDate = z
   .refine((v) => !Number.isNaN(Date.parse(v)), "Pick a real date");
 
 /** `HH:MM`, what `<input type="time">` submits and what Postgres `time` takes. */
-const clockTime = z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/, "Use a 24-hour time like 08:45");
+const clockTime = z
+  .string()
+  .regex(/^([01]\d|2[0-3]):[0-5]\d$/, "Use a 24-hour time like 08:45");
 
 export const subjectSchema = z.object({
   name: z.string().min(1, "A name is required").max(100),
@@ -56,6 +23,7 @@ export const subjectSchema = z.object({
   kind: z.enum(["theory", "practical"]),
   isActive: z.boolean(),
 });
+
 export type SubjectInput = z.infer<typeof subjectSchema>;
 
 export const classRoomSchema = z.object({
@@ -67,6 +35,7 @@ export const classRoomSchema = z.object({
     .max(2000, "That is larger than any room this system will plan for"),
   isActive: z.boolean(),
 });
+
 export type ClassRoomInput = z.infer<typeof classRoomSchema>;
 
 export const timeSlotSchema = z
@@ -88,6 +57,7 @@ export const timeSlotSchema = z
     message: "The end time must be after the start time",
     path: ["endsAt"],
   });
+
 export type TimeSlotInput = z.infer<typeof timeSlotSchema>;
 
 export const holidaySchema = z
@@ -101,6 +71,7 @@ export const holidaySchema = z
     message: "The last day cannot be before the first",
     path: ["endsOn"],
   });
+
 export type HolidayInput = z.infer<typeof holidaySchema>;
 
 export const sectionSubjectSchema = z.object({
@@ -108,26 +79,8 @@ export const sectionSubjectSchema = z.object({
   subjectId: z.string().uuid("Choose a subject"),
   teacherStaffId: z.union([z.string().uuid(), z.literal("")]).optional(),
 });
+
 export type SectionSubjectInput = z.infer<typeof sectionSubjectSchema>;
-
-export function subjectKindLabel(value: string, t: Translator) {
-  const kind = SUBJECT_KINDS.find((k) => k.value === value);
-  return kind ? labelFor(`academics.subjectKind.${kind.value}`, kind.label, t) : value;
-}
-
-// `weekdayLabel` stood here and had **no caller** — the second dead label found
-// in this pass, after `CATEGORY_LABEL`. Rule 15's own sentence: a correct string
-// nobody renders is not a feature. The live answer is `formatWeekday` in
-// `src/lib/i18n/format.ts`, which asks ICU rather than this list.
-
-/** `08:45:00` from Postgres, `08:45` in a form — normalise on the way in. */
-export function toClockTime(value: string) {
-  return value.slice(0, 5);
-}
-
-export function formatSlotRange(startsAt: string, endsAt: string) {
-  return `${toClockTime(startsAt)} – ${toClockTime(endsAt)}`;
-}
 
 /**
  * An academic year.

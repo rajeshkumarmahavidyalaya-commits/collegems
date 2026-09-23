@@ -1,19 +1,43 @@
 "use client";
 
 import { useState } from "react";
+
 import { useRouter } from "next/navigation";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { Building2, CreditCard, FileText, Loader2, Mail, Plus, Trash2 } from "lucide-react";
+
+import {
+  Building2,
+  CreditCard,
+  FileText,
+  Loader2,
+  Mail,
+  Plus,
+  Trash2,
+} from "lucide-react";
+
 import { toast } from "sonner";
+
 import { Badge } from "@/components/ui/badge";
+
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+
 import { Input } from "@/components/ui/input";
+
 import { Label } from "@/components/ui/label";
+
 import { Switch } from "@/components/ui/switch";
+
 import {
   Dialog,
   DialogContent,
@@ -22,22 +46,31 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Form } from "@/components/ui/form";
-import { SelectField, TextField, TextareaField } from "@/components/forms/form-fields";
-import { ErrorSummary } from "@/components/forms/error-summary";
+
 import { useI18n } from "@/components/providers/i18n-provider";
-import { FEE_CATEGORIES, feeHeadSchema, frequencyOptions, feeStructureSchema, generateSectionInvoicesSchema, type FeeHeadInput, type FeeStructureInput } from "@/lib/validations/fees";
+
 import {
   deleteFeeStructure,
-  generateSectionInvoices,
-  saveFeeHead,
   saveFeeIntegrationSettings,
-  saveFeeStructure,
   saveSchoolProfile,
   type FeeIntegrationSettings,
 } from "../actions";
+import dynamic from "next/dynamic";
 
-type FeeHead = {
+// Loaded on the click that opens them and rendered only while open: they
+// hold this page's Zod and form code, and a conditional render is not a
+// conditional load (see `fees-table.tsx` and docs/performance.md).
+const FeeHeadDialog = dynamic(() =>
+  import("./fee-setup-dialogs").then((m) => m.FeeHeadDialog),
+);
+const FeeStructureDialog = dynamic(() =>
+  import("./fee-setup-dialogs").then((m) => m.FeeStructureDialog),
+);
+const BillSectionDialog = dynamic(() =>
+  import("./fee-setup-dialogs").then((m) => m.BillSectionDialog),
+);
+
+export type FeeHead = {
   id: string;
   code: string;
   name: string;
@@ -54,12 +87,6 @@ type FeeStructure = {
   feeHead: string;
   feeHeadCode: string;
 };
-
-function todayPlus(days: number) {
-  const d = new Date();
-  d.setDate(d.getDate() + days);
-  return new Date(d.getTime() - d.getTimezoneOffset() * 60_000).toISOString().slice(0, 10);
-}
 
 export function FeeSetup({
   feeHeads,
@@ -89,10 +116,13 @@ export function FeeSetup({
 
   // Structures grouped by class, because that is the unit a school thinks in:
   // "what does Grade 6 pay", not "what does the transport head cost everywhere".
-  const byClass = structures.reduce<Record<string, FeeStructure[]>>((acc, s) => {
-    (acc[s.classLevel] ??= []).push(s);
-    return acc;
-  }, {});
+  const byClass = structures.reduce<Record<string, FeeStructure[]>>(
+    (acc, s) => {
+      (acc[s.classLevel] ??= []).push(s);
+      return acc;
+    },
+    {},
+  );
 
   return (
     <div className="flex flex-col gap-6">
@@ -101,16 +131,22 @@ export function FeeSetup({
           <TabsTrigger value="structures">Class amounts</TabsTrigger>
           <TabsTrigger value="heads">Fee heads ({feeHeads.length})</TabsTrigger>
           <TabsTrigger value="billing">Raise invoices</TabsTrigger>
-          {canManageSettings && <TabsTrigger value="integrations">Payments &amp; email</TabsTrigger>}
+          {canManageSettings && (
+            <TabsTrigger value="integrations">Payments &amp; email</TabsTrigger>
+          )}
         </TabsList>
 
         <TabsContent value="structures" className="mt-4 flex flex-col gap-4">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <p className="text-sm text-muted-foreground">
-              What each class pays this session. Setting an amount that already exists edits it
-              rather than adding a second row.
+              What each class pays this session. Setting an amount that already
+              exists edits it rather than adding a second row.
             </p>
-            <Button size="sm" onClick={() => setStructureOpen(true)} disabled={activeHeads.length === 0}>
+            <Button
+              size="sm"
+              onClick={() => setStructureOpen(true)}
+              disabled={activeHeads.length === 0}
+            >
               <Plus className="size-4" aria-hidden="true" />
               Set an amount
             </Button>
@@ -121,8 +157,8 @@ export function FeeSetup({
               <FileText className="size-4" aria-hidden="true" />
               <AlertTitle>Add a fee head first</AlertTitle>
               <AlertDescription>
-                A fee head is what you charge for — tuition, transport, exam fees. Amounts are set
-                per class against a head.
+                A fee head is what you charge for — tuition, transport, exam
+                fees. Amounts are set per class against a head.
               </AlertDescription>
             </Alert>
           ) : Object.keys(byClass).length === 0 ? (
@@ -130,7 +166,8 @@ export function FeeSetup({
               <FileText className="size-4" aria-hidden="true" />
               <AlertTitle>No amounts set yet</AlertTitle>
               <AlertDescription>
-                Until a class has amounts against it, invoices for that class cannot be raised.
+                Until a class has amounts against it, invoices for that class
+                cannot be raised.
               </AlertDescription>
             </Alert>
           ) : (
@@ -140,21 +177,29 @@ export function FeeSetup({
                   <CardHeader className="pb-3">
                     <CardTitle className="text-base">{className}</CardTitle>
                     <CardDescription className="font-mono tabular-nums">
-                      {formatCurrency(rows.reduce((s, r) => s + r.amount, 0))} per instalment set
+                      {formatCurrency(rows.reduce((s, r) => s + r.amount, 0))}{" "}
+                      per instalment set
                     </CardDescription>
                   </CardHeader>
                   <CardContent>
                     <ul className="flex flex-col gap-2 text-sm">
                       {rows.map((row) => (
-                        <li key={row.id} className="flex items-center justify-between gap-2">
+                        <li
+                          key={row.id}
+                          className="flex items-center justify-between gap-2"
+                        >
                           <span className="min-w-0">
-                            <span className="block truncate">{row.feeHead}</span>
+                            <span className="block truncate">
+                              {row.feeHead}
+                            </span>
                             <span className="text-xs text-muted-foreground capitalize">
                               {row.frequency.replace("_", " ")}
                             </span>
                           </span>
                           <span className="flex shrink-0 items-center gap-1">
-                            <span className="font-mono tabular-nums">{formatCurrency(row.amount)}</span>
+                            <span className="font-mono tabular-nums">
+                              {formatCurrency(row.amount)}
+                            </span>
                             <Button
                               size="icon"
                               variant="ghost"
@@ -177,8 +222,9 @@ export function FeeSetup({
         <TabsContent value="heads" className="mt-4 flex flex-col gap-4">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <p className="text-sm text-muted-foreground">
-              What the school charges for. A head is never deleted once it has been billed — mark it
-              inactive instead, and it stops appearing on new invoices.
+              What the school charges for. A head is never deleted once it has
+              been billed — mark it inactive instead, and it stops appearing on
+              new invoices.
             </p>
             <Button size="sm" onClick={() => setHeadOpen(true)}>
               <Plus className="size-4" aria-hidden="true" />
@@ -191,7 +237,8 @@ export function FeeSetup({
               <FileText className="size-4" aria-hidden="true" />
               <AlertTitle>No fee heads yet</AlertTitle>
               <AlertDescription>
-                Start with the ones every school has: tuition, exam fee, transport.
+                Start with the ones every school has: tuition, exam fee,
+                transport.
               </AlertDescription>
             </Alert>
           ) : (
@@ -199,16 +246,38 @@ export function FeeSetup({
               <table className="w-full min-w-[560px] text-sm">
                 <thead className="bg-muted/60 text-xs text-muted-foreground">
                   <tr>
-                    <th scope="col" className="px-3 py-2 text-start font-medium">Code</th>
-                    <th scope="col" className="px-3 py-2 text-start font-medium">Name</th>
-                    <th scope="col" className="px-3 py-2 text-start font-medium">Category</th>
-                    <th scope="col" className="px-3 py-2 text-start font-medium">Status</th>
+                    <th
+                      scope="col"
+                      className="px-3 py-2 text-start font-medium"
+                    >
+                      Code
+                    </th>
+                    <th
+                      scope="col"
+                      className="px-3 py-2 text-start font-medium"
+                    >
+                      Name
+                    </th>
+                    <th
+                      scope="col"
+                      className="px-3 py-2 text-start font-medium"
+                    >
+                      Category
+                    </th>
+                    <th
+                      scope="col"
+                      className="px-3 py-2 text-start font-medium"
+                    >
+                      Status
+                    </th>
                   </tr>
                 </thead>
                 <tbody>
                   {feeHeads.map((head) => (
                     <tr key={head.id} className="border-t border-border">
-                      <td className="px-3 py-2 font-mono text-xs">{head.code}</td>
+                      <td className="px-3 py-2 font-mono text-xs">
+                        {head.code}
+                      </td>
                       <td className="px-3 py-2">
                         <span className="font-medium">{head.name}</span>
                         {head.description && (
@@ -233,12 +302,16 @@ export function FeeSetup({
 
         <TabsContent value="billing" className="mt-4 flex flex-col gap-4">
           <p className="text-sm text-muted-foreground">
-            Raising invoices for a class bills every enrolled student at that class&apos;s set
-            amounts. Students who already have an invoice for that due date are skipped, so running
-            it twice tops up rather than double-billing.
+            Raising invoices for a class bills every enrolled student at that
+            class&apos;s set amounts. Students who already have an invoice for
+            that due date are skipped, so running it twice tops up rather than
+            double-billing.
           </p>
           <div>
-            <Button onClick={() => setBillOpen(true)} disabled={structures.length === 0}>
+            <Button
+              onClick={() => setBillOpen(true)}
+              disabled={structures.length === 0}
+            >
               <FileText className="size-4" aria-hidden="true" />
               Raise invoices for a class
             </Button>
@@ -247,7 +320,8 @@ export function FeeSetup({
             <Alert>
               <AlertTitle>Set class amounts first</AlertTitle>
               <AlertDescription>
-                There is nothing to bill until at least one class has amounts against it.
+                There is nothing to bill until at least one class has amounts
+                against it.
               </AlertDescription>
             </Alert>
           )}
@@ -256,27 +330,43 @@ export function FeeSetup({
         {canManageSettings && (
           <TabsContent value="integrations" className="mt-4">
             <div className="flex flex-col gap-4">
-              <SchoolProfileCard profile={schoolProfile} onDone={() => router.refresh()} />
-              <IntegrationSettings settings={integrations} onDone={() => router.refresh()} />
+              <SchoolProfileCard
+                profile={schoolProfile}
+                onDone={() => router.refresh()}
+              />
+              <IntegrationSettings
+                settings={integrations}
+                onDone={() => router.refresh()}
+              />
             </div>
           </TabsContent>
         )}
       </Tabs>
 
-      <FeeHeadDialog open={headOpen} onOpenChange={setHeadOpen} onDone={() => router.refresh()} />
-      <FeeStructureDialog
-        open={structureOpen}
-        onOpenChange={setStructureOpen}
-        classLevels={classLevels}
-        feeHeads={activeHeads}
-        onDone={() => router.refresh()}
-      />
-      <BillSectionDialog
-        open={billOpen}
-        onOpenChange={setBillOpen}
-        sections={sections}
-        onDone={() => router.refresh()}
-      />
+      {headOpen ? (
+        <FeeHeadDialog
+          open={headOpen}
+          onOpenChange={setHeadOpen}
+          onDone={() => router.refresh()}
+        />
+      ) : null}
+      {structureOpen ? (
+        <FeeStructureDialog
+          open={structureOpen}
+          onOpenChange={setStructureOpen}
+          classLevels={classLevels}
+          feeHeads={activeHeads}
+          onDone={() => router.refresh()}
+        />
+      ) : null}
+      {billOpen ? (
+        <BillSectionDialog
+          open={billOpen}
+          onOpenChange={setBillOpen}
+          sections={sections}
+          onDone={() => router.refresh()}
+        />
+      ) : null}
 
       <Dialog
         open={confirmDelete !== null}
@@ -293,8 +383,9 @@ export function FeeSetup({
           <Alert>
             <AlertTitle>Invoices already raised are not affected</AlertTitle>
             <AlertDescription>
-              This only changes what future invoices include. Bills already issued keep their lines,
-              because an issued invoice is a record of what was charged.
+              This only changes what future invoices include. Bills already
+              issued keep their lines, because an issued invoice is a record of
+              what was charged.
             </AlertDescription>
           </Alert>
           <DialogFooter>
@@ -323,260 +414,6 @@ export function FeeSetup({
     </div>
   );
 }
-
-function FeeHeadDialog({
-  open,
-  onOpenChange,
-  onDone,
-}: {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  onDone: () => void;
-}) {
-  const [serverError, setServerError] = useState<string | null>(null);
-  const form = useForm<FeeHeadInput>({
-    resolver: zodResolver(feeHeadSchema),
-    defaultValues: { code: "", name: "", description: "", category: "tuition", isActive: true },
-  });
-
-  async function onSubmit(values: FeeHeadInput) {
-    setServerError(null);
-    const result = await saveFeeHead(values);
-    if (!result.ok) {
-      setServerError(result.error);
-      return;
-    }
-    toast.success("Fee head added");
-    onOpenChange(false);
-    form.reset();
-    onDone();
-  }
-
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-lg">
-        <DialogHeader>
-          <DialogTitle>Add a fee head</DialogTitle>
-          <DialogDescription>Something the school charges for.</DialogDescription>
-        </DialogHeader>
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col gap-4">
-            <ErrorSummary errors={form.formState.errors} submitCount={form.formState.submitCount} />
-            {serverError && (
-              <Alert variant="destructive">
-                <AlertTitle>Not saved</AlertTitle>
-                <AlertDescription>{serverError}</AlertDescription>
-              </Alert>
-            )}
-            <div className="grid gap-4 sm:grid-cols-2">
-              <TextField
-                control={form.control}
-                name="code"
-                label="Code"
-                required
-                placeholder="TUITION"
-                description="Short and stable — it appears on reports"
-              />
-              <SelectField
-                control={form.control}
-                name="category"
-                label="Category"
-                required
-                options={FEE_CATEGORIES.map((c) => ({ value: c.value, label: c.label }))}
-              />
-            </div>
-            <TextField control={form.control} name="name" label="Name" required placeholder="Tuition fee" />
-            <TextareaField control={form.control} name="description" label="Description" />
-            <DialogFooter>
-              <Button type="button" variant="ghost" onClick={() => onOpenChange(false)}>
-                Cancel
-              </Button>
-              <Button type="submit" disabled={form.formState.isSubmitting}>
-                {form.formState.isSubmitting && (
-                  <Loader2 className="size-4 animate-spin" aria-hidden="true" />
-                )}
-                Add fee head
-              </Button>
-            </DialogFooter>
-          </form>
-        </Form>
-      </DialogContent>
-    </Dialog>
-  );
-}
-
-function FeeStructureDialog({
-  open,
-  onOpenChange,
-  classLevels,
-  feeHeads,
-  onDone,
-}: {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  classLevels: { id: string; name: string }[];
-  feeHeads: FeeHead[];
-  onDone: () => void;
-}) {
-  const { t } = useI18n();
-  const [serverError, setServerError] = useState<string | null>(null);
-  const form = useForm<FeeStructureInput>({
-    resolver: zodResolver(feeStructureSchema),
-    defaultValues: { classLevelId: "", feeHeadId: "", amount: undefined, frequency: "annual" },
-  });
-
-  async function onSubmit(values: FeeStructureInput) {
-    setServerError(null);
-    const result = await saveFeeStructure(values);
-    if (!result.ok) {
-      setServerError(result.error);
-      return;
-    }
-    toast.success("Amount set");
-    onOpenChange(false);
-    form.reset();
-    onDone();
-  }
-
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-lg">
-        <DialogHeader>
-          <DialogTitle>Set a class amount</DialogTitle>
-          <DialogDescription>
-            What one class pays for one head, this session.
-          </DialogDescription>
-        </DialogHeader>
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col gap-4">
-            <ErrorSummary errors={form.formState.errors} submitCount={form.formState.submitCount} />
-            {serverError && (
-              <Alert variant="destructive">
-                <AlertTitle>Not saved</AlertTitle>
-                <AlertDescription>{serverError}</AlertDescription>
-              </Alert>
-            )}
-            <div className="grid gap-4 sm:grid-cols-2">
-              <SelectField
-                control={form.control}
-                name="classLevelId"
-                label="Class"
-                required
-                options={classLevels.map((c) => ({ value: c.id, label: c.name }))}
-              />
-              <SelectField
-                control={form.control}
-                name="feeHeadId"
-                label="Fee head"
-                required
-                options={feeHeads.map((h) => ({ value: h.id, label: h.name }))}
-              />
-              <TextField control={form.control} name="amount" label="Amount" type="number" required />
-              <SelectField
-                control={form.control}
-                name="frequency"
-                label="Frequency"
-                required
-                options={frequencyOptions(t)}
-                description="How often this instalment is billed"
-              />
-            </div>
-            <DialogFooter>
-              <Button type="button" variant="ghost" onClick={() => onOpenChange(false)}>
-                Cancel
-              </Button>
-              <Button type="submit" disabled={form.formState.isSubmitting}>
-                {form.formState.isSubmitting && (
-                  <Loader2 className="size-4 animate-spin" aria-hidden="true" />
-                )}
-                Set amount
-              </Button>
-            </DialogFooter>
-          </form>
-        </Form>
-      </DialogContent>
-    </Dialog>
-  );
-}
-
-function BillSectionDialog({
-  open,
-  onOpenChange,
-  sections,
-  onDone,
-}: {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  sections: { id: string; label: string }[];
-  onDone: () => void;
-}) {
-  const [serverError, setServerError] = useState<string | null>(null);
-  const form = useForm<{ sectionId: string; dueDate: string }>({
-    resolver: zodResolver(generateSectionInvoicesSchema),
-    defaultValues: { sectionId: "", dueDate: todayPlus(30) },
-  });
-
-  async function onSubmit(values: { sectionId: string; dueDate: string }) {
-    setServerError(null);
-    const result = await generateSectionInvoices(values);
-    if (!result.ok) {
-      setServerError(result.error);
-      return;
-    }
-    toast.success(
-      result.data.created === 0
-        ? "Every student in that class already had an invoice for that date"
-        : `${result.data.created} ${result.data.created === 1 ? "invoice" : "invoices"} raised`,
-    );
-    onOpenChange(false);
-    form.reset({ sectionId: "", dueDate: todayPlus(30) });
-    onDone();
-  }
-
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-lg">
-        <DialogHeader>
-          <DialogTitle>Raise invoices for a class</DialogTitle>
-          <DialogDescription>
-            Bills every enrolled student in the class at that class&apos;s set amounts.
-          </DialogDescription>
-        </DialogHeader>
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col gap-4">
-            <ErrorSummary errors={form.formState.errors} submitCount={form.formState.submitCount} />
-            {serverError && (
-              <Alert variant="destructive">
-                <AlertTitle>Nothing raised</AlertTitle>
-                <AlertDescription>{serverError}</AlertDescription>
-              </Alert>
-            )}
-            <SelectField
-              control={form.control}
-              name="sectionId"
-              label="Class"
-              required
-              options={sections.map((s) => ({ value: s.id, label: s.label }))}
-            />
-            <TextField control={form.control} name="dueDate" label="Due date" type="date" required />
-            <DialogFooter>
-              <Button type="button" variant="ghost" onClick={() => onOpenChange(false)}>
-                Cancel
-              </Button>
-              <Button type="submit" disabled={form.formState.isSubmitting}>
-                {form.formState.isSubmitting && (
-                  <Loader2 className="size-4 animate-spin" aria-hidden="true" />
-                )}
-                Raise invoices
-              </Button>
-            </DialogFooter>
-          </form>
-        </Form>
-      </DialogContent>
-    </Dialog>
-  );
-}
-
 
 /**
  * Two switches an administrator owns: whether families can be asked to pay
@@ -635,13 +472,18 @@ function IntegrationSettings({
             Online payments
           </CardTitle>
           <CardDescription>
-            Lets the counter create a Razorpay payment link a family can pay from their phone. The
-            payment lands in the ledger with its own receipt number, exactly like cash.
+            Lets the counter create a Razorpay payment link a family can pay
+            from their phone. The payment lands in the ledger with its own
+            receipt number, exactly like cash.
           </CardDescription>
         </CardHeader>
         <CardContent className="flex flex-col gap-3">
           <div className="flex items-center gap-2">
-            <Switch id="online-payments" checked={online} onCheckedChange={setOnline} />
+            <Switch
+              id="online-payments"
+              checked={online}
+              onCheckedChange={setOnline}
+            />
             <Label htmlFor="online-payments" className="font-normal">
               Allow payment links
             </Label>
@@ -652,9 +494,10 @@ function IntegrationSettings({
               Razorpay credentials live on the Supabase Edge Functions as{" "}
               <code className="font-mono text-xs">RAZORPAY_KEY_ID</code>,{" "}
               <code className="font-mono text-xs">RAZORPAY_KEY_SECRET</code> and{" "}
-              <code className="font-mono text-xs">RAZORPAY_WEBHOOK_SECRET</code> — never in this
-              application, so they cannot reach a browser. Until they are set, creating a link
-              fails with a clear message and nothing is charged.
+              <code className="font-mono text-xs">RAZORPAY_WEBHOOK_SECRET</code>{" "}
+              — never in this application, so they cannot reach a browser. Until
+              they are set, creating a link fails with a clear message and
+              nothing is charged.
             </AlertDescription>
           </Alert>
         </CardContent>
@@ -667,12 +510,17 @@ function IntegrationSettings({
             Invoice email
           </CardTitle>
           <CardDescription>
-            One address for this school. Invoices you choose to send are queued for it.
+            One address for this school. Invoices you choose to send are queued
+            for it.
           </CardDescription>
         </CardHeader>
         <CardContent className="flex flex-col gap-3">
           <div className="flex items-center gap-2">
-            <Switch id="invoice-email" checked={emailOn} onCheckedChange={setEmailOn} />
+            <Switch
+              id="invoice-email"
+              checked={emailOn}
+              onCheckedChange={setEmailOn}
+            />
             <Label htmlFor="invoice-email" className="font-normal">
               Queue invoices for email
             </Label>
@@ -691,9 +539,9 @@ function IntegrationSettings({
           <Alert>
             <AlertTitle>Queued, not sent</AlertTitle>
             <AlertDescription>
-              No mail provider is connected yet, so queued invoices wait in the jobs table and
-              nothing reaches an inbox. This is deliberate — turning it on here does not start
-              sending mail to anybody.
+              No mail provider is connected yet, so queued invoices wait in the
+              jobs table and nothing reaches an inbox. This is deliberate —
+              turning it on here does not start sending mail to anybody.
             </AlertDescription>
           </Alert>
         </CardContent>
@@ -701,14 +549,15 @@ function IntegrationSettings({
 
       <div>
         <Button onClick={save} disabled={!dirty || saving}>
-          {saving && <Loader2 className="size-4 animate-spin" aria-hidden="true" />}
+          {saving && (
+            <Loader2 className="size-4 animate-spin" aria-hidden="true" />
+          )}
           Save settings
         </Button>
       </div>
     </div>
   );
 }
-
 
 export type SchoolProfile = {
   addressLine1: string;
@@ -763,8 +612,8 @@ function SchoolProfileCard({
           School details on invoices
         </CardTitle>
         <CardDescription>
-          Printed at the top of every fee invoice. A bill with no address on it is not one a family
-          can act on.
+          Printed at the top of every fee invoice. A bill with no address on it
+          is not one a family can act on.
         </CardDescription>
       </CardHeader>
       <CardContent className="flex flex-col gap-4">
@@ -802,7 +651,9 @@ function SchoolProfileCard({
               onDone();
             }}
           >
-            {saving && <Loader2 className="size-4 animate-spin" aria-hidden="true" />}
+            {saving && (
+              <Loader2 className="size-4 animate-spin" aria-hidden="true" />
+            )}
             Save school details
           </Button>
         </div>

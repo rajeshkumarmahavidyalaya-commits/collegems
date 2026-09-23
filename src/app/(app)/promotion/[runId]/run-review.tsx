@@ -42,10 +42,16 @@ import {
   needsTargetSection,
   switchableDecisions,
   currentlySentence,
-} from "@/lib/validations/promotion";
-import { DecisionBadge } from "../promotion-planner";
-import { applyRun, discardRun, overrideDecision, type DecisionRow, type RunRow } from "../actions";
-import type { LeftBehindNote } from "@/lib/validations/promotion";
+} from "@/lib/validations/promotion-display";
+import { DecisionBadge } from "../decision-badge";
+import {
+  applyRun,
+  discardRun,
+  overrideDecision,
+  type DecisionRow,
+  type RunRow,
+} from "../actions";
+import type { LeftBehindNote } from "@/lib/validations/promotion-display";
 import { useI18n } from "@/components/providers/i18n-provider";
 
 type Props = {
@@ -126,8 +132,10 @@ export function RunReview({ run, decisions, sections, leftBehind }: Props) {
       // Graduating is leaving, so say what leaving closed. A run that ended
       // nothing says nothing rather than "0 bus seats", which reads as a fault.
       const closed = [
-        endedTransport > 0 && `${endedTransport} bus ${endedTransport === 1 ? "seat" : "seats"}`,
-        endedHostel > 0 && `${endedHostel} hostel ${endedHostel === 1 ? "bed" : "beds"}`,
+        endedTransport > 0 &&
+          `${endedTransport} bus ${endedTransport === 1 ? "seat" : "seats"}`,
+        endedHostel > 0 &&
+          `${endedHostel} hostel ${endedHostel === 1 ? "bed" : "beds"}`,
         endedConcessions > 0 &&
           `${endedConcessions} ${endedConcessions === 1 ? "concession" : "concessions"}`,
       ].filter(Boolean) as string[];
@@ -144,7 +152,12 @@ export function RunReview({ run, decisions, sections, leftBehind }: Props) {
   }
 
   function discard() {
-    if (!window.confirm("Discard this run? Nothing has been written, so nothing is lost.")) return;
+    if (
+      !window.confirm(
+        "Discard this run? Nothing has been written, so nothing is lost.",
+      )
+    )
+      return;
     startTransition(async () => {
       const result = await discardRun(run.id);
       if (!result.ok) {
@@ -187,16 +200,23 @@ export function RunReview({ run, decisions, sections, leftBehind }: Props) {
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         {DECISIONS.filter((d) => (counts[d.value] ?? 0) > 0).map((d) => (
           <div key={d.value} className="rounded-lg border p-3">
-            <p className="font-mono text-2xl font-semibold tabular-nums">{counts[d.value]}</p>
+            <p className="font-mono text-2xl font-semibold tabular-nums">
+              {counts[d.value]}
+            </p>
             <p className="text-sm font-medium">{d.label}</p>
           </div>
         ))}
       </div>
 
       {leftBehind.length > 0 && (
-        <section aria-labelledby="left-behind-heading" className="flex flex-col gap-2">
+        <section
+          aria-labelledby="left-behind-heading"
+          className="flex flex-col gap-2"
+        >
           <h2 id="left-behind-heading" className="text-lg font-semibold">
-            {applied ? "What this run could not close" : "What applying will not close"}
+            {applied
+              ? "What this run could not close"
+              : "What applying will not close"}
           </h2>
           <ul className="flex flex-col gap-2">
             {leftBehind.map((problem, index) => (
@@ -204,7 +224,9 @@ export function RunReview({ run, decisions, sections, leftBehind }: Props) {
                 <Alert>
                   <AlertTriangle className="size-4" aria-hidden="true" />
                   <AlertTitle className="flex items-center gap-2">
-                    <Badge variant="warning">{leftBehindLabel(problem.kind, t)}</Badge>
+                    <Badge variant="warning">
+                      {leftBehindLabel(problem.kind, t)}
+                    </Badge>
                   </AlertTitle>
                   <AlertDescription>{problem.message}</AlertDescription>
                 </Alert>
@@ -219,9 +241,10 @@ export function RunReview({ run, decisions, sections, leftBehind }: Props) {
           <CheckCheck className="size-4" aria-hidden="true" />
           <AlertTitle>This run has been applied</AlertTitle>
           <AlertDescription>
-            The enrolments it created are live. Correcting one now means editing that student&rsquo;s
-            enrolment directly — a rollover is not something this screen can take back, which is why
-            the preview exists.
+            The enrolments it created are live. Correcting one now means editing
+            that student&rsquo;s enrolment directly — a rollover is not
+            something this screen can take back, which is why the preview
+            exists.
           </AlertDescription>
         </Alert>
       ) : (
@@ -233,20 +256,24 @@ export function RunReview({ run, decisions, sections, leftBehind }: Props) {
                 {holds} {holds === 1 ? "student is" : "students are"} on hold
               </AlertTitle>
               <AlertDescription>
-                A hold changes nothing at all — the outgoing enrolment stays open, so the student is
-                still visibly somebody&rsquo;s problem rather than quietly gone. Usually it means the
-                receiving year has no matching class, or a person parked the decision.
+                A hold changes nothing at all — the outgoing enrolment stays
+                open, so the student is still visibly somebody&rsquo;s problem
+                rather than quietly gone. Usually it means the receiving year
+                has no matching class, or a person parked the decision.
               </AlertDescription>
             </Alert>
           )}
           {carried > 0 && (
             <Alert>
               <AlertTriangle className="size-4" aria-hidden="true" />
-              <AlertTitle>{formatCurrency(carried)} will be carried forward</AlertTitle>
+              <AlertTitle>
+                {formatCurrency(carried)} will be carried forward
+              </AlertTitle>
               <AlertDescription>
-                Each carried balance becomes an opening invoice in {run.toSessionName}, with its own
-                receipt number — the debt arrives as a document the family can be shown, not as a
-                number copied between years.
+                Each carried balance becomes an opening invoice in{" "}
+                {run.toSessionName}, with its own receipt number — the debt
+                arrives as a document the family can be shown, not as a number
+                copied between years.
               </AlertDescription>
             </Alert>
           )}
@@ -288,13 +315,23 @@ export function RunReview({ run, decisions, sections, leftBehind }: Props) {
         </p>
 
         <div className="ms-auto flex flex-wrap gap-2">
-          <Button variant="outline" size="sm" onClick={exportCsv} disabled={rows.length === 0}>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={exportCsv}
+            disabled={rows.length === 0}
+          >
             <Download className="size-4" aria-hidden="true" />
             CSV
           </Button>
           {!applied && (
             <>
-              <Button variant="outline" size="sm" onClick={discard} disabled={pending}>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={discard}
+                disabled={pending}
+              >
                 <Trash2 className="size-4" aria-hidden="true" />
                 Discard
               </Button>
@@ -321,16 +358,29 @@ export function RunReview({ run, decisions, sections, leftBehind }: Props) {
         <div className="overflow-x-auto rounded-lg border">
           <table className="w-full border-collapse text-sm">
             <caption className="sr-only">
-              Promotion decisions for {run.fromSessionName} into {run.toSessionName}
+              Promotion decisions for {run.fromSessionName} into{" "}
+              {run.toSessionName}
             </caption>
             <thead>
               <tr className="border-b bg-muted/40 text-start">
-                <th scope="col" className="px-3 py-2 font-medium">Student</th>
-                <th scope="col" className="px-3 py-2 font-medium">From</th>
-                <th scope="col" className="px-3 py-2 font-medium">Decision</th>
-                <th scope="col" className="px-3 py-2 font-medium">Into</th>
-                <th scope="col" className="px-3 py-2 font-medium">Why</th>
-                <th scope="col" className="px-3 py-2 text-end font-medium">Carried</th>
+                <th scope="col" className="px-3 py-2 font-medium">
+                  Student
+                </th>
+                <th scope="col" className="px-3 py-2 font-medium">
+                  From
+                </th>
+                <th scope="col" className="px-3 py-2 font-medium">
+                  Decision
+                </th>
+                <th scope="col" className="px-3 py-2 font-medium">
+                  Into
+                </th>
+                <th scope="col" className="px-3 py-2 font-medium">
+                  Why
+                </th>
+                <th scope="col" className="px-3 py-2 text-end font-medium">
+                  Carried
+                </th>
                 {!applied && <th scope="col" className="w-20 px-3 py-2" />}
               </tr>
             </thead>
@@ -343,7 +393,9 @@ export function RunReview({ run, decisions, sections, leftBehind }: Props) {
                       {row.admissionNumber}
                     </span>
                   </td>
-                  <td className="px-3 py-1.5 text-muted-foreground">{row.fromSectionLabel}</td>
+                  <td className="px-3 py-1.5 text-muted-foreground">
+                    {row.fromSectionLabel}
+                  </td>
                   <td className="px-3 py-1.5">
                     <span className="flex flex-wrap items-center gap-1.5">
                       <DecisionBadge decision={row.decision} />
@@ -361,7 +413,9 @@ export function RunReview({ run, decisions, sections, leftBehind }: Props) {
                     {row.reason}
                   </td>
                   <td className="px-3 py-1.5 text-end font-mono tabular-nums">
-                    {row.carryForward > 0 ? formatCurrency(row.carryForward) : "—"}
+                    {row.carryForward > 0
+                      ? formatCurrency(row.carryForward)
+                      : "—"}
                   </td>
                   {!applied && (
                     <td className="px-3 py-1.5 text-end">
@@ -446,8 +500,8 @@ function OverrideDialog({
           <DialogTitle>{decision.studentName}</DialogTitle>
           <DialogDescription>
             {currentlySentence(decision.decision, t)} —{" "}
-            {decision.reason.toLowerCase()}. Applying writes what this row says, not what the rules
-            said.
+            {decision.reason.toLowerCase()}. Applying writes what this row says,
+            not what the rules said.
           </DialogDescription>
         </DialogHeader>
 
@@ -468,8 +522,8 @@ function OverrideDialog({
             </Select>
             {!decision.hasNextClass && (
               <p className="text-xs text-muted-foreground">
-                This is the final class, so there is nowhere to promote to. Graduation is decided by
-                the rules rather than offered here.
+                This is the final class, so there is nowhere to promote to.
+                Graduation is decided by the rules rather than offered here.
               </p>
             )}
           </div>
@@ -501,7 +555,8 @@ function OverrideDialog({
               placeholder="Held pending a transfer decision"
             />
             <p className="text-xs text-muted-foreground">
-              Replaces the machine&rsquo;s reason. Somebody will read this next year.
+              Replaces the machine&rsquo;s reason. Somebody will read this next
+              year.
             </p>
           </div>
         </div>
@@ -511,7 +566,9 @@ function OverrideDialog({
             Cancel
           </Button>
           <Button onClick={save} disabled={pending}>
-            {pending && <Loader2 className="size-4 animate-spin" aria-hidden="true" />}
+            {pending && (
+              <Loader2 className="size-4 animate-spin" aria-hidden="true" />
+            )}
             Change it
           </Button>
         </DialogFooter>

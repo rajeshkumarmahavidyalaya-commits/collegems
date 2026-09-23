@@ -1,9 +1,9 @@
 "use client";
 
 import { useState } from "react";
+
 import { useRouter } from "next/navigation";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
+
 import {
   BookOpen,
   CalendarOff,
@@ -14,12 +14,25 @@ import {
   Trash2,
   UserCog,
 } from "lucide-react";
+
 import { toast } from "sonner";
+
 import { cn } from "@/lib/utils";
+
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+
 import { Badge } from "@/components/ui/badge";
+
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+
 import {
   Dialog,
   DialogContent,
@@ -28,10 +41,13 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Form } from "@/components/ui/form";
+
 import { Label } from "@/components/ui/label";
+
 import { Switch } from "@/components/ui/switch";
+
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+
 import {
   Select,
   SelectContent,
@@ -39,37 +55,20 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { SelectField, TextField, TextareaField } from "@/components/forms/form-fields";
-import { ErrorSummary } from "@/components/forms/error-summary";
+
 import { useI18n } from "@/components/providers/i18n-provider";
+
 import {
   SLOT_KINDS,
-  SUBJECT_KINDS,
   WEEKDAYS,
-  classRoomSchema,
   formatSlotRange,
-  holidaySchema,
-  sectionSubjectSchema,
-  subjectSchema,
-  timeSlotSchema,
-  toClockTime,
-  type ClassRoomInput,
-  type HolidayInput,
-  type SectionSubjectInput,
-  type SubjectInput,
-  type TimeSlotInput,
-} from "@/lib/validations/academics";
+} from "@/lib/validations/academics-display";
 import {
   deleteAssignment,
   deleteClassRoom,
   deleteHoliday,
   deleteSubject,
   deleteTimeSlot,
-  saveAssignment,
-  saveClassRoom,
-  saveHoliday,
-  saveSubject,
-  saveTimeSlot,
   setTeachingDay,
   type AssignmentRow,
   type ClassRoomRow,
@@ -77,11 +76,26 @@ import {
   type SubjectRow,
   type TimeSlotRow,
 } from "./actions";
+import dynamic from "next/dynamic";
 
-function todayIso() {
-  const now = new Date();
-  return new Date(now.getTime() - now.getTimezoneOffset() * 60_000).toISOString().slice(0, 10);
-}
+// Loaded on the click that opens them and rendered only while open: they
+// hold this page's Zod and form code, and a conditional render is not a
+// conditional load (see `fees-table.tsx` and docs/performance.md).
+const SubjectDialog = dynamic(() =>
+  import("./academics-dialogs").then((m) => m.SubjectDialog),
+);
+const AssignmentDialog = dynamic(() =>
+  import("./academics-dialogs").then((m) => m.AssignmentDialog),
+);
+const TimeSlotDialog = dynamic(() =>
+  import("./academics-dialogs").then((m) => m.TimeSlotDialog),
+);
+const ClassRoomDialog = dynamic(() =>
+  import("./academics-dialogs").then((m) => m.ClassRoomDialog),
+);
+const HolidayDialog = dynamic(() =>
+  import("./academics-dialogs").then((m) => m.HolidayDialog),
+);
 
 type Props = {
   subjects: SubjectRow[];
@@ -145,22 +159,20 @@ export function AcademicsSettings(props: Props) {
   );
 }
 
-function Empty({ icon: Icon, title, body }: { icon: typeof BookOpen; title: string; body: string }) {
+function Empty({
+  icon: Icon,
+  title,
+  body,
+}: {
+  icon: typeof BookOpen;
+  title: string;
+  body: string;
+}) {
   return (
     <Alert>
       <Icon className="size-4" aria-hidden="true" />
       <AlertTitle>{title}</AlertTitle>
       <AlertDescription>{body}</AlertDescription>
-    </Alert>
-  );
-}
-
-function ServerError({ message }: { message: string | null }) {
-  if (!message) return null;
-  return (
-    <Alert variant="destructive">
-      <AlertTitle>Not saved</AlertTitle>
-      <AlertDescription>{message}</AlertDescription>
     </Alert>
   );
 }
@@ -201,7 +213,9 @@ function ConfirmDelete({
               setWorking(false);
             }}
           >
-            {working && <Loader2 className="size-4 animate-spin" aria-hidden="true" />}
+            {working && (
+              <Loader2 className="size-4 animate-spin" aria-hidden="true" />
+            )}
             Remove
           </Button>
         </DialogFooter>
@@ -212,7 +226,13 @@ function ConfirmDelete({
 
 // ---------------------------------------------------------------------------
 
-function SubjectsTab({ subjects, canManage }: { subjects: SubjectRow[]; canManage: boolean }) {
+function SubjectsTab({
+  subjects,
+  canManage,
+}: {
+  subjects: SubjectRow[];
+  canManage: boolean;
+}) {
   const router = useRouter();
   const [editing, setEditing] = useState<SubjectRow | null>(null);
   const [creating, setCreating] = useState(false);
@@ -222,8 +242,8 @@ function SubjectsTab({ subjects, canManage }: { subjects: SubjectRow[]; canManag
     <div className="flex flex-col gap-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <p className="text-sm text-muted-foreground">
-          What the school teaches. A subject stays for the life of the school — it is not
-          re-created each year — so this list is not session-scoped.
+          What the school teaches. A subject stays for the life of the school —
+          it is not re-created each year — so this list is not session-scoped.
         </p>
         {canManage && (
           <Button size="sm" onClick={() => setCreating(true)}>
@@ -244,10 +264,18 @@ function SubjectsTab({ subjects, canManage }: { subjects: SubjectRow[]; canManag
           <table className="w-full min-w-[560px] text-sm">
             <thead className="bg-muted/60 text-xs text-muted-foreground">
               <tr>
-                <th scope="col" className="px-3 py-2 text-start font-medium">Code</th>
-                <th scope="col" className="px-3 py-2 text-start font-medium">Subject</th>
-                <th scope="col" className="px-3 py-2 text-start font-medium">Type</th>
-                <th scope="col" className="px-3 py-2 text-start font-medium">Classes</th>
+                <th scope="col" className="px-3 py-2 text-start font-medium">
+                  Code
+                </th>
+                <th scope="col" className="px-3 py-2 text-start font-medium">
+                  Subject
+                </th>
+                <th scope="col" className="px-3 py-2 text-start font-medium">
+                  Type
+                </th>
+                <th scope="col" className="px-3 py-2 text-start font-medium">
+                  Classes
+                </th>
                 <th scope="col" className="px-3 py-2 text-end font-medium">
                   <span className="sr-only">Actions</span>
                 </th>
@@ -255,11 +283,19 @@ function SubjectsTab({ subjects, canManage }: { subjects: SubjectRow[]; canManag
             </thead>
             <tbody>
               {subjects.map((s) => (
-                <tr key={s.id} className={cn("border-t border-border", !s.isActive && "opacity-60")}>
+                <tr
+                  key={s.id}
+                  className={cn(
+                    "border-t border-border",
+                    !s.isActive && "opacity-60",
+                  )}
+                >
                   <td className="px-3 py-2 font-mono text-xs">{s.code}</td>
                   <td className="px-3 py-2 font-medium">{s.name}</td>
                   <td className="px-3 py-2">
-                    <Badge variant={s.kind === "practical" ? "secondary" : "outline"}>
+                    <Badge
+                      variant={s.kind === "practical" ? "secondary" : "outline"}
+                    >
                       {s.kind === "practical" ? "Practical" : "Theory"}
                     </Badge>
                     {!s.isActive && (
@@ -268,11 +304,17 @@ function SubjectsTab({ subjects, canManage }: { subjects: SubjectRow[]; canManag
                       </Badge>
                     )}
                   </td>
-                  <td className="px-3 py-2 tabular-nums">{s.assignmentCount}</td>
+                  <td className="px-3 py-2 tabular-nums">
+                    {s.assignmentCount}
+                  </td>
                   <td className="px-3 py-2 text-end">
                     {canManage && (
                       <span className="flex justify-end gap-1">
-                        <Button size="sm" variant="ghost" onClick={() => setEditing(s)}>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => setEditing(s)}
+                        >
                           Edit
                         </Button>
                         <Button
@@ -293,17 +335,19 @@ function SubjectsTab({ subjects, canManage }: { subjects: SubjectRow[]; canManag
         </div>
       )}
 
-      <SubjectDialog
-        open={creating || editing !== null}
-        subject={editing}
-        onOpenChange={(open) => {
-          if (!open) {
-            setCreating(false);
-            setEditing(null);
-          }
-        }}
-        onDone={() => router.refresh()}
-      />
+      {creating || editing !== null ? (
+        <SubjectDialog
+          open={creating || editing !== null}
+          subject={editing}
+          onOpenChange={(open) => {
+            if (!open) {
+              setCreating(false);
+              setEditing(null);
+            }
+          }}
+          onDone={() => router.refresh()}
+        />
+      ) : null}
 
       <ConfirmDelete
         open={removing !== null}
@@ -327,86 +371,6 @@ function SubjectsTab({ subjects, canManage }: { subjects: SubjectRow[]; canManag
         }}
       />
     </div>
-  );
-}
-
-function SubjectDialog({
-  open,
-  subject,
-  onOpenChange,
-  onDone,
-}: {
-  open: boolean;
-  subject: SubjectRow | null;
-  onOpenChange: (open: boolean) => void;
-  onDone: () => void;
-}) {
-  const [serverError, setServerError] = useState<string | null>(null);
-
-  const form = useForm<SubjectInput>({
-    resolver: zodResolver(subjectSchema),
-    values: {
-      name: subject?.name ?? "",
-      code: subject?.code ?? "",
-      kind: (subject?.kind as "theory" | "practical") ?? "theory",
-      isActive: subject?.isActive ?? true,
-    },
-  });
-
-  async function onSubmit(values: SubjectInput) {
-    setServerError(null);
-    const result = await saveSubject(values, subject?.id);
-    if (!result.ok) {
-      setServerError(result.error);
-      for (const [field, messages] of Object.entries(result.fieldErrors ?? {})) {
-        if (messages?.[0]) form.setError(field as keyof SubjectInput, { message: messages[0] });
-      }
-      return;
-    }
-    toast.success(subject ? "Subject updated" : "Subject added");
-    onOpenChange(false);
-    onDone();
-  }
-
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-lg">
-        <DialogHeader>
-          <DialogTitle>{subject ? "Edit subject" : "Add a subject"}</DialogTitle>
-          <DialogDescription>
-            The code appears on mark sheets and reports, so keep it short and stable.
-          </DialogDescription>
-        </DialogHeader>
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col gap-4">
-            <ErrorSummary errors={form.formState.errors} submitCount={form.formState.submitCount} />
-            <ServerError message={serverError} />
-            <div className="grid gap-4 sm:grid-cols-2">
-              <TextField control={form.control} name="name" label="Name" required placeholder="Mathematics" />
-              <TextField control={form.control} name="code" label="Code" required placeholder="MATH" />
-              <SelectField
-                control={form.control}
-                name="kind"
-                label="Type"
-                required
-                options={SUBJECT_KINDS.map((k) => ({ value: k.value, label: k.label }))}
-              />
-            </div>
-            <DialogFooter>
-              <Button type="button" variant="ghost" onClick={() => onOpenChange(false)}>
-                Cancel
-              </Button>
-              <Button type="submit" disabled={form.formState.isSubmitting}>
-                {form.formState.isSubmitting && (
-                  <Loader2 className="size-4 animate-spin" aria-hidden="true" />
-                )}
-                {subject ? "Save subject" : "Add subject"}
-              </Button>
-            </DialogFooter>
-          </form>
-        </Form>
-      </DialogContent>
-    </Dialog>
   );
 }
 
@@ -436,21 +400,29 @@ function AssignmentsTab({
       ? assignments
       : assignments.filter((a) => a.sectionId === sectionFilter);
 
-  const bySection = visible.reduce<Record<string, AssignmentRow[]>>((acc, a) => {
-    (acc[a.sectionLabel] ??= []).push(a);
-    return acc;
-  }, {});
+  const bySection = visible.reduce<Record<string, AssignmentRow[]>>(
+    (acc, a) => {
+      (acc[a.sectionLabel] ??= []).push(a);
+      return acc;
+    },
+    {},
+  );
 
   return (
     <div className="flex flex-col gap-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <p className="text-sm text-muted-foreground">
-          Each class&apos;s subject list, and who teaches it. This drives marks entry, homework and
-          the timetable — assignments are for one session, so they are set again each year.
+          Each class&apos;s subject list, and who teaches it. This drives marks
+          entry, homework and the timetable — assignments are for one session,
+          so they are set again each year.
         </p>
         <div className="flex flex-wrap items-center gap-2">
           <Select value={sectionFilter} onValueChange={setSectionFilter}>
-            <SelectTrigger size="sm" className="w-[190px]" aria-label="Filter by class">
+            <SelectTrigger
+              size="sm"
+              className="w-[190px]"
+              aria-label="Filter by class"
+            >
               <SelectValue placeholder="All classes" />
             </SelectTrigger>
             <SelectContent>
@@ -463,7 +435,11 @@ function AssignmentsTab({
             </SelectContent>
           </Select>
           {canManage && (
-            <Button size="sm" onClick={() => setCreating(true)} disabled={subjects.length === 0}>
+            <Button
+              size="sm"
+              onClick={() => setCreating(true)}
+              disabled={subjects.length === 0}
+            >
               <Plus className="size-4" aria-hidden="true" />
               Assign subject
             </Button>
@@ -498,16 +474,25 @@ function AssignmentsTab({
               <CardContent>
                 <ul className="flex flex-col gap-2 text-sm">
                   {rows.map((a) => (
-                    <li key={a.id} className="flex items-start justify-between gap-2">
+                    <li
+                      key={a.id}
+                      className="flex items-start justify-between gap-2"
+                    >
                       <span className="min-w-0">
-                        <span className="block truncate font-medium">{a.subjectName}</span>
+                        <span className="block truncate font-medium">
+                          {a.subjectName}
+                        </span>
                         <span className="block truncate text-xs text-muted-foreground">
                           {a.teacherName ?? "No teacher assigned"}
                         </span>
                       </span>
                       {canManage && (
                         <span className="flex shrink-0 gap-1">
-                          <Button size="sm" variant="ghost" onClick={() => setEditing(a)}>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => setEditing(a)}
+                          >
                             Edit
                           </Button>
                           <Button
@@ -529,20 +514,22 @@ function AssignmentsTab({
         </div>
       )}
 
-      <AssignmentDialog
-        open={creating || editing !== null}
-        assignment={editing}
-        sections={sections}
-        subjects={subjects}
-        teachers={teachers}
-        onOpenChange={(open) => {
-          if (!open) {
-            setCreating(false);
-            setEditing(null);
-          }
-        }}
-        onDone={() => router.refresh()}
-      />
+      {creating || editing !== null ? (
+        <AssignmentDialog
+          open={creating || editing !== null}
+          assignment={editing}
+          sections={sections}
+          subjects={subjects}
+          teachers={teachers}
+          onOpenChange={(open) => {
+            if (!open) {
+              setCreating(false);
+              setEditing(null);
+            }
+          }}
+          onDone={() => router.refresh()}
+        />
+      ) : null}
 
       <ConfirmDelete
         open={removing !== null}
@@ -565,105 +552,15 @@ function AssignmentsTab({
   );
 }
 
-function AssignmentDialog({
-  open,
-  assignment,
-  sections,
-  subjects,
-  teachers,
-  onOpenChange,
-  onDone,
-}: {
-  open: boolean;
-  assignment: AssignmentRow | null;
-  sections: { id: string; label: string }[];
-  subjects: SubjectRow[];
-  teachers: { id: string; label: string }[];
-  onOpenChange: (open: boolean) => void;
-  onDone: () => void;
-}) {
-  const [serverError, setServerError] = useState<string | null>(null);
-
-  const form = useForm<SectionSubjectInput>({
-    resolver: zodResolver(sectionSubjectSchema),
-    values: {
-      sectionId: assignment?.sectionId ?? "",
-      subjectId: assignment?.subjectId ?? "",
-      teacherStaffId: assignment?.teacherStaffId ?? "",
-    },
-  });
-
-  async function onSubmit(values: SectionSubjectInput) {
-    setServerError(null);
-    const result = await saveAssignment(values, assignment?.id);
-    if (!result.ok) {
-      setServerError(result.error);
-      return;
-    }
-    toast.success(assignment ? "Assignment updated" : "Subject assigned");
-    onOpenChange(false);
-    onDone();
-  }
-
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-lg">
-        <DialogHeader>
-          <DialogTitle>{assignment ? "Edit assignment" : "Assign a subject"}</DialogTitle>
-          <DialogDescription>
-            Assigning a subject a class already has changes who teaches it, rather than adding a
-            second row.
-          </DialogDescription>
-        </DialogHeader>
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col gap-4">
-            <ErrorSummary errors={form.formState.errors} submitCount={form.formState.submitCount} />
-            <ServerError message={serverError} />
-            <SelectField
-              control={form.control}
-              name="sectionId"
-              label="Class"
-              required
-              options={sections.map((s) => ({ value: s.id, label: s.label }))}
-            />
-            <SelectField
-              control={form.control}
-              name="subjectId"
-              label="Subject"
-              required
-              options={subjects
-                .filter((s) => s.isActive)
-                .map((s) => ({ value: s.id, label: `${s.name} (${s.code})` }))}
-            />
-            <SelectField
-              control={form.control}
-              name="teacherStaffId"
-              label="Teacher"
-              placeholder="Not assigned yet"
-              options={teachers.map((t) => ({ value: t.id, label: t.label }))}
-              description="A subject can be on the curriculum before a teacher is chosen"
-            />
-            <DialogFooter>
-              <Button type="button" variant="ghost" onClick={() => onOpenChange(false)}>
-                Cancel
-              </Button>
-              <Button type="submit" disabled={form.formState.isSubmitting}>
-                {form.formState.isSubmitting && (
-                  <Loader2 className="size-4 animate-spin" aria-hidden="true" />
-                )}
-                Save
-              </Button>
-            </DialogFooter>
-          </form>
-        </Form>
-      </DialogContent>
-    </Dialog>
-  );
-}
-
 // ---------------------------------------------------------------------------
 
-function PeriodsTab({ slots, canManage }: { slots: TimeSlotRow[]; canManage: boolean }) {
+function PeriodsTab({
+  slots,
+  canManage,
+}: {
+  slots: TimeSlotRow[];
+  canManage: boolean;
+}) {
   const router = useRouter();
   const [kind, setKind] = useState("class");
   const [editing, setEditing] = useState<TimeSlotRow | null>(null);
@@ -676,13 +573,17 @@ function PeriodsTab({ slots, canManage }: { slots: TimeSlotRow[]; canManage: boo
     <div className="flex flex-col gap-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <p className="text-sm text-muted-foreground">
-          The bell schedule. Exam periods run longer than lesson periods in most schools, so the
-          two schedules are kept separately — the timetable and the exam planner each read their
-          own.
+          The bell schedule. Exam periods run longer than lesson periods in most
+          schools, so the two schedules are kept separately — the timetable and
+          the exam planner each read their own.
         </p>
         <div className="flex items-center gap-2">
           <Select value={kind} onValueChange={setKind}>
-            <SelectTrigger size="sm" className="w-[170px]" aria-label="Which schedule">
+            <SelectTrigger
+              size="sm"
+              className="w-[170px]"
+              aria-label="Which schedule"
+            >
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -713,9 +614,15 @@ function PeriodsTab({ slots, canManage }: { slots: TimeSlotRow[]; canManage: boo
           <table className="w-full min-w-[520px] text-sm">
             <thead className="bg-muted/60 text-xs text-muted-foreground">
               <tr>
-                <th scope="col" className="px-3 py-2 text-start font-medium">#</th>
-                <th scope="col" className="px-3 py-2 text-start font-medium">Label</th>
-                <th scope="col" className="px-3 py-2 text-start font-medium">Time</th>
+                <th scope="col" className="px-3 py-2 text-start font-medium">
+                  #
+                </th>
+                <th scope="col" className="px-3 py-2 text-start font-medium">
+                  Label
+                </th>
+                <th scope="col" className="px-3 py-2 text-start font-medium">
+                  Time
+                </th>
                 <th scope="col" className="px-3 py-2 text-end font-medium">
                   <span className="sr-only">Actions</span>
                 </th>
@@ -724,7 +631,9 @@ function PeriodsTab({ slots, canManage }: { slots: TimeSlotRow[]; canManage: boo
             <tbody>
               {visible.map((s) => (
                 <tr key={s.id} className="border-t border-border">
-                  <td className="px-3 py-2 font-mono tabular-nums">{s.periodNumber}</td>
+                  <td className="px-3 py-2 font-mono tabular-nums">
+                    {s.periodNumber}
+                  </td>
                   <td className="px-3 py-2">
                     {s.label ?? `Period ${s.periodNumber}`}
                     {s.isBreak && (
@@ -739,7 +648,11 @@ function PeriodsTab({ slots, canManage }: { slots: TimeSlotRow[]; canManage: boo
                   <td className="px-3 py-2 text-end">
                     {canManage && (
                       <span className="flex justify-end gap-1">
-                        <Button size="sm" variant="ghost" onClick={() => setEditing(s)}>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => setEditing(s)}
+                        >
                           Edit
                         </Button>
                         <Button
@@ -760,19 +673,21 @@ function PeriodsTab({ slots, canManage }: { slots: TimeSlotRow[]; canManage: boo
         </div>
       )}
 
-      <TimeSlotDialog
-        open={creating || editing !== null}
-        slot={editing}
-        defaultKind={kind}
-        nextPeriod={Math.max(0, ...visible.map((s) => s.periodNumber)) + 1}
-        onOpenChange={(open) => {
-          if (!open) {
-            setCreating(false);
-            setEditing(null);
-          }
-        }}
-        onDone={() => router.refresh()}
-      />
+      {creating || editing !== null ? (
+        <TimeSlotDialog
+          open={creating || editing !== null}
+          slot={editing}
+          defaultKind={kind}
+          nextPeriod={Math.max(0, ...visible.map((s) => s.periodNumber)) + 1}
+          onOpenChange={(open) => {
+            if (!open) {
+              setCreating(false);
+              setEditing(null);
+            }
+          }}
+          onDone={() => router.refresh()}
+        />
+      ) : null}
 
       <ConfirmDelete
         open={removing !== null}
@@ -795,101 +710,15 @@ function PeriodsTab({ slots, canManage }: { slots: TimeSlotRow[]; canManage: boo
   );
 }
 
-function TimeSlotDialog({
-  open,
-  slot,
-  defaultKind,
-  nextPeriod,
-  onOpenChange,
-  onDone,
-}: {
-  open: boolean;
-  slot: TimeSlotRow | null;
-  defaultKind: string;
-  nextPeriod: number;
-  onOpenChange: (open: boolean) => void;
-  onDone: () => void;
-}) {
-  const [serverError, setServerError] = useState<string | null>(null);
-
-  const form = useForm<TimeSlotInput>({
-    resolver: zodResolver(timeSlotSchema),
-    values: {
-      kind: (slot?.kind as "class" | "exam") ?? (defaultKind as "class" | "exam"),
-      periodNumber: slot?.periodNumber ?? nextPeriod,
-      label: slot?.label ?? "",
-      startsAt: slot ? toClockTime(slot.startsAt) : "08:00",
-      endsAt: slot ? toClockTime(slot.endsAt) : "08:45",
-      isBreak: slot?.isBreak ?? false,
-    },
-  });
-
-  async function onSubmit(values: TimeSlotInput) {
-    setServerError(null);
-    const result = await saveTimeSlot(values, slot?.id);
-    if (!result.ok) {
-      setServerError(result.error);
-      for (const [field, messages] of Object.entries(result.fieldErrors ?? {})) {
-        if (messages?.[0]) form.setError(field as keyof TimeSlotInput, { message: messages[0] });
-      }
-      return;
-    }
-    toast.success(slot ? "Period updated" : "Period added");
-    onOpenChange(false);
-    onDone();
-  }
-
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-lg">
-        <DialogHeader>
-          <DialogTitle>{slot ? "Edit period" : "Add a period"}</DialogTitle>
-          <DialogDescription>Breaks are included so the grid shows the real day.</DialogDescription>
-        </DialogHeader>
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col gap-4">
-            <ErrorSummary errors={form.formState.errors} submitCount={form.formState.submitCount} />
-            <ServerError message={serverError} />
-            <div className="grid gap-4 sm:grid-cols-2">
-              <SelectField
-                control={form.control}
-                name="kind"
-                label="Schedule"
-                required
-                options={SLOT_KINDS.map((k) => ({ value: k.value, label: k.label }))}
-              />
-              <TextField
-                control={form.control}
-                name="periodNumber"
-                label="Period number"
-                type="number"
-                required
-              />
-              <TextField control={form.control} name="startsAt" label="Starts" type="time" required />
-              <TextField control={form.control} name="endsAt" label="Ends" type="time" required />
-            </div>
-            <TextField control={form.control} name="label" label="Label" placeholder="Period 1" />
-            <DialogFooter>
-              <Button type="button" variant="ghost" onClick={() => onOpenChange(false)}>
-                Cancel
-              </Button>
-              <Button type="submit" disabled={form.formState.isSubmitting}>
-                {form.formState.isSubmitting && (
-                  <Loader2 className="size-4 animate-spin" aria-hidden="true" />
-                )}
-                Save period
-              </Button>
-            </DialogFooter>
-          </form>
-        </Form>
-      </DialogContent>
-    </Dialog>
-  );
-}
-
 // ---------------------------------------------------------------------------
 
-function RoomsTab({ rooms, canManage }: { rooms: ClassRoomRow[]; canManage: boolean }) {
+function RoomsTab({
+  rooms,
+  canManage,
+}: {
+  rooms: ClassRoomRow[];
+  canManage: boolean;
+}) {
   const router = useRouter();
   const [editing, setEditing] = useState<ClassRoomRow | null>(null);
   const [creating, setCreating] = useState(false);
@@ -899,8 +728,9 @@ function RoomsTab({ rooms, canManage }: { rooms: ClassRoomRow[]; canManage: bool
     <div className="flex flex-col gap-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <p className="text-sm text-muted-foreground">
-          Rooms the timetable can place a lesson in, and the exam planner can seat students in.
-          Capacity is what the seat-plan generator will divide by.
+          Rooms the timetable can place a lesson in, and the exam planner can
+          seat students in. Capacity is what the seat-plan generator will divide
+          by.
         </p>
         {canManage && (
           <Button size="sm" onClick={() => setCreating(true)}>
@@ -929,7 +759,11 @@ function RoomsTab({ rooms, canManage }: { rooms: ClassRoomRow[]; canManage: bool
               </CardHeader>
               {canManage && (
                 <CardContent className="flex gap-1 pt-0">
-                  <Button size="sm" variant="ghost" onClick={() => setEditing(r)}>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => setEditing(r)}
+                  >
                     Edit
                   </Button>
                   <Button
@@ -947,17 +781,19 @@ function RoomsTab({ rooms, canManage }: { rooms: ClassRoomRow[]; canManage: bool
         </div>
       )}
 
-      <ClassRoomDialog
-        open={creating || editing !== null}
-        room={editing}
-        onOpenChange={(open) => {
-          if (!open) {
-            setCreating(false);
-            setEditing(null);
-          }
-        }}
-        onDone={() => router.refresh()}
-      />
+      {creating || editing !== null ? (
+        <ClassRoomDialog
+          open={creating || editing !== null}
+          room={editing}
+          onOpenChange={(open) => {
+            if (!open) {
+              setCreating(false);
+              setEditing(null);
+            }
+          }}
+          onDone={() => router.refresh()}
+        />
+      ) : null}
 
       <ConfirmDelete
         open={removing !== null}
@@ -980,74 +816,6 @@ function RoomsTab({ rooms, canManage }: { rooms: ClassRoomRow[]; canManage: bool
   );
 }
 
-function ClassRoomDialog({
-  open,
-  room,
-  onOpenChange,
-  onDone,
-}: {
-  open: boolean;
-  room: ClassRoomRow | null;
-  onOpenChange: (open: boolean) => void;
-  onDone: () => void;
-}) {
-  const [serverError, setServerError] = useState<string | null>(null);
-
-  const form = useForm<ClassRoomInput>({
-    resolver: zodResolver(classRoomSchema),
-    values: {
-      name: room?.name ?? "",
-      capacity: room?.capacity ?? 40,
-      isActive: room?.isActive ?? true,
-    },
-  });
-
-  async function onSubmit(values: ClassRoomInput) {
-    setServerError(null);
-    const result = await saveClassRoom(values, room?.id);
-    if (!result.ok) {
-      setServerError(result.error);
-      for (const [field, messages] of Object.entries(result.fieldErrors ?? {})) {
-        if (messages?.[0]) form.setError(field as keyof ClassRoomInput, { message: messages[0] });
-      }
-      return;
-    }
-    toast.success(room ? "Room updated" : "Room added");
-    onOpenChange(false);
-    onDone();
-  }
-
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle>{room ? "Edit room" : "Add a room"}</DialogTitle>
-          <DialogDescription>Named as staff refer to it, not as an internal code.</DialogDescription>
-        </DialogHeader>
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col gap-4">
-            <ErrorSummary errors={form.formState.errors} submitCount={form.formState.submitCount} />
-            <ServerError message={serverError} />
-            <TextField control={form.control} name="name" label="Name" required placeholder="Room 12" />
-            <TextField control={form.control} name="capacity" label="Seats" type="number" required />
-            <DialogFooter>
-              <Button type="button" variant="ghost" onClick={() => onOpenChange(false)}>
-                Cancel
-              </Button>
-              <Button type="submit" disabled={form.formState.isSubmitting}>
-                {form.formState.isSubmitting && (
-                  <Loader2 className="size-4 animate-spin" aria-hidden="true" />
-                )}
-                Save room
-              </Button>
-            </DialogFooter>
-          </form>
-        </Form>
-      </DialogContent>
-    </Dialog>
-  );
-}
-
 // ---------------------------------------------------------------------------
 
 function WeekTab({
@@ -1062,13 +830,16 @@ function WeekTab({
   const [pending, setPending] = useState<number | null>(null);
 
   const byDay = new Map(weekdays.map((w) => [w.weekday, w.isTeaching]));
-  const teachingCount = WEEKDAYS.filter((d) => byDay.get(d.value) ?? true).length;
+  const teachingCount = WEEKDAYS.filter(
+    (d) => byDay.get(d.value) ?? true,
+  ).length;
 
   return (
     <div className="flex flex-col gap-4">
       <p className="text-sm text-muted-foreground">
-        Which days the school teaches on. Attendance and the timetable both read this, so turning a
-        day off removes it everywhere rather than in one screen.
+        Which days the school teaches on. Attendance and the timetable both read
+        this, so turning a day off removes it everywhere rather than in one
+        screen.
       </p>
 
       <Card>
@@ -1082,7 +853,10 @@ function WeekTab({
           {WEEKDAYS.map((day) => {
             const isTeaching = byDay.get(day.value) ?? true;
             return (
-              <div key={day.value} className="flex items-center justify-between gap-3">
+              <div
+                key={day.value}
+                className="flex items-center justify-between gap-3"
+              >
                 <Label htmlFor={`weekday-${day.value}`} className="font-normal">
                   {formatWeekday(day.value)}
                 </Label>
@@ -1105,8 +879,12 @@ function WeekTab({
                       }
                       toast.success(
                         next
-                          ? t("academics.weekday.open", { day: formatWeekday(day.value) })
-                          : t("academics.weekday.closed", { day: formatWeekday(day.value) }),
+                          ? t("academics.weekday.open", {
+                              day: formatWeekday(day.value),
+                            })
+                          : t("academics.weekday.closed", {
+                              day: formatWeekday(day.value),
+                            }),
                       );
                       router.refresh();
                     }}
@@ -1123,7 +901,13 @@ function WeekTab({
 
 // ---------------------------------------------------------------------------
 
-function HolidaysTab({ holidays, canManage }: { holidays: HolidayRow[]; canManage: boolean }) {
+function HolidaysTab({
+  holidays,
+  canManage,
+}: {
+  holidays: HolidayRow[];
+  canManage: boolean;
+}) {
   const { formatDate } = useI18n();
   const router = useRouter();
   const [editing, setEditing] = useState<HolidayRow | null>(null);
@@ -1134,8 +918,8 @@ function HolidaysTab({ holidays, canManage }: { holidays: HolidayRow[]; canManag
     <div className="flex flex-col gap-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <p className="text-sm text-muted-foreground">
-          Closures for this session. A break is one entry with a date range, not one row per day —
-          so changing it is one edit.
+          Closures for this session. A break is one entry with a date range, not
+          one row per day — so changing it is one edit.
         </p>
         {canManage && (
           <Button size="sm" onClick={() => setCreating(true)}>
@@ -1156,10 +940,18 @@ function HolidaysTab({ holidays, canManage }: { holidays: HolidayRow[]; canManag
           <table className="w-full min-w-[560px] text-sm">
             <thead className="bg-muted/60 text-xs text-muted-foreground">
               <tr>
-                <th scope="col" className="px-3 py-2 text-start font-medium">Holiday</th>
-                <th scope="col" className="px-3 py-2 text-start font-medium">From</th>
-                <th scope="col" className="px-3 py-2 text-start font-medium">To</th>
-                <th scope="col" className="px-3 py-2 text-start font-medium">Days</th>
+                <th scope="col" className="px-3 py-2 text-start font-medium">
+                  Holiday
+                </th>
+                <th scope="col" className="px-3 py-2 text-start font-medium">
+                  From
+                </th>
+                <th scope="col" className="px-3 py-2 text-start font-medium">
+                  To
+                </th>
+                <th scope="col" className="px-3 py-2 text-start font-medium">
+                  Days
+                </th>
                 <th scope="col" className="px-3 py-2 text-end font-medium">
                   <span className="sr-only">Actions</span>
                 </th>
@@ -1171,16 +963,26 @@ function HolidaysTab({ holidays, canManage }: { holidays: HolidayRow[]; canManag
                   <td className="px-3 py-2">
                     <span className="font-medium">{h.name}</span>
                     {h.note && (
-                      <span className="block text-xs text-muted-foreground">{h.note}</span>
+                      <span className="block text-xs text-muted-foreground">
+                        {h.note}
+                      </span>
                     )}
                   </td>
-                  <td className="px-3 py-2 tabular-nums">{formatDate(h.startsOn)}</td>
-                  <td className="px-3 py-2 tabular-nums">{formatDate(h.endsOn)}</td>
+                  <td className="px-3 py-2 tabular-nums">
+                    {formatDate(h.startsOn)}
+                  </td>
+                  <td className="px-3 py-2 tabular-nums">
+                    {formatDate(h.endsOn)}
+                  </td>
                   <td className="px-3 py-2 tabular-nums">{h.days}</td>
                   <td className="px-3 py-2 text-end">
                     {canManage && (
                       <span className="flex justify-end gap-1">
-                        <Button size="sm" variant="ghost" onClick={() => setEditing(h)}>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => setEditing(h)}
+                        >
                           Edit
                         </Button>
                         <Button
@@ -1201,17 +1003,19 @@ function HolidaysTab({ holidays, canManage }: { holidays: HolidayRow[]; canManag
         </div>
       )}
 
-      <HolidayDialog
-        open={creating || editing !== null}
-        holiday={editing}
-        onOpenChange={(open) => {
-          if (!open) {
-            setCreating(false);
-            setEditing(null);
-          }
-        }}
-        onDone={() => router.refresh()}
-      />
+      {creating || editing !== null ? (
+        <HolidayDialog
+          open={creating || editing !== null}
+          holiday={editing}
+          onOpenChange={(open) => {
+            if (!open) {
+              setCreating(false);
+              setEditing(null);
+            }
+          }}
+          onDone={() => router.refresh()}
+        />
+      ) : null}
 
       <ConfirmDelete
         open={removing !== null}
@@ -1231,77 +1035,5 @@ function HolidaysTab({ holidays, canManage }: { holidays: HolidayRow[]; canManag
         }}
       />
     </div>
-  );
-}
-
-function HolidayDialog({
-  open,
-  holiday,
-  onOpenChange,
-  onDone,
-}: {
-  open: boolean;
-  holiday: HolidayRow | null;
-  onOpenChange: (open: boolean) => void;
-  onDone: () => void;
-}) {
-  const [serverError, setServerError] = useState<string | null>(null);
-
-  const form = useForm<HolidayInput>({
-    resolver: zodResolver(holidaySchema),
-    values: {
-      name: holiday?.name ?? "",
-      startsOn: holiday?.startsOn ?? todayIso(),
-      endsOn: holiday?.endsOn ?? todayIso(),
-      note: holiday?.note ?? "",
-    },
-  });
-
-  async function onSubmit(values: HolidayInput) {
-    setServerError(null);
-    const result = await saveHoliday(values, holiday?.id);
-    if (!result.ok) {
-      setServerError(result.error);
-      return;
-    }
-    toast.success(holiday ? "Holiday updated" : "Holiday added");
-    onOpenChange(false);
-    onDone();
-  }
-
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-lg">
-        <DialogHeader>
-          <DialogTitle>{holiday ? "Edit holiday" : "Add a holiday"}</DialogTitle>
-          <DialogDescription>
-            Both dates are included, so a single-day closure has the same date twice.
-          </DialogDescription>
-        </DialogHeader>
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col gap-4">
-            <ErrorSummary errors={form.formState.errors} submitCount={form.formState.submitCount} />
-            <ServerError message={serverError} />
-            <TextField control={form.control} name="name" label="Name" required placeholder="Diwali break" />
-            <div className="grid gap-4 sm:grid-cols-2">
-              <TextField control={form.control} name="startsOn" label="First day" type="date" required />
-              <TextField control={form.control} name="endsOn" label="Last day" type="date" required />
-            </div>
-            <TextareaField control={form.control} name="note" label="Note" />
-            <DialogFooter>
-              <Button type="button" variant="ghost" onClick={() => onOpenChange(false)}>
-                Cancel
-              </Button>
-              <Button type="submit" disabled={form.formState.isSubmitting}>
-                {form.formState.isSubmitting && (
-                  <Loader2 className="size-4 animate-spin" aria-hidden="true" />
-                )}
-                Save holiday
-              </Button>
-            </DialogFooter>
-          </form>
-        </Form>
-      </DialogContent>
-    </Dialog>
   );
 }
