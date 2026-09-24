@@ -1756,3 +1756,41 @@ export async function listMyFamilyAccounts(): Promise<FamilyFeeAccount[]> {
     };
   });
 }
+
+export type FeeCopySource = { fromId: string; fromName: string; toId: string; count: number };
+
+/**
+ * When the current year has no fee structures, the latest earlier year that
+ * does -- so a college that switched years before copying its fees is offered
+ * the copy on the screen where the gap shows (0276). Null when there is
+ * nothing to offer.
+ */
+export async function feeCopySource(): Promise<FeeCopySource | null> {
+  const ctx = await getUserContext();
+  if (!ctx?.currentSessionId) return null;
+  const supabase = await createClient();
+
+  const [sessionsRes, structuresRes] = await Promise.all([
+    supabase.from("academic_sessions").select("id, name, start_date").order("start_date", { ascending: false }),
+    supabase.from("fee_structures").select("session_id"),
+  ]);
+  if (sessionsRes.error) throw new Error(sessionsRes.error.message);
+  if (structuresRes.error) throw new Error(structuresRes.error.message);
+
+  const counts = new Map<string, number>();
+  for (const row of structuresRes.data ?? []) {
+    counts.set(row.session_id, (counts.get(row.session_id) ?? 0) + 1);
+  }
+  if ((counts.get(ctx.currentSessionId) ?? 0) > 0) return null;
+
+  const sessions = sessionsRes.data ?? [];
+  const current = sessions.find((s) => s.id === ctx.currentSessionId);
+  if (!current) return null;
+  // Newest first, so the first earlier year with fees is the one just left.
+  const source = sessions.find(
+    (s) => s.start_date < current.start_date && (counts.get(s.id) ?? 0) > 0,
+  );
+  return source
+    ? { fromId: source.id, fromName: source.name, toId: current.id, count: counts.get(source.id)! }
+    : null;
+}

@@ -21,9 +21,10 @@ import { RENEWAL_KINDS, renewalKindLabel, type RenewalRunRow,
 } from "@/lib/validations/renewals";
 import { rollForwardRoutes, startRenewalRun } from "./actions";
 import { useI18n } from "@/components/providers/i18n-provider";
+import { laterYears } from "@/lib/validations/promotion-display";
 
 type Props = {
-  sessions: { id: string; name: string; isCurrent: boolean }[];
+  sessions: { id: string; name: string; isCurrent: boolean; startDate: string }[];
   runs: RenewalRunRow[];
 };
 
@@ -41,10 +42,17 @@ export function RenewalLauncher({ sessions, runs }: Props) {
   const [pending, startTransition] = useTransition();
 
   const current = sessions.find((s) => s.isCurrent) ?? sessions[0];
-  const later = sessions.filter((s) => s.id !== current?.id);
 
-  const [fromId, setFromId] = useState(current?.id ?? "");
+  const [fromId, setFromIdRaw] = useState(current?.id ?? "");
+  // The year after, soonest first. This used to be "every year that is not
+  // current", oldest first, which defaulted to last year (0276).
+  const later = laterYears(sessions, fromId);
   const [toId, setToId] = useState(later[0]?.id ?? "");
+
+  function setFromId(id: string) {
+    setFromIdRaw(id);
+    setToId(laterYears(sessions, id)[0]?.id ?? "");
+  }
 
   function copyRoutes() {
     startTransition(async () => {
@@ -80,7 +88,7 @@ export function RenewalLauncher({ sessions, runs }: Props) {
   if (sessions.length < 2) return null;
 
   return (
-    <Card>
+    <Card id="renewals" className="scroll-mt-20">
       <CardHeader>
         <CardTitle className="text-base">Carrying arrangements forward</CardTitle>
         <CardDescription>
@@ -108,18 +116,16 @@ export function RenewalLauncher({ sessions, runs }: Props) {
           </div>
           <div className="flex flex-col gap-1.5">
             <Label htmlFor="renew-to">Into</Label>
-            <Select value={toId} onValueChange={setToId}>
+            <Select value={toId} onValueChange={setToId} disabled={later.length === 0}>
               <SelectTrigger id="renew-to">
-                <SelectValue />
+                <SelectValue placeholder="No later year yet" />
               </SelectTrigger>
               <SelectContent>
-                {sessions
-                  .filter((s) => s.id !== fromId)
-                  .map((s) => (
-                    <SelectItem key={s.id} value={s.id}>
-                      {s.name}
-                    </SelectItem>
-                  ))}
+                {later.map((s) => (
+                  <SelectItem key={s.id} value={s.id}>
+                    {s.name}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>

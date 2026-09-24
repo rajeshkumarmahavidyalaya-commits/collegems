@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useTransition } from "react";
 
 import { useRouter } from "next/navigation";
 
@@ -54,7 +54,9 @@ import {
   saveFeeIntegrationSettings,
   saveSchoolProfile,
   type FeeIntegrationSettings,
+  type FeeCopySource,
 } from "../actions";
+import { copyFeeStructures } from "../../academics/sessions/actions";
 import dynamic from "next/dynamic";
 
 // Loaded on the click that opens them and rendered only while open: they
@@ -96,6 +98,7 @@ export function FeeSetup({
   integrations,
   schoolProfile,
   canManageSettings,
+  copySource,
 }: {
   feeHeads: FeeHead[];
   structures: FeeStructure[];
@@ -104,8 +107,23 @@ export function FeeSetup({
   integrations: FeeIntegrationSettings;
   schoolProfile: SchoolProfile;
   canManageSettings: boolean;
+  /** Set when this year has no fees and an earlier year does (0276). */
+  copySource: FeeCopySource | null;
 }) {
   const { formatCurrency } = useI18n();
+  const [copying, startCopy] = useTransition();
+
+  function copyLastYear() {
+    if (!copySource) return;
+    startCopy(async () => {
+      const r = await copyFeeStructures(copySource.fromId, copySource.toId);
+      if (!r.ok) return void toast.error(r.error);
+      toast.success(
+        `Copied ${r.data.created} ${r.data.created === 1 ? "fee" : "fees"} from ${copySource.fromName}. Check the amounts before raising invoices.`,
+      );
+      router.refresh();
+    });
+  }
   const router = useRouter();
   const [headOpen, setHeadOpen] = useState(false);
   const [structureOpen, setStructureOpen] = useState(false);
@@ -126,6 +144,20 @@ export function FeeSetup({
 
   return (
     <div className="flex flex-col gap-6">
+      {copySource && (
+        <Alert>
+          <AlertTitle>This year has no fees yet</AlertTitle>
+          <AlertDescription className="flex flex-col items-start gap-2">
+            Nothing would be billed until each class has amounts. {copySource.fromName} had{" "}
+            {copySource.count} {copySource.count === 1 ? "fee" : "fees"}; copy them across as a
+            starting point and change what has gone up.
+            <Button size="sm" variant="outline" onClick={copyLastYear} disabled={copying}>
+              {copying && <Loader2 className="size-4 animate-spin" aria-hidden="true" />}
+              Copy {copySource.fromName}&rsquo;s fees
+            </Button>
+          </AlertDescription>
+        </Alert>
+      )}
       <Tabs defaultValue="structures">
         <TabsList>
           <TabsTrigger value="structures">Class amounts</TabsTrigger>

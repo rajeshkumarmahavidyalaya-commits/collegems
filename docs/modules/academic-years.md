@@ -401,3 +401,45 @@ requires every whole-table read of a session-scoped table to be **named in
 shape applied to rule 2: the failure is the omission, so the test fails on a
 list nobody has decided about rather than on a pattern. Verified by removing
 `listHomework`'s filter and watching it name the line.
+
+## Turning the year over, and six things that were wrong (0276-0278)
+
+Probed on 23 Sep 2026: the flag still said 2025-2026 (which ended on 31
+March), 2026-2027 existed with its 12 classes, and nobody had run a promotion.
+Every step of turning the year over was tried in a rolled-back transaction.
+
+| # | what happened | fix |
+|---|---|---|
+| 1 | The promotion planner and the renewal launcher defaulted to **2024-2025**: "the first year that is not current" in a list sorted oldest first. A run into the previous year was accepted. | `laterYears()` in the pickers. `academics_require_later_year()` in `promotion_start_run`, `renewal_start_run`, `academics_roll_forward_sections`, `fees_roll_forward_structures` and `transport_roll_forward_routes` (0277). |
+| 2 | Carry-forward billed a debt twice (see `promotion.md`). | The debt stays on its own year; nothing is re-billed. |
+| 3 | An **applied** run blocked any later run between the same two years, so a child put on *hold* could never be promoted. | The one-live-run index covers drafts only; a second run contains exactly the children still in the old year. The same fix went on renewals. |
+| 4 | The planner's **default rules could not start a run**: a hold row kept a target class and the CHECK refused it with a raw `23514`. With the annual exam still a draft, that was every child. | A hold carries no class. |
+| 5 | **Switching hid every child.** The banner offered "Make 2026-2027 current" first, and switching before promoting leaves 302 children enrolled only in a year that is no longer current. | `academics_session_activate` refuses, naming the count (`55000`), unless confirmed (`p_force`). Switching **back** is asked too (0278), because it is how a mistaken switch is undone. |
+| 6 | **No fees in 2026-2027** (24 in 2025-2026) and no way to copy them, so the first invoice run would charge nothing. | `fees_roll_forward_structures()`, offered by the checklist, and by fee setup whenever the current year has none. |
+
+### The checklist
+
+`academics_year_end(to)` measures, in one read: classes, fees, children still
+to move, and seats and beds to renew. `src/lib/validations/year-end.ts` turns
+that into five steps, in order. The year screen draws them with the one action
+that moves each forward, and the switch is last. Two decisions in it:
+
+- **"Later" is a state.** Seats and beds follow children, so before anybody is
+  promoted there is nothing to count. "0 to renew" would read as done when it
+  means "not started".
+- **The flag stays a decision** (see *Two questions*). The switch is never
+  disabled. The dialog shows the database's sentence and asks for an explicit
+  *I understand* before *Switch anyway*.
+
+`tests/promotion/year-end.test.ts` pins the wording (number agreement included)
+against the demo college's real document. It also reads the migrations:
+
+- every function that writes across a year pair checks the direction **before**
+  its first insert;
+- `promotion_apply` raises no invoice;
+- the run indexes cover drafts only;
+- the switch refuses both ways.
+
+Three plants were each caught: a writer without the check, an invoice in apply,
+and the old default in the planner.
+

@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { academicSessionSchema } from "@/lib/validations/academics";
+import { parseYearEnd, type YearEnd } from "@/lib/validations/year-end";
 import type { ActionResult } from "../../library/actions";
 
 export type AcademicYear = {
@@ -107,11 +108,61 @@ export async function updateAcademicYear(
  * touched by the change is revalidated because the answer to "what year is it"
  * is on most screens.
  */
-export async function activateAcademicYear(id: string): Promise<ActionResult<{ id: string }>> {
+export type ActivateResult =
+  | { ok: true; data: { id: string } }
+  | {
+      ok: false;
+      error: string;
+      /**
+       * The database refused because children in the current year have not
+       * been promoted into this one (0276). The sentence names how many; the
+       * dialog shows it and lets a person switch anyway, which is the
+       * decision the flag has always been (0195), made knowingly.
+       */
+      needsConfirmation?: boolean;
+    };
+
+export async function activateAcademicYear(id: string, force = false): Promise<ActivateResult> {
   const supabase = await createClient();
-  const { error } = await supabase.rpc("academics_session_activate", { p_session_id: id });
-  if (error) return { ok: false, error: error.message };
+  const { error } = await supabase.rpc("academics_session_activate", {
+    p_session_id: id,
+    p_force: force,
+  });
+  if (error) {
+    return { ok: false, error: error.message, needsConfirmation: error.code === "55000" };
+  }
 
   revalidatePath("/", "layout");
   return { ok: true, data: { id } };
+}
+
+/**
+ * Where turning the current year over into `toId` stands, as the checklist on
+ * the year screen draws it. One read (`academics_year_end`), counts only.
+ */
+export async function getYearEnd(toId: string): Promise<YearEnd | null> {
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("academics_year_end", { p_to_session_id: toId });
+  if (error) throw new Error(error.message);
+  return parseYearEnd(data);
+}
+
+/**
+ * Copies the outgoing year's fee structures into the receiving one, skipping
+ * any already set there, so it is safe to press twice. The database refuses a
+ * copy into an earlier year (0276).
+ */
+export async function copyFeeStructures(
+  fromId: string,
+  toId: string,
+): Promise<ActionResult<{ created: number }>> {
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("fees_roll_forward_structures", {
+    p_from_session_id: fromId,
+    p_to_session_id: toId,
+  });
+  if (error) return { ok: false, error: error.message };
+  revalidatePath("/academics/sessions");
+  revalidatePath("/fees/setup");
+  return { ok: true, data: { created: data ?? 0 } };
 }

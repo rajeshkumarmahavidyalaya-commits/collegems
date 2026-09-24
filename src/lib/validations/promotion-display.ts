@@ -188,3 +188,26 @@ export function leftBehindLabel(kind: string, t: Translator): string {
     return labelFor("promotion.leftBehind.balance", "Money", t);
   return labelFor("promotion.leftBehind.other", "Note", t);
 }
+
+/**
+ * The years a child can move into from `fromId`: the ones that start after it,
+ * soonest first. The first is the default.
+ *
+ * Both pickers used to take "the first year that is not current" from a list
+ * sorted oldest first, which on a college with three years is the year
+ * *before* -- so the promotion screen opened set to promote every child into
+ * last year, and the renewal launcher to carry every bus seat there. The
+ * database refuses a backward run now (0276); this keeps the screen from
+ * offering one. Dates are ISO strings and compared as strings, so no time zone
+ * can move a boundary.
+ */
+export function laterYears<T extends { id: string; startDate: string }>(
+  years: readonly T[],
+  fromId: string,
+): T[] {
+  const from = years.find((y) => y.id === fromId);
+  if (!from) return [];
+  return years
+    .filter((y) => y.startDate > from.startDate)
+    .sort((a, b) => a.startDate.localeCompare(b.startDate));
+}

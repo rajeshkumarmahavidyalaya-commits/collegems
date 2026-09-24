@@ -20,7 +20,9 @@ export const promotionRulesSchema = z.object({
     })
     .optional(),
   on_missing_result: z.enum(["hold", "promote", "repeat"]).optional(),
-  carry_forward_fees: z.boolean().optional(),
+  // `carry_forward_fees` was here until 0276. Unpaid fees stay on the year
+  // they were charged in and follow the child as arrears; re-billing them in
+  // the new year counted every rupee twice, so there is nothing to choose.
 });
 
 export type PromotionRules = z.infer<typeof promotionRulesSchema>;
@@ -40,7 +42,6 @@ export const promotionFormSchema = z.object({
   maxFailedSubjects: z.string(),
   minAttendancePercent: z.string(),
   onMissingResult: z.enum(["hold", "promote", "repeat"]),
-  carryForwardFees: z.boolean(),
 });
 
 export type PromotionFormInput = z.infer<typeof promotionFormSchema>;
@@ -62,7 +63,6 @@ export function toRules(input: PromotionFormInput): PromotionRules {
       ...(attendance === null ? {} : { min_attendance_percent: attendance }),
     },
     on_missing_result: input.onMissingResult,
-    carry_forward_fees: input.carryForwardFees,
   };
 }
 

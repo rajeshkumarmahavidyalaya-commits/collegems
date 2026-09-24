@@ -5,6 +5,7 @@ import { getUserContext } from "@/lib/auth/context";
 import { listSections } from "../../students/actions";
 import { hasPermission } from "@/lib/auth/permissions";
 import {
+  feeCopySource,
   getFeeIntegrationSettings,
   getSchoolProfile,
   listClassLevels,
@@ -25,6 +26,7 @@ export default async function FeeSetupPage() {
     integrations,
     canManageSettings,
     schoolProfile,
+    copySource,
   ] =
     await Promise.all([
       getUserContext(),
@@ -35,6 +37,7 @@ export default async function FeeSetupPage() {
       getFeeIntegrationSettings(),
       hasPermission("fees.manage"),
       getSchoolProfile(),
+      feeCopySource(),
     ]);
 
   return (
@@ -63,6 +66,7 @@ export default async function FeeSetupPage() {
         integrations={integrations}
         schoolProfile={schoolProfile}
         canManageSettings={canManageSettings}
+        copySource={copySource}
       />
     </div>
   );

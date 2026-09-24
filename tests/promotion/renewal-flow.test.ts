@@ -29,7 +29,10 @@ describeDb("renewals", () => {
       .order("start_date");
 
     fromSessionId = sessions!.find((s) => s.is_current)!.id;
-    toSessionId = sessions!.find((s) => s.id !== fromSessionId)!.id;
+    // The year *after* the current one. "Any year that is not current" was
+    // the year before once 2024-2025 existed, and 0276 refuses a backward run.
+    const from = sessions!.find((s) => s.id === fromSessionId)!;
+    toSessionId = sessions!.find((s) => s.start_date > from.start_date)!.id;
   });
 
   afterAll(async () => {
@@ -123,7 +126,7 @@ describeDb("renewals", () => {
     });
 
     expect(second.error).not.toBeNull();
-    expect(second.error!.message).toContain("already a run");
+    expect(second.error!.message).toContain("already a draft run");
   });
 
   it("keeps one tenant's renewal runs invisible to another", async () => {

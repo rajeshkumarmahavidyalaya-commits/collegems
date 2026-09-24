@@ -35,7 +35,6 @@ const base: PromotionFormInput = {
   maxFailedSubjects: "0",
   minAttendancePercent: "",
   onMissingResult: "hold",
-  carryForwardFees: true,
 };
 
 describe("form to rules", () => {
@@ -48,7 +47,6 @@ describe("form to rules", () => {
         max_failed_subjects: 0,
       },
       on_missing_result: "hold",
-      carry_forward_fees: true,
     });
   });
 

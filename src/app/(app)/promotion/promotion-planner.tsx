@@ -55,6 +55,7 @@ import {
   EVALUATION_ORDER,
   EXAM_KINDS_FOR_PROMOTION,
   ON_MISSING_RESULT,
+  laterYears,
   type PromotionFormInput,
   tallySentence,
 } from "@/lib/validations/promotion";
@@ -79,10 +80,13 @@ export function PromotionPlanner({ sessions, runs }: Props) {
   const [preview, setPreview] = useState<PreviewResult | null>(null);
 
   const current = sessions.find((s) => s.isCurrent);
-  const nextByDate = sessions.find((s) => !s.isCurrent && s.id !== current?.id);
+  const fromDefault = current?.id ?? sessions[0]?.id ?? "";
+  // The year after, never merely "a year that is not current": the list is
+  // oldest first, and that used to be last year (0276).
+  const nextByDate = laterYears(sessions, fromDefault)[0];
 
   const [form, setForm] = useState<PromotionFormInput>({
-    fromSessionId: current?.id ?? sessions[0]?.id ?? "",
+    fromSessionId: fromDefault,
     toSessionId: nextByDate?.id ?? "",
     noDetentionUpTo: "",
     requireExamPass: true,
@@ -90,10 +94,11 @@ export function PromotionPlanner({ sessions, runs }: Props) {
     maxFailedSubjects: "0",
     minAttendancePercent: "",
     onMissingResult: "hold",
-    carryForwardFees: true,
   });
 
   const toSession = sessions.find((s) => s.id === form.toSessionId);
+  const fromSession = sessions.find((s) => s.id === form.fromSessionId);
+  const intoChoices = laterYears(sessions, form.fromSessionId);
   const liveRun = runs.find(
     (r) =>
       r.status === "draft" &&
@@ -106,6 +111,17 @@ export function PromotionPlanner({ sessions, runs }: Props) {
     value: PromotionFormInput[K],
   ) {
     setForm((prev) => ({ ...prev, [key]: value }));
+    setPreview(null);
+  }
+
+  // Changing the year promoted from moves the receiving year with it, so the
+  // pair can never be left pointing backwards.
+  function setFrom(id: string) {
+    setForm((prev) => ({
+      ...prev,
+      fromSessionId: id,
+      toSessionId: laterYears(sessions, id)[0]?.id ?? "",
+    }));
     setPreview(null);
   }
 
@@ -182,6 +198,13 @@ export function PromotionPlanner({ sessions, runs }: Props) {
       })).filter((d) => d.count > 0)
     : [];
 
+  const moversOwing = preview
+    ? preview.rows.filter(
+        (r) => (r.decision === "promote" || r.decision === "repeat") && r.outstanding > 0,
+      )
+    : [];
+  const moversOwed = moversOwing.reduce((sum, r) => sum + r.outstanding, 0);
+
   const leaversOwing = preview
     ? preview.rows
         .filter((r) => r.decision === "graduate" && r.outstanding > 0)
@@ -200,7 +223,7 @@ export function PromotionPlanner({ sessions, runs }: Props) {
               <Label htmlFor="from-session">Promote from</Label>
               <Select
                 value={form.fromSessionId}
-                onValueChange={(v) => set("fromSessionId", v)}
+                onValueChange={setFrom}
               >
                 <SelectTrigger id="from-session">
                   <SelectValue />
@@ -218,24 +241,32 @@ export function PromotionPlanner({ sessions, runs }: Props) {
 
             <div className="flex flex-col gap-1.5">
               <Label htmlFor="to-session">Promote into</Label>
-              <Select
-                value={form.toSessionId}
-                onValueChange={(v) => set("toSessionId", v)}
-              >
-                <SelectTrigger id="to-session">
-                  <SelectValue placeholder="Choose the receiving year" />
-                </SelectTrigger>
-                <SelectContent>
-                  {sessions
-                    .filter((s) => s.id !== form.fromSessionId)
-                    .map((s) => (
+              {intoChoices.length === 0 ? (
+                <p className="text-sm text-muted-foreground">
+                  No year starts after {fromSession?.name ?? "this one"}.{" "}
+                  <Link href="/academics/sessions" className="underline underline-offset-2">
+                    Add next year
+                  </Link>{" "}
+                  first. Children only ever move into a later year.
+                </p>
+              ) : (
+                <Select
+                  value={form.toSessionId}
+                  onValueChange={(v) => set("toSessionId", v)}
+                >
+                  <SelectTrigger id="to-session">
+                    <SelectValue placeholder="Choose the receiving year" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {intoChoices.map((s) => (
                       <SelectItem key={s.id} value={s.id}>
                         {s.name} · {s.sectionCount}{" "}
                         {s.sectionCount === 1 ? "class" : "classes"}
                       </SelectItem>
                     ))}
-                </SelectContent>
-              </Select>
+                  </SelectContent>
+                </Select>
+              )}
             </div>
 
             {toSession && toSession.sectionCount === 0 && (
@@ -388,23 +419,17 @@ export function PromotionPlanner({ sessions, runs }: Props) {
               </p>
             </div>
 
-            <div className="flex items-start gap-3">
-              <Checkbox
-                id="carry-fees"
-                checked={form.carryForwardFees}
-                onCheckedChange={(state) =>
-                  set("carryForwardFees", state === true)
-                }
-              />
-              <div className="grid gap-0.5 leading-tight">
-                <Label htmlFor="carry-fees">
-                  Carry unpaid balances forward
-                </Label>
-                <span className="text-xs text-muted-foreground">
-                  Raises an opening invoice in the receiving year, so the debt
-                  arrives as a document rather than a number.
-                </span>
-              </div>
+            {/* Not a choice any more (0276): re-billing an unpaid balance in
+                the new year counted it twice, because the old year still
+                shows it as arrears. So this says where the money stays. */}
+            <div className="rounded-md border border-border bg-muted/30 p-3 text-xs text-muted-foreground">
+              <p className="font-medium text-foreground">Unpaid fees</p>
+              <p className="mt-1">
+                What a child still owes stays on {fromSession?.name ?? "the outgoing year"}&rsquo;s
+                account and follows them: the fee account and the counter show it as
+                arrears, and a payment against it settles that year. Nothing is billed
+                twice.
+              </p>
             </div>
 
             <Button
@@ -462,6 +487,22 @@ export function PromotionPlanner({ sessions, runs }: Props) {
                   </div>
                 ))}
               </div>
+
+              {moversOwing.length > 0 && (
+                <Alert>
+                  <Info className="size-4" aria-hidden="true" />
+                  <AlertTitle>
+                    {moversOwing.length}{" "}
+                    {moversOwing.length === 1 ? "child moving up owes" : "children moving up owe"}{" "}
+                    {formatCurrency(moversOwed)} for {fromSession?.name}
+                  </AlertTitle>
+                  <AlertDescription>
+                    It stays on {fromSession?.name}&rsquo;s account, and the counter and the fee
+                    account show it as arrears once the year changes. It is not billed again in{" "}
+                    {toSession?.name}.
+                  </AlertDescription>
+                </Alert>
+              )}
 
               {leaversOwing > 0 && (
                 <Alert>

@@ -15,7 +15,14 @@ function fail(message: string): ActionResult<never> {
   return { ok: false, error: message };
 }
 
-export type SessionOption = { id: string; name: string; isCurrent: boolean; sectionCount: number };
+export type SessionOption = {
+  id: string;
+  name: string;
+  isCurrent: boolean;
+  /** ISO date. Which way a year turns is decided by this (see `laterYears`). */
+  startDate: string;
+  sectionCount: number;
+};
 
 /**
  * `promotion_runs.left_behind` and `promotion_apply`'s last column are the same
@@ -54,6 +61,7 @@ export async function listSessions(): Promise<SessionOption[]> {
     id: s.id,
     name: s.name,
     isCurrent: s.is_current,
+    startDate: s.start_date,
     sectionCount: counts.get(s.id) ?? 0,
   }));
 }
@@ -168,12 +176,10 @@ export type RunRow = {
   createdAt: string;
   counts: Record<string, number>;
   overrides: number;
-  carriedTotal: number;
   /**
-   * What this run owed and what it could not close. `owedTotal` is the
-   * measurement (`promotion_decisions.outstanding`); `carriedTotal` is what the
-   * policy decided to bill. They differ whenever `carry_forward_fees` is off,
-   * which is the default — see migration 0181.
+   * What the children in this run owed for the outgoing year
+   * (`promotion_decisions.outstanding`). It stays on that year's account and
+   * is never re-billed (0276), so there is no second "carried" figure.
    */
   owedTotal: number;
   leftBehind: LeftBehindNote[];
@@ -195,7 +201,7 @@ export async function listRuns(): Promise<RunRow[]> {
     supabase.from("academic_sessions").select("id, name"),
     supabase
       .from("promotion_decisions")
-      .select("run_id, decision, is_override, carry_forward, outstanding")
+      .select("run_id, decision, is_override, outstanding")
       .in("run_id", runs.map((r) => r.id)),
   ]);
 
@@ -216,7 +222,6 @@ export async function listRuns(): Promise<RunRow[]> {
       createdAt: run.created_at,
       counts,
       overrides: decisions.filter((d) => d.is_override).length,
-      carriedTotal: decisions.reduce((sum, d) => sum + Number(d.carry_forward), 0),
       owedTotal: decisions.reduce((sum, d) => sum + Number(d.outstanding), 0),
       leftBehind: toLeftBehind(run.left_behind),
     };
@@ -235,7 +240,8 @@ export type DecisionRow = {
   toSectionId: string | null;
   toSectionLabel: string | null;
   isOverride: boolean;
-  carryForward: number;
+  /** Owed for the outgoing year; it stays there and follows them as arrears. */
+  outstanding: number;
   hasNextClass: boolean;
 };
 
@@ -245,7 +251,7 @@ export async function getRunDecisions(runId: string): Promise<DecisionRow[]> {
   const { data: decisions, error } = await supabase
     .from("promotion_decisions")
     .select(
-      "id, student_id, from_enrolment_id, decision, reason, to_section_id, is_override, carry_forward",
+      "id, student_id, from_enrolment_id, decision, reason, to_section_id, is_override, outstanding",
     )
     .eq("run_id", runId);
 
@@ -309,7 +315,7 @@ export async function getRunDecisions(runId: string): Promise<DecisionRow[]> {
         toSectionId: d.to_section_id,
         toSectionLabel: d.to_section_id ? (sectionLabel.get(d.to_section_id)?.label ?? null) : null,
         isOverride: d.is_override,
-        carryForward: Number(d.carry_forward),
+        outstanding: Number(d.outstanding),
         hasNextClass: (from?.sequence ?? 0) < maxSequence,
       };
     })

@@ -55,7 +55,10 @@ describeDb("promotion", () => {
     ).toBeGreaterThanOrEqual(2);
 
     fromSessionId = sessions!.find((s) => s.is_current)!.id;
-    toSessionId = sessions!.find((s) => s.id !== fromSessionId)!.id;
+    // The year *after* the current one. "Any year that is not current" was
+    // the year before once 2024-2025 existed, and 0276 refuses a backward run.
+    const from = sessions!.find((s) => s.id === fromSessionId)!;
+    toSessionId = sessions!.find((s) => s.start_date > from.start_date)!.id;
   });
 
   afterAll(async () => {
@@ -228,7 +231,7 @@ describeDb("promotion", () => {
     const { data: runId, error } = await a.rpc("promotion_start_run", {
       p_from_session_id: fromSessionId,
       p_to_session_id: toSessionId,
-      p_rules: { carry_forward_fees: true },
+      p_rules: {},
     });
 
     expect(error, error?.message).toBeNull();
@@ -236,30 +239,25 @@ describeDb("promotion", () => {
 
     const { data: decisions } = await a
       .from("promotion_decisions")
-      .select("id, decision, carry_forward, is_override")
+      .select("id, decision, is_override")
       .eq("run_id", runId!);
 
     expect((decisions ?? []).length).toBeGreaterThan(0);
     expect((decisions ?? []).every((d) => !d.is_override)).toBe(true);
-    // Carry-forward is recorded on the row, so the bursar can see the number
-    // before anybody commits to it.
-    expect((decisions ?? []).some((d) => Number(d.carry_forward) > 0)).toBe(true);
   });
 
-  // Migration 0181. `carry_forward` is what the policy decided; `outstanding`
-  // is what the family owes. With the policy off the two must differ, or a run
-  // has no record of the debt at all — which is how a school that does not
-  // carry fees forward loses sight of what its leavers owe.
-  it("records what is owed even when the policy carries nothing", async () => {
-    const { data: withPolicy } = await a
+  // Migration 0276. `outstanding` is what the family owes and is always
+  // recorded; `carry_forward` is 0, because the debt stays on the outgoing
+  // year's account and follows the child as arrears. Re-billing it in the new
+  // year counted it twice (measured: 26,908.00 became 53,816.00).
+  it("records what is owed and never re-bills it", async () => {
+    const { data: rows } = await a
       .from("promotion_decisions")
       .select("outstanding, carry_forward")
       .eq("run_id", createdRuns[0]);
 
-    const owed = (withPolicy ?? []).filter((d) => Number(d.outstanding) > 0);
-    expect(owed.length).toBeGreaterThan(0);
-    // This run was created with carry_forward_fees on, so they agree here.
-    expect(owed.every((d) => Number(d.carry_forward) === Number(d.outstanding))).toBe(true);
+    expect((rows ?? []).some((d) => Number(d.outstanding) > 0)).toBe(true);
+    expect((rows ?? []).every((d) => Number(d.carry_forward) === 0)).toBe(true);
   });
 
   it("refuses a second live run for the same rollover", async () => {
@@ -272,7 +270,7 @@ describeDb("promotion", () => {
     });
 
     expect(error).not.toBeNull();
-    expect(error!.message).toContain("already a run");
+    expect(error!.message).toContain("already a draft run");
   });
 
   it("refuses a promotion with nowhere to land", async () => {

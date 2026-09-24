@@ -401,6 +401,41 @@ Three things generalise:
   nobody has decided about fails the test; a deliberate one is a line somebody
   wrote on purpose.
 
+### …and a year turns forward, once, after everybody has moved
+
+The sections above say which year a row belongs to. Turning the year over is
+the act that moves the whole school from one to the next, and it had never
+been done here. Tried end to end in a rolled-back transaction on 23 Sep 2026
+(`0276`-`0278`), it failed in six ways:
+
+- **Both pickers defaulted to last year.** They took "the first year that is
+  not current" from a list sorted oldest first. With three years that is
+  2024-25, and nothing downstream compared the dates, so a run into the
+  previous year was accepted. `academics_require_later_year()` is now the one
+  definition of "forward", called before the first insert of every function
+  that writes across a year pair. The guard finds those writers by signature,
+  so a sixth cannot be added without the check.
+- **An applied run locked the pair for ever.** The one-live-run index
+  excluded only *discarded*, so *hold*, documented as "somebody decides
+  later", had no later. *Live* means draft.
+- **The defaults could not start.** A hold row kept its target class and the
+  CHECK refused the whole run. With the annual exam still a draft, that was
+  every child.
+- **Carry-forward billed twice** (rule 12, above).
+- **The switch was the first button** and hid all 302 children from the new
+  year. It is now the last step of a checklist, and it refuses in both
+  directions unless confirmed: forward with the count left behind, backward
+  because that is how a mistake is undone.
+- **Nothing copied fees** into the new year, so its first invoice run would
+  charge nothing.
+
+> **A bug that needs a year to pass is a bug that ships** (rule 2, `0203`), and
+> the rollover is the one feature that only runs when a year passes. Every
+> defect above was in code that had never been run in the direction it exists
+> for. Probe it by doing it, in a transaction, as the person whose job it is.
+
+See `docs/modules/academic-years.md` and `docs/modules/promotion.md`.
+
 ## 3. Auth
 
 - Supabase Auth. A trigger on `auth.users` (`handle_new_auth_user`) resolves a
@@ -3269,6 +3304,12 @@ precisely where the policy is off, because the school least likely to carry fees
 forward is the school most likely to forget the money. Same shape as
 `attendance_coverage` beside a rate, and as `settings` distinguishing a value
 from whether anybody chose it.
+
+**…and `0276` found the decision had never been a choice.** With the policy on,
+`promotion_apply` raised an opening invoice in the new year while the old year
+still showed the debt as arrears (`0187`), so ₹26,908 became ₹53,816. Rule 6
+already said which is right: a debt stays on the year it moves. `carry_forward`
+is 0 now, and the measurement is the column that survived.
 
 And a rule about critics, learned by the critic accusing a correct exit on its
 own last day (`ends_on >= today` where the charge rule wants `>=` and the

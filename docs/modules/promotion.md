@@ -30,12 +30,12 @@ promotion_runs        one rollover, with the rules it was computed under
     "max_failed_subjects": 0,
     "min_attendance_percent": 75
   },
-  "on_missing_result": "hold",
-  "carry_forward_fees": true
+  "on_missing_result": "hold"
 }
 ```
 
-Every key is optional. An empty `{}` promotes everybody who has somewhere to go,
+Every key is optional. (`carry_forward_fees` was a key here until `0276`; it
+billed a debt twice and is gone. See *Unpaid fees* below.) An empty `{}` promotes everybody who has somewhere to go,
 which is a real policy — plenty of primary schools have exactly that one — not a
 degenerate case.
 
@@ -184,7 +184,7 @@ Three things about it:
 - **The money figure comes from `outstanding`, not `carry_forward`** — see
   below.
 
-### `outstanding` and `carry_forward` are two facts
+### `outstanding` and `carry_forward` are two facts (superseded by 0276)
 
 Migration `0181`. The probe that found it: a run created with an empty rules
 document reported `carried = 0` on a school where **96 families owe
@@ -210,24 +210,40 @@ March is a number in the wrong place.
 
 ---
 
-## Fee carry-forward
+## Unpaid fees: owed once, on the year they belong to
 
-An unpaid balance becomes an **opening invoice in the receiving year**, with its
-own gapless number, rather than a figure copied between sessions. Rule 6: money
-moves by documents, so what crosses the year boundary is something the family
-can be shown.
+**Before `0276`** an unpaid balance became an "opening balance" invoice in the
+receiving year, and the outgoing year still showed the same debt. Since
+`0186`/`0187` the fee account and the counter list every earlier year that still
+owes, and a receipt settles the year of the invoice it names. So after a run and
+a switch the family owed the debt twice. Measured in a rolled-back transaction
+on the demo college: the child owing the most owed ₹26,908.00, and afterwards
+the account showed ₹26,908.00 this year **and** ₹26,908.00 for 2025-2026. Across
+the college, ₹13,24,336.00 owed by 103 families would have been counted twice.
+No run had been applied, so nobody was ever billed twice.
 
-Two honest limitations, both surfaced on screen rather than hidden:
+Rule 6 already settles which is right: a ledger row's `session_id` is which
+year's account it moves. So now:
 
-- **A graduate's debt is not carried.** They get no enrolment in the receiving
-  year, so there is nothing to carry it onto. The preview totals it up and says
-  so — ₹2.46L across 17 leavers in the demo cohort — because writing it off
-  silently and inventing a policy are both worse than telling the bursar.
-- **Outstanding is computed inline**, not through `fees_student_balances`, which
-  is bound to whichever session is *current* — and the whole point of a rollover
-  is that the session you are leaving may not be. Same arithmetic: billed, plus
-  the signed ledger, where positive means "owes more". An integration test
-  asserts the two agree when the outgoing session is the current one.
+- **A debt stays on the year it was incurred in** and follows the child as
+  arrears, collected at the counter, where a receipt settles that year.
+- **`carry_forward` is always 0.** `outstanding` is still recorded on every
+  decision, and the screens show it as *Owes for 2025-2026*.
+- **`promotion_apply`'s `carried`** now counts the children who move on owing,
+  which is what the toast says.
+- **The planner's checkbox is gone.** There was no longer a choice to make, so
+  the rules card says where unpaid fees go instead.
+
+Probed after the fix: the same child reads ₹0 this year and ₹26,908.00 as
+2025-2026 arrears, and the run raised no new-year invoice.
+
+A graduate's debt behaves the same way it always did: it stays on the outgoing
+year's account, and the preview totals it (₹2.46L across 17 leavers in the demo
+cohort), because writing it off silently would be worse than telling the bursar.
+
+**`outstanding` is computed inline**, not through `fees_student_balances`, which
+is bound to whichever session is current, and the year being left may not be.
+Measured equal: ₹13,24,336.00 from both on 2025-2026.
 
 ---
 

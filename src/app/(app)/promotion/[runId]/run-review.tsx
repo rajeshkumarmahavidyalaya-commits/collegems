@@ -94,7 +94,13 @@ export function RunReview({ run, decisions, sections, leftBehind }: Props) {
     return map;
   }, [decisions]);
 
-  const carried = decisions.reduce((sum, d) => sum + d.carryForward, 0);
+  // What the children moving up owe for the outgoing year. It stays on that
+  // year's account and follows them as arrears (0276), so it is shown, never
+  // billed again.
+  const movingOwing = decisions.filter(
+    (d) => (d.decision === "promote" || d.decision === "repeat") && d.outstanding > 0,
+  );
+  const owedByMovers = movingOwing.reduce((sum, d) => sum + d.outstanding, 0);
   const overrides = decisions.filter((d) => d.isOverride).length;
   const holds = counts.hold ?? 0;
 
@@ -141,7 +147,10 @@ export function RunReview({ run, decisions, sections, leftBehind }: Props) {
       ].filter(Boolean) as string[];
 
       toast.success(
-        `${promoted} promoted, ${repeated} repeated, ${graduated} graduated, ${held} held. ${carriedCount} balances carried forward.` +
+        `${promoted} promoted, ${repeated} repeated, ${graduated} graduated, ${held} held.` +
+          (carriedCount > 0
+            ? ` ${carriedCount} ${carriedCount === 1 ? "child moves" : "children move"} up owing fees from ${run.fromSessionName}, shown as arrears.`
+            : "") +
           (closed.length > 0 ? ` Leaving closed ${closed.join(", ")}.` : ""),
       );
       // The sentences themselves are on the page, not in this toast: applying
@@ -179,7 +188,7 @@ export function RunReview({ run, decisions, sections, leftBehind }: Props) {
         into: d.toSectionLabel ?? "",
         reason: d.reason,
         overridden: d.isOverride ? "Yes" : "No",
-        carried: d.carryForward > 0 ? d.carryForward : "",
+        owes: d.outstanding > 0 ? d.outstanding : "",
       })),
       [
         { key: "admission", label: "Admission no." },
@@ -189,7 +198,7 @@ export function RunReview({ run, decisions, sections, leftBehind }: Props) {
         { key: "into", label: "Into" },
         { key: "reason", label: "Why" },
         { key: "overridden", label: "Overridden" },
-        { key: "carried", label: "Carried forward" },
+        { key: "owes", label: `Owes for ${run.fromSessionName}` },
       ],
       `promotion-${run.fromSessionName}-to-${run.toSessionName}.csv`,
     );
@@ -263,17 +272,19 @@ export function RunReview({ run, decisions, sections, leftBehind }: Props) {
               </AlertDescription>
             </Alert>
           )}
-          {carried > 0 && (
+          {movingOwing.length > 0 && (
             <Alert>
               <AlertTriangle className="size-4" aria-hidden="true" />
               <AlertTitle>
-                {formatCurrency(carried)} will be carried forward
+                {movingOwing.length}{" "}
+                {movingOwing.length === 1 ? "child moving up owes" : "children moving up owe"}{" "}
+                {formatCurrency(owedByMovers)} for {run.fromSessionName}
               </AlertTitle>
               <AlertDescription>
-                Each carried balance becomes an opening invoice in{" "}
-                {run.toSessionName}, with its own receipt number — the debt
-                arrives as a document the family can be shown, not as a number
-                copied between years.
+                It stays on {run.fromSessionName}&rsquo;s account, where their invoices are, and
+                follows them: once the year changes the fee account and the counter show it
+                as arrears, and a payment against it settles {run.fromSessionName}. It is not
+                billed again in {run.toSessionName}.
               </AlertDescription>
             </Alert>
           )}
@@ -379,7 +390,7 @@ export function RunReview({ run, decisions, sections, leftBehind }: Props) {
                   Why
                 </th>
                 <th scope="col" className="px-3 py-2 text-end font-medium">
-                  Carried
+                  Owes
                 </th>
                 {!applied && <th scope="col" className="w-20 px-3 py-2" />}
               </tr>
@@ -413,8 +424,8 @@ export function RunReview({ run, decisions, sections, leftBehind }: Props) {
                     {row.reason}
                   </td>
                   <td className="px-3 py-1.5 text-end font-mono tabular-nums">
-                    {row.carryForward > 0
-                      ? formatCurrency(row.carryForward)
+                    {row.outstanding > 0
+                      ? formatCurrency(row.outstanding)
                       : "—"}
                   </td>
                   {!applied && (

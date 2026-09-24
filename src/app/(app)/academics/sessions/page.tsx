@@ -1,6 +1,7 @@
 import { getUserContext } from "@/lib/auth/context";
 import { hasPermission } from "@/lib/auth/permissions";
-import { listAcademicYears } from "./actions";
+import { laterYears } from "@/lib/validations/promotion-display";
+import { getYearEnd, listAcademicYears } from "./actions";
 import { AcademicYears } from "./academic-years";
 
 export const metadata = { title: "Academic years" };
@@ -21,6 +22,12 @@ export default async function AcademicYearsPage() {
     hasPermission("academics.manage"),
   ]);
 
+  // The year after the current one, by date -- never "a year that is not
+  // current", which is how two screens came to default to last year (0276).
+  const current = years.find((y) => y.isCurrent);
+  const next = current ? laterYears(years, current.id)[0] : undefined;
+  const yearEnd = next && canManage ? await getYearEnd(next.id) : null;
+
   return (
     <div className="flex flex-col gap-4">
       <div>
@@ -32,7 +39,7 @@ export default async function AcademicYearsPage() {
         </p>
       </div>
 
-      <AcademicYears years={years} canManage={canManage} />
+      <AcademicYears years={years} canManage={canManage} yearEnd={yearEnd} />
     </div>
   );
 }

@@ -7648,12 +7648,16 @@ export type Database = {
         }[]
       }
       academics_is_teaching_day: { Args: { p_date: string }; Returns: boolean }
+      academics_require_later_year: {
+        Args: { p_from_session_id: string; p_to_session_id: string }
+        Returns: undefined
+      }
       academics_roll_forward_sections: {
         Args: { p_from_session_id: string; p_to_session_id: string }
         Returns: number
       }
       academics_session_activate: {
-        Args: { p_session_id: string }
+        Args: { p_force?: boolean; p_session_id: string }
         Returns: {
           created_at: string
           end_date: string
@@ -7745,6 +7749,7 @@ export type Database = {
           start_date: string
         }[]
       }
+      academics_year_end: { Args: { p_to_session_id: string }; Returns: Json }
       accounts_chart_balances: {
         Args: { p_as_of?: string }
         Returns: {
@@ -8843,6 +8848,10 @@ export type Database = {
           isOneToOne: true
           isSetofReturn: false
         }
+      }
+      fees_roll_forward_structures: {
+        Args: { p_from_session_id: string; p_to_session_id: string }
+        Returns: number
       }
       fees_settle_gateway_payment: {
         Args: {

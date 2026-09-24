@@ -34,6 +34,8 @@ import {
   updateAcademicYear,
   type AcademicYear,
 } from "./actions";
+import type { YearEnd } from "@/lib/validations/year-end";
+import { YearEndChecklist } from "./year-end";
 
 function YearDialog({
   open,
@@ -168,15 +170,30 @@ function ActivateDialog({
   onDone: () => void;
 }) {
   const [pending, startTransition] = useTransition();
+  // Set when the database refuses because children have not been promoted
+  // into this year (0276). Its sentence names how many.
+  const [refusal, setRefusal] = useState<string | null>(null);
+  const [understood, setUnderstood] = useState(false);
+
+  function close(v: boolean) {
+    if (!v) {
+      setRefusal(null);
+      setUnderstood(false);
+    }
+    onOpenChange(v);
+  }
 
   function confirm() {
     if (!year) return;
+    const force = refusal !== null && understood;
     startTransition(async () => {
-      const result = await activateAcademicYear(year.id);
+      const result = await activateAcademicYear(year.id, force);
       if (result.ok) {
         toast.success(`${year.name} is now the current year.`);
-        onOpenChange(false);
+        close(false);
         onDone();
+      } else if (result.needsConfirmation) {
+        setRefusal(result.error);
       } else {
         toast.error(result.error);
       }
@@ -184,7 +201,7 @@ function ActivateDialog({
   }
 
   return (
-    <Dialog open={!!year} onOpenChange={onOpenChange}>
+    <Dialog open={!!year} onOpenChange={close}>
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Make {year?.name} the current year</DialogTitle>
@@ -195,20 +212,44 @@ function ActivateDialog({
           </DialogDescription>
         </DialogHeader>
 
-        {year && year.enrolments === 0 && (
-          <p className="rounded-md border border-border bg-muted/40 p-3 text-sm">
-            No child is enrolled in {year.name} yet. Registers and invoices need an enrolment, so
-            run a promotion before the school day starts.
-          </p>
+        {refusal ? (
+          <div
+            role="alert"
+            className="flex flex-col gap-3 rounded-md border border-destructive/40 p-3 text-sm"
+          >
+            <p>{refusal}</p>
+            <div className="flex items-start gap-2">
+              <Checkbox
+                id="switch-anyway"
+                checked={understood}
+                onCheckedChange={(v) => setUnderstood(v === true)}
+              />
+              <Label htmlFor="switch-anyway" className="leading-snug font-normal">
+                I understand, and want to switch anyway
+              </Label>
+            </div>
+          </div>
+        ) : (
+          year &&
+          year.enrolments === 0 && (
+            <p className="rounded-md border border-border bg-muted/40 p-3 text-sm">
+              No child is enrolled in {year.name} yet. Registers and invoices need an enrolment, so
+              promote first.
+            </p>
+          )
         )}
 
         <DialogFooter>
-          <Button variant="ghost" onClick={() => onOpenChange(false)} disabled={pending}>
+          <Button variant="ghost" onClick={() => close(false)} disabled={pending}>
             Cancel
           </Button>
-          <Button onClick={confirm} disabled={pending}>
+          <Button
+            onClick={confirm}
+            disabled={pending || (refusal !== null && !understood)}
+            variant={refusal ? "destructive" : "default"}
+          >
             {pending && <Loader2 className="size-4 animate-spin" aria-hidden="true" />}
-            Make it current
+            {refusal ? "Switch anyway" : "Make it current"}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -219,9 +260,12 @@ function ActivateDialog({
 export function AcademicYears({
   years,
   canManage,
+  yearEnd,
 }: {
   years: AcademicYear[];
   canManage: boolean;
+  /** Where turning into the next year stands; null when there is no next year. */
+  yearEnd: YearEnd | null;
 }) {
   const router = useRouter();
   // Dates go through the formatter, never `toLocaleDateString("en-IN")` and
@@ -242,7 +286,15 @@ export function AcademicYears({
 
   return (
     <div className="flex flex-col gap-4">
-      {staleCurrent && (
+      {canManage && yearEnd && !yearEnd.to?.isCurrent && (
+        <YearEndChecklist
+          yearEnd={yearEnd}
+          stale={staleCurrent}
+          onSwitch={() => setActivating(years.find((y) => y.id === yearEnd.to?.id) ?? null)}
+        />
+      )}
+
+      {staleCurrent && !(canManage && yearEnd) && (
         <Card className="border-destructive/40">
           <CardHeader>
             <CardTitle className="text-base">
