@@ -1816,6 +1816,7 @@ export type Database = {
           frequency: string
           id: string
           session_id: string
+          student_type_id: string | null
           tenant_id: string
           updated_at: string
         }
@@ -1827,6 +1828,7 @@ export type Database = {
           frequency?: string
           id?: string
           session_id: string
+          student_type_id?: string | null
           tenant_id: string
           updated_at?: string
         }
@@ -1838,6 +1840,7 @@ export type Database = {
           frequency?: string
           id?: string
           session_id?: string
+          student_type_id?: string | null
           tenant_id?: string
           updated_at?: string
         }
@@ -1862,6 +1865,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "academic_sessions"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fee_structures_student_type_fkey"
+            columns: ["tenant_id", "student_type_id"]
+            isOneToOne: false
+            referencedRelation: "student_types"
+            referencedColumns: ["tenant_id", "id"]
           },
           {
             foreignKeyName: "fee_structures_tenant_id_fkey"
@@ -6312,6 +6322,84 @@ export type Database = {
             referencedColumns: ["tenant_id", "id"]
           },
         ]
+      }
+      student_type_assignments: {
+        Row: {
+          created_at: string
+          id: string
+          session_id: string
+          student_id: string
+          student_type_id: string
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          session_id: string
+          student_id: string
+          student_type_id: string
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          session_id?: string
+          student_id?: string
+          student_type_id?: string
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "student_type_assignments_enrolment_fkey"
+            columns: ["tenant_id", "session_id", "student_id"]
+            isOneToOne: true
+            referencedRelation: "enrolments"
+            referencedColumns: ["tenant_id", "session_id", "student_id"]
+          },
+          {
+            foreignKeyName: "student_type_assignments_type_fkey"
+            columns: ["tenant_id", "student_type_id"]
+            isOneToOne: false
+            referencedRelation: "student_types"
+            referencedColumns: ["tenant_id", "id"]
+          },
+        ]
+      }
+      student_types: {
+        Row: {
+          code: string
+          created_at: string
+          description: string | null
+          id: string
+          is_active: boolean
+          name: string
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          name: string
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          name?: string
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
       students: {
         Row: {
@@ -10785,6 +10873,10 @@ export type Database = {
       storage_object_tenant_matches: {
         Args: { p_name: string }
         Returns: boolean
+      }
+      student_type_assign: {
+        Args: { p_student_id: string; p_student_type_id: string | null }
+        Returns: Json
       }
       student_end_relationships: {
         Args: {

@@ -13,6 +13,7 @@ import {
   listFeeStructures,
 } from "../actions";
 import { FeeSetup } from "./fee-setup";
+import { listStudentTypes, listTypedStudents } from "./student-type-actions";
 
 export const metadata = { title: "Fee setup" };
 
@@ -27,6 +28,8 @@ export default async function FeeSetupPage() {
     canManageSettings,
     schoolProfile,
     copySource,
+    studentTypes,
+    typedStudents,
   ] =
     await Promise.all([
       getUserContext(),
@@ -38,6 +41,8 @@ export default async function FeeSetupPage() {
       hasPermission("fees.manage"),
       getSchoolProfile(),
       feeCopySource(),
+      listStudentTypes(),
+      listTypedStudents(),
     ]);
 
   return (
@@ -46,7 +51,8 @@ export default async function FeeSetupPage() {
         <div>
           <h1 className="text-2xl font-semibold">Fee setup</h1>
           <p className="text-sm text-muted-foreground">
-            What the school charges, what each class pays, and raising the bills — for{" "}
+            What the school charges, what each class and each kind of student pays, and
+            raising the bills — for{" "}
             {ctx?.currentSessionName ?? "the current session"}.
           </p>
         </div>
@@ -67,6 +73,9 @@ export default async function FeeSetupPage() {
         schoolProfile={schoolProfile}
         canManageSettings={canManageSettings}
         copySource={copySource}
+        studentTypes={studentTypes}
+        typedStudents={typedStudents}
+        sessionName={ctx?.currentSessionName ?? "this year"}
       />
     </div>
   );

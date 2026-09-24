@@ -137,7 +137,7 @@ export async function getStudent(id: string) {
        people:person_id ( first_name, middle_name, last_name, date_of_birth, gender,
                           blood_group, email, phone, address_line1, address_line2,
                           city, state, postal_code, photo_path ),
-       enrolments ( roll_number, status, section_id, sections ( name, class_levels ( name ) ) ),
+       enrolments ( session_id, roll_number, status, section_id, sections ( name, class_levels ( name ) ) ),
        guardian_student ( guardian_id, relationship, is_primary, can_pickup,
                           guardians ( occupation,
                                       people:person_id ( first_name, middle_name, last_name,

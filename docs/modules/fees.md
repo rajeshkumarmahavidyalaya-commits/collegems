@@ -700,6 +700,96 @@ The PDF follows the invoice's limits: English strings only (`pdf.receipt.*`),
 and a Hindi or Urdu reader gets the 422 that points at printing instead, because
 the document font is Latin-only.
 
+## Different fees for different kinds of student
+
+Migration `0281`. Until then `fee_structures` was keyed on (session, class,
+head), so every child in a class paid the same for every head. A college does
+not work that way. A **carry-over** student, promoted with papers still to
+clear, pays a different examination fee from a regular one in the same class.
+A college may have other kinds too (private candidates, a management quota).
+
+| piece | what it is | why that shape |
+|---|---|---|
+| `student_types` | the college's own list of kinds, seeded with *Carry-over* | rule 12: a school decides what kinds of student it has. There is no *Regular* row: no type **is** regular |
+| `student_type_assignments` | which kind a child is **in one year** | rule 2: carry-over is a fact about 2026-2027, not about the child for ever. A composite FK onto `enrolments (tenant, session, student)` means a type can only be given for a year the child is enrolled in |
+| `fee_structures.student_type_id` | null = every student; set = that kind of student only | a typed row **replaces** the regular row for that class and head, for those students. It never adds to it. An amount of 0 exempts them |
+
+The key became `unique nulls not distinct (tenant, session, class, head, type)`,
+so there is still exactly one regular row per class and head.
+
+**Billing uses the same rule everywhere.** `fees_billable_lines`, the one
+definition of what a child would be charged, picks the child's own type's row
+where one exists and the regular row otherwise. The invoice run, a single
+invoice, the instalment preview and concessions all read it. The invoice line
+names the type (*Tuition fee (Carry-over)*), because a family reading a bill
+larger than their neighbour's deserves to see why.
+
+Probed on the demo college, as an accountant, in a rolled-back transaction:
+
+| | Tuition | Examination | Activity | Library |
+|---|---|---|---|---|
+| regular classmate | 8,700.00 | 1,200.00 | 900.00 | 600.00 |
+| carry-over, tuition set to 999 and exam to 0 | **999.00** | **not charged** | 900.00 | 600.00 |
+
+Also in that probe:
+
+- a second regular row for the same class and head is still refused;
+- copying the year's fees forward carried the typed rows too (26, including 2 typed);
+- a teacher is refused with a sentence;
+- a teacher and a parent each read **0** assignments.
+
+**Who may see it.** Anybody in the college may read the *list* of types, like
+the fee catalogue. Only the finance roles (administrator and accountant) may
+read or write *who is which*. Whether a child is carrying papers is a fact
+about them, not something another family should be able to look up. Every
+caller of `fees_billable_lines` is a finance role. A caller who could not read
+the assignment would be shown the regular price, so a new caller from another
+seat has to be checked against this first.
+
+**Screens.**
+
+- **`/fees/setup` → Fees by class.** A *Showing fees for* switch: Regular, or
+  any type. Under a type, each class card shows what that kind of student
+  actually pays. Each line is marked with where its amount came from: the
+  type's own *rate* (with the regular amount struck through beside it), *same
+  as regular*, or *Exempt*. The card total follows the switch. Click a line to
+  change it. Clicking a regular line while viewing a type starts that type's
+  own amount instead.
+- **Set a fee.** The form was modelled on the reference screen the college
+  sent: fee head, session (shown), class, who pays, period and amount. It ends
+  with one sentence saying exactly what will be charged: *"Carry-over students
+  in Grade 1 will be charged ₹999.00 for Tuition fee (Annual), instead of the
+  regular amount."*
+- **`/fees/setup` → Student types.** The kinds of student and how many have
+  each this year. Add one, or switch one off: a type in use cannot be deleted,
+  by `on delete restrict`. On the right is who is which this year: add a
+  student with the shared student search, or make them regular again.
+- **`/students/[id]`.** The enrolment card shows the child's kind of student
+  for the current year, as a select. It is drawn only on `fees.collect`, which
+  is held by exactly the roles the policy lets write.
+
+Two things that are deliberate:
+
+- **A type does not follow a child into next year.** Promotion creates a
+  regular enrolment. Whether they are still carrying papers is decided again,
+  by a person, in the new year. `promotion_undo` counts a type set after the
+  run as something that hangs off it, and refuses rather than let the
+  enrolment's cascade delete it (`tests/promotion/undo.test.ts` found the new
+  table by itself).
+- **Invoices already raised are not rewritten.** Changing a child's type, or a
+  type's amount, changes what the *next* invoice charges, the same as every
+  other fee change here.
+
+Measured with `npm run build`: `/fees/setup` went **158 → 160 kB**. The
+student-types tab loads on the click that opens it (it holds the student search
+popover), and so does the fee form, so the 2 kB is the class-card view and its
+helper. `/students/[id]` went 170 → 171 kB for the select.
+
+`tests/fees/student-types.test.ts` pins the screen's `effectiveFees` and the
+SQL to the probe's numbers. It was checked by planting three violations: a
+typed row that *adds* instead of replacing, a family policy on assignments,
+and a copy-forward using the old key. Each one was caught.
+
 ## Known, deliberate gaps
 
 - **The gateway path has never run end to end.** Every guarantee around it is

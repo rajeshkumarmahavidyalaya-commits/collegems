@@ -1,5 +1,6 @@
 "use server";
 
+import { ALL_STUDENTS } from "@/lib/validations/student-types";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { getUserContext } from "@/lib/auth/context";
@@ -422,7 +423,9 @@ export async function listFeeStructures() {
 
   let query = supabase
     .from("fee_structures")
-    .select("id, amount, frequency, class_level_id, fee_head_id, class_levels ( name, sequence ), fee_heads ( name, code )");
+    .select(
+      "id, amount, frequency, class_level_id, fee_head_id, student_type_id, class_levels ( name, sequence ), fee_heads ( name, code ), student_types ( name )",
+    );
 
   if (ctx?.currentSessionId) query = query.eq("session_id", ctx.currentSessionId);
 
@@ -440,8 +443,17 @@ export async function listFeeStructures() {
       sequence: r.class_levels?.sequence ?? 0,
       feeHead: r.fee_heads?.name ?? "—",
       feeHeadCode: r.fee_heads?.code ?? "",
+      studentTypeId: r.student_type_id,
+      studentType: r.student_types?.name ?? null,
     }))
-    .sort((a, b) => a.sequence - b.sequence || a.feeHead.localeCompare(b.feeHead));
+    // Class, then head, then the untyped row before the rows that replace it.
+    .sort(
+      (a, b) =>
+        a.sequence - b.sequence ||
+        a.feeHead.localeCompare(b.feeHead) ||
+        Number(a.studentTypeId !== null) - Number(b.studentTypeId !== null) ||
+        (a.studentType ?? "").localeCompare(b.studentType ?? ""),
+    );
 }
 
 export async function listClassLevels() {
@@ -699,8 +711,9 @@ export async function saveFeeHead(input: unknown, id?: string): Promise<ActionRe
 }
 
 /**
- * Upserted on (tenant, session, class level, fee head): setting an amount that
- * is already set is an edit, not a duplicate row.
+ * Upserted on (tenant, session, class level, fee head, student type): setting
+ * an amount that is already set is an edit, not a duplicate row. The key is
+ * NULLS NOT DISTINCT (0281), so "every student" is still exactly one row.
  */
 export async function saveFeeStructure(input: unknown): Promise<ActionResult<{ id: string }>> {
   const parsed = feeStructureSchema.safeParse(input);
@@ -723,8 +736,10 @@ export async function saveFeeStructure(input: unknown): Promise<ActionResult<{ i
         fee_head_id: parsed.data.feeHeadId,
         amount: parsed.data.amount,
         frequency: parsed.data.frequency,
+        student_type_id:
+          parsed.data.studentTypeId === ALL_STUDENTS ? null : parsed.data.studentTypeId,
       },
-      { onConflict: "tenant_id,session_id,class_level_id,fee_head_id" },
+      { onConflict: "tenant_id,session_id,class_level_id,fee_head_id,student_type_id" },
     )
     .select("id")
     .single();

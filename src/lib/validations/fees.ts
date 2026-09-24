@@ -129,6 +129,10 @@ export const feeStructureSchema = z.object({
     .min(0, "Cannot be negative")
     .max(10_000_000, "That is larger than this system will bill"),
   frequency: z.enum(["one_time", "monthly", "quarterly", "annual"]),
+  // "all" (every student) or one kind of student, whose amount replaces the
+  // regular one for them only (0281). A sentinel rather than "": a Radix
+  // <Select> cannot hold an empty value.
+  studentTypeId: z.union([z.literal("all"), z.string().uuid("Choose who pays this")]),
 });
 export type FeeStructureInput = z.infer<typeof feeStructureSchema>;
 

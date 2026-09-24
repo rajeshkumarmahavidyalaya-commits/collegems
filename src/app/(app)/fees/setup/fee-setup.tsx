@@ -57,6 +57,17 @@ import {
   type FeeCopySource,
 } from "../actions";
 import { copyFeeStructures } from "../../academics/sessions/actions";
+import type { TypedStudent } from "./student-type-actions";
+import type { FeeStructureDraft } from "./fee-setup-dialogs";
+import {
+  byClass,
+  effectiveFees,
+  effectiveTotal,
+  type EffectiveFee,
+  type FeeRow,
+  type StudentTypeOption,
+} from "@/lib/validations/student-types";
+import { frequencyOptions } from "@/lib/validations/fees-display";
 import dynamic from "next/dynamic";
 
 // Loaded on the click that opens them and rendered only while open: they
@@ -67,6 +78,10 @@ const FeeHeadDialog = dynamic(() =>
 );
 const FeeStructureDialog = dynamic(() =>
   import("./fee-setup-dialogs").then((m) => m.FeeStructureDialog),
+);
+// A tab behind a click, holding the student search (Popover and Command).
+const StudentTypesPanel = dynamic(() =>
+  import("./student-types-panel").then((m) => m.StudentTypesPanel),
 );
 const BillSectionDialog = dynamic(() =>
   import("./fee-setup-dialogs").then((m) => m.BillSectionDialog),
@@ -81,14 +96,6 @@ export type FeeHead = {
   is_active: boolean;
 };
 
-type FeeStructure = {
-  id: string;
-  amount: number;
-  frequency: string;
-  classLevel: string;
-  feeHead: string;
-  feeHeadCode: string;
-};
 
 export function FeeSetup({
   feeHeads,
@@ -99,9 +106,15 @@ export function FeeSetup({
   schoolProfile,
   canManageSettings,
   copySource,
+  studentTypes,
+  typedStudents,
+  sessionName,
 }: {
   feeHeads: FeeHead[];
-  structures: FeeStructure[];
+  structures: FeeRow[];
+  studentTypes: StudentTypeOption[];
+  typedStudents: TypedStudent[];
+  sessionName: string;
   classLevels: { id: string; name: string }[];
   sections: { id: string; label: string }[];
   integrations: FeeIntegrationSettings;
@@ -127,20 +140,29 @@ export function FeeSetup({
   const router = useRouter();
   const [headOpen, setHeadOpen] = useState(false);
   const [structureOpen, setStructureOpen] = useState(false);
+  const [draft, setDraft] = useState<FeeStructureDraft | null>(null);
   const [billOpen, setBillOpen] = useState(false);
-  const [confirmDelete, setConfirmDelete] = useState<FeeStructure | null>(null);
+  const [confirmDelete, setConfirmDelete] = useState<FeeRow | null>(null);
+
+  function openFee(fee: EffectiveFee, viewing: StudentTypeOption | null) {
+    const row = fee.row;
+    const override = fee.kind === "inherited" && viewing !== null;
+    setDraft({
+      classLevelId: row.classLevelId,
+      classLevel: row.classLevel,
+      feeHeadId: row.feeHeadId,
+      feeHead: row.feeHead,
+      studentTypeId: override ? viewing.id : row.studentTypeId,
+      studentType: override ? viewing.name : row.studentType,
+      amount: row.amount,
+      frequency: row.frequency as FeeStructureDraft["frequency"],
+      mode: override ? "override" : "edit",
+    });
+    setStructureOpen(true);
+  }
 
   const activeHeads = feeHeads.filter((h) => h.is_active);
 
-  // Structures grouped by class, because that is the unit a school thinks in:
-  // "what does Grade 6 pay", not "what does the transport head cost everywhere".
-  const byClass = structures.reduce<Record<string, FeeStructure[]>>(
-    (acc, s) => {
-      (acc[s.classLevel] ??= []).push(s);
-      return acc;
-    },
-    {},
-  );
 
   return (
     <div className="flex flex-col gap-6">
@@ -160,7 +182,8 @@ export function FeeSetup({
       )}
       <Tabs defaultValue="structures">
         <TabsList>
-          <TabsTrigger value="structures">Class amounts</TabsTrigger>
+          <TabsTrigger value="structures">Fees by class</TabsTrigger>
+          <TabsTrigger value="types">Student types ({studentTypes.length})</TabsTrigger>
           <TabsTrigger value="heads">Fee heads ({feeHeads.length})</TabsTrigger>
           <TabsTrigger value="billing">Raise invoices</TabsTrigger>
           {canManageSettings && (
@@ -170,17 +193,21 @@ export function FeeSetup({
 
         <TabsContent value="structures" className="mt-4 flex flex-col gap-4">
           <div className="flex flex-wrap items-center justify-between gap-2">
-            <p className="text-sm text-muted-foreground">
-              What each class pays this session. Setting an amount that already
-              exists edits it rather than adding a second row.
+            <p className="max-w-prose text-sm text-muted-foreground">
+              What each class pays in {sessionName}. Click a fee to change it. A
+              carry-over or other kind of student can have its own amount for any
+              fee, and pays the regular amount for the rest.
             </p>
             <Button
               size="sm"
-              onClick={() => setStructureOpen(true)}
+              onClick={() => {
+                setDraft(null);
+                setStructureOpen(true);
+              }}
               disabled={activeHeads.length === 0}
             >
               <Plus className="size-4" aria-hidden="true" />
-              Set an amount
+              Set a fee
             </Button>
           </div>
 
@@ -193,62 +220,31 @@ export function FeeSetup({
                 fees. Amounts are set per class against a head.
               </AlertDescription>
             </Alert>
-          ) : Object.keys(byClass).length === 0 ? (
+          ) : structures.length === 0 ? (
             <Alert>
               <FileText className="size-4" aria-hidden="true" />
-              <AlertTitle>No amounts set yet</AlertTitle>
+              <AlertTitle>No fees set yet</AlertTitle>
               <AlertDescription>
-                Until a class has amounts against it, invoices for that class
+                Until a class has fees against it, invoices for that class
                 cannot be raised.
               </AlertDescription>
             </Alert>
           ) : (
-            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-              {Object.entries(byClass).map(([className, rows]) => (
-                <Card key={className}>
-                  <CardHeader className="pb-3">
-                    <CardTitle className="text-base">{className}</CardTitle>
-                    <CardDescription className="font-mono tabular-nums">
-                      {formatCurrency(rows.reduce((s, r) => s + r.amount, 0))}{" "}
-                      per instalment set
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <ul className="flex flex-col gap-2 text-sm">
-                      {rows.map((row) => (
-                        <li
-                          key={row.id}
-                          className="flex items-center justify-between gap-2"
-                        >
-                          <span className="min-w-0">
-                            <span className="block truncate">
-                              {row.feeHead}
-                            </span>
-                            <span className="text-xs text-muted-foreground capitalize">
-                              {row.frequency.replace("_", " ")}
-                            </span>
-                          </span>
-                          <span className="flex shrink-0 items-center gap-1">
-                            <span className="font-mono tabular-nums">
-                              {formatCurrency(row.amount)}
-                            </span>
-                            <Button
-                              size="icon"
-                              variant="ghost"
-                              aria-label={`Remove ${row.feeHead} from ${className}`}
-                              onClick={() => setConfirmDelete(row)}
-                            >
-                              <Trash2 className="size-4" aria-hidden="true" />
-                            </Button>
-                          </span>
-                        </li>
-                      ))}
-                    </ul>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
+            <ClassFees
+              rows={structures}
+              studentTypes={studentTypes}
+              onEdit={openFee}
+              onDelete={setConfirmDelete}
+            />
           )}
+        </TabsContent>
+
+        <TabsContent value="types" className="mt-4">
+          <StudentTypesPanel
+            types={studentTypes}
+            typedStudents={typedStudents}
+            sessionName={sessionName}
+          />
         </TabsContent>
 
         <TabsContent value="heads" className="mt-4 flex flex-col gap-4">
@@ -385,9 +381,15 @@ export function FeeSetup({
       {structureOpen ? (
         <FeeStructureDialog
           open={structureOpen}
-          onOpenChange={setStructureOpen}
+          onOpenChange={(open) => {
+            setStructureOpen(open);
+            if (!open) setDraft(null);
+          }}
           classLevels={classLevels}
           feeHeads={activeHeads}
+          studentTypes={studentTypes}
+          sessionName={sessionName}
+          initial={draft}
           onDone={() => router.refresh()}
         />
       ) : null}
@@ -406,12 +408,18 @@ export function FeeSetup({
       >
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Remove this amount?</DialogTitle>
+            <DialogTitle>Remove this fee?</DialogTitle>
             <DialogDescription>
               {confirmDelete &&
-                `${confirmDelete.feeHead} · ${confirmDelete.classLevel} · ${formatCurrency(confirmDelete.amount)}`}
+                `${confirmDelete.feeHead} · ${confirmDelete.classLevel} · ${confirmDelete.studentType ? `${confirmDelete.studentType} students` : "every student"} · ${formatCurrency(confirmDelete.amount)}`}
             </DialogDescription>
           </DialogHeader>
+          {confirmDelete?.studentTypeId && (
+            <p className="text-sm">
+              {confirmDelete.studentType} students in {confirmDelete.classLevel} will pay the
+              regular {confirmDelete.feeHead} again.
+            </p>
+          )}
           <Alert>
             <AlertTitle>Invoices already raised are not affected</AlertTitle>
             <AlertDescription>
@@ -433,7 +441,7 @@ export function FeeSetup({
                   toast.error(result.error);
                   return;
                 }
-                toast.success("Amount removed");
+                toast.success("Fee removed");
                 setConfirmDelete(null);
                 router.refresh();
               }}
@@ -443,6 +451,168 @@ export function FeeSetup({
           </DialogFooter>
         </DialogContent>
       </Dialog>
+    </div>
+  );
+}
+
+/**
+ * What each class pays, as one kind of student pays it (0281).
+ *
+ * The switch at the top is the point: "what does a carry-over student in
+ * Grade 6 pay" used to need somebody to read two rows and subtract. Each card
+ * resolves it with `effectiveFees`, the screen's copy of the rule
+ * `fees_billable_lines` bills by, and marks every line with where its amount
+ * came from -- the type's own, the regular one it inherits, or an exemption.
+ */
+function ClassFees({
+  rows,
+  studentTypes,
+  onEdit,
+  onDelete,
+}: {
+  rows: FeeRow[];
+  studentTypes: StudentTypeOption[];
+  onEdit: (fee: EffectiveFee, viewing: StudentTypeOption | null) => void;
+  onDelete: (row: FeeRow) => void;
+}) {
+  const { t, formatCurrency } = useI18n();
+  const [viewing, setViewing] = useState<string | null>(null);
+  const periods = frequencyOptions(t);
+  const periodOf = (v: string) => periods.find((p) => p.value === v)?.label ?? v;
+  const viewingType = studentTypes.find((s) => s.id === viewing) ?? null;
+  const classes = byClass(rows);
+  const ownCount = (typeId: string) => rows.filter((r) => r.studentTypeId === typeId).length;
+
+  return (
+    <div className="flex flex-col gap-4">
+      {studentTypes.length > 0 && (
+        <div className="flex flex-col gap-2">
+          <p id="viewing-label" className="text-xs font-medium text-muted-foreground">
+            Showing fees for
+          </p>
+          <div
+            role="group"
+            aria-labelledby="viewing-label"
+            className="flex flex-wrap gap-2"
+          >
+            {[{ id: null, name: "Regular students", count: null as number | null }, ...studentTypes.map((s) => ({ id: s.id, name: `${s.name} students`, count: ownCount(s.id) }))].map((option) => {
+              const active = viewing === option.id;
+              return (
+                <Button
+                  key={option.id ?? "regular"}
+                  type="button"
+                  size="sm"
+                  variant={active ? "default" : "outline"}
+                  aria-pressed={active}
+                  onClick={() => setViewing(option.id)}
+                >
+                  {option.name}
+                  {option.count !== null && (
+                    <span className="rounded-full bg-background/20 px-1.5 font-mono text-xs tabular-nums">
+                      {option.count}
+                    </span>
+                  )}
+                </Button>
+              );
+            })}
+          </div>
+          {viewingType && (
+            <p className="text-sm text-muted-foreground" aria-live="polite">
+              {viewingType.name} students pay their own amount where one is set, and the regular
+              amount everywhere else.
+              {ownCount(viewingType.id) === 0 &&
+                ` No ${viewingType.name} amounts are set yet, so they pay exactly what regular students pay.`}
+            </p>
+          )}
+        </div>
+      )}
+
+      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+        {classes.map((group) => {
+          const fees = effectiveFees(group.rows, viewing);
+          const total = effectiveTotal(fees);
+          return (
+            <Card key={group.classLevelId} className="overflow-hidden">
+              <CardHeader className="border-b border-border bg-muted/30 pb-3">
+                <div className="flex items-start justify-between gap-2">
+                  <CardTitle className="text-base">{group.classLevel}</CardTitle>
+                  <span className="font-mono text-sm font-semibold tabular-nums">
+                    {formatCurrency(total)}
+                  </span>
+                </div>
+                <CardDescription>
+                  {viewingType ? `As a ${viewingType.name} student` : "As a regular student"} ·
+                  one of each period
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="pt-3">
+                {fees.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">No fees set for this class.</p>
+                ) : (
+                  <ul className="flex flex-col divide-y divide-border text-sm">
+                    {fees.map((fee) => (
+                      <li
+                        key={`${fee.row.id}-${fee.kind}`}
+                        className="flex items-center justify-between gap-2 py-2"
+                      >
+                        <button
+                          type="button"
+                          onClick={() => onEdit(fee, viewingType)}
+                          className="min-w-0 flex-1 rounded-md text-start outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                          aria-label={
+                            fee.kind === "inherited" && viewingType
+                              ? `Set a ${viewingType.name} amount for ${fee.row.feeHead} in ${group.classLevel}`
+                              : `Change ${fee.row.feeHead} for ${group.classLevel}${fee.row.studentType ? `, ${fee.row.studentType} students` : ""}`
+                          }
+                        >
+                          <span className="block truncate font-medium">{fee.row.feeHead}</span>
+                          <span className="flex flex-wrap items-center gap-1.5 text-xs text-muted-foreground">
+                            {periodOf(fee.row.frequency)}
+                            {fee.kind === "own" && (
+                              <Badge variant="warning">{fee.row.studentType} rate</Badge>
+                            )}
+                            {fee.kind === "exempt" && <Badge variant="outline">Exempt</Badge>}
+                            {fee.kind === "inherited" && <span>· same as regular</span>}
+                          </span>
+                        </button>
+                        <span className="flex shrink-0 items-center gap-1">
+                          <span className="text-end">
+                            <span
+                              className={
+                                fee.kind === "exempt"
+                                  ? "block font-mono text-muted-foreground tabular-nums"
+                                  : "block font-mono tabular-nums"
+                              }
+                            >
+                              {fee.kind === "exempt" ? formatCurrency(0) : formatCurrency(fee.row.amount)}
+                            </span>
+                            {fee.regularAmount !== null && (
+                              <span className="block font-mono text-xs text-muted-foreground tabular-nums">
+                                <span className="sr-only">Regular amount </span>
+                                <s>{formatCurrency(fee.regularAmount)}</s>
+                              </span>
+                            )}
+                          </span>
+                          {fee.kind !== "inherited" && (
+                            <Button
+                              size="icon"
+                              variant="ghost"
+                              aria-label={`Remove ${fee.row.feeHead} from ${group.classLevel}${fee.row.studentType ? ` for ${fee.row.studentType} students` : ""}`}
+                              onClick={() => onDelete(fee.row)}
+                            >
+                              <Trash2 className="size-4" aria-hidden="true" />
+                            </Button>
+                          )}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </CardContent>
+            </Card>
+          );
+        })}
+      </div>
     </div>
   );
 }

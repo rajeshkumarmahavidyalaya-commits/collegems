@@ -6,9 +6,10 @@ import { useForm } from "react-hook-form";
 
 import { zodResolver } from "@hookform/resolvers/zod";
 
-import { Loader2 } from "lucide-react";
+import { CalendarDays, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -51,6 +52,7 @@ import {
 } from "../actions";
 
 import type { FeeHead } from "./fee-setup";
+import { ALL_STUDENTS, type StudentTypeOption } from "@/lib/validations/student-types";
 
 /*
  * Dialogs split out of the page so they load on the click that opens them:
@@ -178,58 +180,124 @@ export function FeeHeadDialog({
   );
 }
 
+/** What the fee form opens with: blank, or an existing row to change. */
+export type FeeStructureDraft = {
+  classLevelId: string;
+  classLevel: string;
+  feeHeadId: string;
+  feeHead: string;
+  studentTypeId: string | null;
+  studentType: string | null;
+  amount: number;
+  frequency: FeeStructureInput["frequency"];
+  /**
+   * `edit`: change this row. `override`: start this kind of student's own
+   * amount for a class and head, from the regular one they inherit today.
+   */
+  mode: "edit" | "override";
+};
+
+/**
+ * Set what a class pays for one head, for every student or for one kind of
+ * student (0281). Laid out the way an office thinks about a fee -- what it is,
+ * which year, which class, who pays it, how often, how much -- and closing on
+ * one sentence saying exactly what will be charged, because a form whose
+ * outcome has to be inferred from six fields is a form somebody gets wrong.
+ *
+ * Changing a row locks the three fields that identify it: the save is an
+ * upsert on (class, head, type), so changing any of them would add a second
+ * fee rather than edit this one.
+ */
 export function FeeStructureDialog({
   open,
   onOpenChange,
   classLevels,
   feeHeads,
+  studentTypes,
+  sessionName,
+  initial,
   onDone,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   classLevels: { id: string; name: string }[];
   feeHeads: FeeHead[];
+  studentTypes: StudentTypeOption[];
+  sessionName: string;
+  /** Set when changing an existing fee rather than adding one. */
+  initial?: FeeStructureDraft | null;
   onDone: () => void;
 }) {
-  const { t } = useI18n();
+  const { t, formatCurrency } = useI18n();
   const [serverError, setServerError] = useState<string | null>(null);
+  const editing = Boolean(initial);
   const form = useForm<FeeStructureInput>({
     resolver: zodResolver(feeStructureSchema),
     defaultValues: {
-      classLevelId: "",
-      feeHeadId: "",
-      amount: undefined,
-      frequency: "annual",
+      classLevelId: initial?.classLevelId ?? "",
+      feeHeadId: initial?.feeHeadId ?? "",
+      amount: initial?.amount,
+      frequency: initial?.frequency ?? "annual",
+      studentTypeId: initial?.studentTypeId ?? ALL_STUDENTS,
     },
   });
 
-  async function onSubmit(values: FeeStructureInput) {
+  const values = form.watch();
+  const typeName =
+    values.studentTypeId === ALL_STUDENTS
+      ? null
+      : (studentTypes.find((s) => s.id === values.studentTypeId)?.name ?? null);
+  const className = classLevels.find((c) => c.id === values.classLevelId)?.name;
+  const headName = feeHeads.find((h) => h.id === values.feeHeadId)?.name;
+  const period = frequencyOptions(t).find((f) => f.value === values.frequency)?.label;
+  const amount = typeof values.amount === "number" && Number.isFinite(values.amount) ? values.amount : null;
+
+  // The whole form, as one sentence. Only once it can be said truthfully.
+  const summary =
+    className && headName && amount !== null
+      ? typeName && amount === 0
+        ? `${typeName} students in ${className} will not be charged ${headName}.`
+        : `${typeName ? `${typeName} students` : "Every student"} in ${className} will be charged ${formatCurrency(amount)} for ${headName} (${period ?? values.frequency})${typeName ? ", instead of the regular amount" : ""}.`
+      : null;
+
+  async function onSubmit(v: FeeStructureInput) {
     setServerError(null);
-    const result = await saveFeeStructure(values);
+    const result = await saveFeeStructure(v);
     if (!result.ok) {
       setServerError(result.error);
       return;
     }
-    toast.success("Amount set");
+    toast.success(initial?.mode === "edit" ? "Fee changed" : "Fee set");
     onOpenChange(false);
     form.reset();
     onDone();
   }
 
+  const typeOptions = [
+    { value: ALL_STUDENTS, label: "Every student (regular fee)" },
+    ...studentTypes
+      .filter((s) => s.isActive || s.id === initial?.studentTypeId)
+      .map((s) => ({ value: s.id, label: `${s.name} students only` })),
+  ];
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-lg">
+      <DialogContent className="sm:max-w-2xl">
         <DialogHeader>
-          <DialogTitle>Set a class amount</DialogTitle>
+          <DialogTitle>
+            {initial?.mode === "override"
+              ? `Set a ${initial.studentType} amount`
+              : editing
+                ? "Change a fee"
+                : "Set a fee"}
+          </DialogTitle>
           <DialogDescription>
-            What one class pays for one head, this session.
+            What one class pays for one fee head in {sessionName}. A fee for one
+            kind of student replaces the regular fee for those students only.
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
-          <form
-            onSubmit={form.handleSubmit(onSubmit)}
-            className="flex flex-col gap-4"
-          >
+          <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col gap-5">
             <ErrorSummary
               errors={form.formState.errors}
               submitCount={form.formState.submitCount}
@@ -240,53 +308,97 @@ export function FeeStructureDialog({
                 <AlertDescription>{serverError}</AlertDescription>
               </Alert>
             )}
-            <div className="grid gap-4 sm:grid-cols-2">
+
+            <div className="flex flex-wrap items-center gap-2 rounded-lg border border-border bg-muted/40 px-3 py-2 text-sm">
+              <CalendarDays className="size-4 text-muted-foreground" aria-hidden="true" />
+              <span className="text-muted-foreground">Session</span>
+              <span className="font-medium">{sessionName}</span>
+              {editing && initial && (
+                <>
+                  <span aria-hidden="true" className="text-muted-foreground">·</span>
+                  <span className="font-medium">{initial.classLevel}</span>
+                  <span aria-hidden="true" className="text-muted-foreground">·</span>
+                  <span className="font-medium">{initial.feeHead}</span>
+                  <Badge variant={initial.studentTypeId ? "warning" : "secondary"}>
+                    {initial.studentType ?? "Every student"}
+                  </Badge>
+                </>
+              )}
+            </div>
+
+            {!editing && (
+              <fieldset className="grid gap-4 sm:grid-cols-3">
+                <legend className="sr-only">What the fee is for</legend>
+                <SelectField
+                  control={form.control}
+                  name="feeHeadId"
+                  label="Fee head"
+                  required
+                  placeholder="Tuition, exam…"
+                  options={feeHeads.map((h) => ({ value: h.id, label: h.name }))}
+                />
+                <SelectField
+                  control={form.control}
+                  name="classLevelId"
+                  label="Class"
+                  required
+                  options={classLevels.map((c) => ({ value: c.id, label: c.name }))}
+                />
+                <SelectField
+                  control={form.control}
+                  name="studentTypeId"
+                  label="Who pays"
+                  required
+                  options={typeOptions}
+                />
+              </fieldset>
+            )}
+
+            <fieldset className="grid gap-4 sm:grid-cols-2">
+              <legend className="sr-only">How much, and how often</legend>
               <SelectField
                 control={form.control}
-                name="classLevelId"
-                label="Class"
+                name="frequency"
+                label="Period"
                 required
-                options={classLevels.map((c) => ({
-                  value: c.id,
-                  label: c.name,
-                }))}
-              />
-              <SelectField
-                control={form.control}
-                name="feeHeadId"
-                label="Fee head"
-                required
-                options={feeHeads.map((h) => ({ value: h.id, label: h.name }))}
+                options={frequencyOptions(t)}
+                description="How often it is billed"
               />
               <TextField
                 control={form.control}
                 name="amount"
-                label="Amount"
+                label="Amount (₹)"
                 type="number"
                 required
+                placeholder="0.00"
+                description={
+                  typeName
+                    ? `Enter 0 if ${typeName} students do not pay this at all.`
+                    : "Per period, before any concession."
+                }
               />
-              <SelectField
-                control={form.control}
-                name="frequency"
-                label="Frequency"
-                required
-                options={frequencyOptions(t)}
-                description="How often this instalment is billed"
-              />
-            </div>
+            </fieldset>
+
+            <p
+              className="min-h-10 rounded-lg border border-dashed border-border px-3 py-2 text-sm"
+              aria-live="polite"
+            >
+              {summary ?? (
+                <span className="text-muted-foreground">
+                  Choose a fee head, a class and an amount to see what will be charged.
+                </span>
+              )}
+            </p>
+
             <DialogFooter>
-              <Button
-                type="button"
-                variant="ghost"
-                onClick={() => onOpenChange(false)}
-              >
+              <Button type="button" variant="ghost" onClick={() => onOpenChange(false)}>
                 Cancel
               </Button>
               <Button type="submit" disabled={form.formState.isSubmitting}>
                 {form.formState.isSubmitting && (
                   <Loader2 className="size-4 animate-spin" aria-hidden="true" />
                 )}
-                Set amount
+                {initial?.mode === "edit" ? "Save the change" : "Set the fee"}
               </Button>
             </DialogFooter>
           </form>

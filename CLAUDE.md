@@ -2097,6 +2097,15 @@ A third rule arrived with the billing calendar:
   cancelling re-opens the period, and partial on `instalment_id is not null` so
   ad-hoc counter charges are untouched. See `docs/modules/fees.md`.
 
+**And a fee can differ by the kind of student paying it (`0281`).** A
+carry-over student pays a different examination fee from a regular one in the
+same class. So `fee_structures` gained `student_type_id`: null means every
+student, and a typed row **replaces** the regular one for those students, never
+adds to it. An amount of 0 exempts them. Which kind a child is lives in
+`student_type_assignments`, **per year** (rule 2), readable by finance roles
+only. `fees_billable_lines` applies it, so every invoice path agrees. See
+`docs/modules/fees.md`.
+
 See `docs/modules/transport.md`.
 
 ### Secrets never enter the Next.js app

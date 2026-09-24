@@ -15,6 +15,9 @@ import { removeStudentPhoto, setStudentPhoto } from "../photo-actions";
 import { photoUrl } from "@/lib/storage/photos";
 import { getT } from "@/lib/i18n/server";
 import { BUCKET_LIMITS, formatBytes } from "@/lib/storage/constants";
+import { getUserContext } from "@/lib/auth/context";
+import { createClient } from "@/lib/supabase/server";
+import { StudentTypeControl } from "./student-type-control";
 
 export const metadata = { title: "Student" };
 
@@ -33,18 +36,44 @@ export default async function StudentDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const [student, canManage, canManageGuardians, t] = await Promise.all([
+  const [student, canManage, canManageGuardians, canSetType, t, ctx] = await Promise.all([
     getStudent(id),
     hasPermission("students.manage"),
     hasPermission("guardians.manage"),
+    // Held by exactly the roles the student_type_assignments policy lets write.
+    hasPermission("fees.collect"),
     getT(),
+    getUserContext(),
   ]);
 
   if (!student) notFound();
 
   const person = student.people;
   const enrolments = Array.isArray(student.enrolments) ? student.enrolments : [];
-  const enrolment = enrolments[0];
+  // This year's, not the first the join returns: once a child has been
+  // promoted they hold one enrolment per year, and the card says "current".
+  const enrolment =
+    enrolments.find((e) => e.session_id === ctx?.currentSessionId) ??
+    (ctx?.currentSessionId ? undefined : enrolments[0]);
+
+  // What kind of student they are this year (0281). Finance roles only, by
+  // policy; for anybody else both reads come back empty and nothing is drawn.
+  let studentTypes: { id: string; name: string; isActive: boolean }[] = [];
+  let studentTypeId: string | null = null;
+  if (canSetType && enrolment && ctx?.currentSessionId) {
+    const supabase = await createClient();
+    const [typesRes, assignedRes] = await Promise.all([
+      supabase.from("student_types").select("id, name, is_active").order("name"),
+      supabase
+        .from("student_type_assignments")
+        .select("student_type_id")
+        .eq("student_id", id)
+        .eq("session_id", ctx.currentSessionId)
+        .maybeSingle(),
+    ]);
+    studentTypes = (typesRes.data ?? []).map((r) => ({ id: r.id, name: r.name, isActive: r.is_active }));
+    studentTypeId = assignedRes.data?.student_type_id ?? null;
+  }
   const guardianLinks = Array.isArray(student.guardian_student) ? student.guardian_student : [];
   // Flattened here rather than in the client component: the card is a
   // `"use client"` module, so everything it receives crosses the boundary as
@@ -194,10 +223,24 @@ export default async function StudentDetailPage({
                   label="Status"
                   value={<span className="capitalize">{enrolment.status}</span>}
                 />
+                {canSetType && studentTypes.length > 0 && (
+                  <Fact
+                    label="Kind of student (sets which fees apply)"
+                    value={
+                      <StudentTypeControl
+                        studentId={student.id}
+                        studentName={fullName}
+                        current={studentTypeId}
+                        types={studentTypes}
+                        sessionName={ctx?.currentSessionName ?? "this year"}
+                      />
+                    }
+                  />
+                )}
               </dl>
             ) : (
               <p className="text-sm text-muted-foreground">
-                Not enrolled in a section for this session yet.
+                Not enrolled in a class for {ctx?.currentSessionName ?? "this session"} yet.
               </p>
             )}
           </CardContent>
