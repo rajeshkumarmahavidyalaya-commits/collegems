@@ -49,7 +49,9 @@ export default async function PromotionRunPage({
           <p className="text-sm text-muted-foreground">
             {run.status === "applied"
               ? `Applied on ${formatDate(run.appliedAt, locale)} at ${formatTime(run.appliedAt, locale)}. This is the record of what happened.`
-              : "Nothing has been written yet. Change any row you disagree with, then apply."}
+              : run.undoneAt
+                ? `Applied once and undone on ${formatDate(run.undoneAt, locale)}. Nothing is written now: change any row you disagree with, then apply again.`
+                : "Nothing has been written yet. Change any row you disagree with, then apply."}
           </p>
         </div>
         <Button asChild variant="outline">

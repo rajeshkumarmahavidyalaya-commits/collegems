@@ -211,3 +211,70 @@ export function laterYears<T extends { id: string; startDate: string }>(
     .filter((y) => y.startDate > from.startDate)
     .sort((a, b) => a.startDate.localeCompare(b.startDate));
 }
+
+/**
+ * What `promotion_undo` put back (migration 0279). Parsed defensively because
+ * it is a jsonb document: a missing key reads as nothing restored, never as a
+ * throw on the screen that has just changed three hundred enrolments.
+ */
+export type UndoResult = {
+  removed: number;
+  reopened: number;
+  graduates: number;
+  library: number;
+  concessions: number;
+  seats: number;
+  beds: number;
+  notRestored: string[];
+};
+
+function whole(value: unknown): number {
+  const n = typeof value === "number" ? value : Number(value);
+  return Number.isFinite(n) && n > 0 ? Math.trunc(n) : 0;
+}
+
+export function parseUndo(value: unknown): UndoResult {
+  const v = typeof value === "object" && value !== null ? (value as Record<string, unknown>) : {};
+  return {
+    removed: whole(v.removed),
+    reopened: whole(v.reopened),
+    graduates: whole(v.graduates),
+    library: whole(v.library),
+    concessions: whole(v.concessions),
+    seats: whole(v.seats),
+    beds: whole(v.beds),
+    notRestored: Array.isArray(v.notRestored)
+      ? v.notRestored.filter((s): s is string => typeof s === "string")
+      : [],
+  };
+}
+
+/** Both forms carried, never a stem and a rule: English plurals are not derivable. */
+function count(n: number, one: string, many: string) {
+  return `${n} ${n === 1 ? one : many}`;
+}
+
+/**
+ * One sentence for the toast. Only what happened is named: a run with no
+ * graduates says nothing about library cards rather than "0 library cards",
+ * which reads as a fault.
+ */
+export function undoSentence(u: UndoResult, fromName: string, toName: string): string {
+  const parts = [
+    `Removed ${count(u.removed, "enrolment", "enrolments")} from ${toName} and reopened ${u.reopened} in ${fromName}.`,
+  ];
+  if (u.graduates > 0) {
+    const back = [
+      u.library > 0 && count(u.library, "library card", "library cards"),
+      u.concessions > 0 && count(u.concessions, "concession", "concessions"),
+      u.seats > 0 && count(u.seats, "bus seat", "bus seats"),
+      u.beds > 0 && count(u.beds, "hostel bed", "hostel beds"),
+    ].filter(Boolean) as string[];
+    parts.push(
+      `${count(u.graduates, "graduate is", "graduates are")} back on the roll` +
+        (back.length > 0 ? `, with ${back.join(", ")} restored.` : "."),
+    );
+  }
+  parts.push("The run is a draft again.");
+  return parts.join(" ");
+}

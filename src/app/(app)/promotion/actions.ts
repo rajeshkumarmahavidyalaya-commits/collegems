@@ -9,6 +9,7 @@ import {
   type LeftBehindNote,
   type SessionProblem,
 } from "@/lib/validations/promotion";
+import { parseUndo, type UndoResult } from "@/lib/validations/promotion-display";
 import type { ActionResult } from "../library/actions";
 
 function fail(message: string): ActionResult<never> {
@@ -173,6 +174,8 @@ export type RunRow = {
   status: string;
   rules: unknown;
   appliedAt: string | null;
+  /** When an applied run was last undone and put back to draft (0279). */
+  undoneAt: string | null;
   createdAt: string;
   counts: Record<string, number>;
   overrides: number;
@@ -190,7 +193,9 @@ export async function listRuns(): Promise<RunRow[]> {
 
   const { data: runs, error } = await supabase
     .from("promotion_runs")
-    .select("id, from_session_id, to_session_id, status, rules, applied_at, created_at, left_behind")
+    .select(
+      "id, from_session_id, to_session_id, status, rules, applied_at, undone_at, created_at, left_behind",
+    )
     .neq("status", "discarded")
     .order("created_at", { ascending: false });
 
@@ -219,6 +224,7 @@ export async function listRuns(): Promise<RunRow[]> {
       status: run.status,
       rules: run.rules,
       appliedAt: run.applied_at,
+      undoneAt: run.undone_at,
       createdAt: run.created_at,
       counts,
       overrides: decisions.filter((d) => d.is_override).length,
@@ -455,6 +461,24 @@ export async function applyRun(runId: string): Promise<
       leftBehind: toLeftBehind(result?.left_behind),
     },
   };
+}
+
+/**
+ * Reverse an applied run while nothing in the receiving year depends on it
+ * (migration 0279). The refusals are sentences from Postgres -- registers,
+ * marks, invoices, renewed seats, a later run, or rows changed since -- and
+ * are shown as they are, because each one says what to do first.
+ */
+export async function undoRun(runId: string): Promise<ActionResult<UndoResult>> {
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("promotion_undo", { p_run_id: runId });
+  if (error) return fail(error.message);
+
+  revalidatePath("/promotion");
+  revalidatePath(`/promotion/${runId}`);
+  revalidatePath("/students");
+  revalidatePath("/academics/sessions");
+  return { ok: true, data: parseUndo(data) };
 }
 
 export async function discardRun(runId: string): Promise<ActionResult> {

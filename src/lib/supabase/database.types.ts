@@ -5034,6 +5034,7 @@ export type Database = {
           applied_enrolment_id: string | null
           carry_forward: number
           created_at: string
+          created_enrolment: boolean
           decision: string
           from_enrolment_id: string
           id: string
@@ -5050,6 +5051,7 @@ export type Database = {
           applied_enrolment_id?: string | null
           carry_forward?: number
           created_at?: string
+          created_enrolment?: boolean
           decision: string
           from_enrolment_id: string
           id?: string
@@ -5066,6 +5068,7 @@ export type Database = {
           applied_enrolment_id?: string | null
           carry_forward?: number
           created_at?: string
+          created_enrolment?: boolean
           decision?: string
           from_enrolment_id?: string
           id?: string
@@ -5136,6 +5139,8 @@ export type Database = {
           status: string
           tenant_id: string
           to_session_id: string
+          undone_at: string | null
+          undone_by: string | null
           updated_at: string
         }
         Insert: {
@@ -5150,6 +5155,8 @@ export type Database = {
           status?: string
           tenant_id: string
           to_session_id: string
+          undone_at?: string | null
+          undone_by?: string | null
           updated_at?: string
         }
         Update: {
@@ -5164,6 +5171,8 @@ export type Database = {
           status?: string
           tenant_id?: string
           to_session_id?: string
+          undone_at?: string | null
+          undone_by?: string | null
           updated_at?: string
         }
         Relationships: [
@@ -10156,6 +10165,7 @@ export type Database = {
       }
       promotion_discard_run: { Args: { p_run_id: string }; Returns: undefined }
       promotion_left_behind: { Args: { p_run_id: string }; Returns: Json }
+      promotion_undo: { Args: { p_run_id: string }; Returns: Json }
       promotion_preview: {
         Args: {
           p_from_session_id: string

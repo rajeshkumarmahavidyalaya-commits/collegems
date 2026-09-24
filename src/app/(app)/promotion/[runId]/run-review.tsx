@@ -10,6 +10,7 @@ import {
   Pencil,
   Search,
   Trash2,
+  Undo2,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -42,12 +43,14 @@ import {
   needsTargetSection,
   switchableDecisions,
   currentlySentence,
+  undoSentence,
 } from "@/lib/validations/promotion-display";
 import { DecisionBadge } from "../decision-badge";
 import {
   applyRun,
   discardRun,
   overrideDecision,
+  undoRun,
   type DecisionRow,
   type RunRow,
 } from "../actions";
@@ -72,6 +75,10 @@ export function RunReview({ run, decisions, sections, leftBehind }: Props) {
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState("all");
   const [editing, setEditing] = useState<DecisionRow | null>(null);
+  const [undoOpen, setUndoOpen] = useState(false);
+  // What the undo could not put back exactly. Kept on the page rather than in
+  // a toast, because each sentence is something a person still has to do.
+  const [notRestored, setNotRestored] = useState<string[]>([]);
 
   const applied = run.status === "applied";
 
@@ -112,7 +119,7 @@ export function RunReview({ run, decisions, sections, leftBehind }: Props) {
 
     if (
       !window.confirm(
-        `${warning}Applying writes ${(counts.promote ?? 0) + (counts.repeat ?? 0)} enrolments into ${run.toSessionName}, closes the outgoing year, and cannot be undone from this screen. Continue?`,
+        `${warning}Applying writes ${(counts.promote ?? 0) + (counts.repeat ?? 0)} enrolments into ${run.toSessionName}, and closes the outgoing year. It can be undone from this screen until registers, marks or fees are recorded against them in ${run.toSessionName}. Continue?`,
       )
     ) {
       return;
@@ -153,9 +160,24 @@ export function RunReview({ run, decisions, sections, leftBehind }: Props) {
             : "") +
           (closed.length > 0 ? ` Leaving closed ${closed.join(", ")}.` : ""),
       );
-      // The sentences themselves are on the page, not in this toast: applying
-      // cannot be undone, and a message that scrolls away is one nobody acted
-      // on. `router.refresh()` re-reads the run's frozen `left_behind`.
+      // The sentences themselves are on the page, not in this toast: a
+      // message that scrolls away is one nobody acted on. `router.refresh()` re-reads the run's frozen `left_behind`.
+      router.refresh();
+    });
+  }
+
+  function undo() {
+    startTransition(async () => {
+      const result = await undoRun(run.id);
+      if (!result.ok) {
+        // A refusal names what is in the way; it stays in the dialog, where
+        // the person is looking, as well as in the toast.
+        toast.error(result.error);
+        return;
+      }
+      setUndoOpen(false);
+      setNotRestored(result.data.notRestored);
+      toast.success(undoSentence(result.data, run.fromSessionName, run.toSessionName));
       router.refresh();
     });
   }
@@ -245,15 +267,43 @@ export function RunReview({ run, decisions, sections, leftBehind }: Props) {
         </section>
       )}
 
+      {notRestored.length > 0 && (
+        <Alert role="status">
+          <AlertTriangle className="size-4" aria-hidden="true" />
+          <AlertTitle>Undone, with {notRestored.length === 1 ? "one thing" : `${notRestored.length} things`} left for you</AlertTitle>
+          <AlertDescription>
+            <ul className="list-disc ps-5">
+              {notRestored.map((sentence) => (
+                <li key={sentence}>{sentence}</li>
+              ))}
+            </ul>
+          </AlertDescription>
+        </Alert>
+      )}
+
       {applied ? (
         <Alert>
           <CheckCheck className="size-4" aria-hidden="true" />
           <AlertTitle>This run has been applied</AlertTitle>
-          <AlertDescription>
-            The enrolments it created are live. Correcting one now means editing
-            that student&rsquo;s enrolment directly — a rollover is not
-            something this screen can take back, which is why the preview
-            exists.
+          <AlertDescription className="flex flex-col gap-3">
+            <p>
+              The enrolments it created are live. If a decision was wrong, undo
+              the run, correct the row and apply it again. That works until
+              registers, marks, invoices, seats or beds are recorded against
+              these children in {run.toSessionName}; after that, correct the
+              student&rsquo;s enrolment directly.
+            </p>
+            <div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setUndoOpen(true)}
+                disabled={pending}
+              >
+                <Undo2 className="size-4" aria-hidden="true" />
+                Undo this run
+              </Button>
+            </div>
           </AlertDescription>
         </Alert>
       ) : (
@@ -458,6 +508,58 @@ export function RunReview({ run, decisions, sections, leftBehind }: Props) {
           }}
         />
       )}
+
+      <Dialog open={undoOpen} onOpenChange={(open) => !pending && setUndoOpen(open)}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Undo this run?</DialogTitle>
+            <DialogDescription>
+              Everything it wrote is taken back, and the run becomes a draft you
+              can correct and apply again.
+            </DialogDescription>
+          </DialogHeader>
+          <ul className="flex flex-col gap-2 text-sm">
+            <li className="flex gap-2">
+              <Undo2 className="mt-0.5 size-4 shrink-0 text-muted-foreground" aria-hidden="true" />
+              <span>
+                The {(counts.promote ?? 0) + (counts.repeat ?? 0)} enrolments it made in{" "}
+                {run.toSessionName} are removed, and every child is back in their{" "}
+                {run.fromSessionName} class.
+              </span>
+            </li>
+            {(counts.graduate ?? 0) > 0 && (
+              <li className="flex gap-2">
+                <Undo2 className="mt-0.5 size-4 shrink-0 text-muted-foreground" aria-hidden="true" />
+                <span>
+                  {counts.graduate} {counts.graduate === 1 ? "graduate comes" : "graduates come"} back on
+                  the roll, with the library cards, concessions, seats and beds that graduating
+                  ended, where nobody has changed them since.
+                </span>
+              </li>
+            )}
+            <li className="flex gap-2">
+              <AlertTriangle className="mt-0.5 size-4 shrink-0 text-muted-foreground" aria-hidden="true" />
+              <span>
+                It is refused if registers, marks, invoices, seats or beds have already been
+                recorded against these children in {run.toSessionName}, and it says which.
+              </span>
+            </li>
+          </ul>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setUndoOpen(false)} disabled={pending}>
+              Keep it applied
+            </Button>
+            <Button variant="destructive" onClick={undo} disabled={pending}>
+              {pending ? (
+                <Loader2 className="size-4 animate-spin" aria-hidden="true" />
+              ) : (
+                <Undo2 className="size-4" aria-hidden="true" />
+              )}
+              Undo the run
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

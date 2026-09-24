@@ -247,6 +247,63 @@ Measured equal: ₹13,24,336.00 from both on 2025-2026.
 
 ---
 
+## Undoing an applied run
+
+Migrations `0279`-`0280`, `promotion_undo(run)`, and the *Undo this run* button
+on `/promotion/[runId]`. Until then an applied run was final: a run into the
+wrong year, fifty children graduated who were meant to be kept back, or one
+class sent to the wrong section could only be repaired by hand, one enrolment
+at a time.
+
+It reverses exactly what `promotion_apply` wrote. Where it can't do that, it
+refuses rather than guessing:
+
+| step | what it does | why it is exact |
+|---|---|---|
+| enrolments in the receiving year | deletes only those the run **created** | `apply` adopts an existing enrolment on conflict, so `applied_enrolment_id` alone cannot say whose it is; `promotion_decisions.created_enrolment` does. Older runs: `created_at = applied_at`, one transaction's `now()` |
+| enrolments in the outgoing year | back to `active` | the run set them to `promoted`/`repeated`, and it checks they still say so |
+| graduates | status back to `active`, the graduation reason and date cleared | only while `exit_reason` is still *"Graduated from …"* |
+| what graduating ended | library cards, concessions, cancelled future seats and beds | every row the apply touched carries `updated_at = applied_at`; a row edited since does not, and is left alone |
+| the run | back to `draft`, `undone_at`/`undone_by` stamped | so a row can be corrected and the run applied again |
+
+**It refuses, naming counts, when anything in the receiving year hangs off the
+children it moved:** a register entry (the enrolment's foreign key would
+**delete** it by cascade), marks, results, report-card remarks, homework,
+invoices, ledger entries, online payments, concessions, bus seats, hostel beds,
+certificates, leave applications, gate visits, or a decision in a later run.
+Undo is for a mistake noticed soon after applying, not for unwinding a term.
+
+It also refuses when something the run wrote has changed since: a child
+withdrawn in the new year, a graduate re-admitted, another draft run open for
+the same two years. Putting the old value back would overwrite a later decision.
+
+Three things came out of building it:
+
+- **Count what the run caused, not what the year holds.** The first version
+  refused the demo college's own run with *"the children it moved already have
+  1 hostel bed"*, a bed booked for 2026-2027 **before** the run existed. It was
+  never written against the run's enrolments, and after an undo it is exactly
+  where it was before. `0280` counts only rows made at or after `applied_at`.
+- **A value overwritten is a value that cannot be restored exactly.**
+  Graduating a child moves the end date of a seat or bed that spans the
+  boundary. The old end date is gone, so the undo leaves that row as it is and
+  says so in `notRestored`. The screen keeps those sentences on the page,
+  because each one is something a person still has to do.
+- **A guard on the list of tables, not on the tables named today.**
+  `tests/promotion/undo.test.ts` sweeps the migrations for every table carrying
+  both `student_id` and `session_id` (15 today, the same as the database says)
+  and fails when one is missing from the undo's list. Six plants, each caught.
+
+Probed on the demo college in a rolled-back transaction:
+
+- **Round trip:** apply, then undo. 252 enrolments removed, 302 reopened, 50
+  graduates and 10 library cards back. Enrolments, students, library cards,
+  seats and beds hash identically to before the apply, and the run applies
+  again cleanly.
+- **Refusals:** a register entry, a re-admitted graduate, a second draft, a
+  teacher, and a second undo each refuse with their sentence.
+- **Adopted enrolment:** one made by hand before the run survives the undo.
+
 ## `academics_roll_forward_sections`
 
 `sections` are session-scoped, so next year's 6B is a different row. Promotion
@@ -302,9 +359,9 @@ a real use this does not serve. It is a deliberate trade, not an oversight.
   useful when the result is a screen you can argue with rather than a job id.
   At ten thousand students that stops being true, and the apply is the half that
   should move: it is already row-by-row and already idempotent.
-- **No undo.** Applying is final by design; `promotion_discard_run` only works
-  on a draft. Correcting an applied run means editing the affected enrolments
-  directly, which is honest but not comfortable.
+- **Undo stops at the first thing written against the new year.** See *Undoing
+  an applied run*: after a register, a mark, an invoice or a renewed seat, the
+  run is corrected child by child, on purpose.
 - **Nothing notifies anybody.** No parent is told their child was promoted;
   `notify_send` is not called.
 - **The new session is not made current.** Flipping `is_current` is how a school

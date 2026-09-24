@@ -436,6 +436,14 @@ been done here. Tried end to end in a rolled-back transaction on 23 Sep 2026
 
 See `docs/modules/academic-years.md` and `docs/modules/promotion.md`.
 
+**And an applied run can be undone (`0279`-`0280`), exactly or not at all.** It
+deletes only the enrolments the run *created* (apply adopts existing ones on
+conflict, so the decision now says which), restores what graduating ended only
+where `updated_at` still equals `applied_at`, and refuses, naming counts, while
+anything in the new year hangs off the children it moved. The first draft
+refused the demo college's own run over a bed booked before the run existed:
+**count what the operation caused, not what the year holds.**
+
 ## 3. Auth
 
 - Supabase Auth. A trigger on `auth.users` (`handle_new_auth_user`) resolves a
