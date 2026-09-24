@@ -244,6 +244,7 @@ export function FeeSetup({
             types={studentTypes}
             typedStudents={typedStudents}
             sessionName={sessionName}
+            sections={sections}
           />
         </TabsContent>
 

@@ -6557,6 +6557,141 @@ export type Database = {
           },
         ]
       }
+      assistant_messages: {
+        Row: {
+          created_at: string
+          id: string
+          question: string
+          status: string
+          tenant_id: string
+          tools: string[]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          question: string
+          status?: string
+          tenant_id: string
+          tools?: string[]
+          user_id?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          question?: string
+          status?: string
+          tenant_id?: string
+          tools?: string[]
+          user_id?: string
+        }
+        Relationships: []
+      }
+      student_subject_choices: {
+        Row: {
+          created_at: string
+          group_id: string
+          id: string
+          session_id: string
+          student_id: string
+          subject_id: string
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          group_id: string
+          id?: string
+          session_id: string
+          student_id: string
+          subject_id: string
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          group_id?: string
+          id?: string
+          session_id?: string
+          student_id?: string
+          subject_id?: string
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      subject_group_options: {
+        Row: {
+          created_at: string
+          group_id: string
+          id: string
+          subject_id: string
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          group_id: string
+          id?: string
+          subject_id: string
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          group_id?: string
+          id?: string
+          subject_id?: string
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      subject_groups: {
+        Row: {
+          class_level_id: string
+          closes_on: string | null
+          created_at: string
+          id: string
+          is_open: boolean
+          max_choices: number
+          min_choices: number
+          name: string
+          session_id: string
+          sort_order: number
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          class_level_id: string
+          closes_on?: string | null
+          created_at?: string
+          id?: string
+          is_open?: boolean
+          max_choices?: number
+          min_choices?: number
+          name: string
+          session_id: string
+          sort_order?: number
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          class_level_id?: string
+          closes_on?: string | null
+          created_at?: string
+          id?: string
+          is_open?: boolean
+          max_choices?: number
+          min_choices?: number
+          name?: string
+          session_id?: string
+          sort_order?: number
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       subjects: {
         Row: {
           code: string
@@ -10874,6 +11009,24 @@ export type Database = {
         Args: { p_name: string }
         Returns: boolean
       }
+      assistant_quota: { Args: never; Returns: number }
+      subject_choice_save: {
+        Args: { p_group_id: string; p_student_id?: string; p_subject_ids: string[] }
+        Returns: Json
+      }
+      subject_choices_for_student: { Args: { p_student_id?: string }; Returns: Json }
+      subject_group_create: {
+        Args: {
+          p_class_level_id: string
+          p_closes_on?: string
+          p_max: number
+          p_min: number
+          p_name: string
+          p_subject_ids: string[]
+        }
+        Returns: string
+      }
+      subject_group_overview: { Args: never; Returns: Json }
       student_type_assign: {
         Args: { p_student_id: string; p_student_type_id: string | null }
         Returns: Json

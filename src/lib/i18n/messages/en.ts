@@ -45,6 +45,9 @@ export const en = {
 
   // --- navigation ----------------------------------------------------------
   "nav.dashboard": "Dashboard",
+  "nav.assistant": "Ask SchoolOS",
+  "nav.electives": "Elective subjects",
+  "nav.mySubjects": "My subjects",
   "nav.students": "Students",
   "nav.attendance": "Attendance",
   "nav.academics": "Academics",

@@ -208,3 +208,72 @@ export async function searchStudentsForType(term: string) {
     status: s.status,
   }));
 }
+
+const CLASS_LIMIT = 200;
+
+export type ClassStudent = { id: string; name: string; admissionNumber: string };
+
+/**
+ * One class's roll this year, for giving several children a kind at once. A
+ * class is bounded by the size of a class; the cap says so rather than
+ * trusting it.
+ */
+export async function listClassForType(sectionId: string): Promise<ClassStudent[]> {
+  const ctx = await getUserContext();
+  if (!ctx?.currentSessionId || !/^[0-9a-f-]{36}$/i.test(sectionId)) return [];
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("enrolments")
+    .select("student_id, students ( admission_number, people:person_id ( first_name, last_name ) )")
+    .eq("session_id", ctx.currentSessionId)
+    .eq("section_id", sectionId)
+    .eq("status", "active")
+    .limit(CLASS_LIMIT);
+  if (error) throw new Error(error.message);
+  return (data ?? [])
+    .map((e) => ({
+      id: e.student_id,
+      name: e.students?.people
+        ? `${e.students.people.first_name} ${e.students.people.last_name ?? ""}`.trim()
+        : "—",
+      admissionNumber: e.students?.admission_number ?? "",
+    }))
+    .sort((a, b) => a.name.localeCompare(b.name) || a.admissionNumber.localeCompare(b.admissionNumber));
+}
+
+
+/**
+ * Give several children one kind (or make them regular, with null). Each goes
+ * through `student_type_assign`, the one write path, so a bulk change cannot
+ * disagree with a single one; a child it refuses keeps its reason and the rest
+ * carry on (rule 13: apply partially and say why).
+ */
+export async function assignStudentTypeToMany(
+  studentIds: string[],
+  studentTypeId: string | null,
+): Promise<ActionResult<{ changed: number; unchanged: number; failed: string[] }>> {
+  const ids = [...new Set((Array.isArray(studentIds) ? studentIds : []).filter((x) => /^[0-9a-f-]{36}$/i.test(x)))];
+  if (!ids.length) return fail("Tick at least one student.");
+  if (ids.length > CLASS_LIMIT) return fail(`At most ${CLASS_LIMIT} students at a time.`);
+
+  const supabase = await createClient();
+  let changed = 0;
+  let unchanged = 0;
+  const failed: string[] = [];
+  for (const id of ids) {
+    const { data, error } = await supabase.rpc("student_type_assign", {
+      p_student_id: id,
+      p_student_type_id: studentTypeId,
+    });
+    if (error) {
+      failed.push(error.message);
+      // The first refusal about the caller's role is every refusal: stop there.
+      if (error.code === "42501") break;
+      continue;
+    }
+    if ((data as { changed?: boolean } | null)?.changed) changed += 1;
+    else unchanged += 1;
+  }
+  revalidatePath("/fees/setup");
+  return { ok: true, data: { changed, unchanged, failed } };
+}

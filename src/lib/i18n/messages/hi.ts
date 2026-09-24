@@ -28,6 +28,9 @@ export const hi: Messages = {
   "app.language.saved": "भाषा बदलकर {name} कर दी गई।",
 
   "nav.dashboard": "डैशबोर्ड",
+  "nav.assistant": "SchoolOS से पूछें",
+  "nav.electives": "वैकल्पिक विषय",
+  "nav.mySubjects": "मेरे विषय",
   "nav.students": "विद्यार्थी",
   "nav.attendance": "उपस्थिति",
   "nav.academics": "शैक्षणिक",

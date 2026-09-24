@@ -14,6 +14,8 @@ import { getUserContext } from "@/lib/auth/context";
 import { getLocale } from "@/lib/i18n/server";
 import { formatNumber } from "@/lib/i18n/format";
 import { StatCard } from "@/components/dashboard/stat-card";
+import { QuickActions } from "@/components/dashboard/quick-actions";
+import { ListTodo } from "lucide-react";
 import { EnrollmentChartLazy, DonutChartLazy } from "@/components/dashboard/charts";
 import type { EnrollmentDatum } from "@/components/dashboard/enrollment-chart";
 import type { DonutDatum } from "@/components/dashboard/donut-chart";
@@ -132,6 +134,17 @@ export default async function DashboardPage() {
   return (
     <div className="flex flex-col gap-6">
       {heading}
+
+      {/* A student's own subjects is theirs by record, not by permission --
+          `subject_choice_save` takes the student from the login -- so this one
+          link follows what the login stands for (roles.subject), for display. */}
+      <QuickActions
+        extra={
+          ctx?.roleSubject === "student"
+            ? [{ href: "/my-subjects", label: "My subjects", hint: "See and choose electives", icon: ListTodo }]
+            : []
+        }
+      />
 
       {/* The headline row: the four numbers somebody wants before they have
           finished sitting down. */}

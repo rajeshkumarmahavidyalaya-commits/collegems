@@ -41,6 +41,7 @@ const EVERY_ROLE_ON_PURPOSE = new Map<string, string>([
   ["/notices", "The board is the point; notice_matches_me(audience) decides who sees what."],
   ["/library/books", "The catalogue is a catalogue."],
   ["/settings/language", "Somebody who cannot read the page needs this most."],
+  ["/assistant", "It reads with the asker's own token, so RLS and the matrix scope each seat's answers."],
 ]);
 
 const items = NAV_GROUPS.flatMap((group) => group.items);

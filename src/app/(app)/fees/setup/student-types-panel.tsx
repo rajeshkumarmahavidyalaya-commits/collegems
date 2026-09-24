@@ -12,6 +12,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { StudentPicker, type PickedStudent } from "@/components/people/student-picker";
 import type { StudentTypeOption } from "@/lib/validations/student-types";
+import { ClassBulkAssign } from "./class-bulk-assign";
 import {
   assignStudentType,
   deleteStudentType,
@@ -30,10 +31,12 @@ export function StudentTypesPanel({
   types,
   typedStudents,
   sessionName,
+  sections,
 }: {
   types: StudentTypeOption[];
   typedStudents: TypedStudent[];
   sessionName: string;
+  sections: { id: string; label: string }[];
 }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
@@ -252,6 +255,14 @@ export function StudentTypesPanel({
                   Make {current.name}
                 </Button>
               </div>
+            ) : null}
+            {current.isActive ? (
+              <ClassBulkAssign
+                key={current.id}
+                type={current}
+                sections={sections}
+                memberIds={members.map((m) => m.studentId)}
+              />
             ) : (
               <Alert>
                 <AlertTitle>{current.name} is switched off</AlertTitle>

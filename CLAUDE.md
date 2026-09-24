@@ -1624,6 +1624,27 @@ request must not prevent re-applying for the same dates. The error code is
 "conflicting key value violates exclusion constraint" is not something to show a
 person.
 
+### …and an assistant is a reader with the asker's token, never a reader of its own
+
+`/assistant` (migration `0283`) answers questions about the whole college for
+the super admin and about one child for a parent, and neither answer is decided
+by the model. The `assistant` Edge Function reads through a client carrying the
+**asker's JWT**, over the read paths the screens already use — `report_run`,
+`dashboard_summary`, `global_search`, `mobile_student`, `checks_run`. RLS and
+the matrix scope it, which is also the whole answer to prompt injection: there
+is nothing more for a clever question to reach.
+
+> **A chatbot "with access to the whole platform" is a definer function with a
+> text box in front of it.** The one thing the service role does in that
+> function is read the provider key from Vault, and
+> `tests/assistant/reads-as-the-asker.test.ts` fails on a second use of it or on
+> any tool that writes. See `docs/modules/assistant.md`.
+
+The same release gave electives (`0282`) the `homework_submit` shape: students
+have **no write policy** on `student_subject_choices`, and
+`subject_choice_save` checks window, class, count and allotment. See
+`docs/modules/electives.md`, and `docs/logins.md` for who each login is.
+
 ## 5. Identity model — do not collapse these
 
 ```

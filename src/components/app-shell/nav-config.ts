@@ -49,6 +49,8 @@ import {
   Settings2,
   ShieldAlert,
   Sigma,
+  Sparkles,
+  ListTodo,
   UserCheck,
   UserPlus,
   Users,
@@ -79,8 +81,13 @@ export const NAV_GROUPS: NavGroup[] = [
   {
     title: "Overview",
     messageKey: "nav.overview",
-    items: [{ title: "Dashboard",
- messageKey: "nav.dashboard", href: "/", icon: LayoutDashboard }],
+    items: [
+      { title: "Dashboard", messageKey: "nav.dashboard", href: "/", icon: LayoutDashboard },
+      // Every seat, because the assistant has no access of its own: it reads
+      // with the asker's token, so RLS and the matrix decide what each seat's
+      // assistant can answer (0283). The menu has nothing to narrow.
+      { title: "Ask SchoolOS", messageKey: "nav.assistant", href: "/assistant", icon: Sparkles },
+    ],
   },
   {
     title: "People",
@@ -158,6 +165,24 @@ export const NAV_GROUPS: NavGroup[] = [
         href: "/academics/sessions",
         icon: CalendarRange,
         roles: ["admin"],
+      },
+      // Elective choice (0282): the office allots subjects to a class, and a
+      // student picks from those on their own login. Two entries because they
+      // are two screens for two audiences; the student one is not offered to a
+      // parent, because `subject_choice_save` takes the student from the login.
+      {
+        title: "Elective subjects",
+        messageKey: "nav.electives",
+        href: "/academics/electives",
+        icon: ListTodo,
+        roles: ["admin"],
+      },
+      {
+        title: "My subjects",
+        messageKey: "nav.mySubjects",
+        href: "/my-subjects",
+        icon: ListTodo,
+        roles: ["student"],
       },
       {
         title: "Class routine",
