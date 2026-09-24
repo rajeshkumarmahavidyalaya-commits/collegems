@@ -9,7 +9,7 @@ import { CoverBoard } from "./cover-board";
 import { DayPicker } from "./day-picker";
 import { getT } from "@/lib/i18n/server";
 
-export const metadata = { title: "Cover" };
+export const metadata = { title: "Substitutions" };
 
 /**
  * The morning: who is away, which lessons have nobody in front of them, and
@@ -50,7 +50,7 @@ export default async function SubstitutionsPage({
           <ArrowLeft className="size-3.5 rtl:rotate-180" aria-hidden="true" />
           Timetable
         </Link>
-        <h1 className="mt-1 text-2xl font-semibold">Cover</h1>
+        <h1 className="mt-1 text-2xl font-semibold">Substitutions</h1>
         <p className="max-w-2xl text-sm text-muted-foreground">
           Who stands in when a teacher is away. Somebody is &ldquo;away&rdquo; because their leave
           was approved or because the register says so &mdash; both count, and neither is entered

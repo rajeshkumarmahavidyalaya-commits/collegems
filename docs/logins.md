@@ -54,6 +54,10 @@ once; change each one after the first sign-in.
 
 ## Before a college goes live
 
+A new college's super admin sees a **Get your college ready** checklist on the
+home page until the basics are done: school details, classes, subjects, the
+roll, fees, staff logins and family logins.
+
 - Change every demo password, and remove demo logins nobody will use.
 - Rotate the assistant's model key if it was ever pasted anywhere, and set it
   as the `GEMINI_API_KEY` secret on the `assistant` Edge Function (the Vault

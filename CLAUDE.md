@@ -4194,6 +4194,18 @@ back into every branch. Rule 1 says the policy is the boundary, so it stays as
 it is — and the isolation suite that would prove a policy rewrite safe cannot
 run in this sandbox, which settles it.
 
+### A long menu is a menu nobody reads
+
+The super admin's sidebar had 60 entries. `NavItem.setup` folds the 21
+once-a-year screens into a collapsed **Setup** section, groups fold, and the
+command palette still finds everything. **Presentation only**: `splitSetup()`
+takes the tree `navForRole` already filtered, so it can hide an entry and never
+grant one, and a family's menu has nothing under Setup. The first-run
+checklist beside it (`setup_progress()`, `0284`) is rule 4's definer shape --
+tenant by hand, one permission per step, booleans out -- because the invoker
+version would tell a clerk granted `users.manage` that nobody had a login. See
+`docs/ui-review.md`.
+
 ### Amber is not a hover colour
 
 The generated palette's amber (`--brand-accent`) is for **sparing emphasis** —

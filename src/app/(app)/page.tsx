@@ -15,6 +15,7 @@ import { getLocale } from "@/lib/i18n/server";
 import { formatNumber } from "@/lib/i18n/format";
 import { StatCard } from "@/components/dashboard/stat-card";
 import { QuickActions } from "@/components/dashboard/quick-actions";
+import { SetupChecklist } from "@/components/dashboard/setup-checklist";
 import { ListTodo } from "lucide-react";
 import { EnrollmentChartLazy, DonutChartLazy } from "@/components/dashboard/charts";
 import type { EnrollmentDatum } from "@/components/dashboard/enrollment-chart";
@@ -134,6 +135,10 @@ export default async function DashboardPage() {
   return (
     <div className="flex flex-col gap-6">
       {heading}
+
+      {/* Only while something is left to set up, and only the steps this
+          person may act on (0284). */}
+      <SetupChecklist />
 
       {/* A student's own subjects is theirs by record, not by permission --
           `subject_choice_save` takes the student from the login -- so this one

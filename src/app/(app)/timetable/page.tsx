@@ -9,7 +9,7 @@ import { listTeachers } from "../academics/actions";
 import { getOwnStaffId, listLessonSlots, listRooms, listTeachingWeekdays } from "./actions";
 import { RoutineGrid } from "./routine-grid";
 
-export const metadata = { title: "Class routine" };
+export const metadata = { title: "Timetable" };
 
 export default async function TimetablePage() {
   const [ctx, allSections, slots, teachingWeekdays, rooms, teachers, ownStaffId, canManage] =
@@ -53,7 +53,7 @@ export default async function TimetablePage() {
     <div className="flex flex-col gap-6">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-semibold">Class routine</h1>
+          <h1 className="text-2xl font-semibold">Timetable</h1>
           <p className="max-w-2xl text-sm text-muted-foreground">
             {isFamily
               ? `The weekly grid for ${ctx?.currentSessionName ?? "the current session"}. A change

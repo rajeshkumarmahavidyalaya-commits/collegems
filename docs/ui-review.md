@@ -734,3 +734,34 @@ removed even the incidental stability of a table scan: a function's rows have no
 order of their own at all. The fix arrived in the same pass, but the direction is
 worth recording — *a refactor that is correct about what it set out to change can
 still take away something nobody wrote down.*
+
+## The menu splits daily work from setup (migration 0284)
+
+Counted before changing it: the super admin's sidebar offered **60 entries in 9
+groups**, and most of them are visited once a year. Three changes, none of which
+move a permission:
+
+- **`NavItem.setup`** marks 21 once-a-year screens (fee setup, academic years,
+  electives, permissions, invitations, ...). The sidebar folds them into one
+  collapsed **Setup** section at the bottom; the command palette still searches
+  every entry. `splitSetup()` takes the tree `navForRole` already filtered, so
+  it cannot move an entry between roles. The super admin's everyday menu is now
+  39 entries, with 21 under Setup; a family's is unchanged (16-17, nothing under
+  Setup), which `tests/app-shell/daily-and-setup.test.ts` pins.
+- **Groups fold.** A menu of 20 entries or fewer opens fully; a longer one
+  opens only its first group and the group you are in, and remembers what you
+  opened. The group you are in is always open.
+- **Plainer names.** Class routine -> Timetable, Cover -> Substitutions,
+  Insight -> Reports and alerts, What each role may do -> Roles and permissions,
+  Store -> Store and stock, Background work -> Background tasks. English only:
+  the Hindi and Urdu entries already said the plain thing.
+
+And a **"Get your college ready" checklist** on the home page, from
+`setup_progress()`: seven yes/no steps, each shown only to whoever holds the
+permission of the screen that completes it, gone once all are done. It is a
+definer on purpose -- an invoker over `user_profiles` would tell a clerk given
+`users.manage` that no family had a login, for ever (rule 4's invoker lie) --
+and so it filters by tenant in every step and returns booleans, never rows.
+
+Measured with `next build` against the previous commit: no route moved (`/`
+118 kB, `/students` 214 kB, `/timetable` 213 kB, before and after).

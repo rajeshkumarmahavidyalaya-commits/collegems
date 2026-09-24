@@ -11010,6 +11010,7 @@ export type Database = {
         Returns: boolean
       }
       assistant_quota: { Args: never; Returns: number }
+      setup_progress: { Args: never; Returns: Json }
       subject_choice_save: {
         Args: { p_group_id: string; p_student_id?: string; p_subject_ids: string[] }
         Returns: Json

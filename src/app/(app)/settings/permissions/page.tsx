@@ -5,7 +5,7 @@ import { hasPermission } from "@/lib/auth/permissions";
 import { getMatrix } from "./actions";
 import { PermissionGrid } from "./permission-grid";
 
-export const metadata: Metadata = { title: "What each role may do" };
+export const metadata: Metadata = { title: "Roles and permissions" };
 
 /**
  * The second layer of rule 4, finally editable.
@@ -48,7 +48,7 @@ export default async function PermissionsPage() {
   return (
     <div className="flex flex-col gap-6">
       <div>
-        <h1 className="text-2xl font-semibold">What each role may do</h1>
+        <h1 className="text-2xl font-semibold">Roles and permissions</h1>
         <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
           This decides which menus and buttons each role is offered. It is not what protects the
           records — that is enforced in the database, per role, and does not change here.

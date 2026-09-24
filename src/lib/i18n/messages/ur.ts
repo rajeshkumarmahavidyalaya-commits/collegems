@@ -28,6 +28,8 @@ export const ur: Messages = {
   "app.language.saved": "زبان تبدیل کر کے {name} کر دی گئی۔",
 
   "nav.dashboard": "ڈیش بورڈ",
+  "nav.setup": "سیٹ اپ",
+  "nav.setupHint": "ایک بار یا سال میں ایک بار",
   "nav.assistant": "SchoolOS سے پوچھیں",
   "nav.electives": "اختیاری مضامین",
   "nav.mySubjects": "میرے مضامین",

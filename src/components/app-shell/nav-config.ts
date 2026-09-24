@@ -69,6 +69,14 @@ export type NavItem = {
   href: string;
   icon: LucideIcon;
   roles?: string[]; // omit = every role
+  /**
+   * Visited when setting the college up or once a year, not every day. The
+   * sidebar folds these into one collapsed "Setup" section so the daily menu
+   * stays short; the command palette still finds every one of them. A
+   * presentation choice only -- it narrows nothing, and `roles` still decides
+   * who is offered the entry at all.
+   */
+  setup?: boolean;
 };
 
 export type NavGroup = {
@@ -115,6 +123,7 @@ export const NAV_GROUPS: NavGroup[] = [
         title: "Import students",
         messageKey: "nav.importStudents",
         href: "/students/import",
+        setup: true,
         icon: FileUp,
         roles: ["admin"],
       },
@@ -127,6 +136,7 @@ export const NAV_GROUPS: NavGroup[] = [
         title: "ID cards",
         messageKey: "idCard.title",
         href: "/students/id-cards",
+        setup: true,
         icon: IdCard,
         roles: ["admin", "teacher", "accountant", "librarian"],
       },
@@ -151,6 +161,7 @@ export const NAV_GROUPS: NavGroup[] = [
         title: "Academics",
         messageKey: "nav.academics",
         href: "/academics",
+        setup: true,
         icon: Library,
         roles: ["admin", "teacher", "accountant"],
       },
@@ -163,6 +174,7 @@ export const NAV_GROUPS: NavGroup[] = [
         title: "Academic years",
         messageKey: "nav.academicYears",
         href: "/academics/sessions",
+        setup: true,
         icon: CalendarRange,
         roles: ["admin"],
       },
@@ -174,6 +186,7 @@ export const NAV_GROUPS: NavGroup[] = [
         title: "Elective subjects",
         messageKey: "nav.electives",
         href: "/academics/electives",
+        setup: true,
         icon: ListTodo,
         roles: ["admin"],
       },
@@ -185,7 +198,7 @@ export const NAV_GROUPS: NavGroup[] = [
         roles: ["student"],
       },
       {
-        title: "Class routine",
+        title: "Timetable",
         messageKey: "nav.classRoutine",
         href: "/timetable",
         icon: CalendarRange,
@@ -204,7 +217,7 @@ export const NAV_GROUPS: NavGroup[] = [
       // `substitutions.manage`, because it is built on a table a teacher
       // cannot read across. See migration 0158.
       {
-        title: "Cover",
+        title: "Substitutions",
         messageKey: "nav.cover",
         href: "/timetable/substitutions",
         icon: UserCheck,
@@ -261,6 +274,7 @@ export const NAV_GROUPS: NavGroup[] = [
         title: "Promotion",
         messageKey: "nav.promotion",
         href: "/promotion",
+        setup: true,
         icon: ArrowUpNarrowWide,
         roles: ["admin"],
       },
@@ -370,6 +384,7 @@ export const NAV_GROUPS: NavGroup[] = [
         title: "Bus assignments",
         messageKey: "nav.busAssignments",
         href: "/transport/assignments",
+        setup: true,
         icon: MapPin,
         roles: ["admin"],
       },
@@ -406,6 +421,7 @@ export const NAV_GROUPS: NavGroup[] = [
         title: "Staff ID cards",
         messageKey: "idCard.staffTitle",
         href: "/staff/id-cards",
+        setup: true,
         icon: IdCard,
         roles: ["admin"],
       },
@@ -430,6 +446,7 @@ export const NAV_GROUPS: NavGroup[] = [
         title: "Attendance readers",
         messageKey: "nav.biometric",
         href: "/hr/biometric",
+        setup: true,
         icon: Fingerprint,
         roles: ["admin"],
       },
@@ -444,6 +461,7 @@ export const NAV_GROUPS: NavGroup[] = [
         title: "Salary structures",
         messageKey: "nav.salaryStructures",
         href: "/hr/salary",
+        setup: true,
         icon: Sigma,
         roles: ["admin", "accountant"],
       },
@@ -515,6 +533,7 @@ export const NAV_GROUPS: NavGroup[] = [
         title: "Billing periods",
         messageKey: "nav.billingPeriods",
         href: "/fees/instalments",
+        setup: true,
         icon: CalendarRange,
         roles: ["admin", "accountant"],
       },
@@ -525,6 +544,7 @@ export const NAV_GROUPS: NavGroup[] = [
         title: "Concessions",
         messageKey: "nav.concessions",
         href: "/fees/concessions",
+        setup: true,
         icon: BadgePercent,
         roles: ["admin", "accountant"],
       },
@@ -532,6 +552,7 @@ export const NAV_GROUPS: NavGroup[] = [
         title: "Fee setup",
         messageKey: "nav.feeSetup",
         href: "/fees/setup",
+        setup: true,
         icon: Settings2,
         roles: ["admin", "accountant"],
       },
@@ -557,7 +578,7 @@ export const NAV_GROUPS: NavGroup[] = [
       // librarian is in here because in most schools the store keeper and the
       // librarian are the same person.
       {
-        title: "Store",
+        title: "Store and stock",
         messageKey: "nav.inventory",
         href: "/inventory",
         icon: Boxes,
@@ -566,7 +587,7 @@ export const NAV_GROUPS: NavGroup[] = [
     ],
   },
   {
-    title: "Insight",
+    title: "Reports and alerts",
     messageKey: "nav.insight",
     items: [
       // No `roles` filter: `report_list` already narrows the catalog to what a
@@ -622,6 +643,7 @@ export const NAV_GROUPS: NavGroup[] = [
         title: "Delivery log",
         messageKey: "nav.deliveryLog",
         href: "/notifications/log",
+        setup: true,
         icon: ScrollText,
         roles: ["admin"],
       },
@@ -629,6 +651,7 @@ export const NAV_GROUPS: NavGroup[] = [
         title: "Channels",
         messageKey: "nav.channels",
         href: "/notifications/channels",
+        setup: true,
         icon: Radio,
         roles: ["admin"],
       },
@@ -639,6 +662,7 @@ export const NAV_GROUPS: NavGroup[] = [
         title: "Automatic messages",
         messageKey: "nav.schedules",
         href: "/notifications/schedules",
+        setup: true,
         icon: AlarmClock,
         roles: ["admin", "accountant"],
       },
@@ -691,6 +715,7 @@ export const NAV_GROUPS: NavGroup[] = [
         title: "School settings",
         messageKey: "nav.schoolSettings",
         href: "/settings/school",
+        setup: true,
         icon: Settings2,
         roles: ["admin", "accountant", "librarian"],
       },
@@ -701,6 +726,7 @@ export const NAV_GROUPS: NavGroup[] = [
         title: "People and invitations",
         messageKey: "nav.team",
         href: "/settings/team",
+        setup: true,
         icon: UserPlus,
         roles: ["admin"],
       },
@@ -711,6 +737,7 @@ export const NAV_GROUPS: NavGroup[] = [
         title: "Plan",
         messageKey: "nav.plan",
         href: "/settings/plan",
+        setup: true,
         icon: CreditCard,
         roles: ["admin", "accountant"],
       },
@@ -720,9 +747,10 @@ export const NAV_GROUPS: NavGroup[] = [
       // *can* read the matrix -- `hasPermission()` has always needed that -- but
       // a screen of sixty-four checkboxes nobody may tick is not a screen.
       {
-        title: "What each role may do",
+        title: "Roles and permissions",
         messageKey: "nav.permissions",
         href: "/settings/permissions",
+        setup: true,
         icon: KeyRound,
         roles: ["admin"],
       },
@@ -735,9 +763,10 @@ export const NAV_GROUPS: NavGroup[] = [
       // either on a Tuesday finds the page already working. A family starts
       // nothing, so the list stops at staff.
       {
-        title: "Background work",
+        title: "Background tasks",
         messageKey: "nav.jobs",
         href: "/settings/jobs",
+        setup: true,
         icon: Hourglass,
         roles: ["admin", "accountant", "teacher", "librarian"],
       },
@@ -751,4 +780,17 @@ export function navForRole(roleCode: string): NavGroup[] {
     ...group,
     items: group.items.filter((item) => !item.roles || item.roles.includes(roleCode)),
   })).filter((group) => group.items.length > 0);
+}
+
+/**
+ * One role's tree, split into what is used every day and what is set up once.
+ * Takes the already-filtered tree -- `navForRole` stays the only filter (its
+ * two call sites are guarded) -- and moves nothing between roles.
+ */
+export function splitSetup(groups: NavGroup[]): { daily: NavGroup[]; setup: NavItem[] } {
+  const daily = groups
+    .map((group) => ({ ...group, items: group.items.filter((item) => !item.setup) }))
+    .filter((group) => group.items.length > 0);
+  const setup = groups.flatMap((group) => group.items.filter((item) => item.setup));
+  return { daily, setup };
 }
