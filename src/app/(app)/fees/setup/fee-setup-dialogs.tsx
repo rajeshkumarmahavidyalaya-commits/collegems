@@ -23,7 +23,8 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 
-import { Form } from "@/components/ui/form";
+import { Form, FormField, FormItem } from "@/components/ui/form";
+import { Checkbox } from "@/components/ui/checkbox";
 
 import {
   SelectField,
@@ -86,6 +87,7 @@ export function FeeHeadDialog({
       description: "",
       category: "tuition",
       isActive: true,
+      billOnAdmission: false,
     },
   });
 
@@ -157,6 +159,29 @@ export function FeeHeadDialog({
               control={form.control}
               name="description"
               label="Description"
+            />
+            <FormField
+              control={form.control}
+              name="billOnAdmission"
+              render={({ field }) => (
+                <FormItem>
+                  <label className="flex items-start gap-3 text-sm">
+                    <Checkbox
+                      checked={field.value}
+                      onCheckedChange={(on) => field.onChange(on === true)}
+                      className="mt-0.5"
+                    />
+                    <span>
+                      <span className="font-medium">Bill this when a child is admitted</span>
+                      <span className="block text-xs text-muted-foreground">
+                        For an admission or registration fee. The invoice is raised the moment
+                        the office admits a child, at the amount set for their class. Children
+                        loaded from a spreadsheet are not billed.
+                      </span>
+                    </span>
+                  </label>
+                </FormItem>
+              )}
             />
             <DialogFooter>
               <Button

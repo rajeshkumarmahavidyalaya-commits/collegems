@@ -77,10 +77,34 @@ The subject screens live in `src/components/electives/` and take their save as a
 prop, so the student's and the office's actions keep their own checks. The
 student record grew 171 -> 174 kB for the tick boxes.
 
+## A child who has not chosen is counted (0286)
+
+A child who has not chosen has no paper in the elective (0285). The exam's
+problem list now says so, per class and group:
+
+> *24 students in Grade 4 A have not chosen from "Second language" yet, so they
+> have no paper in Art & Craft or Hindi in this exam. Choose for them on each
+> student's page, or open the choice under Academics > Electives.*
+
+The count comes from `exams_unchosen_electives`, a definer read model. The
+invoker version would be a `not exists` over enrolments and choices, which carry
+different policies for different roles, so an accountant granted
+`exams.manage` would have been told nobody had chosen. The read model:
+
+- filters the tenant by hand;
+- is gated on `exams.manage` or `academics.manage`;
+- returns counts, never names.
+
+A teacher is shown no sentence, rather than a guess. The sentence counts
+children below the group's `min_choices`, so an optional group (minimum 0)
+never appears.
+
+## The timetable splits by elective (0286)
+
+A period can hold one lesson per option of an elective group, and a family sees
+only their child's. See `docs/modules/timetable.md`.
+
 ## Not built yet
 
-- A child who has not chosen yet simply has no paper in that elective, and the
-  result says nothing about it; the electives screen shows who has not chosen.
-- The timetable does not split a class by elective.
 - `promotion_undo` knows about the table (`0282`); rolling choices forward is
   deliberately not done -- a choice belongs to the year it was made in.

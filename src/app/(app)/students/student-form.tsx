@@ -68,7 +68,20 @@ export function StudentForm({
       return;
     }
 
-    toast.success(isEdit ? "Student updated" : "Student admitted");
+    // Two facts on admission, each on its own line: the child is admitted, and
+    // whether the admission fee was billed. Saying only the first is how an
+    // office comes to believe a bill went out (0286).
+    const billing =
+      !isEdit && "billing" in result.data
+        ? (result.data.billing as { billed: boolean; message: string } | null)
+        : null;
+    if (billing && !billing.billed) {
+      toast.warning("Student admitted", { description: billing.message });
+    } else {
+      toast.success(isEdit ? "Student updated" : "Student admitted", {
+        description: billing?.message,
+      });
+    }
     router.push(`/students/${result.data.id}`);
     router.refresh();
   }

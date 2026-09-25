@@ -411,7 +411,7 @@ export async function listFeeHeads() {
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("fee_heads")
-    .select("id, code, name, description, category, is_active")
+    .select("id, code, name, description, category, is_active, bill_on_admission")
     .order("name");
   if (error) throw new Error(error.message);
   return data ?? [];
@@ -689,6 +689,7 @@ export async function saveFeeHead(input: unknown, id?: string): Promise<ActionRe
     description: parsed.data.description || null,
     category: parsed.data.category,
     is_active: parsed.data.isActive,
+    bill_on_admission: parsed.data.billOnAdmission,
   };
 
   const { data, error } = id
@@ -708,6 +709,31 @@ export async function saveFeeHead(input: unknown, id?: string): Promise<ActionRe
 
   revalidatePath("/fees/setup");
   return { ok: true, data: { id: data.id } };
+}
+
+/**
+ * The one switch a school flips on an existing head: bill it when a child is
+ * admitted (0286). A plain update -- the finance policy on `fee_heads` is the
+ * gate -- and the row count is asserted, because an update no policy matches
+ * succeeds while changing nothing (rule 6).
+ */
+export async function setFeeHeadBillOnAdmission(
+  id: string,
+  on: boolean,
+): Promise<ActionResult<{ id: string }>> {
+  if (!/^[0-9a-f-]{36}$/i.test(id)) return fail("That fee head does not exist.");
+
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("fee_heads")
+    .update({ bill_on_admission: on })
+    .eq("id", id)
+    .select("id");
+  if (error) return fail(error.message);
+  if (!data || data.length === 0) return fail("Only the office's finance roles can change a fee head.");
+
+  revalidatePath("/fees/setup");
+  return { ok: true, data: { id } };
 }
 
 /**

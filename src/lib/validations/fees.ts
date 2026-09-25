@@ -116,6 +116,11 @@ export const feeHeadSchema = z.object({
     "other",
   ]),
   isActive: z.boolean(),
+  /**
+   * Invoice this head when a child is admitted from the students screen
+   * (0286). Off unless somebody decides; the importer never bills.
+   */
+  billOnAdmission: z.boolean(),
 });
 export type FeeHeadInput = z.infer<typeof feeHeadSchema>;
 

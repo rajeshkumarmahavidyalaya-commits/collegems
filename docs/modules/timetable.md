@@ -4,11 +4,12 @@ One row per (class, weekday, period). Everything interesting about this module
 is a constraint rather than a column, because a timetable is defined by what it
 refuses:
 
-1. A class has one lesson per period.
+1. A class has one lesson per period -- or several at once when the class
+   splits for an elective (`0286`, below).
 2. A teacher cannot be in two rooms at once.
 3. A room cannot hold two classes at once.
 
-Migrations `0040`–`0042`.
+Migrations `0040`–`0042`, and `0286`–`0287` for elective periods.
 
 ---
 
@@ -200,6 +201,71 @@ where every cell was full would misrepresent what building one feels like.
 Each section keeps one home room, so rooms never clash in the seed. That is also
 how most schools in this product's market run: the class stays put and the
 teachers move.
+
+---
+
+## A period that splits for an elective (0286)
+
+In period 3 half of Grade 11 A goes to Hindi and half to Sanskrit. That is two
+lessons in one period of one class, which rule 1 above used to refuse, so:
+
+- **The key includes the subject.**
+  `timetable_entries_section_slot_subject_key` is
+  `(tenant, session, section, weekday, slot, subject)`.
+- **A trigger decides when a second subject is allowed.**
+  `timetable_entries_share_a_period` allows it only when every subject in the
+  period is an option of one `subject_groups` row for the class and year.
+  Anything else is refused in a sentence: *"Grade 4 A already has Art & Craft
+  and Hindi in period 4 that day. Subjects can share a period only when every
+  one of them is a choice in the same elective group…"*.
+  - It is a trigger because an administrator's plain insert through PostgREST
+    routes around any function.
+  - It takes an advisory lock on the period, because the rule is about other
+    rows.
+- **Editing is by id.** `timetable_set_entry(…, p_entry_id)` updates that
+  lesson; without the id it adds one.
+  - The teacher and room clash checks now exclude only the row being written.
+    Before, they excluded the whole class, so the teacher of the parallel
+    lesson hit the raw unique-index error. Now it is *"That teacher is already
+    taking Grade 4 A · Hindi (period 4)"*.
+  - `timetable_busy_in_slot` takes the lesson being edited rather than the
+    class, for the same reason.
+- **Copying a day** still fills empty periods only, and copies a split period
+  whole.
+- **A family sees their child's lesson.** `timetable_for_section` asks
+  `student_takes_subject` (the one definition, 0285) for each elective lesson.
+  - A student who chose Hindi sees Hindi in period 4 and not Art & Craft.
+  - Staff see every lesson, including a teacher whose own child is in the
+    class. The test is `user_profiles.staff_id`, not the tier.
+- **The grid** draws a period as a stack of lessons with *"Split: 2
+  electives"*, and each lesson's dialog offers *Add a parallel elective*. The
+  count of filled periods counts periods, not lessons.
+
+Probed in a rolled-back transaction on Grade 4 A:
+
+- a second, non-elective subject was refused;
+- after grouping Hindi and Art & Craft, the parallel lesson was accepted;
+- a plain insert of Mathematics into the split period was refused;
+- the Hindi teacher on the Art lesson was refused by name;
+- editing by id kept both lessons;
+- copying the day copied the split period whole (6 copied, 1 skipped for a
+  busy teacher), and copying it again copied nothing.
+
+A student who chose Hindi saw 0 Art & Craft lessons, and the teacher saw every
+lesson.
+
+With no elective groups, every seat's view of all 12 classes is identical to the
+old query, row for row (276 rows each for administrator, student and teacher).
+
+**Fixed in `0287`.** The first version resolved "my children" through
+`family_my_students()`, which projects names through the policies on `people`.
+Measured as the student it cost **94 ms** a call, against 4 ms for an
+administrator. It now reads two ids, and asks `student_takes_subject` only about
+elective subjects: 8–12 ms for every seat.
+
+Not enforced after the fact: removing a subject from an elective group does not
+un-split periods already built on it. The next save of that period is refused,
+which is where somebody will notice.
 
 ---
 

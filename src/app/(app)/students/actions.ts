@@ -4,6 +4,9 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { getUserContext } from "@/lib/auth/context";
 import { studentSchema, type StudentInput } from "@/lib/validations/students";
+import { admissionBillSentence, parseAdmissionBill } from "@/lib/validations/admission-bill";
+import { formatCurrency } from "@/lib/i18n/format";
+import { getLocale } from "@/lib/i18n/server";
 import type { ActionResult, ListParams } from "../library/actions";
 
 export type StudentRow = {
@@ -171,7 +174,7 @@ function toPersonPayload(v: StudentInput) {
 }
 
 /** Postgres unique violation -- surfaced as a field error, not a crash. */
-function duplicateAdmissionNumber(message: string): ActionResult<{ id: string }> {
+function duplicateAdmissionNumber(message: string): ActionResult<never> {
   return {
     ok: false,
     error: "That admission number is already used by another student.",
@@ -179,7 +182,14 @@ function duplicateAdmissionNumber(message: string): ActionResult<{ id: string }>
   };
 }
 
-export async function admitStudent(input: unknown): Promise<ActionResult<{ id: string }>> {
+/**
+ * `billing` is the second fact the office is told: whether the admission fee
+ * was invoiced (0286). Null when no fee head is set to bill on admission.
+ * A failed bill never fails the admission -- the child is admitted either way.
+ */
+export async function admitStudent(
+  input: unknown,
+): Promise<ActionResult<{ id: string; billing: { billed: boolean; message: string } | null }>> {
   const parsed = studentSchema.safeParse(input);
   if (!parsed.success) {
     return { ok: false, error: "Check the highlighted fields.", fieldErrors: parsed.error.flatten().fieldErrors };
@@ -205,8 +215,24 @@ export async function admitStudent(input: unknown): Promise<ActionResult<{ id: s
     return { ok: false, error: error.message };
   }
 
+  const id = (data as { id: string }).id;
+
+  // A second call, after the admission has committed: nothing that happens
+  // here can undo it. The importer does not come this way -- it loads an
+  // existing roll, whose fees were settled before this product existed.
+  let billing: { billed: boolean; message: string } | null = null;
+  const bill = await supabase.rpc("fees_bill_on_admission", { p_student_id: id });
+  if (bill.error) {
+    billing = { billed: false, message: `The admission fee was not billed: ${bill.error.message}` };
+  } else {
+    const parsed = parseAdmissionBill(bill.data);
+    const money = parsed.billed ? formatCurrency(parsed.amount, await getLocale()) : "";
+    const message = admissionBillSentence(parsed, money);
+    if (message) billing = { billed: parsed.billed, message };
+  }
+
   revalidatePath("/students");
-  return { ok: true, data: { id: (data as { id: string }).id } };
+  return { ok: true, data: { id, billing } };
 }
 
 export async function updateStudent(id: string, input: unknown): Promise<ActionResult<{ id: string }>> {

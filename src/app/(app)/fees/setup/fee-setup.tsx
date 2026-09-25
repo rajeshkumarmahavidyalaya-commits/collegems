@@ -52,6 +52,7 @@ import { useI18n } from "@/components/providers/i18n-provider";
 import {
   deleteFeeStructure,
   saveFeeIntegrationSettings,
+  setFeeHeadBillOnAdmission,
   saveSchoolProfile,
   type FeeIntegrationSettings,
   type FeeCopySource,
@@ -94,6 +95,7 @@ export type FeeHead = {
   description: string | null;
   category: string;
   is_active: boolean;
+  bill_on_admission: boolean;
 };
 
 
@@ -162,6 +164,23 @@ export function FeeSetup({
   }
 
   const activeHeads = feeHeads.filter((h) => h.is_active);
+  const [flipping, startFlip] = useTransition();
+
+  function flipAdmission(head: FeeHead, on: boolean) {
+    startFlip(async () => {
+      const result = await setFeeHeadBillOnAdmission(head.id, on);
+      if (!result.ok) {
+        toast.error(result.error);
+        return;
+      }
+      toast.success(
+        on
+          ? `${head.name} will be billed when a child is admitted.`
+          : `${head.name} is no longer billed on admission.`,
+      );
+      router.refresh();
+    });
+  }
 
 
   return (
@@ -299,6 +318,12 @@ export function FeeSetup({
                     >
                       Status
                     </th>
+                    <th
+                      scope="col"
+                      className="px-3 py-2 text-start font-medium"
+                    >
+                      Bill on admission
+                    </th>
                   </tr>
                 </thead>
                 <tbody>
@@ -320,6 +345,25 @@ export function FeeSetup({
                         <Badge variant={head.is_active ? "success" : "outline"}>
                           {head.is_active ? "Active" : "Inactive"}
                         </Badge>
+                      </td>
+                      <td className="px-3 py-2">
+                        {canManageSettings ? (
+                          <span className="flex items-center gap-2">
+                            <Switch
+                              checked={head.bill_on_admission}
+                              onCheckedChange={(on) => flipAdmission(head, on)}
+                              disabled={flipping || !head.is_active}
+                              aria-label={`Bill ${head.name} when a child is admitted`}
+                            />
+                            <span className="text-xs text-muted-foreground">
+                              {head.bill_on_admission ? "On" : "Off"}
+                            </span>
+                          </span>
+                        ) : (
+                          <span className="text-xs text-muted-foreground">
+                            {head.bill_on_admission ? "On" : "Off"}
+                          </span>
+                        )}
                       </td>
                     </tr>
                   ))}

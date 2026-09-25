@@ -1705,6 +1705,7 @@ export type Database = {
       }
       fee_heads: {
         Row: {
+          bill_on_admission: boolean
           category: string
           code: string
           created_at: string
@@ -1716,6 +1717,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          bill_on_admission?: boolean
           category?: string
           code: string
           created_at?: string
@@ -1727,6 +1729,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          bill_on_admission?: boolean
           category?: string
           code?: string
           created_at?: string
@@ -8554,6 +8557,16 @@ export type Database = {
         Args: { p_student_id: string }
         Returns: boolean
       }
+      exams_unchosen_electives: {
+        Args: { p_exam_id: string }
+        Returns: {
+          group_name: string
+          min_choices: number
+          section_label: string
+          subjects: string[]
+          unchosen: number
+        }[]
+      }
       exams_problems: {
         Args: { p_exam_id: string }
         Returns: {
@@ -8702,6 +8715,7 @@ export type Database = {
         Args: { p_ledger_entry_id: string }
         Returns: Json
       }
+      fees_bill_on_admission: { Args: { p_student_id: string }; Returns: Json }
       fees_billable_lines: {
         Args: {
           p_as_of?: string
@@ -11355,7 +11369,7 @@ export type Database = {
       }
       timetable_busy_in_slot: {
         Args: {
-          p_section_id?: string
+          p_entry_id?: string
           p_time_slot_id: string
           p_weekday: number
         }
@@ -11419,6 +11433,7 @@ export type Database = {
       timetable_set_entry: {
         Args: {
           p_class_room_id?: string
+          p_entry_id?: string
           p_note?: string
           p_section_id: string
           p_subject_id: string

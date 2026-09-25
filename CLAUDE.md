@@ -1651,6 +1651,21 @@ definition, and `tests/electives/elective-papers.test.ts` reads the latest
 definition of each. See
 `docs/modules/electives.md`, and `docs/logins.md` for who each login is.
 
+`0286` carried the elective to the timetable. It did this without weakening
+rule 1's "one lesson per period": the key gained the subject, and a trigger
+allows a second subject only when every subject in the period is an option of
+one elective group. The trigger holds an advisory lock, because the rule is
+about other rows. A family's timetable asks `student_takes_subject` (the one
+definition). A child who has not chosen is counted in `exams_problems`,
+through a definer that returns counts. The invoker `not exists` would answer
+differently for each role, so an accountant granted `exams.manage` would have
+been told nobody had chosen. The same migration made the admission fee a
+per-head switch, **off by default**. It answers in jsonb rather than raising,
+because a failed bill is not a failed admission. The importer never calls it.
+`0287` is the probe's correction: `family_my_students()` projects names through
+`people`'s policies. That cost **94 ms** as a student to answer a question
+about two ids. The family's lookup reads the ids now, 8-12 ms for every seat.
+
 ## 5. Identity model — do not collapse these
 
 ```

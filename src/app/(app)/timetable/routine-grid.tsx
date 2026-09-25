@@ -96,7 +96,13 @@ export function RoutineGrid({
   const [entries, setEntries] = useState<RoutineEntry[] | null>(null);
   const [curriculum, setCurriculum] = useState<CurriculumRow[]>([]);
   const [loadError, setLoadError] = useState(false);
-  const [editing, setEditing] = useState<{ weekday: number; slot: SlotRow } | null>(null);
+  // `entryId` null is an empty period, or a parallel elective being added
+  // beside the lessons already in it (0286).
+  const [editing, setEditing] = useState<{
+    weekday: number;
+    slot: SlotRow;
+    entryId: string | null;
+  } | null>(null);
   const [copyOpen, setCopyOpen] = useState(false);
 
   // The grid only ever renders days the school is actually open on, so a
@@ -126,16 +132,21 @@ export function RoutineGrid({
     void load(sectionId);
   }, [sectionId, load]);
 
+  // A period can hold several lessons at once when a class splits for an
+  // elective (0286), so a cell is a list, not one entry.
   const byCell = useMemo(() => {
-    const map = new Map<string, RoutineEntry>();
+    const map = new Map<string, RoutineEntry[]>();
     for (const entry of entries ?? []) {
-      map.set(cellKey(entry.weekday, entry.timeSlotId), entry);
+      const key = cellKey(entry.weekday, entry.timeSlotId);
+      map.set(key, [...(map.get(key) ?? []), entry]);
     }
     return map;
   }, [entries]);
 
   const possible = days.length * lessonSlots.length;
-  const filled = entries?.length ?? 0;
+  // Periods with something in them, not lessons: two parallel electives fill
+  // one period, and counting both would read as more than 100%.
+  const filled = entries ? byCell.size : 0;
 
   if (sections.length === 0) {
     return (
@@ -276,9 +287,9 @@ export function RoutineGrid({
                     </div>
                     <div className="min-w-0 flex-1">
                       <Cell
-                        entry={byCell.get(cellKey(mobileDay, slot.id))}
+                        entries={byCell.get(cellKey(mobileDay, slot.id)) ?? []}
                         canManage={canManage}
-                        onEdit={() => setEditing({ weekday: mobileDay, slot })}
+                        onEdit={(entryId) => setEditing({ weekday: mobileDay, slot, entryId })}
                         label={`${weekdayName(mobileDay)}, ${periodLabel(slot.periodNumber, slot.label, t)}`}
                       />
                     </div>
@@ -339,9 +350,9 @@ export function RoutineGrid({
                         {days.map((d) => (
                           <td key={d.value} className="p-1 align-top">
                             <Cell
-                              entry={byCell.get(cellKey(d.value, slot.id))}
+                              entries={byCell.get(cellKey(d.value, slot.id)) ?? []}
                               canManage={canManage}
-                              onEdit={() => setEditing({ weekday: d.value, slot })}
+                              onEdit={(entryId) => setEditing({ weekday: d.value, slot, entryId })}
                               label={`${formatWeekday(d.value)}, ${periodLabel(slot.periodNumber, slot.label, t)}`}
                             />
                           </td>
@@ -363,7 +374,13 @@ export function RoutineGrid({
           sectionId={sectionId}
           weekday={editing.weekday}
           slot={editing.slot}
-          entry={byCell.get(cellKey(editing.weekday, editing.slot.id))}
+          entry={(byCell.get(cellKey(editing.weekday, editing.slot.id)) ?? []).find(
+            (e) => e.id === editing.entryId,
+          )}
+          alongside={(byCell.get(cellKey(editing.weekday, editing.slot.id)) ?? []).filter(
+            (e) => e.id !== editing.entryId,
+          )}
+          onAddParallel={() => setEditing({ ...editing, entryId: null })}
           curriculum={curriculum}
           teachers={teachers}
           rooms={rooms}
@@ -405,17 +422,17 @@ function BreakBand({ slot }: { slot: SlotRow }) {
 }
 
 function Cell({
-  entry,
+  entries,
   canManage,
   onEdit,
   label,
 }: {
-  entry: RoutineEntry | undefined;
+  entries: RoutineEntry[];
   canManage: boolean;
-  onEdit: () => void;
+  onEdit: (entryId: string | null) => void;
   label: string;
 }) {
-  if (!entry) {
+  if (entries.length === 0) {
     if (!canManage) {
       return (
         <div className="flex min-h-16 items-center justify-center rounded-md border border-dashed px-2 text-xs text-muted-foreground">
@@ -426,7 +443,7 @@ function Cell({
     return (
       <button
         type="button"
-        onClick={onEdit}
+        onClick={() => onEdit(null)}
         aria-label={`Add a lesson: ${label}`}
         className="flex min-h-16 w-full items-center justify-center gap-1 rounded-md border border-dashed text-xs text-muted-foreground transition-colors hover:border-primary hover:bg-accent hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
       >
@@ -436,6 +453,39 @@ function Cell({
     );
   }
 
+  // Parallel electives stack in one cell, each its own lesson with its own
+  // teacher and room, and the class splits between them.
+  return (
+    <div className="flex flex-col gap-1">
+      {entries.length > 1 && (
+        <span className="px-1 text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+          Split: {entries.length} electives
+        </span>
+      )}
+      {entries.map((entry) => (
+        <Lesson
+          key={entry.id}
+          entry={entry}
+          canManage={canManage}
+          onEdit={() => onEdit(entry.id)}
+          label={label}
+        />
+      ))}
+    </div>
+  );
+}
+
+function Lesson({
+  entry,
+  canManage,
+  onEdit,
+  label,
+}: {
+  entry: RoutineEntry;
+  canManage: boolean;
+  onEdit: () => void;
+  label: string;
+}) {
   const body = (
     <>
       <div className="flex items-center gap-1.5">
@@ -539,6 +589,8 @@ function CellDialog({
   weekday,
   slot,
   entry,
+  alongside,
+  onAddParallel,
   curriculum,
   teachers,
   rooms,
@@ -549,7 +601,11 @@ function CellDialog({
   sectionId: string;
   weekday: number;
   slot: SlotRow;
+  /** The lesson being edited; undefined when adding one. */
   entry: RoutineEntry | undefined;
+  /** The other lessons already in this period -- parallel electives. */
+  alongside: RoutineEntry[];
+  onAddParallel: () => void;
   curriculum: CurriculumRow[];
   teachers: { id: string; label: string }[];
   rooms: { id: string; label: string }[];
@@ -559,16 +615,21 @@ function CellDialog({
   const [pending, startTransition] = useTransition();
   const [busy, setBusy] = useState<BusyRow[] | null>(null);
 
+  // Adding beside other lessons starts on a subject not already in the period.
+  const taken = new Set(alongside.map((e) => e.subjectId));
+  const firstFree = curriculum.find((c) => !taken.has(c.subjectId)) ?? curriculum[0];
+
   const form = useForm<TimetableEntryInput>({
     resolver: zodResolver(timetableEntrySchema),
     values: {
       sectionId,
       weekday,
       timeSlotId: slot.id,
-      subjectId: entry?.subjectId ?? curriculum[0]?.subjectId ?? "",
-      teacherStaffId: entry?.teacherStaffId ?? curriculum[0]?.defaultTeacherStaffId ?? "",
+      subjectId: entry?.subjectId ?? firstFree?.subjectId ?? "",
+      teacherStaffId: entry?.teacherStaffId ?? firstFree?.defaultTeacherStaffId ?? "",
       classRoomId: entry?.classRoomId ?? "",
       note: entry?.note ?? "",
+      entryId: entry?.id ?? "",
     },
   });
 
@@ -579,13 +640,13 @@ function CellDialog({
     if (!open) return;
     let cancelled = false;
     setBusy(null);
-    getBusyInSlot(weekday, slot.id, sectionId)
+    getBusyInSlot(weekday, slot.id, entry?.id)
       .then((rows) => !cancelled && setBusy(rows))
       .catch(() => !cancelled && setBusy([]));
     return () => {
       cancelled = true;
     };
-  }, [open, weekday, slot.id, sectionId]);
+  }, [open, weekday, slot.id, entry?.id]);
 
   const busyTeachers = useMemo(
     () => new Map((busy ?? []).filter((b) => b.entity === "teacher").map((b) => [b.entityId, b.busyWith])),
@@ -616,7 +677,7 @@ function CellDialog({
         toast.error(result.error);
         return;
       }
-      toast.success("Period saved.");
+      toast.success(entry || alongside.length === 0 ? "Period saved." : "Parallel lesson added.");
       onSaved();
     });
   }
@@ -629,7 +690,7 @@ function CellDialog({
         toast.error(result.error);
         return;
       }
-      toast.success("Period cleared.");
+      toast.success(alongside.length > 0 ? "Lesson removed." : "Period cleared.");
       onSaved();
     });
   }
@@ -646,6 +707,22 @@ function CellDialog({
             class&rsquo;s curriculum can be scheduled.
           </DialogDescription>
         </DialogHeader>
+
+        {alongside.length > 0 && (
+          // Said before the save rather than after it: the database refuses a
+          // second subject unless the period is a split for an elective.
+          <Alert>
+            <AlertTitle>
+              {entry ? "Also in this period" : "Adding a parallel lesson"}:{" "}
+              {alongside.map((e) => e.subjectName).join(", ")}
+            </AlertTitle>
+            <AlertDescription>
+              Several subjects can share a period only when they are all choices in one elective
+              group for this class, so each child goes to the one they chose. Set the group up
+              under Academics › Electives.
+            </AlertDescription>
+          </Alert>
+        )}
 
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col gap-4" noValidate>
@@ -714,10 +791,16 @@ function CellDialog({
 
             <DialogFooter className="gap-2 sm:justify-between">
               {entry ? (
-                <Button type="button" variant="outline" onClick={onClear} disabled={pending}>
-                  <Trash2 className="size-4" aria-hidden="true" />
-                  Clear this period
-                </Button>
+                <div className="flex flex-wrap gap-2">
+                  <Button type="button" variant="outline" onClick={onClear} disabled={pending}>
+                    <Trash2 className="size-4" aria-hidden="true" />
+                    {alongside.length > 0 ? "Remove this lesson" : "Clear this period"}
+                  </Button>
+                  <Button type="button" variant="ghost" onClick={onAddParallel} disabled={pending}>
+                    <Plus className="size-4" aria-hidden="true" />
+                    Add a parallel elective
+                  </Button>
+                </div>
               ) : (
                 <span />
               )}

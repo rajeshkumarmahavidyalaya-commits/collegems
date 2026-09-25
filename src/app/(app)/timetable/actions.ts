@@ -136,13 +136,15 @@ export type BusyRow = { entity: "teacher" | "room"; entityId: string; busyWith: 
 export async function getBusyInSlot(
   weekday: number,
   timeSlotId: string,
-  sectionId: string,
+  entryId?: string,
 ): Promise<BusyRow[]> {
   const supabase = await createClient();
+  // Excludes only the lesson being edited: a parallel elective in the same
+  // class is somewhere its teacher cannot also be (0286).
   const { data, error } = await supabase.rpc("timetable_busy_in_slot", {
     p_weekday: weekday,
     p_time_slot_id: timeSlotId,
-    p_section_id: sectionId,
+    p_entry_id: entryId || undefined,
   });
   if (error) throw new Error(error.message);
 
@@ -293,6 +295,7 @@ export async function saveEntry(input: unknown): Promise<ActionResult<{ id: stri
     p_teacher_staff_id: parsed.data.teacherStaffId || undefined,
     p_class_room_id: parsed.data.classRoomId || undefined,
     p_note: parsed.data.note || undefined,
+    p_entry_id: parsed.data.entryId || undefined,
   });
 
   if (error) return rpcError(error);

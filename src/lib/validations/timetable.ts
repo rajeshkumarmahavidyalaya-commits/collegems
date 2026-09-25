@@ -33,6 +33,13 @@ export const timetableEntrySchema = z.object({
   teacherStaffId: z.union([z.string().uuid(), z.literal("")]).optional(),
   classRoomId: z.union([z.string().uuid(), z.literal("")]).optional(),
   note: z.string().max(200).optional(),
+  /**
+   * The lesson being edited. Without it the save ADDS a lesson to the period,
+   * which the database allows beside another only when both are choices in one
+   * elective group for the class (0286) -- so "edit" and "add a parallel
+   * elective" are the same form with and without this id.
+   */
+  entryId: z.union([z.string().uuid(), z.literal("")]).optional(),
 });
 export type TimetableEntryInput = z.infer<typeof timetableEntrySchema>;
 

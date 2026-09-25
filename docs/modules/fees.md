@@ -790,6 +790,33 @@ SQL to the probe's numbers. It was checked by planting three violations: a
 typed row that *adds* instead of replacing, a family policy on assignments,
 and a copy-forward using the old key. Each one was caught.
 
+## The admission fee, billed on admission (0286)
+
+A fee head can be marked **Bill on admission** (Fees › Fee setup › Fee heads).
+It is off for every head until somebody switches it on. When the office admits
+a child, `admitStudent` calls `fees_bill_on_admission`, which raises one invoice
+over the flagged heads.
+
+- It goes through `fees_generate_invoice`, the one definition of what a child
+  is charged, so the class amount, the student type (0281) and any concession
+  all apply.
+- **A failed bill is not a failed admission.** The function answers in jsonb
+  rather than raising, and the toast says both facts. For example, *"Student
+  admitted. Admission fees billed: invoice IN-2025-00346 for ₹1,200.00"*.
+  Otherwise the toast gives the reason: no amount set for the class, already
+  billed this year, or *"Your role does not raise invoices…"* for a role
+  without `fees.collect`.
+- **The importer never bills.** It loads an existing roll, and a college's
+  first import is its whole school. The guard checks that
+  `import_apply_run` never calls the function.
+
+Probed in a rolled-back transaction:
+
+1. With nothing flagged, `{billed: false, reason: null}`, and nothing is said.
+2. With the examination fee flagged, one invoice for 1,200.00.
+3. Called again, *"already been billed"*, and still one invoice.
+4. Called as a teacher, the role sentence.
+
 ## Known, deliberate gaps
 
 - **The gateway path has never run end to end.** Every guarantee around it is
