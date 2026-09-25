@@ -29,3 +29,16 @@ export async function saveMyChoice(groupId: string, subjectIds: string[]): Promi
   revalidatePath("/my-subjects");
   return { ok: true, data: undefined };
 }
+
+/**
+ * One child's subjects, for a parent or the office. `subject_choices_for_student`
+ * is an invoker, so RLS decides whose child this may be: a parent reads their
+ * own children's enrolments and choices and nobody else's.
+ */
+export async function getSubjectsFor(studentId: string): Promise<MySubjects> {
+  if (!UUID.test(studentId ?? "")) return { enrolled: false };
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("subject_choices_for_student", { p_student_id: studentId });
+  if (error) throw new Error(error.message);
+  return parseMySubjects(data);
+}

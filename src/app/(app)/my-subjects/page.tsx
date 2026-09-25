@@ -1,112 +1,83 @@
-import { BookOpen, Lock } from "lucide-react";
+import { BookOpen } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { getUserContext } from "@/lib/auth/context";
+import { listMyChildren } from "@/lib/auth/family";
 import { getLocale } from "@/lib/i18n/server";
-import { formatDate } from "@/lib/i18n/format";
-import { choiceRule } from "@/lib/validations/electives";
-import { getMySubjects } from "./actions";
-import { ChoiceForm } from "./choice-form";
+import { SubjectsView } from "@/components/electives/subjects-view";
+import { getMySubjects, getSubjectsFor, saveMyChoice } from "./actions";
 
 export const metadata = { title: "My subjects" };
 
+function NotEnrolled({ who }: { who: string }) {
+  return (
+    <Alert>
+      <BookOpen className="size-4" aria-hidden="true" />
+      <AlertTitle>{who} not enrolled in a class this year</AlertTitle>
+      <AlertDescription>
+        Subjects appear once the office has placed the student in a class for this year.
+      </AlertDescription>
+    </Alert>
+  );
+}
+
 /**
- * A student's subjects this year. Only the groups allotted to their own class
- * reach this page -- `subject_choices_for_student` finds the class from the
- * enrolment, not from anything the browser sends -- and only the subjects
- * allotted to each group can be ticked, because those are the only ones drawn
- * and the only ones `subject_choice_save` accepts.
+ * A student's subjects, or a parent's children's. What decides which is the
+ * record the login stands for (`roles.subject`), for display only: a student
+ * chooses through `subject_choice_save`, which takes the student from the
+ * login, and a parent only reads -- RLS on enrolments and choices decides whose
+ * children those are.
  */
 export default async function MySubjectsPage() {
-  const [mine, locale] = await Promise.all([getMySubjects(), getLocale()]);
+  const [ctx, locale] = await Promise.all([getUserContext(), getLocale()]);
 
-  if (!mine.enrolled) {
+  if (ctx?.roleSubject === "guardian") {
+    const children = await listMyChildren();
+    const views = await Promise.all(children.map((c) => getSubjectsFor(c.studentId)));
     return (
       <div className="mx-auto flex w-full max-w-3xl flex-col gap-6">
-        <h1 className="text-2xl font-semibold">My subjects</h1>
-        <Alert>
-          <BookOpen className="size-4" aria-hidden="true" />
-          <AlertTitle>Not enrolled in a class this year</AlertTitle>
-          <AlertDescription>
-            Your subjects appear once the office has placed you in a class for this year. If you think
-            that has happened, ask them to check your login is linked to your student record.
-          </AlertDescription>
-        </Alert>
+        <div>
+          <h1 className="text-2xl font-semibold">Subjects</h1>
+          <p className="text-sm text-muted-foreground">
+            What each of your children studies this year, and the electives they chose.
+          </p>
+        </div>
+        {children.length === 0 && (
+          <p className="text-sm text-muted-foreground">No children are linked to your login yet. Ask the office.</p>
+        )}
+        {children.map((c, i) => {
+          const mine = views[i];
+          return (
+            <section key={c.studentId} className="flex flex-col gap-3" aria-labelledby={`child-${c.studentId}`}>
+              <h2 id={`child-${c.studentId}`} className="text-lg font-semibold">
+                {c.name}
+              </h2>
+              {mine.enrolled ? (
+                <SubjectsView mine={mine} locale={locale} mode="readonly" />
+              ) : (
+                <NotEnrolled who={`${c.name} is`} />
+              )}
+            </section>
+          );
+        })}
       </div>
     );
   }
 
+  const mine = await getMySubjects();
   return (
     <div className="mx-auto flex w-full max-w-3xl flex-col gap-6">
       <div>
         <h1 className="text-2xl font-semibold">My subjects</h1>
         <p className="text-sm text-muted-foreground">
-          {mine.classLabel}. Everybody in your class studies the subjects below; where there is a choice,
-          pick from the subjects offered to your class.
+          {mine.enrolled
+            ? `${mine.classLabel}. Everybody in your class studies the subjects below; where there is a choice, pick from the subjects offered to your class.`
+            : "Your subjects for this year."}
         </p>
       </div>
-
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">Studied by everybody in {mine.classLabel}</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {mine.compulsory.length === 0 ? (
-            <p className="text-sm text-muted-foreground">The office has not listed the class subjects yet.</p>
-          ) : (
-            <ul className="flex flex-wrap gap-2">
-              {mine.compulsory.map((s) => (
-                <li key={s.id}>
-                  <Badge variant="secondary">{s.name}</Badge>
-                </li>
-              ))}
-            </ul>
-          )}
-        </CardContent>
-      </Card>
-
-      {mine.groups.length === 0 ? (
-        <p className="text-sm text-muted-foreground">
-          There is nothing to choose for your class this year.
-        </p>
+      {mine.enrolled ? (
+        <SubjectsView mine={mine} locale={locale} mode="self" save={saveMyChoice} />
       ) : (
-        mine.groups.map((g) => {
-          const chosen = g.options.filter((o) => o.chosen);
-          return (
-            <Card key={g.id}>
-              <CardHeader>
-                <CardTitle className="flex flex-wrap items-center gap-2 text-base">
-                  {g.name}
-                  {g.isOpen ? (
-                    <Badge>Open</Badge>
-                  ) : (
-                    <Badge variant="outline">
-                      <Lock className="size-3" aria-hidden="true" />
-                      Closed
-                    </Badge>
-                  )}
-                </CardTitle>
-                <CardDescription>
-                  {choiceRule(g.min, g.max)}
-                  {g.isOpen && g.closesOn ? ` by ${formatDate(g.closesOn, locale)}` : ""}.
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                {g.isOpen ? (
-                  <ChoiceForm group={g} />
-                ) : chosen.length ? (
-                  <p className="text-sm">
-                    You chose: <span className="font-medium">{chosen.map((c) => c.name).join(", ")}</span>
-                  </p>
-                ) : (
-                  <p className="text-sm text-muted-foreground">
-                    Not open for choosing. The office opens it when choices are due.
-                  </p>
-                )}
-              </CardContent>
-            </Card>
-          );
-        })
+        <NotEnrolled who="You are" />
       )}
     </div>
   );

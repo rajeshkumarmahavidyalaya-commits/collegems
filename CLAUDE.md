@@ -1642,7 +1642,13 @@ is nothing more for a clever question to reach.
 
 The same release gave electives (`0282`) the `homework_submit` shape: students
 have **no write policy** on `student_subject_choices`, and
-`subject_choice_save` checks window, class, count and allotment. See
+`subject_choice_save` checks window, class, count and allotment. And `0285`
+learned the rule-2 lesson one table along: **a feature that changes who sits a
+paper has to reach every function that decides who sits a paper.** Three exam
+functions read the class roll, so an elective paper made thirty children's
+results *incomplete* for ever; `student_takes_subject()` is now the one
+definition, and `tests/electives/elective-papers.test.ts` reads the latest
+definition of each. See
 `docs/modules/electives.md`, and `docs/logins.md` for who each login is.
 
 ## 5. Identity model — do not collapse these

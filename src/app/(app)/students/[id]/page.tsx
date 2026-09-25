@@ -18,6 +18,10 @@ import { BUCKET_LIMITS, formatBytes } from "@/lib/storage/constants";
 import { getUserContext } from "@/lib/auth/context";
 import { createClient } from "@/lib/supabase/server";
 import { StudentTypeControl } from "./student-type-control";
+import { SubjectsView } from "@/components/electives/subjects-view";
+import { getSubjectsFor } from "../../my-subjects/actions";
+import { saveChoiceFor } from "../../academics/electives/actions";
+import { getLocale } from "@/lib/i18n/server";
 
 export const metadata = { title: "Student" };
 
@@ -36,7 +40,7 @@ export default async function StudentDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const [student, canManage, canManageGuardians, canSetType, t, ctx] = await Promise.all([
+  const [student, canManage, canManageGuardians, canSetType, t, ctx, subjects, canChooseFor, locale] = await Promise.all([
     getStudent(id),
     hasPermission("students.manage"),
     hasPermission("guardians.manage"),
@@ -44,6 +48,12 @@ export default async function StudentDetailPage({
     hasPermission("fees.collect"),
     getT(),
     getUserContext(),
+    // Read through RLS, like the record itself; a child the caller cannot see
+    // comes back not enrolled and draws nothing.
+    getSubjectsFor(id),
+    // The gate the electives screen uses; `subject_choice_save` is the boundary.
+    hasPermission("academics.manage"),
+    getLocale(),
   ]);
 
   if (!student) notFound();
@@ -246,6 +256,20 @@ export default async function StudentDetailPage({
           </CardContent>
         </Card>
       </div>
+
+      {subjects.enrolled && (subjects.groups.length > 0 || subjects.compulsory.length > 0) && (
+        <section className="flex flex-col gap-3" aria-labelledby="student-subjects">
+          <h2 id="student-subjects" className="text-lg font-semibold">
+            Subjects this year
+          </h2>
+          <SubjectsView
+            mine={subjects}
+            locale={locale}
+            mode={canChooseFor ? "office" : "readonly"}
+            save={canChooseFor ? saveChoiceFor.bind(null, student.id) : undefined}
+          />
+        </section>
+      )}
 
       <GuardiansCard
         studentId={student.id}

@@ -102,3 +102,33 @@ export async function deleteElectiveGroup(groupId: string): Promise<ActionResult
   revalidatePath("/academics/electives");
   return { ok: true, data: undefined };
 }
+
+/**
+ * The office choosing on a child's behalf -- a late admission, a student with
+ * no login, a change of mind after the window closed. `subject_choice_save`
+ * lets an administrator pass the student and skips the window for them; it
+ * still checks the class, the count and that each subject was allotted.
+ */
+export async function saveChoiceFor(
+  studentId: string,
+  groupId: string,
+  subjectIds: string[],
+): Promise<ActionResult> {
+  if (!(await hasPermission("academics.manage"))) {
+    return { ok: false, error: "Your role does not change a student's electives." };
+  }
+  if (!UUID.test(studentId ?? "") || !UUID.test(groupId ?? "")) {
+    return { ok: false, error: "That choice does not exist." };
+  }
+  const ids = (Array.isArray(subjectIds) ? subjectIds : []).filter((x) => UUID.test(x));
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("subject_choice_save", {
+    p_group_id: groupId,
+    p_subject_ids: ids,
+    p_student_id: studentId,
+  });
+  if (error) return { ok: false, error: error.message };
+  revalidatePath(`/students/${studentId}`);
+  revalidatePath("/academics/electives");
+  return { ok: true, data: undefined };
+}

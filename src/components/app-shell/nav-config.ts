@@ -180,8 +180,10 @@ export const NAV_GROUPS: NavGroup[] = [
       },
       // Elective choice (0282): the office allots subjects to a class, and a
       // student picks from those on their own login. Two entries because they
-      // are two screens for two audiences; the student one is not offered to a
-      // parent, because `subject_choice_save` takes the student from the login.
+      // are two screens for two audiences. A parent reaches the second one
+      // read-only -- their children's subjects -- because a choice is a family
+      // matter even though `subject_choice_save` takes the student from the
+      // login and so only the student can make it.
       {
         title: "Elective subjects",
         messageKey: "nav.electives",
@@ -195,7 +197,7 @@ export const NAV_GROUPS: NavGroup[] = [
         messageKey: "nav.mySubjects",
         href: "/my-subjects",
         icon: ListTodo,
-        roles: ["student"],
+        roles: ["student", "parent"],
       },
       {
         title: "Timetable",

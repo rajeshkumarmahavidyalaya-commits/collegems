@@ -6,9 +6,16 @@ import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { selectionProblem, type ElectiveGroup } from "@/lib/validations/electives";
-import { saveMyChoice } from "./actions";
 
-export function ChoiceForm({ group }: { group: ElectiveGroup }) {
+/**
+ * One elective group as ticks. Shared by a student choosing for themselves and
+ * the office choosing on a child's behalf, so it takes the save as a prop: the
+ * choreography is shared, the authorization stays with the caller's action
+ * (rule 8's split, as the student picker does).
+ */
+type Save = (groupId: string, subjectIds: string[]) => Promise<{ ok: true } | { ok: false; error: string }>;
+
+export function ChoiceForm({ group, save: saveChoice }: { group: ElectiveGroup; save: Save }) {
   const initial = group.options.filter((o) => o.chosen).map((o) => o.subjectId);
   const [picked, setPicked] = useState<string[]>(initial);
   const [pending, startTransition] = useTransition();
@@ -23,7 +30,7 @@ export function ChoiceForm({ group }: { group: ElectiveGroup }) {
 
   function save() {
     startTransition(async () => {
-      const r = await saveMyChoice(group.id, picked);
+      const r = await saveChoice(group.id, picked);
       if (r.ok) toast.success(`Saved your choice for ${group.name}.`);
       else toast.error(r.error);
     });

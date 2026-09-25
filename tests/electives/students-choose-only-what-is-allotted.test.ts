@@ -37,7 +37,12 @@ describe("a student chooses only what was allotted", () => {
     expect(SQL).toMatch(/You can only choose your own subjects/);
     expect(SQL).toMatch(/revoke all on function public\.subject_choice_save\(uuid, uuid\[\], uuid\) from public, anon;/);
     const action = readFileSync(join(process.cwd(), "src/app/(app)/my-subjects/actions.ts"), "utf8");
-    expect(action).not.toMatch(/p_student_id/);
+    // The student's own save never names a student: the function takes them
+    // from the login. (The read beside it may name one -- RLS decides whose.)
+    const save = action.slice(action.indexOf("export async function saveMyChoice"));
+    const saveBody = save.slice(0, save.indexOf("\n}\n") + 2);
+    expect(saveBody).toMatch(/subject_choice_save/);
+    expect(saveBody).not.toMatch(/p_student_id/);
   });
 });
 

@@ -36,11 +36,51 @@ subjects allotted to that group**:
   choice. At the limit the remaining boxes are disabled, so the rule is visible
   before anybody breaks it.
 
+## Exams read the same choice (0285)
+
+A paper in an elective belongs only to the children who chose it. Before
+`0285`, every exam function read the class roll, so a French paper listed all
+forty children and the thirty who chose Sanskrit got an unmarked French paper:
+their result read *incomplete* for ever.
+
+`student_takes_subject(student, subject, session, class level)` is the one
+definition -- yes for a subject not offered in any elective group for that
+class and year, and yes for an elective only if the child chose it -- and all
+three exam functions ask it:
+
+- `exams_mark_sheet` lists only the children who take the paper's subject;
+- `exams_subject_breakdown` (read by the result sheet, publishing and the
+  report card) builds each child's papers from it;
+- `exams_enter_marks` refuses a mark for a child who did not choose the subject,
+  by name, instead of writing a row every result would then ignore.
+
+It is `SECURITY DEFINER`, tenant-filtered by hand, and returns a boolean:
+`student_subject_choices` has no accountant policy, so as an invoker it would
+tell an accountant that nobody chose French and drop the paper from every
+result on their screen. Measured on the demo college: results identical to the
+row before and after (2,416 and 200 rows; no elective groups exist yet), and
+the Half-Yearly breakdown 791 -> 767 ms, i.e. unchanged. Probed with a group
+in a rolled-back transaction: 25 in the class, 3 chose the paper, mark sheet 3,
+results 3, and a mark for a non-chooser refused naming the child.
+
+## Who sees and changes a choice
+
+- **The student**, on My subjects, while the choice is open.
+- **A parent**, on the same screen, read-only, for each of their children.
+  Probed with a real guardian link: their child's subjects shown, another
+  family's child answered as *not enrolled*, and a save refused.
+- **The office**, on the student's record, open or closed -- a late admission, a
+  child with no login, a change after the window. Drawn for `academics.manage`;
+  `subject_choice_save` (administrator only on behalf of a child) is the gate.
+
+The subject screens live in `src/components/electives/` and take their save as a
+prop, so the student's and the office's actions keep their own checks. The
+student record grew 171 -> 174 kB for the tick boxes.
+
 ## Not built yet
 
-- A parent reads their child's choices through RLS but has no screen for it.
-- The office choosing on a student's behalf is supported by the function
-  (`p_student_id`) and has no screen.
-- Marks entry and the timetable do not yet filter by elective.
+- A child who has not chosen yet simply has no paper in that elective, and the
+  result says nothing about it; the electives screen shows who has not chosen.
+- The timetable does not split a class by elective.
 - `promotion_undo` knows about the table (`0282`); rolling choices forward is
-  deliberately not done — a choice belongs to the year it was made in.
+  deliberately not done -- a choice belongs to the year it was made in.
