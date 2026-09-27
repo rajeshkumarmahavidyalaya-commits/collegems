@@ -3,17 +3,32 @@ import { BarChart3 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { getUserContext } from "@/lib/auth/context";
 import { hasPermission } from "@/lib/auth/permissions";
-import { listMarkableSections } from "./actions";
+import { listMarkableSections, sectionsMarkedToday } from "./actions";
 import { AttendanceMarker } from "./attendance-marker";
 
 export const metadata = { title: "Attendance" };
 
-export default async function AttendancePage() {
-  const [ctx, sections, canMark] = await Promise.all([
+export default async function AttendancePage({
+  searchParams,
+}: {
+  searchParams: Promise<{ section?: string }>;
+}) {
+  const [{ section }, ctx, sections, canMark, marked] = await Promise.all([
+    searchParams,
     getUserContext(),
     listMarkableSections(),
     hasPermission("attendance.mark"),
+    sectionsMarkedToday(),
   ]);
+
+  // Open on the class asked for, else the first one nobody has marked today,
+  // else the first -- never an arbitrary one when a choice is obvious.
+  const markedSet = new Set(marked);
+  const initialSectionId =
+    sections.find((s) => s.id === section)?.id ??
+    sections.find((s) => !markedSet.has(s.id))?.id ??
+    sections[0]?.id ??
+    "";
 
   return (
     <div className="flex flex-col gap-4">
@@ -33,7 +48,12 @@ export default async function AttendancePage() {
         </Button>
       </div>
 
-      <AttendanceMarker sections={sections} canMark={canMark} />
+      <AttendanceMarker
+        sections={sections}
+        canMark={canMark}
+        initialSectionId={initialSectionId}
+        markedToday={marked}
+      />
     </div>
   );
 }

@@ -72,12 +72,15 @@ type Done = {
 
 export function FeeCounter({
   feeHeads,
+  initialStudent = null,
 }: {
   feeHeads: { id: string; name: string }[];
+  /** From `?student=`: the child the clerk arrived here for (0290). */
+  initialStudent?: CounterHit | null;
 }) {
   const { formatCurrency } = useI18n();
   const [query, setQuery] = useState("");
-  const [selected, setSelected] = useState<CounterHit | null>(null);
+  const [selected, setSelected] = useState<CounterHit | null>(initialStudent);
   const [highlight, setHighlight] = useState(0);
   const [done, setDone] = useState<Done | null>(null);
 

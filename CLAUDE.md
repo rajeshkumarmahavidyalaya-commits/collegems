@@ -4264,6 +4264,22 @@ tenant by hand, one permission per step, booleans out -- because the invoker
 version would tell a clerk granted `users.manage` that nobody had a login. See
 `docs/ui-review.md`.
 
+### …and every module is one screen away
+
+`module_overview()` (`0290`) is the home page's grid: one tile per module the
+caller may open, its count, what needs doing today, and its main action.
+
+> **A tile is a door, so its number is the room's.** It is an invoker, so a
+> teacher's tile counts what the teacher's screen lists. The definer shape
+> (`setup_progress`) answers about the whole college, and a tile that did
+> that would open onto a screen showing a different number.
+
+The gates live in SQL, and `MODULE_TILES` keeps a copy only so a test can
+compare the two. The two numbers the dashboard already computes are read from
+the brief (`0291`): measured, asking twice was 185 of 230 ms. And the library's
+borrower list held the first 20 of 75 cards, which is `0259`'s *"a bound nobody
+has reached"* one module along (`0292`). See `docs/ui-review.md`.
+
 ### Amber is not a hover colour
 
 The generated palette's amber (`--brand-accent`) is for **sparing emphasis** —

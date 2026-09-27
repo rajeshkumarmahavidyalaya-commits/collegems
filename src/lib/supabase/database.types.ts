@@ -9807,6 +9807,17 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      library_member_search: {
+        Args: { p_limit?: number; p_query: string }
+        Returns: {
+          full_name: string
+          id: string
+          kind: string
+          max_books: number
+          membership_number: string
+          reference: string | null
+        }[]
+      }
       library_return_book: {
         Args: { p_fine_per_day?: number; p_issue_id: string }
         Returns: {
@@ -11027,6 +11038,7 @@ export type Database = {
         Returns: boolean
       }
       assistant_quota: { Args: never; Returns: number }
+      module_overview: { Args: never; Returns: Json }
       setup_progress: { Args: never; Returns: Json }
       student_takes_subject: {
         Args: { p_class_level_id: string; p_session_id: string; p_student_id: string; p_subject_id: string }

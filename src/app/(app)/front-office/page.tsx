@@ -15,7 +15,12 @@ import { FrontOfficeView } from "./front-office-view";
 
 export const metadata = { title: "Front office" };
 
-export default async function FrontOfficePage() {
+export default async function FrontOfficePage({
+  searchParams,
+}: {
+  searchParams: Promise<{ new?: string }>;
+}) {
+  const { new: startNew } = await searchParams;
   const [ctx, canView, canManage, canAdmit, mayChangeSettings] = await Promise.all([
     getUserContext(),
     hasPermission("frontoffice.view"),
@@ -74,6 +79,7 @@ export default async function FrontOfficePage() {
         staff={staff}
         canManage={canManage}
         canAdmit={canAdmit}
+        openEnquiry={startNew === "enquiry"}
       />
     </div>
   );

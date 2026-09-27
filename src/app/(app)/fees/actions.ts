@@ -846,6 +846,27 @@ export async function searchStudentsForCounter(query: string): Promise<CounterHi
     .sort((a, b) => b.balance - a.balance || a.fullName.localeCompare(b.fullName));
 }
 
+/**
+ * One student, priced the way the counter prices a search hit, so a link from
+ * the student's record or the balances list can open the counter with them
+ * already chosen (`/fees/counter?student=`, 0290). Null when the caller cannot
+ * see them -- the counter then simply opens empty, which is what it did before.
+ */
+export async function counterHitFor(studentId: string): Promise<CounterHit | null> {
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("fees_student_balances", { p_student_ids: [studentId] });
+  if (error || !data?.[0]) return null;
+  const r = data[0];
+  return {
+    studentId: r.student_id,
+    admissionNumber: r.admission_number,
+    fullName: r.full_name,
+    sectionLabel: r.section_label,
+    rollNumber: r.roll_number,
+    balance: Number(r.balance),
+  };
+}
+
 /** A charge typed at the counter, not derived from the class fee structure. */
 export async function raiseCharge(input: unknown): Promise<ActionResult<{ invoiceNumber: string }>> {
   const parsed = chargeSchema.safeParse(input);

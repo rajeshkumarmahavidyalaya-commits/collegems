@@ -765,3 +765,91 @@ and so it filters by tenant in every step and returns booleans, never rows.
 
 Measured with `next build` against the previous commit: no route moved (`/`
 118 kB, `/students` 214 kB, `/timetable` 213 kB, before and after).
+
+## Every module on one screen (migrations 0290-0292)
+
+Asked for as "make the flow as easy as WPSchool". The demo site is blocked from
+the build environment, so this follows that plugin's known shape rather than a
+screen-by-screen copy: a home page with one tile per module, a count on each,
+and the module's main action one click away.
+
+### The grid
+
+Staff and the principal now see **Everything in one place** on the home page,
+in place of the eight quick links. There are 22 tiles for the principal, 14
+for a teacher and 5 for the librarian. Families keep their own short list.
+Each tile shows:
+
+- the module's name, from the menu's own translated label;
+- a count, such as *302 students on roll* or *3 of 12 classes marked today*;
+- an amber line, in words, when something needs doing today: follow-ups due,
+  registers not taken, books overdue, requests waiting;
+- the module's main action, such as *Admit a student*, *Collect a fee* or
+  *Issue a book*.
+
+Two design points:
+
+- **The tiles come from Postgres, not from a list in the page.**
+  `module_overview()` returns an entry only for a module the caller may open,
+  gated on the permission that module's page reads. It also says whether the
+  caller may take its main action. So a tile never opens onto a refusal.
+- **It is an invoker, on purpose.** A tile is a door into a screen, so its
+  number must be the number the screen shows. A teacher's Homework tile counts
+  the teacher's homework, because both read through the same policies.
+  `setup_progress()` is a definer for the opposite reason: it answers booleans
+  about the whole college.
+
+### What it cost, measured as the caller
+
+The first version took 727 ms on the first call and 230 ms after that, as the
+administrator. Two blocks repeated work `dashboard_summary()` already does on
+the same page: today's receipts (105 ms) and the staff register (80 ms).
+`0291` returns null for those two, and the page takes them from the brief.
+The two numbers now cost nothing extra and cannot disagree with the card
+beside them.
+
+| Caller | Time per call |
+|---|---|
+| Administrator | 72 ms (275 ms first) |
+| Teacher | 67 ms |
+| Librarian | 24 ms |
+
+The grid is a Server Component, so `/` is 117 kB before and after.
+
+### The five daily jobs
+
+- **Admit a student / add staff.** Both forms have *… and add another*. It
+  keeps the class (or department) and the date, and the toast links to the
+  record just made.
+- **Take attendance.** The screen opens on the class teacher's own class, then
+  on the first class with no register today. The class picker marks the done
+  ones *marked today*, in words. `?section=` opens a given class.
+- **Collect a fee.** `/fees/counter?student=` opens the counter with the child
+  already chosen. The student record has *Collect fee*, and the balances list
+  already had it on every row.
+- **Issue a book.** The issues counter had no *Issue* button: issuing meant
+  Catalog, find the book, open it, Issue. The counter now has one, and it
+  finds both the book and the borrower by typing.
+
+  The borrower list it replaced held **the first 20 cards of 75** active
+  members, and searched card numbers only. `library_member_search` (`0292`)
+  follows `student_search`: invoker, a bound parameter, at least two
+  characters, bounded and totally ordered. The old dropdown is gone, which is
+  also why `/library/books/[id]` went 165 → 145 kB.
+- **New enquiry.** `?new=enquiry` opens the form on the front office.
+
+### Guards
+
+`tests/dashboard/module-grid.test.ts` pins:
+
+- that the function is an invoker, is revoked from `anon`, and has no hand
+  tenant filter;
+- that each tile's gate in `MODULE_TILES` matches the gate in the SQL, so the
+  two copies cannot drift;
+- that every tile and action goes to a page that exists;
+- the number agreement of every count phrase;
+- that the grid has no role branch;
+- each of the daily-job changes.
+
+It was checked by planting three violations, and each was caught: a drifted
+gate, a definer with a hand tenant filter, and a role branch in the grid.

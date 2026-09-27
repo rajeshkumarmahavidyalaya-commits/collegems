@@ -82,6 +82,7 @@ export function FrontOfficeView({
   staff,
   canManage,
   canAdmit,
+  openEnquiry = false,
 }: {
   enquiries: EnquiryRow[];
   funnel: FunnelRow[];
@@ -91,8 +92,10 @@ export function FrontOfficeView({
   staff: Options;
   canManage: boolean;
   canAdmit: boolean;
+  /** `?new=enquiry`, from the home page's Front office tile (0290). */
+  openEnquiry?: boolean;
 }) {
-  const [enquiryOpen, setEnquiryOpen] = useState(false);
+  const [enquiryOpen, setEnquiryOpen] = useState(openEnquiry && canManage);
   const [followUpFor, setFollowUpFor] = useState<EnquiryRow | null>(null);
   const [convertFor, setConvertFor] = useState<EnquiryRow | null>(null);
   const [visitorOpen, setVisitorOpen] = useState(false);

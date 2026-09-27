@@ -16,6 +16,7 @@ import { formatNumber } from "@/lib/i18n/format";
 import { StatCard } from "@/components/dashboard/stat-card";
 import { QuickActions } from "@/components/dashboard/quick-actions";
 import { SetupChecklist } from "@/components/dashboard/setup-checklist";
+import { ModuleGrid } from "@/components/dashboard/module-grid";
 import { ListTodo } from "lucide-react";
 import { EnrollmentChartLazy, DonutChartLazy } from "@/components/dashboard/charts";
 import type { EnrollmentDatum } from "@/components/dashboard/enrollment-chart";
@@ -140,16 +141,32 @@ export default async function DashboardPage() {
           person may act on (0284). */}
       <SetupChecklist />
 
-      {/* A student's own subjects is theirs by record, not by permission --
-          `subject_choice_save` takes the student from the login -- so this one
-          link follows what the login stands for (roles.subject), for display. */}
-      <QuickActions
-        extra={
-          ctx?.roleSubject === "student"
-            ? [{ href: "/my-subjects", label: "My subjects", hint: "See and choose electives", icon: ListTodo }]
-            : []
-        }
-      />
+      {/* Staff and the principal get every module on one screen (0290); a
+          family keeps the few links that are theirs. Which audience sees which
+          is a tier, and a tier decides only what is shown (0208): the tiles
+          themselves are gated on the matrix inside module_overview(). */}
+      {ctx?.roleTier === "student" ? (
+        /* A student's own subjects is theirs by record, not by permission --
+           `subject_choice_save` takes the student from the login -- so this one
+           link follows what the login stands for (roles.subject), for display. */
+        <QuickActions
+          extra={
+            ctx?.roleSubject === "student"
+              ? [{ href: "/my-subjects", label: "My subjects", hint: "See and choose electives", icon: ListTodo }]
+              : []
+          }
+        />
+      ) : (
+        <ModuleGrid
+          fromBrief={{
+            fees: { count: brief.fees?.receipts_today ?? null },
+            staff_attendance: {
+              count: brief.staff_attendance?.marked ?? null,
+              total: brief.staff_attendance?.roll ?? null,
+            },
+          }}
+        />
+      )}
 
       {/* The headline row: the four numbers somebody wants before they have
           finished sitting down. */}

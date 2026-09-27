@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { BookOpen, IdCard, Pencil, TriangleAlert } from "lucide-react";
+import { BookOpen, IdCard, IndianRupee, Pencil, TriangleAlert } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -41,7 +41,7 @@ export default async function StudentDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const [student, canManage, canManageGuardians, canSetType, t, ctx, subjects, canChooseFor, locale] = await Promise.all([
+  const [student, canManage, canManageGuardians, canCollectFees, t, ctx, subjects, canChooseFor, locale] = await Promise.all([
     getStudent(id),
     hasPermission("students.manage"),
     hasPermission("guardians.manage"),
@@ -71,7 +71,7 @@ export default async function StudentDetailPage({
   // policy; for anybody else both reads come back empty and nothing is drawn.
   let studentTypes: { id: string; name: string; isActive: boolean }[] = [];
   let studentTypeId: string | null = null;
-  if (canSetType && enrolment && ctx?.currentSessionId) {
+  if (canCollectFees && enrolment && ctx?.currentSessionId) {
     const supabase = await createClient();
     const [typesRes, assignedRes] = await Promise.all([
       supabase.from("student_types").select("id, name, is_active").order("name"),
@@ -144,6 +144,16 @@ export default async function StudentDetailPage({
               {t("idCard.printOne")}
             </Link>
           </Button>
+          {/* The counter with this child already chosen (0290): the clerk was
+              just looking at them, and should not have to type their name. */}
+          {canCollectFees && (
+            <Button asChild variant="outline">
+              <Link href={`/fees/counter?student=${student.id}`}>
+                <IndianRupee className="size-4" aria-hidden="true" />
+                Collect fee
+              </Link>
+            </Button>
+          )}
           {canManage && (
             <>
             <Button asChild variant="outline">
@@ -240,7 +250,7 @@ export default async function StudentDetailPage({
                   label="Status"
                   value={<span className="capitalize">{enrolment.status}</span>}
                 />
-                {canSetType && studentTypes.length > 0 && (
+                {canCollectFees && studentTypes.length > 0 && (
                   <Fact
                     label="Kind of student (sets which fees apply)"
                     value={

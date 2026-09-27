@@ -1,6 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import { useRef } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
@@ -29,9 +30,11 @@ export function StudentForm({
   const router = useRouter();
   const isEdit = !!student;
 
-  const form = useForm<StudentInput>({
-    resolver: zodResolver(studentSchema),
-    defaultValues: student ?? {
+  // "Save and add another" (0290): an office admitting a class of new
+  // children does it one after another, and each trip through the new record
+  // and back is two page loads for nothing.
+  const another = useRef(false);
+  const blank: StudentInput = {
       firstName: "",
       middleName: "",
       lastName: "",
@@ -50,7 +53,11 @@ export function StudentForm({
       status: "active",
       sectionId: "",
       rollNumber: "",
-    },
+  };
+
+  const form = useForm<StudentInput>({
+    resolver: zodResolver(studentSchema),
+    defaultValues: student ?? blank,
   });
 
   useUnsavedChangesGuard(form.formState.isDirty && !form.formState.isSubmitSuccessful);
@@ -75,12 +82,27 @@ export function StudentForm({
       !isEdit && "billing" in result.data
         ? (result.data.billing as { billed: boolean; message: string } | null)
         : null;
+    const id = result.data.id;
+    const staying = !isEdit && another.current;
+    // Staying on the form, the toast is the only way back to the child just
+    // admitted, so it carries the link.
+    const open = staying ? { label: "Open", onClick: () => router.push(`/students/${id}`) } : undefined;
+    const admitted = staying ? `${values.firstName} ${values.lastName} admitted` : "Student admitted";
     if (billing && !billing.billed) {
-      toast.warning("Student admitted", { description: billing.message });
+      toast.warning(admitted, { description: billing.message, action: open });
     } else {
-      toast.success(isEdit ? "Student updated" : "Student admitted", {
+      toast.success(isEdit ? "Student updated" : admitted, {
         description: billing?.message,
+        action: open,
       });
+    }
+    if (staying) {
+      // Keep the class and the date: the next child is usually going into the
+      // same section on the same day.
+      form.reset({ ...blank, sectionId: values.sectionId, admissionDate: values.admissionDate });
+      form.setFocus("firstName");
+      router.refresh();
+      return;
     }
     router.push(`/students/${result.data.id}`);
     router.refresh();
@@ -183,12 +205,30 @@ export function StudentForm({
         </Card>
 
         <div className="flex items-center gap-3">
-          <Button type="submit" disabled={form.formState.isSubmitting}>
+          <Button
+            type="submit"
+            disabled={form.formState.isSubmitting}
+            onClick={() => {
+              another.current = false;
+            }}
+          >
             {form.formState.isSubmitting && (
               <Loader2 className="size-4 animate-spin" aria-hidden="true" />
             )}
             {isEdit ? "Save changes" : "Admit student"}
           </Button>
+          {!isEdit && (
+            <Button
+              type="submit"
+              variant="outline"
+              disabled={form.formState.isSubmitting}
+              onClick={() => {
+                another.current = true;
+              }}
+            >
+              Admit and add another
+            </Button>
+          )}
           <Button
             type="button"
             variant="ghost"

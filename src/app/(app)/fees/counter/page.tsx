@@ -4,20 +4,35 @@ import { redirect } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { getUserContext } from "@/lib/auth/context";
 import { hasPermission } from "@/lib/auth/permissions";
-import { listFeeHeads } from "../actions";
+import { counterHitFor, listFeeHeads } from "../actions";
 import { FeeCounter } from "./fee-counter";
 
 export const metadata = { title: "Fee counter" };
 
-export default async function FeeCounterPage() {
-  const [ctx, canCollect] = await Promise.all([getUserContext(), hasPermission("fees.collect")]);
+export default async function FeeCounterPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ student?: string }>;
+}) {
+  const [{ student }, ctx, canCollect] = await Promise.all([
+    searchParams,
+    getUserContext(),
+    hasPermission("fees.collect"),
+  ]);
 
   // Unlike the read-only screens, this page exists only to write money. Someone
   // without the permission has nothing to do here, so send them to the
   // collection view rather than rendering a desk with every control disabled.
   if (!canCollect) redirect("/fees");
 
-  const feeHeads = await listFeeHeads();
+  // `?student=` opens the counter with that child already chosen -- from their
+  // record or the balances list -- instead of making the clerk type the name
+  // they were just looking at (0290). Anything unreadable opens it empty.
+  const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  const [feeHeads, initialStudent] = await Promise.all([
+    listFeeHeads(),
+    student && uuid.test(student) ? counterHitFor(student) : Promise.resolve(null),
+  ]);
 
   return (
     <div className="flex flex-col gap-4">
@@ -45,7 +60,7 @@ export default async function FeeCounterPage() {
         </div>
       </div>
 
-      <FeeCounter feeHeads={feeHeads.filter((h) => h.is_active)} />
+      <FeeCounter feeHeads={feeHeads.filter((h) => h.is_active)} initialStudent={initialStudent} />
     </div>
   );
 }

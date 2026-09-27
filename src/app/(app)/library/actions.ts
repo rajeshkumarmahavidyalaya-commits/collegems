@@ -476,33 +476,6 @@ export async function returnBook(
   return { ok: true, data: { fineAmount, billedToFees, studentId } };
 }
 
-export async function listIssuableMembers(search: string) {
-  const supabase = await createClient();
-  let query = supabase
-    .from("members")
-    .select(
-      `id, membership_number,
-       students ( people:person_id ( first_name, last_name ) ),
-       staff ( people:person_id ( first_name, last_name ) )`,
-    )
-    .eq("status", "active")
-    .order("membership_number")
-    .limit(20);
-
-  if (search.trim()) {
-    query = query.ilike("membership_number", `%${search.trim()}%`);
-  }
-
-  const { data } = await query;
-  return (data ?? []).map((m) => {
-    const person = m.students?.people ?? m.staff?.people;
-    return {
-      id: m.id,
-      label: `${m.membership_number} · ${person ? `${person.first_name} ${person.last_name}` : "—"}`,
-    };
-  });
-}
-
 /**
  * Write off a staff library fine. A student's fine goes to the fee ledger at
  * return time (migration 0026); a staff member's has nowhere to go there --
@@ -611,4 +584,41 @@ export async function deleteBookCategory(id: string): Promise<ActionResult> {
   if (!data || data.length === 0) return { ok: false, error: "Only the library can change categories." };
   revalidatePath("/library/books");
   return { ok: true, data: undefined };
+}
+
+export type IssuePick = { id: string; label: string; detail: string };
+
+/**
+ * A borrower by card number, name, admission number or employee code, for the
+ * issue dialog (0292). Replaces a list of the first twenty cards, which is all
+ * the dialog could ever offer on a roll of three hundred.
+ */
+export async function searchMembersForIssue(term: string): Promise<IssuePick[]> {
+  if (term.trim().length < 2) return [];
+  const supabase = await createClient();
+  const { data } = await supabase.rpc("library_member_search", { p_query: term.trim(), p_limit: 12 });
+  return (data ?? []).map((m) => ({
+    id: m.id,
+    label: m.full_name,
+    detail: [m.membership_number, m.kind === "staff" ? "Staff" : "Student", m.reference]
+      .filter(Boolean)
+      .join(" · "),
+  }));
+}
+
+/** A book with a copy on the shelf, by title, author or ISBN -- `library_books`, the catalogue's own search. */
+export async function searchBooksForIssue(term: string): Promise<IssuePick[]> {
+  if (term.trim().length < 2) return [];
+  const supabase = await createClient();
+  const { data } = await supabase
+    .rpc("library_books", { p_query: term.trim() })
+    .gt("available_copies", 0)
+    .order("title")
+    .order("id")
+    .limit(12);
+  return (data ?? []).map((b) => ({
+    id: b.id,
+    label: b.title,
+    detail: [b.author, `${b.available_copies} on the shelf`].filter(Boolean).join(" · "),
+  }));
 }

@@ -1,6 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import { useRef } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
@@ -28,9 +29,9 @@ export function StaffForm({ staff }: { staff?: StaffInput & { id: string } }) {
   const router = useRouter();
   const isEdit = !!staff;
 
-  const form = useForm<StaffInput>({
-    resolver: zodResolver(staffSchema),
-    defaultValues: staff ?? {
+  // "Add and add another", as on the student form (0290).
+  const another = useRef(false);
+  const blank: StaffInput = {
       firstName: "",
       middleName: "",
       lastName: "",
@@ -48,7 +49,11 @@ export function StaffForm({ staff }: { staff?: StaffInput & { id: string } }) {
       designation: "",
       department: "",
       dateOfJoining: new Date().toISOString().slice(0, 10),
-    },
+  };
+
+  const form = useForm<StaffInput>({
+    resolver: zodResolver(staffSchema),
+    defaultValues: staff ?? blank,
   });
 
   useUnsavedChangesGuard(form.formState.isDirty && !form.formState.isSubmitSuccessful);
@@ -66,8 +71,19 @@ export function StaffForm({ staff }: { staff?: StaffInput & { id: string } }) {
       return;
     }
 
+    const id = result.data.id;
+    if (!isEdit && another.current) {
+      toast.success(`${values.firstName} ${values.lastName} added to the staff list`, {
+        action: { label: "Open", onClick: () => router.push(`/staff/${id}`) },
+      });
+      // Keep the department and the joining date: staff join in batches.
+      form.reset({ ...blank, department: values.department, dateOfJoining: values.dateOfJoining });
+      form.setFocus("firstName");
+      router.refresh();
+      return;
+    }
     toast.success(isEdit ? "Staff record updated" : "Added to the staff list");
-    router.push(`/staff/${result.data.id}`);
+    router.push(`/staff/${id}`);
     router.refresh();
   }
 
@@ -154,12 +170,30 @@ export function StaffForm({ staff }: { staff?: StaffInput & { id: string } }) {
         </Card>
 
         <div className="flex items-center gap-3">
-          <Button type="submit" disabled={form.formState.isSubmitting}>
+          <Button
+            type="submit"
+            disabled={form.formState.isSubmitting}
+            onClick={() => {
+              another.current = false;
+            }}
+          >
             {form.formState.isSubmitting && (
               <Loader2 className="size-4 animate-spin" aria-hidden="true" />
             )}
             {isEdit ? "Save changes" : "Add to staff"}
           </Button>
+          {!isEdit && (
+            <Button
+              type="submit"
+              variant="outline"
+              disabled={form.formState.isSubmitting}
+              onClick={() => {
+                another.current = true;
+              }}
+            >
+              Add and add another
+            </Button>
+          )}
           <Button
             type="button"
             variant="ghost"

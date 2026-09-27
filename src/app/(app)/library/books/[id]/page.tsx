@@ -68,7 +68,7 @@ export default async function BookDetailPage({ params }: { params: Promise<{ id:
         </div>
         <div className="flex flex-wrap items-center gap-2">
           {canManage && book.available_copies > 0 && (
-            <IssueBookDialog bookId={book.id} bookTitle={book.title} />
+            <IssueBookDialog book={{ id: book.id, title: book.title }} />
           )}
           {canManage && (
             <Button asChild variant="outline">

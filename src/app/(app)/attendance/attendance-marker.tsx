@@ -82,12 +82,19 @@ function todayIso() {
 export function AttendanceMarker({
   sections,
   canMark,
+  initialSectionId,
+  markedToday = [],
 }: {
   sections: SectionOption[];
   canMark: boolean;
+  /** Chosen on the server: the first class with no register today (0290). */
+  initialSectionId?: string;
+  /** Classes with a register today, so the picker can say which are done. */
+  markedToday?: string[];
 }) {
   const { t } = useI18n();
-  const [sectionId, setSectionId] = useState(sections[0]?.id ?? "");
+  const [sectionId, setSectionId] = useState(initialSectionId || (sections[0]?.id ?? ""));
+  const done = useMemo(() => new Set(markedToday), [markedToday]);
   const [date, setDate] = useState(todayIso());
   const [draft, setDraft] = useState<Draft>({});
   const [saveState, setSaveState] = useState<SaveState>({ kind: "clean", at: null });
@@ -295,6 +302,8 @@ export function AttendanceMarker({
               {sections.map((s) => (
                 <SelectItem key={s.id} value={s.id}>
                   {s.label}
+                  {/* In words, not a tick alone: meaning never by symbol or colour only. */}
+                  {done.has(s.id) ? " · marked today" : ""}
                 </SelectItem>
               ))}
             </SelectContent>

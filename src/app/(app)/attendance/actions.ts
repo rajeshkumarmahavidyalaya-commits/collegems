@@ -466,3 +466,29 @@ export async function getCoverage(from: string, to: string): Promise<CoverageRow
     coveragePercent: r.coverage_percent === null ? null : Number(r.coverage_percent),
   }));
 }
+
+/**
+ * Which classes already have a register today, in the school's own timezone
+ * (`mobile_today()`, the date `dashboard_summary` and `module_overview` use).
+ * The attendance screen opens on the first class *not* in this list, so the
+ * home page's *Take register* walks the office through what is left instead of
+ * reopening Grade 1 A every time (0290).
+ */
+export async function sectionsMarkedToday(): Promise<string[]> {
+  const ctx = await getUserContext();
+  if (!ctx?.currentSessionId) return [];
+  const supabase = await createClient();
+  const { data: today } = await supabase.rpc("mobile_today");
+  if (!today) return [];
+  const { data } = await supabase
+    .from("attendance_records")
+    .select("enrolments!inner ( section_id )")
+    .eq("attendance_date", today)
+    .eq("session_id", ctx.currentSessionId);
+  const ids = new Set<string>();
+  for (const r of data ?? []) {
+    const e = r.enrolments as unknown as { section_id: string } | null;
+    if (e?.section_id) ids.add(e.section_id);
+  }
+  return [...ids];
+}
