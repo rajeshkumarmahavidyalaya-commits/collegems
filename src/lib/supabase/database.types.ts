@@ -8045,6 +8045,7 @@ export type Database = {
           name: string
         }[]
       }
+      and_list: { Args: { p_items: string[] }; Returns: string }
       admission_apply: {
         Args: { p_application: Json; p_slug: string }
         Returns: Json
@@ -8344,6 +8345,7 @@ export type Database = {
       current_role_code: { Args: never; Returns: string }
       current_role_tier: { Args: never; Returns: string }
       current_session_id: { Args: { p_tenant_id: string }; Returns: string }
+      count_phrase: { Args: { p_many: string; p_n: number; p_one: string }; Returns: string }
       current_tenant_id: { Args: never; Returns: string }
       dashboard_enrolment_by_grade: { Args: never; Returns: Json }
       dashboard_summary: { Args: never; Returns: Json }
@@ -10855,6 +10857,7 @@ export type Database = {
           staff_id: string
         }[]
       }
+      staff_delete: { Args: { p_staff_id: string }; Returns: Json }
       staff_exit: {
         Args: {
           p_left_on?: string
@@ -11059,6 +11062,7 @@ export type Database = {
         }
         Returns: Json
       }
+      student_delete: { Args: { p_student_id: string }; Returns: Json }
       student_exit: {
         Args: {
           p_left_on?: string

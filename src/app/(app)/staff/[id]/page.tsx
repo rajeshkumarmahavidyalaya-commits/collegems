@@ -10,7 +10,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Separator } from "@/components/ui/separator";
 import { hasPermission } from "@/lib/auth/permissions";
 import { staffStatusLabel, staffStatusTone } from "@/lib/validations/staff-display";
-import { getStaffRecord } from "../actions";
+import { deleteStaffRecord, getStaffRecord } from "../actions";
+import { DeleteRecordControl } from "@/components/people/delete-record-control";
 import { StaffExitControl } from "./staff-exit-control";
 import { getT } from "@/lib/i18n/server";
 
@@ -84,6 +85,12 @@ export default async function StaffDetailPage({ params }: { params: Promise<{ id
               </Link>
             </Button>
             {!hasLeft && <StaffExitControl staffId={staff.id} staffName={person.full_name} />}
+            <DeleteRecordControl
+              name={person.full_name}
+              kind="staff"
+              action={deleteStaffRecord.bind(null, staff.id)}
+              afterDelete="/staff"
+            />
             </>
           )}
         </div>

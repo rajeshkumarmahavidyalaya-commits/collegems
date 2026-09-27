@@ -1901,6 +1901,17 @@ Two consequences worth knowing before you touch this module:
   comment. An INSERT needs the check **before** it, naming what it refuses;
   the row count still guards the `on conflict do update` path beside it.
   Migration `0257`, and `docs/modules/syllabus.md`.
+- **A revoke does not stop a cascade.** A referential action runs as the table
+  owner, so `ledger_entries`' revoked DELETE never applied to `delete from
+  students`. Probed as an administrator, rolled back: one child deleted, their
+  4 ledger entries and invoice gone with them; one teacher deleted, 3 payslips
+  and 51 register rows gone. `0288` puts `BEFORE DELETE` guards on `students`,
+  `staff`, `sections` and `class_levels`. They refuse while history exists and
+  say what is held, and they are what makes the *Delete* button safe to offer
+  for a record entered by mistake. **Before offering a delete, list what
+  cascades from it.** The same pass found fourteen `(tenant_id, x) ... ON
+  DELETE SET NULL` keys that null `tenant_id` too, so they could never fire,
+  and a college with no way to create a class. See `docs/audit-2026-09.md`.
 - **Amounts are signed, positive means "owes more", and the RPCs take positive
   numbers** and do the signing. Never ask a caller for a negative amount.
 - **`session_id` on a ledger entry is which year's account it moves;

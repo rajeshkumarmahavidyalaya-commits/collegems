@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { deletePhotoObject } from "@/lib/storage/photos";
 import { staffSchema, type StaffInput } from "@/lib/validations/staff";
 import type { ActionResult, ListParams } from "../library/actions";
 
@@ -249,4 +250,25 @@ export async function recordStaffExit(
   revalidatePath("/staff");
   revalidatePath(`/staff/${id}`);
   return { ok: true, data: data as unknown as StaffExitOutcome };
+}
+
+/**
+ * Delete a staff record entered by mistake (0288). `staff_delete` checks the
+ * permission, and a trigger on `staff` refuses anybody with history --
+ * payslips, register, leave -- naming what is held; that sentence is the error.
+ *
+ * The photograph goes after the row, not before: removing it first and then
+ * being refused would lose the photograph of somebody who is kept. An object
+ * orphaned by a failure here costs bytes; the other order costs a record.
+ */
+export async function deleteStaffRecord(id: string): Promise<ActionResult<{ name: string }>> {
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("staff_delete", { p_staff_id: id });
+  if (error) return { ok: false, error: error.message };
+
+  const result = data as unknown as { name: string; photoPath: string | null };
+  if (result.photoPath) await deletePhotoObject(result.photoPath);
+
+  revalidatePath("/staff");
+  return { ok: true, data: { name: result.name } };
 }

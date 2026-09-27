@@ -6,7 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { hasPermission } from "@/lib/auth/permissions";
-import { getStudent } from "../actions";
+import { deleteStudentRecord, getStudent } from "../actions";
+import { DeleteRecordControl } from "@/components/people/delete-record-control";
 import { ExitControl } from "./exit-control";
 import { GuardiansCard, type GuardianRow } from "./guardians-card";
 import { relationshipLabel, relationshipOptions } from "@/lib/validations/guardians";
@@ -154,6 +155,12 @@ export default async function StudentDetailPage({
             {student.status === "active" && (
               <ExitControl studentId={student.id} studentName={fullName} />
             )}
+            <DeleteRecordControl
+              name={fullName}
+              kind="student"
+              action={deleteStudentRecord.bind(null, student.id)}
+              afterDelete="/students"
+            />
             </>
           )}
         </div>

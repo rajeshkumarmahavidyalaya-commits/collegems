@@ -46,6 +46,8 @@ import { Label } from "@/components/ui/label";
 
 import { Switch } from "@/components/ui/switch";
 
+import { ClassesTab } from "./classes-tab";
+import type { ClassLevelRow } from "./class-actions";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 import {
@@ -107,7 +109,13 @@ type Props = {
   sections: { id: string; label: string }[];
   teachers: { id: string; label: string }[];
   canManage: boolean;
+  classLevels: ClassLevelRow[];
+  sessionName: string | null;
+  /** `?tab=` from the URL, so the setup checklist can land on the right one. */
+  initialTab?: string;
 };
+
+const TABS = ["classes", "subjects", "assignments", "periods", "rooms", "week", "holidays"];
 
 /**
  * One "Academics" area with tabs rather than eight sidebar links.
@@ -121,8 +129,17 @@ export function AcademicsSettings(props: Props) {
   const { canManage } = props;
 
   return (
-    <Tabs defaultValue="subjects">
+    <Tabs
+      defaultValue={
+        props.initialTab && TABS.includes(props.initialTab)
+          ? props.initialTab
+          : props.classLevels.length === 0
+            ? "classes"
+            : "subjects"
+      }
+    >
       <TabsList className="flex-wrap">
+        <TabsTrigger value="classes">Classes</TabsTrigger>
         <TabsTrigger value="subjects">Subjects</TabsTrigger>
         <TabsTrigger value="assignments">Who teaches what</TabsTrigger>
         <TabsTrigger value="periods">Periods</TabsTrigger>
@@ -131,6 +148,14 @@ export function AcademicsSettings(props: Props) {
         <TabsTrigger value="holidays">Holidays</TabsTrigger>
       </TabsList>
 
+      <TabsContent value="classes" className="mt-4">
+        <ClassesTab
+          levels={props.classLevels}
+          teachers={props.teachers}
+          canManage={canManage}
+          sessionName={props.sessionName}
+        />
+      </TabsContent>
       <TabsContent value="subjects" className="mt-4">
         <SubjectsTab subjects={props.subjects} sections={props.sections} canManage={canManage} />
       </TabsContent>

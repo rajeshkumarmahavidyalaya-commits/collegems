@@ -25,12 +25,12 @@ export const SETUP_STEPS: Record<SetupStepKey, { label: string; hint: string; hr
   classes: {
     label: "Create this year's classes",
     hint: "Classes and sections for the current academic year.",
-    href: "/academics",
+    href: "/academics?tab=classes",
   },
   subjects: {
     label: "Give each class its subjects",
     hint: "The timetable, marks and electives all read from these.",
-    href: "/academics",
+    href: "/academics?tab=subjects",
   },
   students: {
     label: "Put students on the roll",

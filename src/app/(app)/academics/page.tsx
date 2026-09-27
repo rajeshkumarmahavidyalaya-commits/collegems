@@ -14,10 +14,16 @@ import {
   listWeekdays,
 } from "./actions";
 import { AcademicsSettings } from "./academics-settings";
+import { listClassStructure } from "./class-actions";
 
 export const metadata = { title: "Academics" };
 
-export default async function AcademicsPage() {
+export default async function AcademicsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ tab?: string }>;
+}) {
+  const { tab } = await searchParams;
   const [
     ctx,
     subjects,
@@ -30,6 +36,7 @@ export default async function AcademicsPage() {
     teachers,
     canManage,
     canSeeSyllabus,
+    classLevels,
   ] = await Promise.all([
     getUserContext(),
     listSubjects(),
@@ -45,6 +52,7 @@ export default async function AcademicsPage() {
     // the permission the destination itself checks — a button to a screen that
     // will refuse you is the same defect one click along.
     hasPermission("academics.view"),
+    listClassStructure(),
   ]);
 
   return (
@@ -78,6 +86,9 @@ export default async function AcademicsPage() {
         sections={sections}
         teachers={teachers}
         canManage={canManage}
+        classLevels={classLevels}
+        sessionName={ctx?.currentSessionName ?? null}
+        initialTab={tab}
       />
     </div>
   );

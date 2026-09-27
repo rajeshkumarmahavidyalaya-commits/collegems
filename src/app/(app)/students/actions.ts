@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { deletePhotoObject } from "@/lib/storage/photos";
 import { getUserContext } from "@/lib/auth/context";
 import { studentSchema, type StudentInput } from "@/lib/validations/students";
 import { admissionBillSentence, parseAdmissionBill } from "@/lib/validations/admission-bill";
@@ -338,4 +339,22 @@ export async function setStudentStatus(
   revalidatePath("/students");
   revalidatePath(`/students/${id}`);
   return { ok: true, data: null };
+}
+
+/**
+ * Delete a student admitted by mistake (0288), with any guardian left with no
+ * child here. A trigger on `students` refuses anybody with history -- fees,
+ * register, marks -- naming what is held; that sentence is the error. The
+ * photograph goes after the row, for the reason `deleteStaffRecord` gives.
+ */
+export async function deleteStudentRecord(id: string): Promise<ActionResult<{ name: string }>> {
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("student_delete", { p_student_id: id });
+  if (error) return { ok: false, error: error.message };
+
+  const result = data as unknown as { name: string; photoPath: string | null };
+  if (result.photoPath) await deletePhotoObject(result.photoPath);
+
+  revalidatePath("/students");
+  return { ok: true, data: { name: result.name } };
 }
