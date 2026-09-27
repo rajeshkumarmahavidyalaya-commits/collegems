@@ -18,6 +18,7 @@ import {
   submitSchema,
 } from "@/lib/validations/homework";
 import type { ActionResult } from "../library/actions";
+import { deleteErrorSentence, nothingDeletedSentence } from "@/lib/validations/errors";
 
 function fail(message: string): ActionResult<never> {
   return { ok: false, error: message };
@@ -220,21 +221,25 @@ export async function unpublishHomework(id: string): Promise<ActionResult> {
 export async function deleteHomework(id: string): Promise<ActionResult> {
   const supabase = await createClient();
 
-  // The objects first, then the rows. `on delete cascade` will take the file
-  // rows with the homework, and a row that has gone is a file nobody can ever
-  // name again -- so the bucket has to be emptied while the paths are still
-  // readable.
+  // Read the paths first: `on delete cascade` takes the file rows with the
+  // homework, and a row that has gone is a file nobody can ever name again.
+  // But remove the objects only *after* the delete succeeds. Since `0289` the
+  // database refuses to delete homework with marked submissions, and emptying
+  // the bucket first would leave a refused homework with every attachment
+  // gone -- a broken download on somebody's screen, which is the worse orphan
+  // (rule 8). An object left behind by a failure below costs bytes nobody sees.
   const { data: files } = await supabase
     .from("homework_files")
     .select("bucket_id, storage_path")
     .eq("homework_id", id);
 
+  const { data, error } = await supabase.from("homework").delete().eq("id", id).select("id");
+  if (error) return fail(deleteErrorSentence(error, "this homework"));
+  if (!data?.length) return fail(nothingDeletedSentence("this homework"));
+
   for (const file of files ?? []) {
     await removeFile(file.bucket_id as BucketId, file.storage_path);
   }
-
-  const { error } = await supabase.from("homework").delete().eq("id", id);
-  if (error) return fail(error.message);
 
   revalidatePath("/homework");
   return { ok: true, data: undefined };

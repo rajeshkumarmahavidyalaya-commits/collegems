@@ -148,6 +148,19 @@ export const ur: Messages = {
   "login.failed": "یہ ای میل پتہ اور پاس ورڈ آپس میں میل نہیں کھاتے۔",
   "login.noTenant":
     "یہ لاگ اِن ابھی کسی اسکول سے منسلک نہیں۔ اپنے منتظم سے دعوت نامہ بھیجنے کو کہیں۔",
+  "login.switchedOff": "آپ کے ادارے نے یہ لاگ اِن بند کر دیا ہے۔ اگر یہ غلطی لگے تو دفتر سے پوچھیں۔",
+  "auth.forgot.title": "اپنا پاس ورڈ بدلیں",
+  "auth.forgot.body": "وہ پتہ لکھیں جس سے آپ سائن اِن کرتے ہیں۔ اگر یہاں اس کا لاگ اِن ہے تو نیا پاس ورڈ چننے کا لنک ای میل کیا جائے گا۔",
+  "auth.forgot.submit": "لنک بھیجیں",
+  "auth.forgot.sent": "اگر اس پتے کا لاگ اِن ہے تو لنک بھیج دیا گیا ہے۔ یہ ایک بار کام کرتا ہے اور ایک گھنٹے میں ختم ہو جاتا ہے۔",
+  "auth.forgot.back": "سائن اِن پر واپس جائیں",
+  "auth.reset.title": "نیا پاس ورڈ چنیں",
+  "auth.reset.newPassword": "نیا پاس ورڈ",
+  "auth.reset.confirm": "اسے دوبارہ لکھیں",
+  "auth.reset.submit": "نیا پاس ورڈ محفوظ کریں",
+  "auth.reset.expired": "یہ لنک ختم ہو چکا ہے یا پہلے استعمال ہو چکا ہے۔ نیا لنک مانگیں۔",
+  "auth.reset.tooShort": "کم از کم 8 حروف استعمال کریں۔",
+  "auth.reset.mismatch": "دونوں پاس ورڈ ایک جیسے نہیں ہیں۔",
 
 
   // The DataTable's own chrome. It is on roughly twenty list screens, and

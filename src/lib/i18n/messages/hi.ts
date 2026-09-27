@@ -148,6 +148,19 @@ export const hi: Messages = {
   "login.failed": "यह ईमेल पता और पासवर्ड मेल नहीं खाते।",
   "login.noTenant":
     "यह लॉगिन अभी किसी विद्यालय से जुड़ा नहीं है। अपने प्रशासक से निमंत्रण भेजने को कहें।",
+  "login.switchedOff": "आपके विद्यालय ने यह लॉगिन बंद कर दिया है। अगर यह गलती लगे तो कार्यालय से पूछें।",
+  "auth.forgot.title": "अपना पासवर्ड बदलें",
+  "auth.forgot.body": "वह पता लिखें जिससे आप साइन इन करते हैं। अगर यहाँ उसका लॉगिन है, तो नया पासवर्ड चुनने का लिंक ईमेल किया जाएगा।",
+  "auth.forgot.submit": "लिंक भेजें",
+  "auth.forgot.sent": "अगर उस पते का लॉगिन है, तो लिंक भेज दिया गया है। यह एक बार चलता है और एक घंटे में समाप्त हो जाता है।",
+  "auth.forgot.back": "साइन इन पर लौटें",
+  "auth.reset.title": "नया पासवर्ड चुनें",
+  "auth.reset.newPassword": "नया पासवर्ड",
+  "auth.reset.confirm": "इसे दोबारा लिखें",
+  "auth.reset.submit": "नया पासवर्ड सहेजें",
+  "auth.reset.expired": "यह लिंक समाप्त हो गया है या पहले ही उपयोग हो चुका है। नया लिंक माँगें।",
+  "auth.reset.tooShort": "कम से कम 8 अक्षर उपयोग करें।",
+  "auth.reset.mismatch": "दोनों पासवर्ड एक जैसे नहीं हैं।",
 
 
   // The DataTable's own chrome. It is on roughly twenty list screens, and

@@ -69,36 +69,49 @@ export function todayPlus(days: number) {
     .slice(0, 10);
 }
 
+/** An existing head to edit (0289); omitted to add one. */
+export type FeeHeadEditing = {
+  id: string;
+  code: string;
+  name: string;
+  description: string | null;
+  category: string;
+  is_active: boolean;
+  bill_on_admission: boolean;
+};
+
 export function FeeHeadDialog({
   open,
   onOpenChange,
   onDone,
+  head,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onDone: () => void;
+  head?: FeeHeadEditing | null;
 }) {
   const [serverError, setServerError] = useState<string | null>(null);
   const form = useForm<FeeHeadInput>({
     resolver: zodResolver(feeHeadSchema),
     defaultValues: {
-      code: "",
-      name: "",
-      description: "",
-      category: "tuition",
-      isActive: true,
-      billOnAdmission: false,
+      code: head?.code ?? "",
+      name: head?.name ?? "",
+      description: head?.description ?? "",
+      category: (head?.category as FeeHeadInput["category"]) ?? "tuition",
+      isActive: head?.is_active ?? true,
+      billOnAdmission: head?.bill_on_admission ?? false,
     },
   });
 
   async function onSubmit(values: FeeHeadInput) {
     setServerError(null);
-    const result = await saveFeeHead(values);
+    const result = await saveFeeHead(values, head?.id);
     if (!result.ok) {
       setServerError(result.error);
       return;
     }
-    toast.success("Fee head added");
+    toast.success(head ? "Fee head saved" : "Fee head added");
     onOpenChange(false);
     form.reset();
     onDone();
@@ -108,9 +121,11 @@ export function FeeHeadDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>
-          <DialogTitle>Add a fee head</DialogTitle>
+          <DialogTitle>{head ? `Edit ${head.name}` : "Add a fee head"}</DialogTitle>
           <DialogDescription>
-            Something the school charges for.
+            {head
+              ? "Invoices already raised keep the wording they were raised with."
+              : "Something the school charges for."}
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
@@ -160,6 +175,30 @@ export function FeeHeadDialog({
               name="description"
               label="Description"
             />
+            {head && (
+              <FormField
+                control={form.control}
+                name="isActive"
+                render={({ field }) => (
+                  <FormItem>
+                    <label className="flex items-start gap-3 text-sm">
+                      <Checkbox
+                        checked={field.value}
+                        onCheckedChange={(on) => field.onChange(on === true)}
+                        className="mt-0.5"
+                      />
+                      <span>
+                        <span className="font-medium">In use</span>
+                        <span className="block text-xs text-muted-foreground">
+                          Untick to stop charging it. A head that has been billed is never
+                          deleted, so this is how one is retired.
+                        </span>
+                      </span>
+                    </label>
+                  </FormItem>
+                )}
+              />
+            )}
             <FormField
               control={form.control}
               name="billOnAdmission"
@@ -195,7 +234,7 @@ export function FeeHeadDialog({
                 {form.formState.isSubmitting && (
                   <Loader2 className="size-4 animate-spin" aria-hidden="true" />
                 )}
-                Add fee head
+                {head ? "Save" : "Add fee head"}
               </Button>
             </DialogFooter>
           </form>

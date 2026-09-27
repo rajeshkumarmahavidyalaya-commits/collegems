@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { getUserContext } from "@/lib/auth/context";
 import { bookSchema, issueBookSchema, memberSchema } from "@/lib/validations/library";
+import { deleteErrorSentence, nothingDeletedSentence } from "@/lib/validations/errors";
 
 export type ActionResult<T = void> =
   | { ok: true; data: T }
@@ -167,8 +168,9 @@ export async function updateBook(id: string, input: unknown): Promise<ActionResu
 
 export async function deleteBook(id: string): Promise<ActionResult> {
   const supabase = await createClient();
-  const { error } = await supabase.from("books").delete().eq("id", id);
-  if (error) return { ok: false, error: error.message };
+  const { data, error } = await supabase.from("books").delete().eq("id", id).select("id");
+  if (error) return { ok: false, error: deleteErrorSentence(error, "this book") };
+  if (!data?.length) return { ok: false, error: nothingDeletedSentence("this book") };
 
   revalidatePath("/library/books");
   return { ok: true, data: undefined };
@@ -522,5 +524,91 @@ export async function waiveStaffFine(issueId: string, note?: string): Promise<Ac
   if (error) return { ok: false, error: error.message };
 
   revalidatePath("/library/issues");
+  return { ok: true, data: undefined };
+}
+
+// ---------------------------------------------------------------------------
+// Members and categories (0289)
+// ---------------------------------------------------------------------------
+//
+// `createMember` existed and nothing called it: a college could not add a
+// borrower, so a new college's library could never lend. And a card could
+// only close through a formal leaving. These are the screens' halves; the
+// "librarians manage" policies are the gate, and every write asserts that a
+// row was written, because a write no policy matches raises nothing.
+
+/** Find a child to give a library card. The one definition, `student_search`. */
+export async function searchStudentsForLibrary(term: string) {
+  const needle = term.trim();
+  if (needle.length < 2) return [];
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("student_search", { p_query: needle, p_limit: 10 });
+  if (error) throw new Error(error.message);
+  return (data ?? []).map((s) => ({
+    id: s.id,
+    name: s.full_name,
+    admissionNumber: s.admission_number,
+    status: s.status,
+  }));
+}
+
+/** Current staff, for a staff card. A college's staff is bounded by its size. */
+export async function listStaffForLibrary(): Promise<{ id: string; label: string }[]> {
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("staff")
+    .select("id, employee_code, people:person_id ( first_name, last_name )")
+    .eq("status", "active")
+    .order("employee_code");
+  return (data ?? []).map((s) => ({
+    id: s.id,
+    label: s.people ? `${s.people.first_name} ${s.people.last_name} · ${s.employee_code}` : s.employee_code,
+  }));
+}
+
+/** A suggestion, not a rule: the next number after the highest in use. */
+export async function nextMembershipNumber(): Promise<string> {
+  const supabase = await createClient();
+  const { count } = await supabase.from("members").select("id", { count: "exact", head: true });
+  return `LIB-${String((count ?? 0) + 1).padStart(4, "0")}`;
+}
+
+export async function setMemberStatus(
+  id: string,
+  status: "active" | "suspended",
+): Promise<ActionResult> {
+  const supabase = await createClient();
+  const { data, error } = await supabase.from("members").update({ status }).eq("id", id).select("id");
+  if (error) return { ok: false, error: error.message };
+  if (!data || data.length === 0) return { ok: false, error: "Only the library can change a card." };
+  revalidatePath("/library/members");
+  return { ok: true, data: undefined };
+}
+
+export async function saveBookCategory(name: string, id?: string): Promise<ActionResult<{ id: string }>> {
+  const trimmed = name.trim();
+  if (trimmed.length < 1 || trimmed.length > 60) return { ok: false, error: "Give the category a name." };
+  const ctx = await getUserContext();
+  if (!ctx) return { ok: false, error: "Not signed in." };
+  const supabase = await createClient();
+  const { data, error } = id
+    ? await supabase.from("book_categories").update({ name: trimmed }).eq("id", id).select("id")
+    : await supabase.from("book_categories").insert({ name: trimmed, tenant_id: ctx.tenantId }).select("id");
+  if (error) {
+    if (error.code === "23505") return { ok: false, error: "There is already a category with that name." };
+    return { ok: false, error: error.message };
+  }
+  if (!data || data.length === 0) return { ok: false, error: "Only the library can change categories." };
+  revalidatePath("/library/books");
+  return { ok: true, data: { id: data[0].id } };
+}
+
+/** Books in it keep their place in the catalogue, uncategorised. */
+export async function deleteBookCategory(id: string): Promise<ActionResult> {
+  const supabase = await createClient();
+  const { data, error } = await supabase.from("book_categories").delete().eq("id", id).select("id");
+  if (error) return { ok: false, error: error.message };
+  if (!data || data.length === 0) return { ok: false, error: "Only the library can change categories." };
+  revalidatePath("/library/books");
   return { ok: true, data: undefined };
 }

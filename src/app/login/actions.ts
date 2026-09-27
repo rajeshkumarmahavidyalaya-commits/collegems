@@ -3,6 +3,7 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { loginSchema } from "@/lib/validations/auth";
+import { getT } from "@/lib/i18n/server";
 
 export type LoginActionState = {
   error: string | null;
@@ -26,7 +27,10 @@ export async function login(
   const { error } = await supabase.auth.signInWithPassword(parsed.data);
 
   if (error) {
-    return { error: "Incorrect email or password." };
+    const t = await getT();
+    // A login the college switched off (0289) is told so, rather than being
+    // sent round the password-reset loop for a password that is correct.
+    return { error: error.code === "user_banned" ? t("login.switchedOff") : t("login.failed") };
   }
 
   const next = formData.get("next");

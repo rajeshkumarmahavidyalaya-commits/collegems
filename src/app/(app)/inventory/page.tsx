@@ -1,7 +1,8 @@
 import { PackageSearch } from "lucide-react";
 import { hasPermission } from "@/lib/auth/permissions";
 import { listStaffOptions } from "../hr/actions";
-import { listAssetsOut, listCategories, listStock } from "./actions";
+import { deleteCategory, listAssetsOut, listCategories, listStock, saveCategory } from "./actions";
+import { CategoriesDialog } from "@/components/forms/categories-dialog";
 import { InventoryView } from "./inventory-view";
 import { stockValue } from "@/lib/validations/inventory";
 import { formatCurrency } from "@/lib/i18n/format";
@@ -52,6 +53,17 @@ export default async function InventoryPage() {
             it.
           </p>
         </div>
+        <div className="flex flex-wrap items-center gap-3">
+        {canManage && (
+          <CategoriesDialog
+            title="Store categories"
+            description="Deleting a category leaves its items, their stock and their history in place, uncategorised."
+            categories={categories.map((c) => ({ id: c.id, name: c.label }))}
+            save={saveCategory}
+            remove={deleteCategory}
+            deleteNote="Its items stay, uncategorised."
+          />
+        )}
         <div className="flex items-center gap-2 rounded-lg border border-border bg-card px-4 py-2">
           <PackageSearch className="size-5 text-muted-foreground" aria-hidden="true" />
           <div>
@@ -64,6 +76,7 @@ export default async function InventoryPage() {
                 ` · ${stock.length - valued.length} unpriced`}
             </p>
           </div>
+        </div>
         </div>
       </div>
 

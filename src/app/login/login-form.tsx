@@ -2,6 +2,7 @@
 
 import { useActionState, useEffect, useId, useRef, useState } from "react";
 import { Eye, EyeOff, GraduationCap, Loader2, TriangleAlert } from "lucide-react";
+import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -64,6 +65,11 @@ export function LoginForm({ next }: { next?: string }) {
       <div className="grid gap-2">
         <div className="flex items-center justify-between">
           <Label htmlFor={passwordId}>{t("login.password")}</Label>
+          {/* The key existed in all three languages and was drawn nowhere
+              until 0289 -- a string in the catalogue is not a control. */}
+          <Link href="/auth/forgot" className="text-sm text-muted-foreground underline-offset-4 hover:underline">
+            {t("login.forgot")}
+          </Link>
         </div>
         <div className="relative">
           <Input

@@ -636,6 +636,27 @@ would be a second answer to a question that already has one.
 tenant's own `roles` table, and somebody who works across colleges belongs to no
 tenant. That is its own schema, its own decision and its own guard.
 
+### …and a login is something the office can close
+
+For 288 migrations a login, once made, could be neither listed, re-roled nor
+switched off, and `staff_exit` ended nine relationships while leaving the one
+that reads 302 children's records. `0289` gives *Settings → Team* the list and
+closes a leaver's login by trigger on `staff.status`.
+
+> **Switching a login off is three writes, and each alone fails.** The profile
+> flag is read by no policy; the auth ban stops a new sign-in and not a live
+> session; deleting `auth.sessions` stops the refresh and not an access token
+> already issued. All three, and the stated limit is the token's hour.
+
+Two refusals are the rule 4 *way back* again: nobody acts on their own login,
+and the last active holder of `users.manage` cannot be removed, including by
+the leaver trigger, which keeps that one open and says so. A role is offered
+only where the login's record satisfies its `roles.subject`, because a control
+that will refuse you is worse than none. And the password reset answers
+*"if that address has a login"* whatever the address: a form that says which
+emails are real is an oracle, the `not-found.tsx` rule at the front door. See
+`docs/audit-2026-09.md`.
+
 ## 4. Authorization is two layers
 
 1. **RLS** — tenant isolation *and* row ownership. Teachers see only students
@@ -1912,6 +1933,11 @@ Two consequences worth knowing before you touch this module:
   cascades from it.** The same pass found fourteen `(tenant_id, x) ... ON
   DELETE SET NULL` keys that null `tenant_id` too, so they could never fire,
   and a college with no way to create a class. See `docs/audit-2026-09.md`.
+  `0289` adds five more: a published exam and its papers, homework with
+  marked submissions, a period whose lessons were covered, a book ever lent.
+  **And delete the object after the row, where a guard may refuse the row.**
+  `deleteHomework` emptied the bucket first, per rule 8, which was right while
+  nothing could refuse the delete and wrong the day something could.
 - **Amounts are signed, positive means "owes more", and the RPCs take positive
   numbers** and do the signing. Never ask a caller for a negative amount.
 - **`session_id` on a ledger entry is which year's account it moves;

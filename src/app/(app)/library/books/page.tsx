@@ -5,6 +5,8 @@ import { getUserContext } from "@/lib/auth/context";
 import { hasPermission } from "@/lib/auth/permissions";
 import { listCategories } from "../actions";
 import { BooksTable } from "./books-table";
+import { CategoriesDialog } from "@/components/forms/categories-dialog";
+import { deleteBookCategory, saveBookCategory } from "../actions";
 
 export const metadata = { title: "Catalog" };
 
@@ -25,12 +27,22 @@ export default async function BooksPage() {
           </p>
         </div>
         {canManage && (
-          <Button asChild>
-            <Link href="/library/books/new">
-              <BookPlus className="size-4" aria-hidden="true" />
-              Add book
-            </Link>
-          </Button>
+          <div className="flex flex-wrap gap-2">
+            <CategoriesDialog
+              title="Book categories"
+              description="Deleting a category leaves its books in the catalogue, uncategorised."
+              categories={categories}
+              save={saveBookCategory}
+              remove={deleteBookCategory}
+              deleteNote="Its books stay, uncategorised."
+            />
+            <Button asChild>
+              <Link href="/library/books/new">
+                <BookPlus className="size-4" aria-hidden="true" />
+                Add book
+              </Link>
+            </Button>
+          </div>
         )}
       </div>
 

@@ -1,6 +1,7 @@
 "use client";
 
-import { LogOut } from "lucide-react";
+import Link from "next/link";
+import { KeyRound, LogOut } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import {
@@ -43,6 +44,12 @@ export function UserMenu({ displayName, roleName }: { displayName: string; roleN
           </div>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
+        <DropdownMenuItem asChild>
+          <Link href="/account" className="w-full cursor-pointer">
+            <KeyRound className="size-4" aria-hidden="true" />
+            Change password
+          </Link>
+        </DropdownMenuItem>
         <form action={logout}>
           <DropdownMenuItem asChild variant="destructive">
             <button type="submit" className="w-full cursor-pointer">

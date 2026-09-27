@@ -13,6 +13,9 @@ import { staffStatusLabel, staffStatusTone } from "@/lib/validations/staff-displ
 import { deleteStaffRecord, getStaffRecord } from "../actions";
 import { DeleteRecordControl } from "@/components/people/delete-record-control";
 import { StaffExitControl } from "./staff-exit-control";
+import { GiveLoginControl } from "./give-login-control";
+import { listRoles } from "../../settings/team/actions";
+import { createClient } from "@/lib/supabase/server";
 import { getT } from "@/lib/i18n/server";
 
 export const metadata = { title: "Staff record" };
@@ -29,9 +32,10 @@ function Fact({ label, value }: { label: string; value: React.ReactNode }) {
 export default async function StaffDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const t = await getT();
   const { id } = await params;
-  const [record, canManage] = await Promise.all([
+  const [record, canManage, canManageLogins] = await Promise.all([
     getStaffRecord(id),
     hasPermission("staff.manage"),
+    hasPermission("users.manage"),
   ]);
 
   // `staff_record` raises for a caller without `staff.view` and for an id they
@@ -48,6 +52,25 @@ export default async function StaffDetailPage({ params }: { params: Promise<{ id
   const avatarLimits = BUCKET_LIMITS["avatars"];
   const hasLeft = staff.status !== "active";
   const address = [person.address_line1, person.address_line2].filter(Boolean).join(", ");
+
+  // Whether to offer "Give a login": only to somebody who manages logins,
+  // for a current member of staff who has neither a login nor a pending
+  // invitation. Both reads go through the admin policies, which is also why
+  // they are only asked of somebody holding users.manage (0289).
+  let loginRoles: { id: string; name: string; code: string }[] = [];
+  if (canManageLogins && !hasLeft) {
+    const supabase = await createClient();
+    const [{ count: logins }, { count: pending }, roles] = await Promise.all([
+      supabase.from("user_profiles").select("id", { count: "exact", head: true }).eq("staff_id", staff.id),
+      supabase
+        .from("invitations")
+        .select("id", { count: "exact", head: true })
+        .eq("staff_id", staff.id)
+        .eq("status", "pending"),
+      listRoles(),
+    ]);
+    if (!logins && !pending) loginRoles = roles.filter((r) => r.subject === "staff");
+  }
 
   return (
     <div className="flex flex-col gap-6">
@@ -84,6 +107,14 @@ export default async function StaffDetailPage({ params }: { params: Promise<{ id
                 Edit
               </Link>
             </Button>
+            {loginRoles.length > 0 && (
+              <GiveLoginControl
+                staffId={staff.id}
+                name={person.full_name}
+                email={person.email}
+                roles={loginRoles}
+              />
+            )}
             {!hasLeft && <StaffExitControl staffId={staff.id} staffName={person.full_name} />}
             <DeleteRecordControl
               name={person.full_name}

@@ -1,9 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState, useTransition } from "react";
+import dynamic from "next/dynamic";
+import { UserPlus } from "lucide-react";
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import type { ColumnDef, SortingState, VisibilityState } from "@tanstack/react-table";
+import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import {
   Select,
   SelectContent,
@@ -13,9 +17,12 @@ import {
 } from "@/components/ui/select";
 import { DataTable, exportRowsToCsv } from "@/components/data-table/data-table";
 import { DataTableToolbar } from "@/components/data-table/data-table-toolbar";
-import { listMembers, type MemberRow } from "../actions";
+import { listMembers, setMemberStatus, type MemberRow } from "../actions";
 
-const columns: ColumnDef<MemberRow>[] = [
+const AddMemberDialog = dynamic(() => import("./add-member-dialog"));
+
+function baseColumns(): ColumnDef<MemberRow>[] {
+  return [
   {
     accessorKey: "membershipNumber",
     header: "Membership no.",
@@ -69,15 +76,58 @@ const columns: ColumnDef<MemberRow>[] = [
     enableSorting: false,
     meta: { label: "Books out" },
   },
-];
+  ];
+}
 
-export function MembersTable() {
+export function MembersTable({ canManage }: { canManage: boolean }) {
+  const [busy, startBusy] = useTransition();
+  const [adding, setAdding] = useState(false);
+  const [addMounted, setAddMounted] = useState(false);
   const [pageIndex, setPageIndex] = useState(0);
   const [pageSize, setPageSize] = useState(25);
   const [sorting, setSorting] = useState<SortingState>([]);
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState("all");
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
+
+  const columns = useMemo<ColumnDef<MemberRow>[]>(() => {
+    const cols = baseColumns();
+    if (!canManage) return cols;
+    // Suspending is a librarian's judgement about a borrower; it is undone
+    // here too. Expired cards come from a formal leaving and stay expired.
+    cols.push({
+      id: "actions",
+      header: "",
+      cell: ({ row }) => {
+        const m = row.original;
+        if (m.status === "expired") return null;
+        const next = m.status === "active" ? "suspended" : "active";
+        return (
+          <Button
+            size="sm"
+            variant="outline"
+            disabled={busy}
+            onClick={() =>
+              startBusy(async () => {
+                const result = await setMemberStatus(m.id, next);
+                if (!result.ok) toast.error(result.error);
+                else {
+                  toast.success(next === "active" ? `${m.holderName} can borrow again.` : `${m.holderName} is suspended.`);
+                  void query.refetch();
+                }
+              })
+            }
+          >
+            {next === "active" ? "Reinstate" : "Suspend"}
+          </Button>
+        );
+      },
+      enableSorting: false,
+      meta: { label: "Actions" },
+    });
+    return cols;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [canManage, busy]);
 
   const query = useQuery({
     queryKey: ["library-members", pageIndex, pageSize, search, status],
@@ -115,7 +165,9 @@ export function MembersTable() {
       emptyDescription={
         search || status !== "all"
           ? "Try a different search or clear the status filter."
-          : "Enrol a student or staff member to start lending."
+          : canManage
+            ? "Add a member to start lending."
+            : "Nobody has a library card yet."
       }
       toolbar={(table) => (
         <DataTableToolbar
@@ -160,6 +212,27 @@ export function MembersTable() {
               <SelectItem value="expired">Expired</SelectItem>
             </SelectContent>
           </Select>
+          {canManage && (
+            <>
+              <Button
+                size="sm"
+                onClick={() => {
+                  setAddMounted(true);
+                  setAdding(true);
+                }}
+              >
+                <UserPlus className="size-4" aria-hidden="true" />
+                Add member
+              </Button>
+              {addMounted && (
+                <AddMemberDialog
+                  open={adding}
+                  onOpenChange={setAdding}
+                  onAdded={() => void query.refetch()}
+                />
+              )}
+            </>
+          )}
         </DataTableToolbar>
       )}
     />

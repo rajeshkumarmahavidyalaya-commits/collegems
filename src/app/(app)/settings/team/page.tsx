@@ -1,6 +1,8 @@
 import { hasPermission } from "@/lib/auth/permissions";
 import { listInvitations, listRoles } from "./actions";
 import { TeamView } from "./team-view";
+import { LoginsPanel } from "./logins-panel";
+import { listLogins } from "./login-actions";
 
 export const metadata = { title: "People and invitations" };
 
@@ -13,10 +15,12 @@ export default async function TeamPage() {
   // It is not the gate: `invitations` carries an admin-only policy, so a
   // non-admin who calls the action directly writes nothing. Rule 4 — the UI
   // layer is never the gate.
-  const [invitations, roles, canManage] = await Promise.all([
+  const [invitations, roles, canManage, logins] = await Promise.all([
     listInvitations(),
     listRoles(),
     hasPermission("users.manage"),
+    // null when the caller may not see who can sign in (0289).
+    listLogins(),
   ]);
 
   return (
@@ -27,6 +31,8 @@ export default async function TeamPage() {
           Who can sign in to this school, and who has been asked to.
         </p>
       </div>
+
+      {canManage && logins && <LoginsPanel logins={logins} roles={roles} />}
 
       <TeamView invitations={invitations} roles={roles} canManage={canManage} />
     </div>

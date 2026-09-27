@@ -12,6 +12,7 @@ import {
   timeSlotSchema,
 } from "@/lib/validations/academics";
 import type { ActionResult } from "../library/actions";
+import { deleteErrorSentence, nothingDeletedSentence } from "@/lib/validations/errors";
 
 function fail(message: string): ActionResult<never> {
   return { ok: false, error: message };
@@ -206,8 +207,9 @@ export async function saveClassRoom(
 
 export async function deleteClassRoom(id: string): Promise<ActionResult> {
   const supabase = await createClient();
-  const { error } = await supabase.from("class_rooms").delete().eq("id", id);
-  if (error) return fail(error.message);
+  const { data, error } = await supabase.from("class_rooms").delete().eq("id", id).select("id");
+  if (error) return fail(deleteErrorSentence(error, "this room"));
+  if (!data?.length) return fail(nothingDeletedSentence("this room"));
   revalidatePath("/academics");
   return { ok: true, data: undefined };
 }
@@ -224,13 +226,18 @@ export type TimeSlotRow = {
   startsAt: string;
   endsAt: string;
   isBreak: boolean;
+  /** Lessons in this period across the week, every class, every year. They go
+   *  with it when the period is deleted, so the confirmation says how many. */
+  lessonCount: number;
 };
 
 export async function listTimeSlots(): Promise<TimeSlotRow[]> {
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("time_slots")
-    .select("id, kind, period_number, label, starts_at, ends_at, is_break")
+    .select(
+      "id, kind, period_number, label, starts_at, ends_at, is_break, timetable_entries(count)",
+    )
     .order("kind")
     .order("period_number");
   if (error) throw new Error(error.message);
@@ -243,6 +250,8 @@ export async function listTimeSlots(): Promise<TimeSlotRow[]> {
     startsAt: t.starts_at,
     endsAt: t.ends_at,
     isBreak: t.is_break,
+    lessonCount:
+      (t.timetable_entries as unknown as { count: number }[] | null)?.[0]?.count ?? 0,
   }));
 }
 
@@ -284,8 +293,9 @@ export async function saveTimeSlot(
 
 export async function deleteTimeSlot(id: string): Promise<ActionResult> {
   const supabase = await createClient();
-  const { error } = await supabase.from("time_slots").delete().eq("id", id);
-  if (error) return fail(error.message);
+  const { data, error } = await supabase.from("time_slots").delete().eq("id", id).select("id");
+  if (error) return fail(deleteErrorSentence(error, "this period"));
+  if (!data?.length) return fail(nothingDeletedSentence("this period"));
   revalidatePath("/academics");
   return { ok: true, data: undefined };
 }

@@ -721,7 +721,11 @@ function PeriodsTab({
         open={removing !== null}
         onOpenChange={(open) => !open && setRemoving(null)}
         title="Remove this period?"
-        body="The timetable grid will lose this row. Anything already scheduled in it will need moving."
+        body={
+          (removing?.lessonCount ?? 0) > 0
+            ? `${removing?.lessonCount === 1 ? "1 lesson is" : `${removing?.lessonCount} lessons are`} timetabled in this period across the week, and ${removing?.lessonCount === 1 ? "it goes" : "they go"} with it. The period cannot be removed while a cover arrangement was made for one of them.`
+            : "No lesson is timetabled in this period, so nothing else changes."
+        }
         onConfirm={async () => {
           if (!removing) return;
           const result = await deleteTimeSlot(removing.id);

@@ -10,6 +10,7 @@ import {
   FileText,
   Loader2,
   Mail,
+  Pencil,
   Plus,
   Trash2,
 } from "lucide-react";
@@ -141,6 +142,7 @@ export function FeeSetup({
   }
   const router = useRouter();
   const [headOpen, setHeadOpen] = useState(false);
+  const [editingHead, setEditingHead] = useState<FeeHead | null>(null);
   const [structureOpen, setStructureOpen] = useState(false);
   const [draft, setDraft] = useState<FeeStructureDraft | null>(null);
   const [billOpen, setBillOpen] = useState(false);
@@ -274,7 +276,13 @@ export function FeeSetup({
               been billed — mark it inactive instead, and it stops appearing on
               new invoices.
             </p>
-            <Button size="sm" onClick={() => setHeadOpen(true)}>
+            <Button
+              size="sm"
+              onClick={() => {
+                setEditingHead(null);
+                setHeadOpen(true);
+              }}
+            >
               <Plus className="size-4" aria-hidden="true" />
               Add fee head
             </Button>
@@ -334,6 +342,20 @@ export function FeeSetup({
                       </td>
                       <td className="px-3 py-2">
                         <span className="font-medium">{head.name}</span>
+                        {canManageSettings && (
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="ms-1 h-7 px-2"
+                            aria-label={`Edit ${head.name}`}
+                            onClick={() => {
+                              setEditingHead(head);
+                              setHeadOpen(true);
+                            }}
+                          >
+                            <Pencil className="size-3.5" aria-hidden="true" />
+                          </Button>
+                        )}
                         {head.description && (
                           <span className="block text-xs text-muted-foreground">
                             {head.description}
@@ -421,6 +443,7 @@ export function FeeSetup({
           open={headOpen}
           onOpenChange={setHeadOpen}
           onDone={() => router.refresh()}
+          head={editingHead}
         />
       ) : null}
       {structureOpen ? (

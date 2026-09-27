@@ -1,4 +1,7 @@
 import { z } from "zod";
+import { normaliseHeading, splitCsvLine } from "./csv";
+
+export { splitCsvLine, parseImportDate, normaliseGender } from "./csv";
 
 /**
  * Bulk student import.
@@ -67,57 +70,6 @@ export type ParseResult =
   | { ok: true; rows: ParsedRow[]; headers: string[]; unmatched: string[] }
   | { ok: false; error: string };
 
-function normaliseHeading(value: string): string {
-  return (
-    value
-      .replace(/^﻿/, "")
-      .toLowerCase()
-      .replace(/[._-]+/g, " ")
-      .replace(/[^a-z0-9 ]/g, "")
-      .replace(/\s+/g, " ")
-      // Trimmed **last**, not first: "Admission No." loses its dot to the
-      // separator rule above and becomes "admission no " — a trailing space
-      // that made every heading with punctuation fail to match.
-      .trim()
-  );
-}
-
-/**
- * A CSV line splitter that understands quotes, because school spreadsheets
- * contain `"Kumar, Rajesh"` and a naive `split(",")` turns one child into two.
- */
-export function splitCsvLine(line: string): string[] {
-  const out: string[] = [];
-  let current = "";
-  let inQuotes = false;
-
-  for (let i = 0; i < line.length; i += 1) {
-    const char = line[i];
-    if (inQuotes) {
-      if (char === '"') {
-        // A doubled quote inside a quoted field is a literal quote.
-        if (line[i + 1] === '"') {
-          current += '"';
-          i += 1;
-        } else {
-          inQuotes = false;
-        }
-      } else {
-        current += char;
-      }
-    } else if (char === '"') {
-      inQuotes = true;
-    } else if (char === ",") {
-      out.push(current);
-      current = "";
-    } else {
-      current += char;
-    }
-  }
-  out.push(current);
-  return out.map((v) => v.trim());
-}
-
 /**
  * Turn a file into rows. Refuses rather than truncating when the file is over
  * the bound: silently importing the first 500 of 900 children is the worst
@@ -179,45 +131,6 @@ export function parseCsv(text: string): ParseResult {
   });
 
   return { ok: true, rows, headers, unmatched };
-}
-
-/**
- * Dates as schools actually write them: `2015-06-12`, `12/06/2015`,
- * `12-06-2015`. **Day first**, because that is what an Indian school office
- * types and getting it wrong silently swaps birthdays for every child born
- * before the 13th.
- */
-export function parseImportDate(value: string | undefined): string | null {
-  if (!value) return null;
-  const text = value.trim();
-  if (text === "") return null;
-
-  const iso = /^(\d{4})-(\d{1,2})-(\d{1,2})$/.exec(text);
-  if (iso) {
-    return `${iso[1]}-${iso[2].padStart(2, "0")}-${iso[3].padStart(2, "0")}`;
-  }
-
-  const dmy = /^(\d{1,2})[/-](\d{1,2})[/-](\d{4})$/.exec(text);
-  if (dmy) {
-    const day = Number(dmy[1]);
-    const month = Number(dmy[2]);
-    if (day < 1 || day > 31 || month < 1 || month > 12) return null;
-    return `${dmy[3]}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
-  }
-
-  return null;
-}
-
-/** `M`, `Male`, `boy` → `male`. Anything unrecognised stays as typed, so the database's own check reports it. */
-export function normaliseGender(value: string | undefined): string | null {
-  if (!value) return null;
-  const text = value.trim().toLowerCase();
-  if (text === "") return null;
-  if (["m", "male", "boy", "b"].includes(text)) return "male";
-  if (["f", "female", "girl", "g"].includes(text)) return "female";
-  if (["o", "other"].includes(text)) return "other";
-  if (["u", "undisclosed", "not stated", "na", "n/a"].includes(text)) return "undisclosed";
-  return text;
 }
 
 export const importRowEditSchema = z.object({

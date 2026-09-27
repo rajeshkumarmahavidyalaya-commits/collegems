@@ -168,6 +168,19 @@ export const en = {
   "login.failed": "That email address and password do not match.",
   "login.noTenant":
     "This login is not attached to a school yet. Ask your administrator to send you an invitation.",
+  "login.switchedOff": "This login has been switched off by your college. Ask the office if you think that is a mistake.",
+  "auth.forgot.title": "Reset your password",
+  "auth.forgot.body": "Enter the address you sign in with. If it belongs to a login here, we will email a link to choose a new password.",
+  "auth.forgot.submit": "Send the link",
+  "auth.forgot.sent": "If that address has a login, a link is on its way. It works once and expires within the hour.",
+  "auth.forgot.back": "Back to sign in",
+  "auth.reset.title": "Choose a new password",
+  "auth.reset.newPassword": "New password",
+  "auth.reset.confirm": "Type it again",
+  "auth.reset.submit": "Save the new password",
+  "auth.reset.expired": "This link has expired or has already been used. Ask for a new one.",
+  "auth.reset.tooShort": "Use at least 8 characters.",
+  "auth.reset.mismatch": "The two passwords are not the same.",
 
   // --- notification channels, the newest screen and a full one ------------
 

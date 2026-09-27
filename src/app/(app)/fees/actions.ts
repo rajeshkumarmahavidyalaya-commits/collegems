@@ -20,6 +20,7 @@ import {
   reversalSchema,
 } from "@/lib/validations/fees";
 import type { ActionResult } from "../library/actions";
+import { deleteErrorSentence, nothingDeletedSentence } from "@/lib/validations/errors";
 
 export type BalanceRow = {
   studentId: string;
@@ -778,8 +779,9 @@ export async function saveFeeStructure(input: unknown): Promise<ActionResult<{ i
 
 export async function deleteFeeStructure(id: string): Promise<ActionResult> {
   const supabase = await createClient();
-  const { error } = await supabase.from("fee_structures").delete().eq("id", id);
-  if (error) return fail(error.message);
+  const { data, error } = await supabase.from("fee_structures").delete().eq("id", id).select("id");
+  if (error) return fail(deleteErrorSentence(error, "this fee"));
+  if (!data?.length) return fail(nothingDeletedSentence("this fee"));
   revalidatePath("/fees/setup");
   return { ok: true, data: undefined };
 }

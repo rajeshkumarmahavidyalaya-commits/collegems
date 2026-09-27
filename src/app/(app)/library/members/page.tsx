@@ -1,8 +1,10 @@
+import { hasPermission } from "@/lib/auth/permissions";
 import { MembersTable } from "./members-table";
 
 export const metadata = { title: "Library members" };
 
-export default function MembersPage() {
+export default async function MembersPage() {
+  const canManage = await hasPermission("library.manage");
   return (
     <div className="flex flex-col gap-4">
       <div>
@@ -11,7 +13,7 @@ export default function MembersPage() {
           Students and staff who can borrow, and how many books each has out.
         </p>
       </div>
-      <MembersTable />
+      <MembersTable canManage={canManage} />
     </div>
   );
 }

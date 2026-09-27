@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { UserPlus } from "lucide-react";
+import { FileUp, UserPlus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { getUserContext } from "@/lib/auth/context";
 import { hasPermission } from "@/lib/auth/permissions";
@@ -30,12 +30,20 @@ export default async function StaffPage() {
           </p>
         </div>
         {canManage && (
-          <Button asChild>
-            <Link href="/staff/new">
-              <UserPlus className="size-4" aria-hidden="true" />
-              Add staff
-            </Link>
-          </Button>
+          <div className="flex flex-wrap gap-2">
+            <Button asChild variant="outline">
+              <Link href="/staff/import">
+                <FileUp className="size-4" aria-hidden="true" />
+                Import from a spreadsheet
+              </Link>
+            </Button>
+            <Button asChild>
+              <Link href="/staff/new">
+                <UserPlus className="size-4" aria-hidden="true" />
+                Add staff
+              </Link>
+            </Button>
+          </div>
         )}
       </div>
 

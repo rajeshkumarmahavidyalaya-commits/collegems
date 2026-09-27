@@ -12,6 +12,7 @@ import {
   parseRules,
 } from "@/lib/validations/exams";
 import type { ActionResult } from "../library/actions";
+import { deleteErrorSentence, nothingDeletedSentence } from "@/lib/validations/errors";
 
 function fail(message: string): ActionResult<never> {
   return { ok: false, error: message };
@@ -179,8 +180,9 @@ export async function saveExam(input: unknown, id?: string): Promise<ActionResul
 
 export async function deleteExam(id: string): Promise<ActionResult> {
   const supabase = await createClient();
-  const { error } = await supabase.from("exams").delete().eq("id", id);
-  if (error) return fail(error.message);
+  const { data, error } = await supabase.from("exams").delete().eq("id", id).select("id");
+  if (error) return fail(deleteErrorSentence(error, "this exam"));
+  if (!data?.length) return fail(nothingDeletedSentence("this exam"));
 
   revalidatePath("/exams");
   return { ok: true, data: undefined };
@@ -392,8 +394,9 @@ export async function savePaper(
 
 export async function deletePaper(id: string): Promise<ActionResult> {
   const supabase = await createClient();
-  const { error } = await supabase.from("exam_subjects").delete().eq("id", id);
-  if (error) return fail(error.message);
+  const { data, error } = await supabase.from("exam_subjects").delete().eq("id", id).select("id");
+  if (error) return fail(deleteErrorSentence(error, "this paper"));
+  if (!data?.length) return fail(nothingDeletedSentence("this paper"));
 
   revalidatePath("/exams");
   return { ok: true, data: undefined };

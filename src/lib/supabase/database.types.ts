@@ -11371,6 +11371,23 @@ export type Database = {
           teacher_name: string
         }[]
       }
+      team_logins: {
+        Args: never
+        Returns: {
+          display_name: string
+          email: string
+          is_active: boolean
+          is_you: boolean
+          last_sign_in_at: string | null
+          record_kind: string
+          role_id: string
+          role_name: string
+          role_subject: string
+          user_id: string
+        }[]
+      }
+      login_set_access: { Args: { p_active: boolean; p_user_id: string }; Returns: Json }
+      login_set_role: { Args: { p_role_id: string; p_user_id: string }; Returns: Json }
       timetable_busy_in_slot: {
         Args: {
           p_entry_id?: string

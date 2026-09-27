@@ -373,3 +373,37 @@ export async function reverseSale(input: unknown): Promise<ActionResult<{ amount
   revalidatePath("/fees");
   return { ok: true, data: { amount: Number((data as { amount: number }).amount) } };
 }
+
+/** Rename, or add when there is no id: the shared categories dialog's `save` (0289). */
+export async function saveCategory(name: string, id?: string): Promise<ActionResult<{ id: string }>> {
+  if (!id) return addCategory(name);
+  const trimmed = name.trim();
+  if (trimmed === "") return fail("A category needs a name.");
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("item_categories")
+    .update({ name: trimmed })
+    .eq("id", id)
+    .select("id");
+  if (error) {
+    if (error.code === "23505") return fail(`There is already a "${trimmed}" category.`);
+    return fail(error.message);
+  }
+  if (!data || data.length === 0) return fail("Only the store can change categories.");
+  revalidatePath("/inventory");
+  return { ok: true, data: { id } };
+}
+
+/**
+ * Items in it keep their stock and history, uncategorised: the key onto
+ * `item_categories` is `SET NULL (category_id)` since 0288, where before it
+ * would have nulled `tenant_id` too and failed.
+ */
+export async function deleteCategory(id: string): Promise<ActionResult> {
+  const supabase = await createClient();
+  const { data, error } = await supabase.from("item_categories").delete().eq("id", id).select("id");
+  if (error) return fail(error.message);
+  if (!data || data.length === 0) return fail("Only the store can change categories.");
+  revalidatePath("/inventory");
+  return { ok: true, data: undefined };
+}
