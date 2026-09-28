@@ -4280,6 +4280,18 @@ the brief (`0291`): measured, asking twice was 185 of 230 ms. And the library's
 borrower list held the first 20 of 75 cards, which is `0259`'s *"a bound nobody
 has reached"* one module along (`0292`). See `docs/ui-review.md`.
 
+The page behind each tile opens on the same shape: `module_cards(module)`
+(`0294`) is a strip of counts under the header of sixteen module pages.
+`0293` put staff on the same buses as the children: one table, one seat count,
+and a staff seat that is free by CHECK until payroll can collect a fare.
+
+> **A card is drawn for somebody who sees the whole room.** Probed as a
+> teacher, *"students without a class"* read **277 of 302**. That is a `not
+> exists` from tenant-wide `students` into row-owned `enrolments`, the rule-4
+> lie in its accusing form. `0295` draws each row-owned card only for the
+> permission that acts on it, and otherwise leaves it out rather than zeroing
+> it. `tests/dashboard/module-cards.test.ts` pins each one inside its branch.
+
 ### Amber is not a hover colour
 
 The generated palette's amber (`--brand-accent`) is for **sparing emphasis** —

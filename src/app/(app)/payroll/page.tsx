@@ -2,6 +2,7 @@ import { getUserContext } from "@/lib/auth/context";
 import { hasPermission } from "@/lib/auth/permissions";
 import { getMyPayslips, listRuns } from "./actions";
 import { MyPayslips, PayrollRuns } from "./payroll-runs";
+import { ModuleCards } from "@/components/module-cards";
 
 export const metadata = { title: "Payroll" };
 
@@ -43,6 +44,7 @@ export default async function PayrollPage() {
           a release.
         </p>
       </div>
+      <ModuleCards module="payroll" />
 
       <PayrollRuns runs={runs} canProcess={canProcess} />
     </div>

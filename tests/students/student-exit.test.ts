@@ -34,13 +34,14 @@ describeDb("student exit", () => {
     const { data } = await a
       .from("transport_assignments")
       .select("student_id")
+      .not("student_id", "is", null)
       .eq("status", "active")
       .is("ends_on", null)
       .limit(1)
       .maybeSingle();
 
     if (!data) return;
-    studentId = data.student_id;
+    studentId = data.student_id as string;
 
     const [{ data: enrolments }, { data: transport }, { data: hostel }] = await Promise.all([
       a.from("enrolments").select("id").eq("student_id", studentId).eq("status", "active"),

@@ -81,12 +81,13 @@ describeDb("transport", () => {
     const { data: existing } = await a
       .from("transport_assignments")
       .select("student_id")
+      .not("student_id", "is", null)
       .eq("status", "active")
       .limit(1)
       .single();
 
     const { error } = await a.rpc("transport_assign_student", {
-      p_student_id: existing!.student_id,
+      p_student_id: existing!.student_id as string,
       p_stop_id: stopOnBoth,
       p_direction: "both",
     });
@@ -104,6 +105,7 @@ describeDb("transport", () => {
     const { data: taken } = await a
       .from("transport_assignments")
       .select("student_id")
+      .not("student_id", "is", null)
       .eq("status", "active");
 
     const busy = new Set((taken ?? []).map((t) => t.student_id));
@@ -151,13 +153,14 @@ describeDb("transport", () => {
     const { data: assignment } = await a
       .from("transport_assignments")
       .select("student_id, monthly_fare")
+      .not("student_id", "is", null)
       .eq("status", "active")
       .gt("monthly_fare", 0)
       .limit(1)
       .single();
 
     const { data: lines, error } = await a.rpc("fees_billable_lines", {
-      p_student_id: assignment!.student_id,
+      p_student_id: assignment!.student_id as string,
     });
     expect(error, error?.message).toBeNull();
 
@@ -176,12 +179,13 @@ describeDb("transport", () => {
     const { data: assignments } = await a
       .from("transport_assignments")
       .select("student_id")
+      .not("student_id", "is", null)
       .eq("status", "active")
       .limit(3);
 
     for (const row of assignments ?? []) {
       const { data: lines } = await a.rpc("fees_billable_lines", {
-        p_student_id: row.student_id,
+        p_student_id: row.student_id as string,
       });
       const transport = (lines ?? []).filter((l) => l.source === "transport");
       expect(transport).toHaveLength(1);

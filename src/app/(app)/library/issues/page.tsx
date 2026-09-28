@@ -1,6 +1,7 @@
 import { hasPermission } from "@/lib/auth/permissions";
 import { IssueBookDialog } from "../issue-book-dialog";
 import { IssuesTable } from "./issues-table";
+import { ModuleCards } from "@/components/module-cards";
 
 export const metadata = { title: "Issues & returns" };
 
@@ -31,6 +32,7 @@ export default async function IssuesPage({
         </div>
         {canIssue && <IssueBookDialog defaultOpen={issue === "1"} />}
       </div>
+      <ModuleCards module="library" />
       <IssuesTable canManage={canManage} />
     </div>
   );

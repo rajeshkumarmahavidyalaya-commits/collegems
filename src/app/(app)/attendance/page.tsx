@@ -5,6 +5,7 @@ import { getUserContext } from "@/lib/auth/context";
 import { hasPermission } from "@/lib/auth/permissions";
 import { listMarkableSections, sectionsMarkedToday } from "./actions";
 import { AttendanceMarker } from "./attendance-marker";
+import { ModuleCards } from "@/components/module-cards";
 
 export const metadata = { title: "Attendance" };
 
@@ -47,6 +48,7 @@ export default async function AttendancePage({
           </Link>
         </Button>
       </div>
+      <ModuleCards module="attendance" />
 
       <AttendanceMarker
         sections={sections}

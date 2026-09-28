@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { getUserContext } from "@/lib/auth/context";
 import { hasPermission } from "@/lib/auth/permissions";
 import { StaffTable } from "./staff-table";
+import { ModuleCards } from "@/components/module-cards";
 
 export const metadata = { title: "Staff" };
 
@@ -46,6 +47,7 @@ export default async function StaffPage() {
           </div>
         )}
       </div>
+      <ModuleCards module="staff" />
 
       <StaffTable canManage={canManage} />
     </div>

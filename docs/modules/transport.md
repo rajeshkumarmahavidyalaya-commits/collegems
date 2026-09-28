@@ -288,3 +288,24 @@ admissions desk.
   detected.
 - **Nothing notifies anybody.** A route change or a bus running late is exactly
   what `notify_send` exists for, and no code calls it yet.
+
+## Staff ride the same buses (0293)
+
+A member of staff can hold a seat: *Give a member of staff a seat* on
+`/transport/assignments`, and the seat shows on their record under
+**Transport**. It is the same table, the same checks and the same seat count
+under the same advisory lock, so a bus with 40 seats is 40 children and staff
+together.
+
+- **One rider per seat.** `num_nonnulls(student_id, staff_id) = 1`.
+- **One seat at a time.** The existing exclusion compares `student_id` with
+  `=`, and `null = null` is never true, so staff rows have a twin exclusion.
+- **Free, by CHECK.** `staff_id is null or monthly_fare = 0`. Charging staff
+  would be a payroll deduction that nothing collects yet. A fare the database
+  records and nobody bills is the `fee_structures.frequency` mistake, so the
+  column cannot hold one until payroll can.
+- **Leaving ends it.** `staff_exit` ends a current seat and cancels a future
+  one. `guard_staff_delete` counts bus seats among the history that stops a
+  delete.
+- **Readers that mean children say so.** Renewal and the year-end critic
+  filter `student_id is not null`. The manifest lists staff riders by name.

@@ -180,7 +180,9 @@ export async function assignStudentType(
   const supabase = await createClient();
   const { data, error } = await supabase.rpc("student_type_assign", {
     p_student_id: studentId,
-    p_student_type_id: studentTypeId,
+    // Null is meaningful here -- it takes the type away -- and every SQL argument
+    // accepts it; the generated types cannot say so for a function argument.
+    p_student_type_id: studentTypeId as string,
   });
   if (error) return fail(error.message);
   const result = (data ?? {}) as { type?: string | null; changed?: boolean };
@@ -263,7 +265,9 @@ export async function assignStudentTypeToMany(
   for (const id of ids) {
     const { data, error } = await supabase.rpc("student_type_assign", {
       p_student_id: id,
-      p_student_type_id: studentTypeId,
+      // Null is meaningful here -- it takes the type away -- and every SQL argument
+    // accepts it; the generated types cannot say so for a function argument.
+    p_student_type_id: studentTypeId as string,
     });
     if (error) {
       failed.push(error.message);

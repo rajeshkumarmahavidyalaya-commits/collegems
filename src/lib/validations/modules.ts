@@ -225,3 +225,140 @@ export function attentionLine(e: ModuleEntry): string | null {
   if (!tile?.attention || e.attention === null || e.attention === 0) return null;
   return countPhrase(e.attention, tile.attention);
 }
+
+/**
+ * The count cards at the top of each module page (0294, 0295): the WordPress
+ * school plugins' shape -- a strip of numbers, then the list -- on every
+ * module rather than on the home page alone.
+ *
+ * Which cards exist for the caller is decided by `module_cards()` in Postgres,
+ * gated like the module's tile; a card whose honest answer needs every row is
+ * drawn only for the permission that acts on it (0295). This map only says
+ * how to draw a key. `warn` draws the number amber when it is above zero --
+ * the card is something to act on. `href` goes to a different screen, never
+ * the one the card sits on.
+ */
+export type ModuleCard = { label: string; warn?: boolean; href?: string };
+
+export const MODULE_CARDS: Record<string, Record<string, ModuleCard>> = {
+  students: {
+    on_roll: { label: "On roll" },
+    admitted_this_year: { label: "Admitted this year" },
+    left_this_year: { label: "Left this year" },
+    without_class: { label: "Without a class", warn: true, href: "/academics?tab=classes" },
+  },
+  staff: {
+    active: { label: "Current staff" },
+    class_teachers: { label: "Class teachers" },
+    departments: { label: "Departments" },
+    left: { label: "Have left" },
+  },
+  classes: {
+    class_levels: { label: "Classes" },
+    sections: { label: "Sections this year" },
+    no_class_teacher: { label: "No class teacher", warn: true },
+    subjects: { label: "Subjects" },
+  },
+  attendance: {
+    classes: { label: "Your classes" },
+    marked_today: { label: "Registers taken today" },
+    present_today: { label: "Present today" },
+    absent_today: { label: "Absent today" },
+  },
+  fees: {
+    owing: { label: "Families owing", warn: true },
+    invoices_this_year: { label: "Invoices this year", href: "/fees/invoices" },
+    cancelled_this_year: { label: "Cancelled invoices" },
+    fee_heads: { label: "Fee heads", href: "/fees/setup" },
+  },
+  exams: {
+    this_year: { label: "Exams this year" },
+    drafts: { label: "Still drafts", warn: true },
+    published: { label: "Results published" },
+  },
+  library: {
+    titles: { label: "Titles", href: "/library/books" },
+    members: { label: "Library cards", href: "/library/members" },
+    out: { label: "Books out" },
+    overdue: { label: "Overdue", warn: true },
+  },
+  transport: {
+    vehicles: { label: "Vehicles" },
+    routes: { label: "Routes" },
+    students: { label: "Students riding", href: "/transport/assignments" },
+    staff: { label: "Staff riding", href: "/transport/assignments" },
+  },
+  hostel: {
+    hostels: { label: "Hostels" },
+    rooms: { label: "Rooms" },
+    beds: { label: "Beds" },
+    occupied: { label: "Beds occupied" },
+  },
+  inventory: {
+    items: { label: "Items" },
+    below_reorder: { label: "Below reorder level", warn: true },
+    assets: { label: "Assets" },
+  },
+  front_office: {
+    open_enquiries: { label: "Open enquiries" },
+    follow_ups_due: { label: "Follow-ups due", warn: true },
+    admitted_this_year: { label: "Admitted from enquiries" },
+    visitors_in: { label: "Visitors in now" },
+  },
+  notices: {
+    up: { label: "On the board" },
+    pinned: { label: "Pinned" },
+    drafts: { label: "Drafts", href: "/notices/manage" },
+  },
+  accounts: {
+    posted_this_month: { label: "Vouchers this month" },
+    drafts: { label: "Drafts waiting", warn: true },
+    ledgers: { label: "Ledgers" },
+  },
+  certificates: {
+    issued_this_year: { label: "Issued this year" },
+    for_staff: { label: "For staff" },
+    cancelled_this_year: { label: "Cancelled" },
+  },
+  payroll: {
+    finalised_this_year: { label: "Runs paid this year" },
+    drafts: { label: "Draft runs", warn: true },
+    on_payroll: { label: "Staff on payroll" },
+  },
+  staff_attendance: {
+    marked_today: { label: "Marked today" },
+    on_leave_today: { label: "On leave today" },
+    leave_waiting: { label: "Leave requests waiting", warn: true, href: "/hr/leave" },
+  },
+};
+
+export type ModuleCardEntry = { key: string; count: number };
+
+/** Reads `module_cards()`; null (may not open the module) and nonsense both draw nothing. */
+export function parseModuleCards(module: string, data: unknown): ModuleCardEntry[] {
+  const cards = (data as { cards?: unknown } | null)?.cards;
+  const known = MODULE_CARDS[module];
+  if (!Array.isArray(cards) || !known) return [];
+  const out: ModuleCardEntry[] = [];
+  for (const c of cards) {
+    const r = c as Record<string, unknown> | null;
+    if (!r || typeof r.key !== "string" || !known[r.key]) continue;
+    const n = num(r.count);
+    if (n === null) continue;
+    out.push({ key: r.key, count: n });
+  }
+  return out;
+}
+
+/**
+ * Homework keeps the strip it already had (`HomeworkSummary`: set, still to
+ * hand in, waiting to be marked), which answers the teacher's question more
+ * closely than these. Its cards are declared so the function and this map
+ * agree, and drawn nowhere until the two strips are one.
+ */
+MODULE_CARDS.homework = {
+  set_this_year: { label: "Set this year" },
+  due_this_week: { label: "Due this week" },
+  to_grade: { label: "Waiting to be marked", warn: true },
+  drafts: { label: "Drafts" },
+};

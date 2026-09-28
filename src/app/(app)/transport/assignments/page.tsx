@@ -2,7 +2,7 @@ import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { hasPermission } from "@/lib/auth/permissions";
-import { listAssignments, listStopOptions } from "../actions";
+import { listAssignments, listStaffForTransport, listStopOptions } from "../actions";
 import { AssignmentsView } from "./assignments-view";
 
 export const metadata = { title: "Transport assignments" };
@@ -24,7 +24,11 @@ export default async function AssignmentsPage() {
     );
   }
 
-  const [stops, assignments] = await Promise.all([listStopOptions(), listAssignments()]);
+  const [stops, assignments, staff] = await Promise.all([
+    listStopOptions(),
+    listAssignments(),
+    canAssign ? listStaffForTransport() : Promise.resolve([]),
+  ]);
 
   return (
     <div className="flex flex-col gap-6">
@@ -32,7 +36,7 @@ export default async function AssignmentsPage() {
         <div>
           <h1 className="text-2xl font-semibold">Transport assignments</h1>
           <p className="max-w-2xl text-sm text-muted-foreground">
-            Which child boards where. A full bus, a child already on another route and a one-way
+            Which child, and which member of staff, boards where. A full bus, a child already on another route and a one-way
             route that cannot drop are all refused by the database with a sentence — this screen
             shows it rather than rewording it.
           </p>
@@ -45,7 +49,7 @@ export default async function AssignmentsPage() {
         </Button>
       </div>
 
-      <AssignmentsView stops={stops} assignments={assignments} canAssign={canAssign} />
+      <AssignmentsView stops={stops} staff={staff} assignments={assignments} canAssign={canAssign} />
     </div>
   );
 }

@@ -3,6 +3,7 @@ import { hasPermission } from "@/lib/auth/permissions";
 import { schoolToday } from "@/lib/validations/homework";
 import { getAttendanceSheet } from "./actions";
 import { AttendanceRegister, MyAttendance, RegisterDatePicker } from "./attendance-register";
+import { ModuleCards } from "@/components/module-cards";
 
 export const metadata = { title: "Staff attendance" };
 
@@ -52,6 +53,7 @@ export default async function StaffAttendancePage({
         </div>
         <RegisterDatePicker date={date} />
       </div>
+      <ModuleCards module="staff_attendance" />
 
       <AttendanceRegister date={date} rows={rows} canMark={canMark} />
 

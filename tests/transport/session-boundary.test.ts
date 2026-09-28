@@ -55,6 +55,7 @@ describeDb("an arrangement cannot outlive the year it was made for", () => {
     const { data: lapsed } = await a
       .from("transport_assignments")
       .select("student_id, effective_ends_on")
+      .not("student_id", "is", null)
       .eq("status", "active")
       .not("effective_ends_on", "is", null);
 
@@ -66,7 +67,7 @@ describeDb("an arrangement cannot outlive the year it was made for", () => {
 
     for (const row of past.slice(0, 10)) {
       const { data: lines, error } = await a.rpc("transport_fee_lines", {
-        p_student_id: row.student_id,
+        p_student_id: row.student_id as string,
         p_as_of: today,
       });
       expect(error).toBeNull();
@@ -84,6 +85,7 @@ describeDb("an arrangement cannot outlive the year it was made for", () => {
     const { data: rows } = await a
       .from("transport_assignments")
       .select("student_id, effective_ends_on, monthly_fare")
+      .not("student_id", "is", null)
       .eq("status", "active")
       .gt("monthly_fare", 0)
       .not("effective_ends_on", "is", null)
@@ -91,7 +93,7 @@ describeDb("an arrangement cannot outlive the year it was made for", () => {
 
     for (const row of rows ?? []) {
       const { data: lines, error } = await a.rpc("transport_fee_lines", {
-        p_student_id: row.student_id,
+        p_student_id: row.student_id as string,
         p_as_of: row.effective_ends_on as string,
       });
       expect(error).toBeNull();

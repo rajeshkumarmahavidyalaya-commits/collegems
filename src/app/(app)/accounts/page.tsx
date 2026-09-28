@@ -7,6 +7,7 @@ import {
   listPostingRules,
 } from "./actions";
 import { ChartView } from "./chart-view";
+import { ModuleCards } from "@/components/module-cards";
 
 export const metadata = { title: "Accounts" };
 
@@ -52,6 +53,7 @@ export default async function AccountsPage() {
           subledgers can never quietly disagree.
         </p>
       </div>
+      <ModuleCards module="accounts" />
 
       <ChartView
         chart={chart}

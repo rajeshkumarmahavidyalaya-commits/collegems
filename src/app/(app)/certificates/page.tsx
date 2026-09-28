@@ -15,6 +15,7 @@ import { hasPermission } from "@/lib/auth/permissions";
 import { listCertificates } from "./actions";
 import { kindLabel } from "@/lib/validations/certificates";
 import { getT } from "@/lib/i18n/server";
+import { ModuleCards } from "@/components/module-cards";
 
 export const metadata = { title: "Certificates" };
 
@@ -60,6 +61,7 @@ export default async function CertificatesPage() {
           </Button>
         )}
       </div>
+      <ModuleCards module="certificates" />
 
       <Card>
         <CardHeader>

@@ -853,3 +853,54 @@ The grid is a Server Component, so `/` is 117 kB before and after.
 
 It was checked by planting three violations, and each was caught: a drifted
 gate, a definer with a hand tenant filter, and a role branch in the grid.
+
+## Every module page opens on its numbers (0294, 0295)
+
+The WordPress school plugins an office already knows open every module the
+same way: a strip of counts, then the list. Transport says *Vehicles 2 ·
+Routes 2 · Students riding · Staff riding* before anything else. Here, the home
+page had that shape (`0290`) and the pages behind it did not.
+
+`module_cards(p_module)` gives each module page its strip: one invoker call per
+page, gated on the same permission as the module's home tile, with no role
+list in the page. `<ModuleCards module="…" />` draws it under the header of 16
+module pages. A card that is something to act on (*Overdue*, *Below reorder
+level*, *Follow-ups due*, *Without a class*) turns amber above zero. The label
+says what it means, so the meaning does not rest on colour.
+
+Homework keeps the strip it already had, which answers the teacher's question
+more closely (*still to hand in*, *waiting to be marked*).
+
+### The probe found the rule-4 lie, and the fix is 0295
+
+`0294` read correctly as the administrator of both colleges. As the other seats
+it did not:
+
+| seat | card | said | why |
+|---|---|---|---|
+| teacher | Students without a class | **277 of 302** | `students` is tenant-wide, `enrolments` row-owned: a `not exists` over the two |
+| student | Library cards / books out | 1 / 0 | their own card, about a library lending 18 books |
+| student | Riding the bus | their own seat | assignments are row-owned for a family |
+
+An invoker over row-ownership RLS answers a narrower caller with a smaller,
+plausible number, and the first row is the worse face of it: an accusation.
+`0295` draws each such card only for the permission held by whoever acts on
+it: `students.manage`, `library.issue`, `transport.assign`, `hostel.allocate`,
+`notices.manage`. Otherwise the card is left out, never zeroed. Probed again
+as teacher, librarian and student, every remaining card is true of the whole
+college. The staff register and staff leave, both row-owned, are drawn for
+`hr.manage` only.
+
+### Guards
+
+`tests/dashboard/module-cards.test.ts` pins:
+
+- that the function is an invoker with no hand tenant filter, revoked from
+  `anon`;
+- that each module's gate matches its tile's gate;
+- that the SQL keys and `MODULE_CARDS` agree, module by module;
+- that each row-owned card sits inside its acting permission's branch, with a
+  synthetic plant proving the check can fail;
+- that every link resolves to a different page;
+- that the strip is on all 16 pages;
+- that the component decides nothing about roles.

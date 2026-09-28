@@ -4,6 +4,7 @@ import { listStaffOptions } from "../hr/actions";
 import { getBillingConflicts } from "../transport/actions";
 import { listFeeHeads, listHostels, listRooms } from "./actions";
 import { HostelView } from "./hostel-view";
+import { ModuleCards } from "@/components/module-cards";
 
 export const metadata = { title: "Hostel" };
 
@@ -60,6 +61,7 @@ export default async function HostelPage() {
           </div>
         </div>
       </div>
+      <ModuleCards module="hostel" />
 
       <HostelView
         hostels={hostels}

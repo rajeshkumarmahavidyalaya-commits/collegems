@@ -12,6 +12,7 @@ import {
 import { OnlineApplicationsCard } from "./online-applications-card";
 import { canChangeSettings } from "../settings/school/actions";
 import { FrontOfficeView } from "./front-office-view";
+import { ModuleCards } from "@/components/module-cards";
 
 export const metadata = { title: "Front office" };
 
@@ -67,6 +68,7 @@ export default async function FrontOfficePage({
           click, through the same path the office already uses.
         </p>
       </div>
+      <ModuleCards module="front_office" />
 
       {online ? <OnlineApplicationsCard online={online} canChange={mayChangeSettings} /> : null}
 

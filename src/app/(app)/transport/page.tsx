@@ -9,6 +9,7 @@ import {
   listVehicles,
 } from "./actions";
 import { TransportView } from "./transport-view";
+import { ModuleCards } from "@/components/module-cards";
 
 export const metadata = { title: "Transport" };
 
@@ -62,6 +63,7 @@ export default async function TransportPage() {
           </div>
         </div>
       </div>
+      <ModuleCards module="transport" />
 
       <TransportView
         routes={routes}

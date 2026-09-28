@@ -118,6 +118,44 @@ export type Database = {
           },
         ]
       }
+      assistant_messages: {
+        Row: {
+          created_at: string
+          id: string
+          question: string
+          status: string
+          tenant_id: string
+          tools: string[]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          question: string
+          status?: string
+          tenant_id: string
+          tools?: string[]
+          user_id?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          question?: string
+          status?: string
+          tenant_id?: string
+          tools?: string[]
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "assistant_messages_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       attendance_records: {
         Row: {
           attendance_date: string
@@ -6326,6 +6364,68 @@ export type Database = {
           },
         ]
       }
+      student_subject_choices: {
+        Row: {
+          created_at: string
+          group_id: string
+          id: string
+          session_id: string
+          student_id: string
+          subject_id: string
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          group_id: string
+          id?: string
+          session_id: string
+          student_id: string
+          subject_id: string
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          group_id?: string
+          id?: string
+          session_id?: string
+          student_id?: string
+          subject_id?: string
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "student_subject_choices_enrolment_fkey"
+            columns: ["tenant_id", "session_id", "student_id"]
+            isOneToOne: false
+            referencedRelation: "enrolments"
+            referencedColumns: ["tenant_id", "session_id", "student_id"]
+          },
+          {
+            foreignKeyName: "student_subject_choices_group_fkey"
+            columns: ["tenant_id", "group_id", "session_id"]
+            isOneToOne: false
+            referencedRelation: "subject_groups"
+            referencedColumns: ["tenant_id", "id", "session_id"]
+          },
+          {
+            foreignKeyName: "student_subject_choices_option_fkey"
+            columns: ["group_id", "subject_id"]
+            isOneToOne: false
+            referencedRelation: "subject_group_options"
+            referencedColumns: ["group_id", "subject_id"]
+          },
+          {
+            foreignKeyName: "student_subject_choices_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       student_type_assignments: {
         Row: {
           created_at: string
@@ -6361,6 +6461,13 @@ export type Database = {
             isOneToOne: true
             referencedRelation: "enrolments"
             referencedColumns: ["tenant_id", "session_id", "student_id"]
+          },
+          {
+            foreignKeyName: "student_type_assignments_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
           },
           {
             foreignKeyName: "student_type_assignments_type_fkey"
@@ -6402,7 +6509,15 @@ export type Database = {
           tenant_id?: string
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "student_types_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       students: {
         Row: {
@@ -6560,69 +6675,6 @@ export type Database = {
           },
         ]
       }
-      assistant_messages: {
-        Row: {
-          created_at: string
-          id: string
-          question: string
-          status: string
-          tenant_id: string
-          tools: string[]
-          user_id: string
-        }
-        Insert: {
-          created_at?: string
-          id?: string
-          question: string
-          status?: string
-          tenant_id: string
-          tools?: string[]
-          user_id?: string
-        }
-        Update: {
-          created_at?: string
-          id?: string
-          question?: string
-          status?: string
-          tenant_id?: string
-          tools?: string[]
-          user_id?: string
-        }
-        Relationships: []
-      }
-      student_subject_choices: {
-        Row: {
-          created_at: string
-          group_id: string
-          id: string
-          session_id: string
-          student_id: string
-          subject_id: string
-          tenant_id: string
-          updated_at: string
-        }
-        Insert: {
-          created_at?: string
-          group_id: string
-          id?: string
-          session_id: string
-          student_id: string
-          subject_id: string
-          tenant_id: string
-          updated_at?: string
-        }
-        Update: {
-          created_at?: string
-          group_id?: string
-          id?: string
-          session_id?: string
-          student_id?: string
-          subject_id?: string
-          tenant_id?: string
-          updated_at?: string
-        }
-        Relationships: []
-      }
       subject_group_options: {
         Row: {
           created_at: string
@@ -6648,7 +6700,29 @@ export type Database = {
           tenant_id?: string
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "subject_group_options_group_fkey"
+            columns: ["tenant_id", "group_id"]
+            isOneToOne: false
+            referencedRelation: "subject_groups"
+            referencedColumns: ["tenant_id", "id"]
+          },
+          {
+            foreignKeyName: "subject_group_options_subject_id_fkey"
+            columns: ["subject_id"]
+            isOneToOne: false
+            referencedRelation: "subjects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "subject_group_options_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       subject_groups: {
         Row: {
@@ -6693,7 +6767,29 @@ export type Database = {
           tenant_id?: string
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "subject_groups_class_level_id_fkey"
+            columns: ["class_level_id"]
+            isOneToOne: false
+            referencedRelation: "class_levels"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "subject_groups_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "academic_sessions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "subject_groups_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       subjects: {
         Row: {
@@ -7326,10 +7422,11 @@ export type Database = {
           session_ends_on: string
           session_id: string
           session_starts_on: string
+          staff_id: string | null
           starts_on: string
           status: string
           stop_id: string
-          student_id: string
+          student_id: string | null
           tenant_id: string
           updated_at: string
         }
@@ -7346,10 +7443,11 @@ export type Database = {
           session_ends_on: string
           session_id: string
           session_starts_on: string
+          staff_id?: string | null
           starts_on: string
           status?: string
           stop_id: string
-          student_id: string
+          student_id?: string | null
           tenant_id: string
           updated_at?: string
         }
@@ -7366,10 +7464,11 @@ export type Database = {
           session_ends_on?: string
           session_id?: string
           session_starts_on?: string
+          staff_id?: string | null
           starts_on?: string
           status?: string
           stop_id?: string
-          student_id?: string
+          student_id?: string | null
           tenant_id?: string
           updated_at?: string
         }
@@ -7406,6 +7505,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "academic_sessions"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "transport_assignments_staff_fkey"
+            columns: ["tenant_id", "staff_id"]
+            isOneToOne: false
+            referencedRelation: "staff"
+            referencedColumns: ["tenant_id", "id"]
           },
           {
             foreignKeyName: "transport_assignments_stop_on_route_fkey"
@@ -8045,7 +8151,6 @@ export type Database = {
           name: string
         }[]
       }
-      and_list: { Args: { p_items: string[] }; Returns: string }
       admission_apply: {
         Args: { p_application: Json; p_slug: string }
         Returns: Json
@@ -8082,6 +8187,8 @@ export type Database = {
         Args: { p_column: string; p_table: unknown }
         Returns: string[]
       }
+      and_list: { Args: { p_items: string[] }; Returns: string }
+      assistant_quota: { Args: never; Returns: number }
       attendance_calendar: {
         Args: { p_from: string; p_to: string }
         Returns: {
@@ -8338,6 +8445,10 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      count_phrase: {
+        Args: { p_many: string; p_n: number; p_one: string }
+        Returns: string
+      }
       current_role_allows: {
         Args: { p_permission_code: string }
         Returns: boolean
@@ -8345,7 +8456,6 @@ export type Database = {
       current_role_code: { Args: never; Returns: string }
       current_role_tier: { Args: never; Returns: string }
       current_session_id: { Args: { p_tenant_id: string }; Returns: string }
-      count_phrase: { Args: { p_many: string; p_n: number; p_one: string }; Returns: string }
       current_tenant_id: { Args: never; Returns: string }
       dashboard_enrolment_by_grade: { Args: never; Returns: Json }
       dashboard_summary: { Args: never; Returns: Json }
@@ -8559,16 +8669,6 @@ export type Database = {
         Args: { p_student_id: string }
         Returns: boolean
       }
-      exams_unchosen_electives: {
-        Args: { p_exam_id: string }
-        Returns: {
-          group_name: string
-          min_choices: number
-          section_label: string
-          subjects: string[]
-          unchosen: number
-        }[]
-      }
       exams_problems: {
         Args: { p_exam_id: string }
         Returns: {
@@ -8673,6 +8773,16 @@ export type Database = {
           subject_id: string
           subject_name: string
           weight: number
+        }[]
+      }
+      exams_unchosen_electives: {
+        Args: { p_exam_id: string }
+        Returns: {
+          group_name: string
+          min_choices: number
+          section_label: string
+          subjects: string[]
+          unchosen: number
         }[]
       }
       exams_unpublish: { Args: { p_exam_id: string }; Returns: number }
@@ -9815,7 +9925,7 @@ export type Database = {
           kind: string
           max_books: number
           membership_number: string
-          reference: string | null
+          reference: string
         }[]
       }
       library_return_book: {
@@ -9912,6 +10022,22 @@ export type Database = {
           title: string
         }[]
       }
+      login_close: {
+        Args: { p_active: boolean; p_tenant: string; p_user: string }
+        Returns: undefined
+      }
+      login_set_access: {
+        Args: { p_active: boolean; p_user_id: string }
+        Returns: Json
+      }
+      login_set_role: {
+        Args: { p_role_id: string; p_user_id: string }
+        Returns: Json
+      }
+      logins_that_can_manage_users: {
+        Args: { p_excluding: string; p_tenant: string }
+        Returns: number
+      }
       mark_attendance: {
         Args: {
           p_date: string
@@ -9966,6 +10092,8 @@ export type Database = {
         Returns: Json
       }
       mobile_today: { Args: never; Returns: string }
+      module_cards: { Args: { p_module: string }; Returns: Json }
+      module_overview: { Args: never; Returns: Json }
       notice_announce: { Args: { p_notice_id: string }; Returns: Json }
       notice_board: {
         Args: { p_limit?: number }
@@ -10415,7 +10543,6 @@ export type Database = {
       }
       promotion_discard_run: { Args: { p_run_id: string }; Returns: undefined }
       promotion_left_behind: { Args: { p_run_id: string }; Returns: Json }
-      promotion_undo: { Args: { p_run_id: string }; Returns: Json }
       promotion_preview: {
         Args: {
           p_from_session_id: string
@@ -10455,6 +10582,7 @@ export type Database = {
         }
         Returns: string
       }
+      promotion_undo: { Args: { p_run_id: string }; Returns: Json }
       renewal_apply: {
         Args: { p_run_id: string }
         Returns: {
@@ -10827,6 +10955,7 @@ export type Database = {
           severity: string
         }[]
       }
+      setup_progress: { Args: never; Returns: Json }
       sms_segments: { Args: { p_text: string }; Returns: number }
       staff_admit: {
         Args: {
@@ -10859,6 +10988,7 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      staff_delete: { Args: { p_staff_id: string }; Returns: Json }
       staff_directory: {
         Args: never
         Returns: {
@@ -10868,7 +10998,6 @@ export type Database = {
           staff_id: string
         }[]
       }
-      staff_delete: { Args: { p_staff_id: string }; Returns: Json }
       staff_exit: {
         Args: {
           p_left_on?: string
@@ -11037,34 +11166,7 @@ export type Database = {
         Args: { p_name: string }
         Returns: boolean
       }
-      assistant_quota: { Args: never; Returns: number }
-      module_overview: { Args: never; Returns: Json }
-      setup_progress: { Args: never; Returns: Json }
-      student_takes_subject: {
-        Args: { p_class_level_id: string; p_session_id: string; p_student_id: string; p_subject_id: string }
-        Returns: boolean
-      }
-      subject_choice_save: {
-        Args: { p_group_id: string; p_student_id?: string; p_subject_ids: string[] }
-        Returns: Json
-      }
-      subject_choices_for_student: { Args: { p_student_id?: string }; Returns: Json }
-      subject_group_create: {
-        Args: {
-          p_class_level_id: string
-          p_closes_on?: string
-          p_max: number
-          p_min: number
-          p_name: string
-          p_subject_ids: string[]
-        }
-        Returns: string
-      }
-      subject_group_overview: { Args: never; Returns: Json }
-      student_type_assign: {
-        Args: { p_student_id: string; p_student_type_id: string | null }
-        Returns: Json
-      }
+      student_delete: { Args: { p_student_id: string }; Returns: Json }
       student_end_relationships: {
         Args: {
           p_on: string
@@ -11074,7 +11176,6 @@ export type Database = {
         }
         Returns: Json
       }
-      student_delete: { Args: { p_student_id: string }; Returns: Json }
       student_exit: {
         Args: {
           p_left_on?: string
@@ -11200,6 +11301,43 @@ export type Database = {
           status: string
         }[]
       }
+      student_takes_subject: {
+        Args: {
+          p_class_level_id: string
+          p_session_id: string
+          p_student_id: string
+          p_subject_id: string
+        }
+        Returns: boolean
+      }
+      student_type_assign: {
+        Args: { p_student_id: string; p_student_type_id: string }
+        Returns: Json
+      }
+      subject_choice_save: {
+        Args: {
+          p_group_id: string
+          p_student_id?: string
+          p_subject_ids: string[]
+        }
+        Returns: Json
+      }
+      subject_choices_for_student: {
+        Args: { p_student_id?: string }
+        Returns: Json
+      }
+      subject_group_create: {
+        Args: {
+          p_class_level_id: string
+          p_closes_on?: string
+          p_max: number
+          p_min: number
+          p_name: string
+          p_subject_ids: string[]
+        }
+        Returns: string
+      }
+      subject_group_overview: { Args: never; Returns: Json }
       subscription_expire_trials: { Args: never; Returns: number }
       subscription_overview: { Args: never; Returns: Json }
       subscription_problems: {
@@ -11390,7 +11528,7 @@ export type Database = {
           email: string
           is_active: boolean
           is_you: boolean
-          last_sign_in_at: string | null
+          last_sign_in_at: string
           record_kind: string
           role_id: string
           role_name: string
@@ -11398,14 +11536,8 @@ export type Database = {
           user_id: string
         }[]
       }
-      login_set_access: { Args: { p_active: boolean; p_user_id: string }; Returns: Json }
-      login_set_role: { Args: { p_role_id: string; p_user_id: string }; Returns: Json }
       timetable_busy_in_slot: {
-        Args: {
-          p_entry_id?: string
-          p_time_slot_id: string
-          p_weekday: number
-        }
+        Args: { p_entry_id?: string; p_time_slot_id: string; p_weekday: number }
         Returns: {
           busy_with: string
           entity: string
@@ -11507,6 +11639,27 @@ export type Database = {
           teacher_name: string
         }[]
       }
+      transport_assign_staff: {
+        Args: {
+          p_direction?: string
+          p_ends_on?: string
+          p_staff_id: string
+          p_starts_on?: string
+          p_stop_id: string
+        }
+        Returns: string
+      }
+      transport_assign_staff_for: {
+        Args: {
+          p_direction?: string
+          p_ends_on?: string
+          p_session_id: string
+          p_staff_id: string
+          p_starts_on?: string
+          p_stop_id: string
+        }
+        Returns: string
+      }
       transport_assign_student: {
         Args: {
           p_direction?: string
@@ -11542,6 +11695,24 @@ export type Database = {
           amount: number
           description: string
           fee_head_id: string
+        }[]
+      }
+      transport_for_staff: {
+        Args: { p_staff_id: string }
+        Returns: {
+          assignment_id: string
+          direction: string
+          drop_time: string
+          effective_ends_on: string
+          ends_on: string
+          landmark: string
+          pickup_time: string
+          registration_number: string
+          route_code: string
+          route_name: string
+          starts_on: string
+          status: string
+          stop_name: string
         }[]
       }
       transport_for_student: {

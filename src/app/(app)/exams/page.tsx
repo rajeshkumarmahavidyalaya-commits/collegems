@@ -2,6 +2,7 @@ import { getUserContext } from "@/lib/auth/context";
 import { hasPermission } from "@/lib/auth/permissions";
 import { listExams, listSchemes } from "./actions";
 import { ExamsList } from "./exams-list";
+import { ModuleCards } from "@/components/module-cards";
 
 export const metadata = { title: "Exams" };
 
@@ -23,6 +24,7 @@ export default async function ExamsPage() {
           as data, so a school with different rules is a row rather than a release.
         </p>
       </div>
+      <ModuleCards module="exams" />
 
       <ExamsList exams={exams} schemes={schemes} canManage={canManage} />
     </div>

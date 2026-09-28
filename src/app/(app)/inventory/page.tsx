@@ -7,6 +7,7 @@ import { InventoryView } from "./inventory-view";
 import { stockValue } from "@/lib/validations/inventory";
 import { formatCurrency } from "@/lib/i18n/format";
 import { getLocale } from "@/lib/i18n/server";
+import { ModuleCards } from "@/components/module-cards";
 
 export const metadata = { title: "Store and stock" };
 
@@ -79,6 +80,7 @@ export default async function InventoryPage() {
         </div>
         </div>
       </div>
+      <ModuleCards module="inventory" />
 
       <InventoryView
         stock={stock}

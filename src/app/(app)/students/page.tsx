@@ -5,6 +5,7 @@ import { getUserContext } from "@/lib/auth/context";
 import { hasPermission } from "@/lib/auth/permissions";
 import { listSections } from "./actions";
 import { StudentsTable } from "./students-table";
+import { ModuleCards } from "@/components/module-cards";
 
 export const metadata = { title: "Students" };
 
@@ -34,6 +35,7 @@ export default async function StudentsPage() {
           </Button>
         )}
       </div>
+      <ModuleCards module="students" />
 
       <StudentsTable sections={sections} canManage={canManage} />
     </div>

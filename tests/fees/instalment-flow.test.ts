@@ -43,6 +43,7 @@ describeDb("billing periods", () => {
     const { data: assignment } = await a
       .from("transport_assignments")
       .select("student_id")
+      .not("student_id", "is", null)
       .eq("status", "active")
       .gt("monthly_fare", 0)
       .limit(1)
@@ -50,11 +51,11 @@ describeDb("billing periods", () => {
 
     const [first, later] = await Promise.all([
       a.rpc("fees_billable_lines", {
-        p_student_id: assignment!.student_id,
+        p_student_id: assignment!.student_id as string,
         p_instalment_id: opening,
       }),
       a.rpc("fees_billable_lines", {
-        p_student_id: assignment!.student_id,
+        p_student_id: assignment!.student_id as string,
         p_instalment_id: recurring,
       }),
     ]);
@@ -75,6 +76,7 @@ describeDb("billing periods", () => {
     const { data: assignment } = await a
       .from("transport_assignments")
       .select("student_id")
+      .not("student_id", "is", null)
       .eq("status", "active")
       .gt("monthly_fare", 0)
       .limit(1)
@@ -83,12 +85,12 @@ describeDb("billing periods", () => {
     // Whether the first call raises or finds an existing invoice, the second
     // must not create a second one.
     await a.rpc("fees_generate_invoice", {
-      p_student_id: assignment!.student_id,
+      p_student_id: assignment!.student_id as string,
       p_instalment_id: recurring,
     });
 
     const { error } = await a.rpc("fees_generate_invoice", {
-      p_student_id: assignment!.student_id,
+      p_student_id: assignment!.student_id as string,
       p_instalment_id: recurring,
     });
 
@@ -98,7 +100,7 @@ describeDb("billing periods", () => {
     const { data: invoices } = await a
       .from("invoices")
       .select("id")
-      .eq("student_id", assignment!.student_id)
+      .eq("student_id", assignment!.student_id as string)
       .eq("instalment_id", recurring)
       .eq("status", "issued");
 

@@ -384,7 +384,9 @@ export async function listStopOptions(): Promise<StopOption[]> {
 
 export type AssignmentRow = {
   id: string;
+  /** Empty for a staff rider (0293); `staffId` is set instead. */
   studentId: string;
+  staffId: string | null;
   studentName: string;
   admissionNumber: string | null;
   sectionLabel: string | null;
@@ -403,7 +405,7 @@ export async function listAssignments(routeId?: string): Promise<AssignmentRow[]
 
   let query = supabase
     .from("transport_assignments")
-    .select("id, student_id, route_id, stop_id, direction, monthly_fare, starts_on, ends_on, status")
+    .select("id, student_id, staff_id, route_id, stop_id, direction, monthly_fare, starts_on, ends_on, status")
     .eq("status", "active")
     .order("starts_on", { ascending: false });
 
@@ -418,11 +420,12 @@ export async function listAssignments(routeId?: string): Promise<AssignmentRow[]
 
   // Same reason as `listVehicles`: every one of these is a composite foreign
   // key, so the joins happen here rather than in PostgREST.
-  const studentIds = [...new Set(rows.map((r) => r.student_id))];
+  const studentIds = [...new Set(rows.map((r) => r.student_id).filter((x): x is string => !!x))];
+  const staffIds = [...new Set(rows.map((r) => r.staff_id).filter((x): x is string => !!x))];
   const routeIds = [...new Set(rows.map((r) => r.route_id))];
   const stopIds = [...new Set(rows.map((r) => r.stop_id))];
 
-  const [studentsRes, routesRes, stopsRes, enrolmentsRes] = await Promise.all([
+  const [studentsRes, routesRes, stopsRes, enrolmentsRes, staffRes] = await Promise.all([
     supabase
       .from("students")
       .select("id, admission_number, people:person_id ( first_name, last_name )")
@@ -434,6 +437,14 @@ export async function listAssignments(routeId?: string): Promise<AssignmentRow[]
       .select("student_id, sections ( name, class_levels ( name ) )")
       .in("student_id", studentIds)
       .eq("status", "active"),
+    // A staff rider (0293), named from `staff` through its own policy -- the
+    // same read the rest of this screen's office users already make.
+    staffIds.length > 0
+      ? supabase
+          .from("staff")
+          .select("id, employee_code, designation, people:person_id ( first_name, last_name )")
+          .in("id", staffIds)
+      : Promise.resolve({ data: [], error: null }),
   ]);
 
   if (studentsRes.error) throw new Error(studentsRes.error.message);
@@ -453,6 +464,21 @@ export async function listAssignments(routeId?: string): Promise<AssignmentRow[]
       ];
     }),
   );
+  const staffRiders = new Map(
+    ((staffRes.data ?? []) as {
+      id: string;
+      employee_code: string;
+      designation: string | null;
+      people: { first_name: string; last_name: string } | null;
+    }[]).map((s) => [
+      s.id,
+      {
+        name: s.people ? `${s.people.first_name} ${s.people.last_name}` : "A member of staff",
+        code: s.employee_code,
+        label: s.designation ? `Staff \u00b7 ${s.designation}` : "Staff",
+      },
+    ]),
+  );
   const routeCodes = new Map((routesRes.data ?? []).map((r) => [r.id, r.code]));
   const stopNames = new Map((stopsRes.data ?? []).map((s) => [s.id, s.name]));
   const sections = new Map(
@@ -465,12 +491,16 @@ export async function listAssignments(routeId?: string): Promise<AssignmentRow[]
     }),
   );
 
-  return rows.map((a) => ({
+  return rows.map((a) => {
+    const staff = a.staff_id ? staffRiders.get(a.staff_id) : undefined;
+    const sid = a.student_id ?? "";
+    return {
     id: a.id,
-    studentId: a.student_id,
-    studentName: students.get(a.student_id)?.name ?? "Unknown",
-    admissionNumber: students.get(a.student_id)?.admissionNumber ?? null,
-    sectionLabel: sections.get(a.student_id) ?? null,
+    studentId: sid,
+    staffId: a.staff_id,
+    studentName: staff?.name ?? students.get(sid)?.name ?? "Unknown",
+    admissionNumber: staff?.code ?? students.get(sid)?.admissionNumber ?? null,
+    sectionLabel: staff?.label ?? sections.get(sid) ?? null,
     routeCode: routeCodes.get(a.route_id) ?? "\u2014",
     stopName: stopNames.get(a.stop_id) ?? "\u2014",
     direction: a.direction,
@@ -478,7 +508,86 @@ export async function listAssignments(routeId?: string): Promise<AssignmentRow[]
     startsOn: a.starts_on,
     endsOn: a.ends_on,
     status: a.status,
-  }));
+    };
+  });
+}
+
+/** Active staff for the seat picker. A college's staff is a list, not a roll: whole. */
+export async function listStaffForTransport(): Promise<{ id: string; label: string }[]> {
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("staff")
+    .select("id, employee_code, people:person_id ( first_name, last_name )")
+    .eq("status", "active")
+    .order("employee_code");
+  return (data ?? []).map((s) => {
+    const p = s.people as { first_name: string; last_name: string } | null;
+    return { id: s.id, label: `${p ? `${p.first_name} ${p.last_name}` : "Unknown"} (${s.employee_code})` };
+  });
+}
+
+/**
+ * A seat for a member of staff (0293): the same checks and the same seat count
+ * as a child's, through `transport_assign_staff`. Free by construction -- the
+ * database refuses a fare on a staff seat until payroll can collect one.
+ */
+export async function assignStaffSeat(input: {
+  staffId: string;
+  stopId: string;
+  direction?: string;
+  startsOn?: string;
+}): Promise<ActionResult<{ id: string }>> {
+  if (!input.staffId || !input.stopId) return fail("Choose who and where.");
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("transport_assign_staff", {
+    p_staff_id: input.staffId,
+    p_stop_id: input.stopId,
+    p_direction: input.direction || "both",
+    p_starts_on: input.startsOn || undefined,
+  });
+  if (error) return fail(error.message);
+  revalidatePath("/transport");
+  revalidatePath("/transport/assignments");
+  revalidatePath(`/staff/${input.staffId}`);
+  return { ok: true, data: { id: data as string } };
+}
+
+export type StaffSeat = {
+  id: string;
+  routeCode: string;
+  routeName: string;
+  stopName: string;
+  pickupTime: string | null;
+  dropTime: string | null;
+  vehicle: string | null;
+  startsOn: string;
+  effectiveEndsOn: string | null;
+};
+
+/** The seat a member of staff holds today, if any -- for their record and their account page. */
+export async function currentStaffSeat(staffId: string): Promise<StaffSeat | null> {
+  const supabase = await createClient();
+  const [{ data }, { data: today }] = await Promise.all([
+    supabase.rpc("transport_for_staff", { p_staff_id: staffId }),
+    supabase.rpc("mobile_today"),
+  ]);
+  const day = (today as string | null) ?? new Date().toISOString().slice(0, 10);
+  // ISO strings compare as dates (arrangements.ts): no timezone moves them.
+  const row = (data ?? []).find(
+    (r) => r.status === "active" && r.starts_on <= day && (r.effective_ends_on ?? day) >= day,
+  );
+  if (!row) return null;
+  return {
+    id: row.assignment_id,
+    routeCode: row.route_code,
+    routeName: row.route_name,
+    stopName: row.stop_name,
+    pickupTime: row.pickup_time,
+    dropTime: row.drop_time,
+    vehicle: row.registration_number,
+    startsOn: row.starts_on,
+    effectiveEndsOn: row.effective_ends_on,
+  };
 }
 
 export async function assignStudent(input: unknown): Promise<ActionResult<{ id: string }>> {

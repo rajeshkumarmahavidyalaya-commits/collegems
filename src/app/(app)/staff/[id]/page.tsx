@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { BookOpen, CalendarClock, IdCard, Pencil } from "lucide-react";
+import { BookOpen, Bus, CalendarClock, IdCard, Pencil } from "lucide-react";
+import { currentStaffSeat } from "../../transport/actions";
+import { formatStopTime } from "@/lib/validations/transport";
 import { PhotoControl } from "@/components/people/photo-control";
 import { removeStaffPhoto, setStaffPhoto, staffPhotoUrl } from "../photo-actions";
 import { BUCKET_LIMITS, formatBytes } from "@/lib/storage/constants";
@@ -48,7 +50,14 @@ export default async function StaffDetailPage({ params }: { params: Promise<{ id
   // `staff.view` — rule 8 again, and the reason this is not read alongside the
   // record: `staff_record` does not project `photo_path`, so it is a column it
   // does not return rather than a second answer to a question it answers.
-  const photo = await staffPhotoUrl(staff.id);
+  const [photo, canAssignSeat, canSeeTransport] = await Promise.all([
+    staffPhotoUrl(staff.id),
+    hasPermission("transport.assign"),
+    hasPermission("transport.view"),
+  ]);
+  // The seat through `transport_for_staff` (0293), an invoker read: the
+  // assignment policies decide, so a caller who may not see it gets nothing.
+  const seat = canSeeTransport ? await currentStaffSeat(staff.id) : null;
   const avatarLimits = BUCKET_LIMITS["avatars"];
   const hasLeft = staff.status !== "active";
   const address = [person.address_line1, person.address_line2].filter(Boolean).join(", ");
@@ -277,6 +286,36 @@ export default async function StaffDetailPage({ params }: { params: Promise<{ id
             )}
           </CardContent>
         </Card>
+
+        {/* Drawn only for somebody who may see seats: "no seat" to a caller
+            who cannot read them would be the policy speaking, not a fact. */}
+        {canSeeTransport && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Bus className="size-4 text-muted-foreground" aria-hidden="true" />
+              Transport
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="flex flex-col gap-3">
+            {seat ? (
+              <dl className="grid grid-cols-2 gap-4">
+                <Fact label="Route" value={<span className="font-mono">{seat.routeCode}</span>} />
+                <Fact label="Stop" value={seat.stopName} />
+                <Fact label="Pickup" value={formatStopTime(seat.pickupTime)} />
+                <Fact label="Vehicle" value={seat.vehicle} />
+              </dl>
+            ) : (
+              <p className="text-sm text-muted-foreground">No seat on a school bus.</p>
+            )}
+            {canAssignSeat && !hasLeft && (
+              <Button asChild variant="outline" size="sm" className="w-fit">
+                <Link href="/transport/assignments">{seat ? "Change or end" : "Give a seat"}</Link>
+              </Button>
+            )}
+          </CardContent>
+        </Card>
+        )}
       </div>
     </div>
   );

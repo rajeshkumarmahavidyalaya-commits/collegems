@@ -15,6 +15,7 @@ import {
 } from "./actions";
 import { AcademicsSettings } from "./academics-settings";
 import { listClassStructure } from "./class-actions";
+import { ModuleCards } from "@/components/module-cards";
 
 export const metadata = { title: "Academics" };
 
@@ -75,6 +76,7 @@ export default async function AcademicsPage({
           </Button>
         )}
       </div>
+      <ModuleCards module="classes" />
 
       <AcademicsSettings
         subjects={subjects}

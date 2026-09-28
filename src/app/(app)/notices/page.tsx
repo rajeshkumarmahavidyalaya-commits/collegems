@@ -8,6 +8,7 @@ import { getBoard } from "./actions";
 import { categoryLabel, categoryTone } from "@/lib/validations/notices";
 import { getLocale, getT } from "@/lib/i18n/server";
 import { formatDate } from "@/lib/i18n/format";
+import { ModuleCards } from "@/components/module-cards";
 
 export const metadata = { title: "Notice board" };
 
@@ -44,6 +45,7 @@ export default async function NoticesPage() {
           </Button>
         )}
       </div>
+      <ModuleCards module="notices" />
 
       {notices.length === 0 ? (
         <Card>

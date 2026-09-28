@@ -28,6 +28,7 @@ import {
 import { allowedDirections, directionLabel, formatStopTime, type Direction } from "@/lib/validations/transport";
 import { useI18n } from "@/components/providers/i18n-provider";
 import {
+  assignStaffSeat,
   assignStudent,
   cancelAssignment,
   endAssignment,
@@ -39,18 +40,164 @@ import {
 
 export function AssignmentsView({
   stops,
+  staff,
   assignments,
   canAssign,
 }: {
   stops: StopOption[];
+  staff: { id: string; label: string }[];
   assignments: AssignmentRow[];
   canAssign: boolean;
 }) {
   return (
     <div className="grid gap-6 lg:grid-cols-[24rem_1fr]">
-      {canAssign ? <AssignForm stops={stops} /> : null}
+      {canAssign ? (
+        <div className="flex flex-col gap-6">
+          <AssignForm stops={stops} />
+          <StaffSeatForm stops={stops} staff={staff} />
+        </div>
+      ) : null}
       <AssignmentList assignments={assignments} canAssign={canAssign} />
     </div>
+  );
+}
+
+/**
+ * A seat for a member of staff (0293) -- the same buses, the same seat count.
+ * No fare: the database holds a staff seat at zero until payroll can collect
+ * one, so the form does not ask for money it could not bill.
+ */
+function StaffSeatForm({ stops, staff }: { stops: StopOption[]; staff: { id: string; label: string }[] }) {
+  const router = useRouter();
+  const [pending, startTransition] = useTransition();
+  const [staffId, setStaffId] = useState("");
+  const [stopId, setStopId] = useState("");
+  const [direction, setDirection] = useState<Direction>("both");
+  const [startsOn, setStartsOn] = useState("");
+  const [error, setError] = useState<string | null>(null);
+
+  const chosenStop = stops.find((s) => s.stopId === stopId) ?? null;
+  const directions = chosenStop ? allowedDirections(chosenStop.routeDirection) : [];
+  const effectiveDirection: Direction =
+    chosenStop && !directions.some((d) => d.value === direction)
+      ? (chosenStop.routeDirection as Direction)
+      : direction;
+  const full = chosenStop?.seatsFree !== null && (chosenStop?.seatsFree ?? 1) <= 0;
+
+  function submit() {
+    setError(null);
+    if (!staffId || !stopId) {
+      setError("Choose who and where.");
+      return;
+    }
+    startTransition(async () => {
+      const result = await assignStaffSeat({
+        staffId,
+        stopId,
+        direction: effectiveDirection,
+        startsOn: startsOn || undefined,
+      });
+      if (!result.ok) {
+        setError(result.error);
+        return;
+      }
+      toast.success(`${staff.find((s) => s.id === staffId)?.label ?? "They"} have a seat on ${chosenStop?.routeCode}.`);
+      setStaffId("");
+      setStopId("");
+      setStartsOn("");
+      router.refresh();
+    });
+  }
+
+  return (
+    <Card className="h-fit">
+      <CardHeader>
+        <CardTitle>Give a member of staff a seat</CardTitle>
+        <CardDescription>
+          Same buses, same seat count as the children. A staff seat is free.
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="flex flex-col gap-4">
+        <div className="flex flex-col gap-1.5">
+          <Label htmlFor="staff-seat-person">Member of staff</Label>
+          <Select value={staffId} onValueChange={setStaffId}>
+            <SelectTrigger id="staff-seat-person" className="cursor-pointer">
+              <SelectValue placeholder={staff.length === 0 ? "No active staff" : "Choose a person"} />
+            </SelectTrigger>
+            <SelectContent>
+              {staff.map((s) => (
+                <SelectItem key={s.id} value={s.id} className="cursor-pointer">
+                  {s.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="flex flex-col gap-1.5">
+          <Label htmlFor="staff-seat-stop">Stop</Label>
+          <Select value={stopId} onValueChange={setStopId}>
+            <SelectTrigger id="staff-seat-stop" className="cursor-pointer">
+              <SelectValue placeholder="Choose a boarding point" />
+            </SelectTrigger>
+            <SelectContent>
+              {stops
+                .filter((s) => s.routeIsActive)
+                .map((s) => (
+                  <SelectItem key={s.stopId} value={s.stopId} className="cursor-pointer">
+                    {s.routeCode} · {s.stopName}
+                    {s.seatsFree !== null && s.seatsFree <= 0 ? " (full)" : ""}
+                  </SelectItem>
+                ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="grid grid-cols-2 gap-3">
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="staff-seat-direction">Runs</Label>
+            <Select
+              value={effectiveDirection}
+              onValueChange={(next) => setDirection(next as Direction)}
+              disabled={!chosenStop}
+            >
+              <SelectTrigger id="staff-seat-direction" className="cursor-pointer">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {(chosenStop ? directions : []).map((d) => (
+                  <SelectItem key={d.value} value={d.value} className="cursor-pointer">
+                    {d.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="staff-seat-starts">Starting</Label>
+            <Input
+              id="staff-seat-starts"
+              type="date"
+              value={startsOn}
+              onChange={(event) => setStartsOn(event.target.value)}
+            />
+          </div>
+        </div>
+        <p aria-live="assertive" className="min-h-5">
+          {error && (
+            <span role="alert" className="text-sm font-medium text-destructive">
+              {error}
+            </span>
+          )}
+        </p>
+        <Button type="button" onClick={submit} disabled={pending || full} className="cursor-pointer">
+          {pending ? (
+            <Loader2 className="size-4 animate-spin" aria-hidden="true" />
+          ) : (
+            <UserPlus className="size-4" aria-hidden="true" />
+          )}
+          {full ? "That bus is full" : "Give a seat"}
+        </Button>
+      </CardContent>
+    </Card>
   );
 }
 
@@ -384,7 +531,7 @@ function AssignmentList({
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Child</TableHead>
+                  <TableHead>Rider</TableHead>
                   <TableHead>Class</TableHead>
                   <TableHead>Route</TableHead>
                   <TableHead>Stop</TableHead>
@@ -414,7 +561,7 @@ function AssignmentList({
                       {directionLabel(row.direction, t)}
                     </TableCell>
                     <TableCell className="text-end font-mono tabular-nums">
-                      {formatCurrency(row.monthlyFare)}
+                      {row.staffId ? "Free" : formatCurrency(row.monthlyFare)}
                     </TableCell>
                     <TableCell className="text-muted-foreground">
                       {row.startsOn}

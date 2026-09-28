@@ -17,6 +17,7 @@ import { getCollectionSummary } from "./actions";
 import { FeesTable } from "./fees-table";
 import { formatCurrency } from "@/lib/i18n/format";
 import { getLocale } from "@/lib/i18n/server";
+import { ModuleCards } from "@/components/module-cards";
 
 export const metadata = { title: "Fees" };
 
@@ -65,6 +66,7 @@ export default async function FeesPage() {
           )}
         </div>
       </div>
+      <ModuleCards module="fees" />
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <StatCard
