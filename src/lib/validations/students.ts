@@ -28,6 +28,12 @@ export const studentSchema = z.object({
 
   sectionId: z.string().uuid().optional().or(z.literal("")),
   rollNumber: z.string().max(20).optional(),
+
+  // At admission only (0296), each optional: a bus stop and a hostel room,
+  // so a boarder on the bus is one form rather than three screens. Ignored
+  // by an edit, where the record's own cards do it.
+  busStopId: z.string().uuid().optional().or(z.literal("")),
+  hostelRoomId: z.string().uuid().optional().or(z.literal("")),
 });
 
 export type StudentInput = z.infer<typeof studentSchema>;

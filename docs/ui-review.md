@@ -904,3 +904,34 @@ college. The staff register and staff leave, both row-owned, are drawn for
 - that every link resolves to a different page;
 - that the strip is on all 16 pages;
 - that the component decides nothing about roles.
+
+## The record is the hub (0296)
+
+WPSchool assigns transport "at the time of admission or by editing the student
+record". Here a bus seat, a hostel bed and a library card each lived on their
+own module's screen, where the office found the child again by typing their
+name.
+
+- **Student record.** A *School bus* card and a *Hostel* card show the current
+  arrangement (`isCurrentArrangement`, the one definition the family's screen
+  uses) or a *Put on a bus* / *Give a bed* button. The library card has *Give a
+  library card*: one click, with the next number and three books.
+- **Staff record.** *Give a seat* on the same buses, and *Give a library card*
+  with five books.
+- **Admission.** The form has an optional *School bus* stop and *Hostel* room.
+  The admission commits first. A refused seat or bed is a sentence on the
+  toast beside *Student admitted*, never a failed admission: the admission-fee
+  rule from 0286, applied to two more facts.
+- **A staff login's account page** shows *Your bus*, through the "staff view
+  own" policy from 0293. A librarian with no transport permission still sees
+  their own seat.
+
+Every button is drawn on the permission its write needs: `transport.assign`,
+`hostel.allocate`, `library.manage`. Every write goes through the module's own
+function, so a full bus or a boys' house refusing a girl is the module's
+sentence, unchanged. `arrange-controls.tsx` takes its actions as props and
+imports nothing from `@/app` (rule 8's split).
+
+`tests/people/records-as-hub.test.ts` pins it. It was checked by planting two
+of the defects this found back in: the manifest's `studentId` filter and the
+edit dialog's empty fee head. Both were caught.

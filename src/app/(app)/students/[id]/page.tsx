@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { BookOpen, IdCard, IndianRupee, Pencil, TriangleAlert } from "lucide-react";
+import { BedDouble, BookOpen, Bus, IdCard, IndianRupee, Pencil, TriangleAlert } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -23,6 +23,11 @@ import { SubjectsView } from "@/components/electives/subjects-view";
 import { getSubjectsFor } from "../../my-subjects/actions";
 import { saveChoiceFor } from "../../academics/electives/actions";
 import { getLocale } from "@/lib/i18n/server";
+import { formatCurrency } from "@/lib/i18n/format";
+import { isCurrentArrangement } from "@/lib/validations/arrangements";
+import { formatStopTime } from "@/lib/validations/transport-display";
+import { ArrangeButton, LibraryCardButton } from "@/components/people/arrange-controls";
+import { bedOptions, busStopOptions, giveBed, giveBusSeat, giveLibraryCard } from "../arrangement-actions";
 
 export const metadata = { title: "Student" };
 
@@ -58,6 +63,23 @@ export default async function StudentDetailPage({
   ]);
 
   if (!student) notFound();
+
+  // The bus seat, the bed and who may give them (0296): the record is where
+  // the office already is. Both reads are the modules' own invoker functions,
+  // so RLS decides what comes back; "current" is the one shared definition.
+  const supabase0 = await createClient();
+  const [busRes, bedRes, todayRes, canAssignBus, canAllocateBed, canGiveCard] = await Promise.all([
+    supabase0.rpc("transport_for_student", { p_student_id: id }),
+    supabase0.rpc("hostel_for_student", { p_student_id: id }),
+    supabase0.rpc("mobile_today"),
+    hasPermission("transport.assign"),
+    hasPermission("hostel.allocate"),
+    hasPermission("library.manage"),
+  ]);
+  const schoolDay = (todayRes.data as string | null) ?? new Date().toISOString().slice(0, 10);
+  const seat = (busRes.data ?? []).find((r) => isCurrentArrangement(r, schoolDay)) ?? null;
+  const bed = (bedRes.data ?? []).find((r) => isCurrentArrangement(r, schoolDay)) ?? null;
+  const isActive = student.status === "active";
 
   const person = student.people;
   const enrolments = Array.isArray(student.enrolments) ? student.enrolments : [];
@@ -296,6 +318,83 @@ export default async function StudentDetailPage({
         canManage={canManageGuardians}
       />
 
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Bus className="size-4 text-muted-foreground" aria-hidden="true" />
+              School bus
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="flex flex-col gap-3">
+            {seat ? (
+              <dl className="grid grid-cols-2 gap-4">
+                <Fact label="Route" value={<span className="font-mono">{seat.route_code}</span>} />
+                <Fact label="Stop" value={seat.stop_name} />
+                <Fact label="Pickup" value={formatStopTime(seat.pickup_time)} />
+                <Fact label="Monthly fare" value={formatCurrency(seat.monthly_fare, locale)} />
+              </dl>
+            ) : (
+              <p className="text-sm text-muted-foreground">Not on a school bus.</p>
+            )}
+            {canAssignBus && isActive && !seat && (
+              <ArrangeButton
+                kind="bus"
+                label="Put on a bus"
+                title={`A bus seat for ${fullName}`}
+                description="The fare comes from the stop and joins the next invoice. A full bus is refused."
+                pickLabel="Stop"
+                load={busStopOptions}
+                submit={giveBusSeat.bind(null, "student", student.id)}
+                withDirection
+              />
+            )}
+            {canAssignBus && seat && (
+              <Link href="/transport/assignments" className="text-sm underline underline-offset-4">
+                Change or end on the transport screen
+              </Link>
+            )}
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <BedDouble className="size-4 text-muted-foreground" aria-hidden="true" />
+              Hostel
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="flex flex-col gap-3">
+            {bed ? (
+              <dl className="grid grid-cols-2 gap-4">
+                <Fact label="Hostel" value={bed.hostel_name} />
+                <Fact label="Room" value={bed.room_number} />
+                <Fact label="Warden" value={bed.warden_name} />
+                <Fact label="Monthly fare" value={formatCurrency(bed.monthly_fare, locale)} />
+              </dl>
+            ) : (
+              <p className="text-sm text-muted-foreground">A day scholar: no hostel bed.</p>
+            )}
+            {canAllocateBed && isActive && !bed && (
+              <ArrangeButton
+                kind="bed"
+                label="Give a bed"
+                title={`A hostel bed for ${fullName}`}
+                description="The room's fare joins the next invoice. A full room, or a house that does not take this child, is refused."
+                pickLabel="Room"
+                load={bedOptions}
+                submit={giveBed.bind(null, student.id)}
+              />
+            )}
+            {canAllocateBed && bed && (
+              <Link href="/hostel" className="text-sm underline underline-offset-4">
+                Move or release on the hostel screen
+              </Link>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+
       <Card>
         <CardHeader>
           <CardTitle>Library</CardTitle>
@@ -307,13 +406,17 @@ export default async function StudentDetailPage({
         </CardHeader>
         <CardContent>
           {!membership ? (
-            <p className="text-sm text-muted-foreground">
-              Create one from{" "}
-              <Link href="/library/members" className="underline underline-offset-4">
-                Library → Members
-              </Link>{" "}
-              to let this student borrow books.
-            </p>
+            canGiveCard && isActive ? (
+              <LibraryCardButton give={giveLibraryCard.bind(null, "student", student.id)} />
+            ) : (
+              <p className="text-sm text-muted-foreground">
+                Create one from{" "}
+                <Link href="/library/members" className="underline underline-offset-4">
+                  Library → Members
+                </Link>{" "}
+                to let this student borrow books.
+              </p>
+            )
           ) : openIssues.length === 0 ? (
             <p className="text-sm text-muted-foreground">No books currently on loan.</p>
           ) : (

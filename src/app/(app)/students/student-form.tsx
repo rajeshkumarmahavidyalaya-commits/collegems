@@ -23,9 +23,14 @@ import { admitStudent, updateStudent } from "./actions";
 export function StudentForm({
   sections,
   student,
+  busStops = [],
+  hostelRooms = [],
 }: {
   sections: { id: string; label: string }[];
   student?: StudentInput & { id: string };
+  /** Offered at admission only, and only to somebody who may assign (0296). */
+  busStops?: { id: string; label: string; full?: boolean }[];
+  hostelRooms?: { id: string; label: string; full?: boolean }[];
 }) {
   const router = useRouter();
   const isEdit = !!student;
@@ -53,6 +58,8 @@ export function StudentForm({
       status: "active",
       sectionId: "",
       rollNumber: "",
+      busStopId: "",
+      hostelRoomId: "",
   };
 
   const form = useForm<StudentInput>({
@@ -82,24 +89,36 @@ export function StudentForm({
       !isEdit && "billing" in result.data
         ? (result.data.billing as { billed: boolean; message: string } | null)
         : null;
+    // The bus seat and the bed are two more facts, said the same way: each
+    // one that was refused is named, and none of them un-admits the child.
+    const arrangements =
+      !isEdit && "arrangements" in result.data
+        ? (result.data.arrangements as { ok: boolean; message: string }[])
+        : [];
+    const refused = arrangements.some((a) => !a.ok);
+    const description =
+      [billing?.message, ...arrangements.map((a) => a.message)].filter(Boolean).join(" ") || undefined;
     const id = result.data.id;
     const staying = !isEdit && another.current;
     // Staying on the form, the toast is the only way back to the child just
     // admitted, so it carries the link.
     const open = staying ? { label: "Open", onClick: () => router.push(`/students/${id}`) } : undefined;
     const admitted = staying ? `${values.firstName} ${values.lastName} admitted` : "Student admitted";
-    if (billing && !billing.billed) {
-      toast.warning(admitted, { description: billing.message, action: open });
+    if ((billing && !billing.billed) || refused) {
+      toast.warning(admitted, { description, action: open });
     } else {
-      toast.success(isEdit ? "Student updated" : admitted, {
-        description: billing?.message,
-        action: open,
-      });
+      toast.success(isEdit ? "Student updated" : admitted, { description, action: open });
     }
     if (staying) {
       // Keep the class and the date: the next child is usually going into the
       // same section on the same day.
-      form.reset({ ...blank, sectionId: values.sectionId, admissionDate: values.admissionDate });
+      form.reset({
+        ...blank,
+        sectionId: values.sectionId,
+        admissionDate: values.admissionDate,
+        busStopId: values.busStopId,
+        hostelRoomId: values.hostelRoomId,
+      });
       form.setFocus("firstName");
       router.refresh();
       return;
@@ -192,6 +211,31 @@ export function StudentForm({
               options={sections.map((s) => ({ value: s.id, label: s.label }))}
             />
             <TextField control={form.control} name="rollNumber" label="Roll number" />
+            {!isEdit && busStops.length > 0 && (
+              <SelectField
+                control={form.control}
+                name="busStopId"
+                label="School bus"
+                placeholder="Does not take the bus"
+                options={[
+                  { value: "", label: "Does not take the bus" },
+                  ...busStops.map((s) => ({ value: s.id, label: s.full ? `${s.label} (full)` : s.label })),
+                ]}
+                description="The stop's fare joins the next invoice."
+              />
+            )}
+            {!isEdit && hostelRooms.length > 0 && (
+              <SelectField
+                control={form.control}
+                name="hostelRoomId"
+                label="Hostel"
+                placeholder="Day scholar"
+                options={[
+                  { value: "", label: "Day scholar" },
+                  ...hostelRooms.map((r) => ({ value: r.id, label: r.full ? `${r.label} (full)` : r.label })),
+                ]}
+              />
+            )}
             {isEdit && (
               <SelectField
                 control={form.control}

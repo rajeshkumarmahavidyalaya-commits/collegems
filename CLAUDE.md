@@ -4292,6 +4292,15 @@ and a staff seat that is free by CHECK until payroll can collect a fare.
 > permission that acts on it, and otherwise leaves it out rather than zeroing
 > it. `tests/dashboard/module-cards.test.ts` pins each one inside its branch.
 
+**And the record is the hub (`0296`).** A bus seat, a hostel bed and a library
+card are given from the student's or staff member's own page and, for a bus
+and a bed, on the admission form. Every write goes through the module's own
+function, and each button is drawn on the permission that write needs. A seat
+refused at admission is a sentence beside *admitted*, never a failed admission.
+The same pass found two quiet defects: editing a route sent an empty fee head,
+so renaming it stopped its fares billing; and the bus list dropped the staff
+riders `0293` had added. See `docs/ui-review.md` and `docs/modules/transport.md`.
+
 ### Amber is not a hover colour
 
 The generated palette's amber (`--brand-accent`) is for **sparing emphasis** —

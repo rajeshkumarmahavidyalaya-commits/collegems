@@ -1,6 +1,6 @@
 "use client";
 
-import { useTransition } from "react";
+import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 
 import { useForm } from "react-hook-form";
@@ -23,6 +23,7 @@ import {
 
 import { Form } from "@/components/ui/form";
 
+import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
 import { Switch } from "@/components/ui/switch";
@@ -43,6 +44,7 @@ import {
   type VehicleInput,
 } from "@/lib/validations/transport";
 import {
+  createRoute,
   saveRoute,
   saveVehicle,
   type RouteLoadRow,
@@ -78,19 +80,37 @@ export function RouteDialog({
       name: route?.name ?? "",
       direction: (route?.direction ?? "both") as RouteInput["direction"],
       vehicleId: route?.vehicleId ?? "",
-      feeHeadId: "",
+      // The route's own head: "" here used to clear it on every edit.
+      feeHeadId: route?.feeHeadId ?? (feeHeads.length === 1 ? feeHeads[0].id : ""),
       isActive: route?.isActive ?? true,
     },
   });
 
+  // The first stop, on a new route only: name, fare and pickup time in the
+  // same form as the route (0296). An existing route's stops are edited on
+  // its own page, where they are listed.
+  const [stopName, setStopName] = useState("");
+  const [stopFare, setStopFare] = useState("");
+  const [stopTime, setStopTime] = useState("");
+
   function onSubmit(values: RouteInput) {
     startTransition(async () => {
-      const result = await saveRoute(values, route?.routeId);
+      const result = route
+        ? await saveRoute(values, route.routeId)
+        : await createRoute(
+            values,
+            stopName.trim() ? { name: stopName, monthlyFare: stopFare, pickupTime: stopTime } : null,
+          );
       if (!result.ok) {
         toast.error(result.error);
         return;
       }
-      toast.success(route ? "Route updated." : "Route created.");
+      toast.success(
+        route ? "Route updated." : stopName.trim() ? "Route and first stop created." : "Route created.",
+      );
+      setStopName("");
+      setStopFare("");
+      setStopTime("");
       onOpenChange(false);
       router.refresh();
     });
@@ -163,6 +183,48 @@ export function RouteDialog({
               ]}
               description="Which head a stop's fare posts to on the invoice."
             />
+
+            {!route && (
+              <fieldset className="flex flex-col gap-3 rounded-md border p-3">
+                <legend className="px-1 text-sm font-medium">First stop (optional)</legend>
+                <p className="text-xs text-muted-foreground">
+                  The fare is per stop, so a route can charge more for a farther stop. Add the rest
+                  on the route&apos;s own page.
+                </p>
+                <div className="flex flex-col gap-1.5">
+                  <Label htmlFor="first-stop-name">Stop name</Label>
+                  <Input
+                    id="first-stop-name"
+                    value={stopName}
+                    onChange={(e) => setStopName(e.target.value)}
+                    placeholder="Main gate"
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="flex flex-col gap-1.5">
+                    <Label htmlFor="first-stop-fare">Monthly fare</Label>
+                    <Input
+                      id="first-stop-fare"
+                      inputMode="decimal"
+                      value={stopFare}
+                      onChange={(e) => setStopFare(e.target.value)}
+                      placeholder="650"
+                      disabled={!stopName.trim()}
+                    />
+                  </div>
+                  <div className="flex flex-col gap-1.5">
+                    <Label htmlFor="first-stop-time">Pickup</Label>
+                    <Input
+                      id="first-stop-time"
+                      type="time"
+                      value={stopTime}
+                      onChange={(e) => setStopTime(e.target.value)}
+                      disabled={!stopName.trim()}
+                    />
+                  </div>
+                </div>
+              </fieldset>
+            )}
 
             <div className="flex items-center justify-between rounded-md border p-3">
               <div>

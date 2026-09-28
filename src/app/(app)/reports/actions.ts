@@ -113,6 +113,9 @@ export type ParamOptions = {
   sections: { id: string; label: string }[];
   classLevels: { id: string; label: string }[];
   staff: { id: string; label: string }[];
+  /** This year's routes and the fleet (0296), for the transport report. */
+  routes: { id: string; label: string }[];
+  vehicles: { id: string; label: string }[];
 };
 
 export async function getParamOptions(): Promise<ParamOptions> {
@@ -124,7 +127,7 @@ export async function getParamOptions(): Promise<ParamOptions> {
   // the other half of the codebase.
   const sessionId = (await getUserContext())?.currentSessionId ?? null;
 
-  const [sectionsRes, levelsRes, staffRes] = await Promise.all([
+  const [sectionsRes, levelsRes, staffRes, routesRes, vehiclesRes] = await Promise.all([
     sessionId
       ? supabase
           .from("sections")
@@ -139,6 +142,12 @@ export async function getParamOptions(): Promise<ParamOptions> {
       .eq("status", "active")
       .order("employee_code")
       .limit(500),
+    // Routes belong to a year, like sections: last year's R1 beside this
+    // year's would be two identical labels.
+    sessionId
+      ? supabase.from("transport_routes").select("id, code, name").eq("session_id", sessionId).order("code")
+      : supabase.from("transport_routes").select("id, code, name").order("code"),
+    supabase.from("vehicles").select("id, registration_number").eq("is_active", true).order("registration_number"),
   ]);
 
   const sections = (sectionsRes.data ?? [])
@@ -159,5 +168,8 @@ export async function getParamOptions(): Promise<ParamOptions> {
     }))
     .sort((a, b) => a.label.localeCompare(b.label));
 
-  return { sections, classLevels, staff };
+  const routes = (routesRes.data ?? []).map((r) => ({ id: r.id, label: `${r.code} · ${r.name}` }));
+  const vehicles = (vehiclesRes.data ?? []).map((v) => ({ id: v.id, label: v.registration_number }));
+
+  return { sections, classLevels, staff, routes, vehicles };
 }

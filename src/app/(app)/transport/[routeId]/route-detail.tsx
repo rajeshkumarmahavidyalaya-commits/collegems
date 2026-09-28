@@ -96,7 +96,12 @@ export function RouteDetail({
  */
 function Manifest({ routeLabel, rows }: { routeLabel: string; rows: ManifestRow[] }) {
   const { t } = useI18n();
-  const riders = rows.filter((r) => r.studentId !== null);
+  // A rider is a row with a name. `studentId` alone would drop the staff who
+  // ride the same bus (0293): theirs is null by design, since it is how the
+  // manifest tells a member of staff from a child.
+  const riders = rows.filter((r) => r.studentName !== null);
+  const staffCount = riders.filter((r) => r.studentId === null).length;
+  const childCount = riders.length - staffCount;
 
   return (
     <Card>
@@ -104,7 +109,9 @@ function Manifest({ routeLabel, rows }: { routeLabel: string; rows: ManifestRow[
         <div>
           <CardTitle>Manifest</CardTitle>
           <CardDescription className="max-w-2xl">
-            {routeLabel} — {riders.length} {riders.length === 1 ? "child" : "children"} today. Only
+            {routeLabel} — {childCount} {childCount === 1 ? "child" : "children"}
+            {staffCount > 0 ? ` and ${staffCount} ${staffCount === 1 ? "member" : "members"} of staff` : ""}{" "}
+            today. Only
             the primary guardian&apos;s number is shown: a list with three numbers per child is one
             nobody reads on a roadside.
           </CardDescription>
@@ -141,7 +148,7 @@ function Manifest({ routeLabel, rows }: { routeLabel: string; rows: ManifestRow[
                   <TableHead className="w-12 text-end">#</TableHead>
                   <TableHead>Stop</TableHead>
                   <TableHead>Time</TableHead>
-                  <TableHead>Child</TableHead>
+                  <TableHead>Rider</TableHead>
                   <TableHead>Class</TableHead>
                   <TableHead>Runs</TableHead>
                   <TableHead>Guardian</TableHead>
@@ -178,7 +185,9 @@ function Manifest({ routeLabel, rows }: { routeLabel: string; rows: ManifestRow[
                       {row.direction ? directionLabel(row.direction, t) : "—"}
                     </TableCell>
                     <TableCell>
-                      {row.guardianPhone ? (
+                      {row.studentId === null ? (
+                        <span className="text-muted-foreground">Staff</span>
+                      ) : row.guardianPhone ? (
                         <>
                           <a
                             href={`tel:${row.guardianPhone}`}

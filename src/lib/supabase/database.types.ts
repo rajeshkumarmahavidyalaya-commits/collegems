@@ -10810,6 +10810,12 @@ export type Database = {
           row_data: Json
         }[]
       }
+      report_transport_riders: {
+        Args: { p_params: Json }
+        Returns: {
+          row_data: Json
+        }[]
+      }
       role_has_permission: { Args: { p_code: string }; Returns: boolean }
       salary_structure_problems: {
         Args: { p_components: Json }
@@ -11759,6 +11765,10 @@ export type Database = {
           skipped: number
           stops: number
         }[]
+      }
+      transport_route_create: {
+        Args: { p_first_stop?: Json; p_route: Json }
+        Returns: string
       }
       transport_route_load: {
         Args: { p_session_id?: string }

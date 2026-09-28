@@ -2,7 +2,9 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { BookOpen, Bus, CalendarClock, IdCard, Pencil } from "lucide-react";
 import { currentStaffSeat } from "../../transport/actions";
-import { formatStopTime } from "@/lib/validations/transport";
+import { ArrangeButton, LibraryCardButton } from "@/components/people/arrange-controls";
+import { busStopOptions, giveBusSeat, giveLibraryCard } from "../../students/arrangement-actions";
+import { formatStopTime } from "@/lib/validations/transport-display";
 import { PhotoControl } from "@/components/people/photo-control";
 import { removeStaffPhoto, setStaffPhoto, staffPhotoUrl } from "../photo-actions";
 import { BUCKET_LIMITS, formatBytes } from "@/lib/storage/constants";
@@ -50,10 +52,11 @@ export default async function StaffDetailPage({ params }: { params: Promise<{ id
   // `staff.view` — rule 8 again, and the reason this is not read alongside the
   // record: `staff_record` does not project `photo_path`, so it is a column it
   // does not return rather than a second answer to a question it answers.
-  const [photo, canAssignSeat, canSeeTransport] = await Promise.all([
+  const [photo, canAssignSeat, canSeeTransport, canGiveCard] = await Promise.all([
     staffPhotoUrl(staff.id),
     hasPermission("transport.assign"),
     hasPermission("transport.view"),
+    hasPermission("library.manage"),
   ]);
   // The seat through `transport_for_staff` (0293), an invoker read: the
   // assignment policies decide, so a caller who may not see it gets nothing.
@@ -273,6 +276,11 @@ export default async function StaffDetailPage({ params }: { params: Promise<{ id
                   value={<span className="tabular-nums">{library.books_out}</span>}
                 />
               </dl>
+            ) : canGiveCard && !hasLeft ? (
+              <div className="flex flex-col gap-2">
+                <p className="text-sm text-muted-foreground">No library card yet.</p>
+                <LibraryCardButton give={giveLibraryCard.bind(null, "staff", staff.id)} />
+              </div>
             ) : (
               <p className="text-sm text-muted-foreground">
                 No library card. One can be issued from the library members screen.
@@ -308,10 +316,22 @@ export default async function StaffDetailPage({ params }: { params: Promise<{ id
             ) : (
               <p className="text-sm text-muted-foreground">No seat on a school bus.</p>
             )}
-            {canAssignSeat && !hasLeft && (
-              <Button asChild variant="outline" size="sm" className="w-fit">
-                <Link href="/transport/assignments">{seat ? "Change or end" : "Give a seat"}</Link>
-              </Button>
+            {canAssignSeat && !hasLeft && !seat && (
+              <ArrangeButton
+                kind="bus"
+                label="Give a seat"
+                title={`A bus seat for ${person.full_name}`}
+                description="Same buses and the same seat count as the children. A staff seat is free."
+                pickLabel="Stop"
+                load={busStopOptions}
+                submit={giveBusSeat.bind(null, "staff", staff.id)}
+                withDirection
+              />
+            )}
+            {canAssignSeat && seat && (
+              <Link href="/transport/assignments" className="text-sm underline underline-offset-4">
+                Change or end on the transport screen
+              </Link>
             )}
           </CardContent>
         </Card>

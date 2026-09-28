@@ -190,7 +190,13 @@ function duplicateAdmissionNumber(message: string): ActionResult<never> {
  */
 export async function admitStudent(
   input: unknown,
-): Promise<ActionResult<{ id: string; billing: { billed: boolean; message: string } | null }>> {
+): Promise<
+  ActionResult<{
+    id: string;
+    billing: { billed: boolean; message: string } | null;
+    arrangements: { ok: boolean; message: string }[];
+  }>
+> {
   const parsed = studentSchema.safeParse(input);
   if (!parsed.success) {
     return { ok: false, error: "Check the highlighted fields.", fieldErrors: parsed.error.flatten().fieldErrors };
@@ -232,8 +238,37 @@ export async function admitStudent(
     if (message) billing = { billed: parsed.billed, message };
   }
 
+  // The bus seat and the bed chosen on the form (0296), through the modules'
+  // own write functions after the admission has committed. A refused seat is
+  // not a refused admission -- the fee bill's rule above -- so each is a
+  // sentence beside the success, never a failure of it.
+  const arrangements: { ok: boolean; message: string }[] = [];
+  if (parsed.data.busStopId) {
+    const seat = await supabase.rpc("transport_assign_student", {
+      p_student_id: id,
+      p_stop_id: parsed.data.busStopId,
+      p_direction: "both",
+    });
+    arrangements.push(
+      seat.error
+        ? { ok: false, message: `No bus seat: ${seat.error.message}` }
+        : { ok: true, message: "Put on the bus." },
+    );
+  }
+  if (parsed.data.hostelRoomId) {
+    const bed = await supabase.rpc("hostel_allocate", {
+      p_student_id: id,
+      p_room_id: parsed.data.hostelRoomId,
+    });
+    arrangements.push(
+      bed.error
+        ? { ok: false, message: `No hostel bed: ${bed.error.message}` }
+        : { ok: true, message: "Given a hostel bed." },
+    );
+  }
+
   revalidatePath("/students");
-  return { ok: true, data: { id, billing } };
+  return { ok: true, data: { id, billing, arrangements } };
 }
 
 export async function updateStudent(id: string, input: unknown): Promise<ActionResult<{ id: string }>> {

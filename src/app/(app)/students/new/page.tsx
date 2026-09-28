@@ -1,12 +1,24 @@
 import { redirect } from "next/navigation";
 import { hasPermission } from "@/lib/auth/permissions";
 import { listSections } from "../actions";
+import { bedOptions, busStopOptions } from "../arrangement-actions";
 import { StudentForm } from "../student-form";
 
 export const metadata = { title: "Admit student" };
 
 export default async function NewStudentPage() {
-  const [sections, canManage] = await Promise.all([listSections(), hasPermission("students.manage")]);
+  const [sections, canManage, canAssignBus, canAllocateBed] = await Promise.all([
+    listSections(),
+    hasPermission("students.manage"),
+    hasPermission("transport.assign"),
+    hasPermission("hostel.allocate"),
+  ]);
+  // Offered only to somebody who may assign them: a field whose write will be
+  // refused is a control that costs the person the work of trying.
+  const [busStops, hostelRooms] = await Promise.all([
+    canAssignBus ? busStopOptions() : Promise.resolve([]),
+    canAllocateBed ? bedOptions() : Promise.resolve([]),
+  ]);
 
   // The RLS policy is the real gate; this just avoids showing a form whose
   // submit is guaranteed to be rejected.
@@ -20,7 +32,7 @@ export default async function NewStudentPage() {
           Creates the person, their student record, and their enrolment together.
         </p>
       </div>
-      <StudentForm sections={sections} />
+      <StudentForm sections={sections} busStops={busStops} hostelRooms={hostelRooms} />
     </div>
   );
 }

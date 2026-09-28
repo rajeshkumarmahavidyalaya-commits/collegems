@@ -542,6 +542,10 @@ function ParamControl({
         ? [{ value: "", label: "Every year group" }, ...options.classLevels.map((l) => ({ value: l.id, label: l.label }))]
         : descriptor.type === "staff"
           ? [{ value: "", label: "Everybody" }, ...options.staff.map((s) => ({ value: s.id, label: s.label }))]
+          : descriptor.type === "route"
+            ? [{ value: "", label: "Every route" }, ...options.routes.map((r) => ({ value: r.id, label: r.label }))]
+          : descriptor.type === "vehicle"
+            ? [{ value: "", label: "Every vehicle" }, ...options.vehicles.map((r) => ({ value: r.id, label: r.label }))]
           : descriptor.type === "select"
             ? [{ value: "", label: "Any" }, ...descriptor.options]
             : null;

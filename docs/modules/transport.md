@@ -309,3 +309,32 @@ together.
   delete.
 - **Readers that mean children say so.** Renewal and the year-end critic
   filter `student_id is not null`. The manifest lists staff riders by name.
+
+## A route in one form, and who rides what (0296)
+
+- **One form for a new route.** *New route* now takes the first stop, its
+  monthly fare and its pickup time beside the route's name, vehicle and fee
+  head, as WPSchool's *Add New Route* does. `transport_route_create` writes both
+  in one transaction, because two client calls would leave a route with no stop
+  behind when the second one failed. A first stop with no fare is refused in a
+  sentence rather than given 0.
+- **Editing a route kept its fee head only by accident, and not even that.**
+  `transport_route_load` does not return `fee_head_id`, so the edit dialog sent
+  `""`. Renaming a route silently stopped its fares reaching the bill. Both
+  demo routes had a head. The list now reads the head beside the load.
+- **The bus list is today's, on the school's day.** `transport_manifest`
+  listed a seat from the day it was booked, not the day it starts, and
+  compared against UTC's `current_date`. It asks `mobile_today()` on both
+  ends. The screen had also been filtering on `studentId !== null`, which
+  dropped every staff rider 0293 had added: a rider is now a row with a name.
+- **Who rides which bus** is a catalogue report (`transport.riders`),
+  filterable by day, route, vehicle, class, section, and children or staff. It
+  is gated on `transport.assign`: assignments are row-owned for a family, so
+  `transport.view` would answer a parent with their own child. The report
+  runner gained `route` and `vehicle` parameter types, and this year's routes
+  only, because last year's R1 beside this year's is two identical labels.
+
+Probed as the administrator, rolled back: a route with its first stop created
+in one call; a teacher given a seat on it; the report finding them with
+*Riders: Staff*; 46 children on 15 January; and nobody today, because the demo
+college's year ended in March.

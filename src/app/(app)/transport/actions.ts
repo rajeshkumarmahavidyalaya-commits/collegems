@@ -10,6 +10,7 @@ import {
   vehicleSchema,
 } from "@/lib/validations/transport";
 import type { ActionResult } from "../library/actions";
+import { isCurrentArrangement } from "@/lib/validations/arrangements";
 
 function fail(message: string): ActionResult<never> {
   return { ok: false, error: message };
@@ -34,6 +35,12 @@ export type RouteLoadRow = {
   direction: string;
   isActive: boolean;
   vehicleId: string | null;
+  /**
+   * Which head the fares post to. Not in `transport_route_load`, so read
+   * beside it: without it the edit dialog sent "" and saving a renamed route
+   * silently stopped it billing.
+   */
+  feeHeadId: string | null;
   registrationNumber: string | null;
   capacity: number | null;
   driverName: string | null;
@@ -48,10 +55,14 @@ export async function listRoutes(): Promise<RouteLoadRow[]> {
   const supabase = await createClient();
 
   // The session comes from the server context, never from the client (rule 2).
-  const { data, error } = await supabase.rpc("transport_route_load", {
-    p_session_id: ctx?.currentSessionId ?? undefined,
-  });
+  const [{ data, error }, heads] = await Promise.all([
+    supabase.rpc("transport_route_load", {
+      p_session_id: ctx?.currentSessionId ?? undefined,
+    }),
+    supabase.from("transport_routes").select("id, fee_head_id"),
+  ]);
   if (error) throw new Error(error.message);
+  const headOf = new Map((heads.data ?? []).map((r) => [r.id, r.fee_head_id]));
 
   return (data ?? []).map((r) => ({
     routeId: r.route_id,
@@ -60,6 +71,7 @@ export async function listRoutes(): Promise<RouteLoadRow[]> {
     direction: r.direction,
     isActive: r.is_active,
     vehicleId: r.vehicle_id,
+    feeHeadId: headOf.get(r.route_id) ?? null,
     registrationNumber: r.registration_number,
     capacity: r.capacity,
     driverName: r.driver_name,
@@ -173,6 +185,54 @@ export async function listStops(routeId: string): Promise<StopRow[]> {
     dropTime: s.drop_time,
     monthlyFare: Number(s.monthly_fare),
   }));
+}
+
+/**
+ * A new route and its first stop, fare included, in one form and one
+ * transaction (0296) -- WPSchool's "Add New Route". A route with no stop
+ * cannot carry anybody, and two client calls would leave one behind when the
+ * second failed.
+ */
+export async function createRoute(
+  input: unknown,
+  firstStop: { name: string; monthlyFare: string; pickupTime: string } | null,
+): Promise<ActionResult<{ id: string }>> {
+  const parsed = routeSchema.safeParse(input);
+  if (!parsed.success) return invalid(parsed.error);
+
+  let stop: { name: string; monthly_fare: string; pickup_time: string } | null = null;
+  if (firstStop && firstStop.name.trim()) {
+    const fare = Number(firstStop.monthlyFare);
+    if (firstStop.monthlyFare.trim() === "" || !Number.isFinite(fare) || fare < 0) {
+      return fail("Give the first stop a monthly fare, or 0 if it is free.");
+    }
+    if (firstStop.pickupTime && !/^\d{2}:\d{2}$/.test(firstStop.pickupTime)) {
+      return fail("Write the pickup time as HH:MM.");
+    }
+    stop = { name: firstStop.name.trim(), monthly_fare: String(fare), pickup_time: firstStop.pickupTime };
+  }
+
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("transport_route_create", {
+    p_route: {
+      code: parsed.data.code.trim(),
+      name: parsed.data.name.trim(),
+      direction: parsed.data.direction,
+      vehicle_id: parsed.data.vehicleId || "",
+      fee_head_id: parsed.data.feeHeadId || "",
+      is_active: parsed.data.isActive,
+    },
+    p_first_stop: stop ?? undefined,
+  });
+  if (error) {
+    if (error.code === "23505") {
+      return fail(`A route with the code ${parsed.data.code} already exists this session.`);
+    }
+    return fail(error.message);
+  }
+
+  revalidatePath("/transport");
+  return { ok: true, data: { id: data as string } };
 }
 
 export async function saveStop(
@@ -572,10 +632,9 @@ export async function currentStaffSeat(staffId: string): Promise<StaffSeat | nul
     supabase.rpc("mobile_today"),
   ]);
   const day = (today as string | null) ?? new Date().toISOString().slice(0, 10);
-  // ISO strings compare as dates (arrangements.ts): no timezone moves them.
-  const row = (data ?? []).find(
-    (r) => r.status === "active" && r.starts_on <= day && (r.effective_ends_on ?? day) >= day,
-  );
+  // One definition of "current" (arrangements.ts), shared with the family's
+  // screen and the student record: the date decides, never the list order.
+  const row = (data ?? []).find((r) => isCurrentArrangement(r, day));
   if (!row) return null;
   return {
     id: row.assignment_id,
