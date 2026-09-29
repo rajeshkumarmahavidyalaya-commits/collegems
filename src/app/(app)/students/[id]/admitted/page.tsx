@@ -17,7 +17,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { hasPermission } from "@/lib/auth/permissions";
 import { getUserContext } from "@/lib/auth/context";
 import { createClient } from "@/lib/supabase/server";
-import { getLocale } from "@/lib/i18n/server";
+import { getLocale, getT } from "@/lib/i18n/server";
 import { formatCurrency } from "@/lib/i18n/format";
 import { isCurrentArrangement } from "@/lib/validations/arrangements";
 import { getStudent } from "../../actions";
@@ -43,7 +43,7 @@ export const metadata = { title: "Admitted" };
  */
 export default async function AdmittedPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const [student, ctx, locale] = await Promise.all([getStudent(id), getUserContext(), getLocale()]);
+  const [student, ctx, locale, t] = await Promise.all([getStudent(id), getUserContext(), getLocale(), getT()]);
   if (!student) notFound();
 
   const supabase = await createClient();
@@ -74,7 +74,7 @@ export default async function AdmittedPage({ params }: { params: Promise<{ id: s
   ]);
 
   const person = student.people;
-  const fullName = person ? `${person.first_name} ${person.last_name}`.trim() : "The student";
+  const fullName = person ? `${person.first_name} ${person.last_name}`.trim() : t("admitted.theStudent");
   const enrolments = Array.isArray(student.enrolments) ? student.enrolments : [];
   const enrolment = enrolments.find((e) => e.session_id === ctx?.currentSessionId) ?? enrolments[0];
   const classLabel = enrolment?.sections
@@ -97,13 +97,15 @@ export default async function AdmittedPage({ params }: { params: Promise<{ id: s
     familyContact = row?.contact_name ?? null;
   }
 
+  const stepLabels = { done: t("admitted.done"), notDone: t("admitted.notDone"), ifNeeded: t("admitted.ifNeeded") };
+  const who = { name: familyContact ?? t("admitted.family.guardian") };
   const family: Record<string, { done: boolean; text: string }> = {
-    can_sign_in: { done: true, text: "The family can sign in." },
-    invited: { done: true, text: `${familyContact ?? "The guardian"} has been invited and has not signed up yet.` },
-    not_invited: { done: false, text: `${familyContact ?? "The guardian"} has an email address and has not been invited.` },
-    expired: { done: false, text: `The invitation to ${familyContact ?? "the guardian"} expired unused.` },
-    no_address: { done: false, text: `${familyContact ?? "The guardian"} has no email address, so there is nowhere to send an invitation.` },
-    no_guardian: { done: false, text: "No guardian is on record yet." },
+    can_sign_in: { done: true, text: t("admitted.family.can_sign_in") },
+    invited: { done: true, text: t("admitted.family.invited", who) },
+    not_invited: { done: false, text: t("admitted.family.not_invited", who) },
+    expired: { done: false, text: t("admitted.family.expired", who) },
+    no_address: { done: false, text: t("admitted.family.no_address", who) },
+    no_guardian: { done: false, text: t("admitted.family.no_guardian") },
   };
 
   return (
@@ -111,29 +113,27 @@ export default async function AdmittedPage({ params }: { params: Promise<{ id: s
       <div className="flex items-start gap-3">
         <CheckCircle2 className="mt-1 size-7 shrink-0 text-success" aria-hidden="true" />
         <div className="min-w-0">
-          <h1 className="text-2xl font-semibold break-words">{fullName} is admitted</h1>
+          <h1 className="text-2xl font-semibold break-words">{t("admitted.title", { name: fullName })}</h1>
           <p className="text-sm text-muted-foreground">
             <span className="font-mono">{student.admission_number}</span>
-            {classLabel ? ` · ${classLabel}` : " · no class yet"}
+            {` · ${classLabel ?? t("admitted.noClass")}`}
           </p>
         </div>
       </div>
 
-      <p className="text-sm text-muted-foreground">
-        What the office usually does next. Each step says whether it is done; none of them is
-        required, and all of them are on the student&apos;s record later.
-      </p>
+      <p className="text-sm text-muted-foreground">{t("admitted.intro")}</p>
 
       <ol className="flex flex-col gap-3">
         {canIssue && (
           <Step
+            labels={stepLabels}
             icon={<FileText className="size-4" aria-hidden="true" />}
-            title="Admission letter"
+            title={t("admitted.letter.title")}
             done={Boolean(letter)}
-            text={letter ? `Letter ${letter.serialNo} is issued.` : "A numbered letter for the family to keep."}
+            text={letter ? t("admitted.letter.issued", { serial: letter.serialNo }) : t("admitted.letter.none")}
           >
             <LetterButton
-              label={letter ? "Open letter" : "Issue and print"}
+              label={letter ? t("admitted.letter.open") : t("admitted.letter.issue")}
               existing={letter}
               issue={issueLetter.bind(null, "admission", id)}
             />
@@ -142,18 +142,19 @@ export default async function AdmittedPage({ params }: { params: Promise<{ id: s
 
         {canCollect && (
           <Step
+            labels={stepLabels}
             icon={<IndianRupee className="size-4" aria-hidden="true" />}
-            title="First fee"
+            title={t("admitted.fee.title")}
             done={balance <= 0}
             text={
               balance > 0
-                ? `${formatCurrency(balance, locale)} is owed on this child's account.`
-                : "Nothing is owed on this child's account yet."
+                ? t("admitted.fee.owed", { amount: formatCurrency(balance, locale) })
+                : t("admitted.fee.none")
             }
           >
             {balance > 0 && (
               <Button asChild variant="outline">
-                <Link href={`/fees/counter?student=${id}`}>Collect fee</Link>
+                <Link href={`/fees/counter?student=${id}`}>{t("admitted.fee.collect")}</Link>
               </Button>
             )}
           </Step>
@@ -161,17 +162,18 @@ export default async function AdmittedPage({ params }: { params: Promise<{ id: s
 
         {canInvite && familyState && (
           <Step
+            labels={stepLabels}
             icon={<Users className="size-4" aria-hidden="true" />}
-            title="Family login"
+            title={t("admitted.family.title")}
             done={family[familyState]?.done ?? false}
             text={family[familyState]?.text ?? familyState}
           >
             {(familyState === "not_invited" || familyState === "expired") && (
-              <OneClickAction label="Invite the family" run={inviteFamily.bind(null, id)} />
+              <OneClickAction label={t("admitted.family.invite")} run={inviteFamily.bind(null, id)} />
             )}
             {(familyState === "no_address" || familyState === "no_guardian") && (
               <Button asChild variant="outline">
-                <Link href={`/students/${id}#guardians`}>Add on the record</Link>
+                <Link href={`/students/${id}#guardians`}>{t("admitted.family.addOnRecord")}</Link>
               </Button>
             )}
           </Step>
@@ -179,19 +181,20 @@ export default async function AdmittedPage({ params }: { params: Promise<{ id: s
 
         {canAssignBus && (
           <Step
+            labels={stepLabels}
             icon={<Bus className="size-4" aria-hidden="true" />}
-            title="School bus"
+            title={t("admitted.bus.title")}
             done={Boolean(seat)}
             optional
-            text={seat ? `Route ${seat.route_code}, ${seat.stop_name}.` : "Not on a school bus."}
+            text={seat ? t("admitted.bus.on", { route: seat.route_code, stop: seat.stop_name }) : t("admitted.bus.off")}
           >
             {!seat && (
               <ArrangeButton
                 kind="bus"
-                label="Put on a bus"
-                title={`A bus seat for ${fullName}`}
-                description="The fare comes from the stop and joins the next invoice. A full bus is refused."
-                pickLabel="Stop"
+                label={t("admitted.bus.button")}
+                title={t("admitted.bus.dialogTitle", { name: fullName })}
+                description={t("admitted.bus.dialogDescription")}
+                pickLabel={t("admitted.bus.pick")}
                 load={busStopOptions}
                 submit={giveBusSeat.bind(null, "student", id)}
                 withDirection
@@ -202,19 +205,20 @@ export default async function AdmittedPage({ params }: { params: Promise<{ id: s
 
         {canAllocateBed && (
           <Step
+            labels={stepLabels}
             icon={<BedDouble className="size-4" aria-hidden="true" />}
-            title="Hostel"
+            title={t("admitted.bed.title")}
             done={Boolean(bed)}
             optional
-            text={bed ? `${bed.hostel_name}, room ${bed.room_number}.` : "A day scholar: no hostel bed."}
+            text={bed ? t("admitted.bed.on", { hostel: bed.hostel_name, room: bed.room_number }) : t("admitted.bed.off")}
           >
             {!bed && (
               <ArrangeButton
                 kind="bed"
-                label="Give a bed"
-                title={`A hostel bed for ${fullName}`}
-                description="The room's fare joins the next invoice. A full room, or a house that does not take this child, is refused."
-                pickLabel="Room"
+                label={t("admitted.bed.button")}
+                title={t("admitted.bed.dialogTitle", { name: fullName })}
+                description={t("admitted.bed.dialogDescription")}
+                pickLabel={t("admitted.bed.pick")}
                 load={bedOptions}
                 submit={giveBed.bind(null, id)}
               />
@@ -223,14 +227,15 @@ export default async function AdmittedPage({ params }: { params: Promise<{ id: s
         )}
 
         <Step
+          labels={stepLabels}
           icon={<IdCard className="size-4" aria-hidden="true" />}
-          title="Identity card"
+          title={t("admitted.card.title")}
           done={false}
           optional
-          text="Printed from the record, with the photograph if one has been added."
+          text={t("admitted.card.text")}
         >
           <Button asChild variant="outline">
-            <Link href={`/students/${id}/id-card`}>Print ID card</Link>
+            <Link href={`/students/${id}/id-card`}>{t("admitted.card.print")}</Link>
           </Button>
         </Step>
       </ol>
@@ -240,12 +245,12 @@ export default async function AdmittedPage({ params }: { params: Promise<{ id: s
           <Button asChild>
             <Link href="/students/new">
               <UserPlus className="size-4" aria-hidden="true" />
-              Admit another student
+              {t("admitted.another")}
             </Link>
           </Button>
         )}
         <Button asChild variant="outline">
-          <Link href={`/students/${id}`}>Open the record</Link>
+          <Link href={`/students/${id}`}>{t("admitted.openRecord")}</Link>
         </Button>
       </div>
     </div>
@@ -258,6 +263,7 @@ function Step({
   text,
   done,
   optional = false,
+  labels,
   children,
 }: {
   icon: ReactNode;
@@ -265,6 +271,7 @@ function Step({
   text: string;
   done: boolean;
   optional?: boolean;
+  labels: { done: string; notDone: string; ifNeeded: string };
   children?: ReactNode;
 }) {
   return (
@@ -278,8 +285,8 @@ function Step({
             <p className="flex items-center gap-2 font-medium">
               {icon}
               {title}
-              <span className="sr-only">{done ? "(done)" : "(not done)"}</span>
-              {optional && !done && <span className="text-xs font-normal text-muted-foreground">if needed</span>}
+              <span className="sr-only">{done ? labels.done : labels.notDone}</span>
+              {optional && !done && <span className="text-xs font-normal text-muted-foreground">{labels.ifNeeded}</span>}
             </p>
             <p className="text-sm text-muted-foreground">{text}</p>
           </div>

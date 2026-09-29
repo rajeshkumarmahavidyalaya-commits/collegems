@@ -1,7 +1,6 @@
-import { PDFDocument, PDFFont, PDFImage, PDFPage, rgb } from "pdf-lib";
-import fontkit from "@pdf-lib/fontkit";
-import { documentFont, unrenderable } from "./font";
-import { UnrenderableDocument, pdfFileName } from "./document";
+import { PDFDocument, PDFImage, PDFPage, rgb } from "pdf-lib";
+import { pdfFileName } from "./document";
+import { Typeset, graphemes, type Face } from "./typeset";
 import { qrModules } from "@/lib/id-card/qr";
 
 /**
@@ -141,21 +140,15 @@ export function qrRectangles(
  */
 function drawCard(
   page: PDFPage,
-  font: PDFFont,
-  covered: ReadonlySet<number>,
+  fonts: Typeset,
   doc: CardDocument,
   photo: PDFImage,
 ): void {
-  const check = (text: string): string => {
-    const missing = unrenderable(text, covered);
-    if (missing.length > 0) throw new UnrenderableDocument(missing);
-    return text;
-  };
-  const fit = (text: string, size: number, width: number): string => {
-    if (font.widthOfTextAtSize(text, size) <= width) return text;
+  const fit = (face: Face, text: string, size: number, width: number): string => {
+    if (face.width(text, size) <= width) return text;
     let out = "";
-    for (const ch of text) {
-      if (font.widthOfTextAtSize(`${out}${ch}…`, size) > width) break;
+    for (const ch of graphemes(text)) {
+      if (face.width(`${out}${ch}…`, size) > width) break;
       out += ch;
     }
     return `${out}…`;
@@ -168,11 +161,11 @@ function drawCard(
     width: number,
     tone: "ink" | "quiet" = "ink",
   ): void => {
-    page.drawText(fit(check(text), size, width), {
+    const face = fonts.pick(text);
+    face.draw(page, fit(face, text, size, width), {
       x,
       y,
       size,
-      font,
       color: tone === "quiet" ? QUIET : INK,
     });
   };
@@ -184,7 +177,7 @@ function drawCard(
   // expiry that a fifteen-year-old is still holding at twenty.
   const headerY = CR80.height - PAD - 7;
   const session = doc.sessionName ? `${doc.sessionName}` : "";
-  const sessionWidth = session ? font.widthOfTextAtSize(session, 6) + 6 : 0;
+  const sessionWidth = session ? fonts.pick(session).width(session, 6) + 6 : 0;
   draw(doc.schoolName.toLocaleUpperCase("en"), PAD, headerY, 7.5, inner - sessionWidth);
   if (session) {
     draw(session, CR80.width - PAD - sessionWidth + 6, headerY, 6, sessionWidth, "quiet");
@@ -258,18 +251,16 @@ function drawCard(
   }
 }
 
-async function open(): Promise<{ doc: PDFDocument; font: PDFFont; covered: ReadonlySet<number> }> {
+async function open(): Promise<{ doc: PDFDocument; fonts: Typeset }> {
   const doc = await PDFDocument.create();
-  doc.registerFontkit(fontkit);
-  const { bytes, covered } = await documentFont();
-  const font = await doc.embedFont(bytes, { subset: true });
-  return { doc, font, covered };
+  return { doc, fonts: await Typeset.open(doc) };
 }
 
 export async function renderIdCard(card: CardDocument): Promise<Uint8Array> {
-  const { doc, font, covered } = await open();
+  const { doc, fonts } = await open();
   const photo = await embedPhoto(doc, card.photo);
-  drawCard(doc.addPage([CR80.width, CR80.height]), font, covered, card, photo);
+  drawCard(doc.addPage([CR80.width, CR80.height]), fonts, card, photo);
+  await fonts.flush();
   return doc.save();
 }
 
@@ -284,11 +275,12 @@ export async function renderIdCard(card: CardDocument): Promise<Uint8Array> {
  * truncating it*, because nobody notices until April.
  */
 export async function renderIdCards(cards: CardDocument[]): Promise<Uint8Array> {
-  const { doc, font, covered } = await open();
+  const { doc, fonts } = await open();
   for (const card of cards) {
     const photo = await embedPhoto(doc, card.photo);
-    drawCard(doc.addPage([CR80.width, CR80.height]), font, covered, card, photo);
+    drawCard(doc.addPage([CR80.width, CR80.height]), fonts, card, photo);
   }
+  await fonts.flush();
   return doc.save();
 }
 

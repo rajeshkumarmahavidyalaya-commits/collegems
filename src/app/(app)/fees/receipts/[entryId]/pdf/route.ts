@@ -36,6 +36,7 @@ export async function GET(
       againstInvoice: t("pdf.receipt.againstInvoice"),
       onAccount: t("pdf.receipt.onAccount"),
       reversed: t("pdf.receipt.reversed"),
+      roll: t("pdf.roll"),
     });
 
     return new Response(Buffer.from(bytes), {

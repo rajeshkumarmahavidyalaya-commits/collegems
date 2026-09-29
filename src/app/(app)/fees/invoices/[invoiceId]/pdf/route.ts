@@ -26,10 +26,10 @@ import { UnrenderableDocument } from "@/lib/pdf/document";
  * as an accident, because it is the kind of thing somebody will want to change
  * and should change deliberately.
  *
- * A consequence, and it is honest rather than hidden: a Hindi or Urdu reader
- * gets the 422 below, because `formatDate` returns Devanagari month names and
- * the document font is Latin-only. The message says so and points at printing,
- * which uses the reader's own system fonts and works.
+ * A consequence, and it is honest rather than hidden: an Urdu reader gets
+ * the 422 below, because the renderer has a Latin and a Devanagari face and no
+ * Arabic one (a Hindi reader gets a Hindi bill). The message says so and points
+ * at printing, which uses the reader's own system fonts and works.
  */
 export async function GET(
   _request: Request,
@@ -59,6 +59,8 @@ export async function GET(
       noPayments: t("pdf.invoice.noPayments"),
       cancelled: t("pdf.invoice.cancelled"),
       producedOn: t("pdf.invoice.producedOn"),
+      due: t("pdf.invoice.due"),
+      roll: t("pdf.roll"),
     });
 
     return new Response(Buffer.from(bytes), {

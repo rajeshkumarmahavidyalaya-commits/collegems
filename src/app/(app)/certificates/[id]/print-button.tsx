@@ -13,9 +13,9 @@ import { Button } from "@/components/ui/button";
  * They fail in opposite directions, so both are kept and the page offers both:
  *
  *   - printing renders in the reader's browser with the reader's system fonts,
- *     so it prints Devanagari and Urdu that `src/lib/pdf` cannot — and produces
+ *     so it prints Urdu, which `src/lib/pdf` cannot — and produces
  *     nothing anybody can attach to an email;
- *   - the PDF beside it is a file, and is Latin-script only.
+ *   - the PDF beside it is a file, in Latin or Devanagari script.
  *
  * A comment that answers the question somebody was about to ask is worse than
  * no comment when it answers a slightly different one.

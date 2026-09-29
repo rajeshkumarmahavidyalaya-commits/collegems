@@ -16,6 +16,31 @@ export const GRADE_MEANING: Record<BehaviourGrade, string> = {
   E: "Needs improvement",
 };
 
+/**
+ * The college's scale (0307, `exams.behaviour_scale`): which letters it uses
+ * and what each means. Anything missing or malformed reads as CBSE's five
+ * points -- rule 12's conservative reading, and exactly what 0303 shipped.
+ */
+export type BehaviourScale = { grades: BehaviourGrade[]; meaning: Record<string, string> };
+
+export function parseScale(value: unknown): BehaviourScale {
+  const v = (value && typeof value === "object" ? value : {}) as Record<string, unknown>;
+  const raw = typeof v.points === "number" ? v.points : Number(v.points);
+  const points = Number.isFinite(raw) ? Math.min(5, Math.max(3, Math.round(raw))) : 5;
+  const grades = BEHAVIOUR_GRADES.slice(0, points);
+  const meaning: Record<string, string> = {};
+  for (const g of grades) {
+    const word = typeof v[g] === "string" ? (v[g] as string).trim() : "";
+    meaning[g] = word || GRADE_MEANING[g];
+  }
+  return { grades, meaning };
+}
+
+/** "A Outstanding · B Very good · …", the line printed under the grades. */
+export function scaleLegend(scale: BehaviourScale): string {
+  return scale.grades.map((g) => `${g} ${scale.meaning[g]}`).join(" · ");
+}
+
 export function isGrade(value: unknown): value is BehaviourGrade {
   return typeof value === "string" && (BEHAVIOUR_GRADES as readonly string[]).includes(value);
 }

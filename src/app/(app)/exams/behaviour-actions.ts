@@ -2,7 +2,14 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
-import { cellKey, isGrade, type BehaviourGrade, type GradeMap } from "@/lib/validations/behaviour";
+import {
+  cellKey,
+  isGrade,
+  parseScale,
+  type BehaviourGrade,
+  type BehaviourScale,
+  type GradeMap,
+} from "@/lib/validations/behaviour";
 
 type Result<T> = { ok: true; data: T } | { ok: false; error: string };
 
@@ -10,6 +17,13 @@ export type BehaviourTrait = { id: string; name: string; kind: string; isActive:
 export type BehaviourStudent = { studentId: string; studentName: string; rollNumber: string | null };
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/** The college's scale (0307), through `setting_value` so the default is the catalogue's. */
+export async function getBehaviourScale(): Promise<BehaviourScale> {
+  const supabase = await createClient();
+  const { data } = await supabase.rpc("setting_value", { p_key: "exams.behaviour_scale" });
+  return parseScale(data);
+}
 
 /** The college's traits, behaviour first, in its own order (0303). */
 export async function listTraits(): Promise<BehaviourTrait[]> {
@@ -33,11 +47,12 @@ export async function listTraits(): Promise<BehaviourTrait[]> {
 export async function getBehaviourSheet(
   examId: string,
   sectionId: string,
-): Promise<{ traits: BehaviourTrait[]; students: BehaviourStudent[]; grades: GradeMap }> {
+): Promise<{ traits: BehaviourTrait[]; students: BehaviourStudent[]; grades: GradeMap; scale: BehaviourScale }> {
   const supabase = await createClient();
-  const [traits, { data: rows, error }] = await Promise.all([
+  const [traits, { data: rows, error }, scale] = await Promise.all([
     listTraits(),
     supabase.rpc("exams_remark_sheet", { p_exam_id: examId, p_section_id: sectionId }),
+    getBehaviourScale(),
   ]);
   if (error) throw new Error(error.message);
   const students = (rows ?? []).map((r) => ({
@@ -60,7 +75,7 @@ export async function getBehaviourSheet(
       if (isGrade(r.grade)) grades[cellKey(r.student_id, r.trait_id)] = r.grade;
     }
   }
-  return { traits: traits.filter((t) => t.isActive), students, grades };
+  return { traits: traits.filter((t) => t.isActive), students, grades, scale };
 }
 
 /**

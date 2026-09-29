@@ -38,21 +38,18 @@ export default async function CalendarPage({
     <div className="flex flex-col gap-6">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-semibold">School calendar</h1>
-          <p className="max-w-2xl text-sm text-muted-foreground">
-            Holidays, exams, fee due dates and notices, each from the module that owns it. Holidays
-            are added under Academics.
-          </p>
+          <h1 className="text-2xl font-semibold">{t("calendar.title")}</h1>
+          <p className="max-w-2xl text-sm text-muted-foreground">{t("calendar.intro")}</p>
         </div>
-        <nav aria-label="Month" className="flex items-center gap-2">
+        <nav aria-label={t("calendar.month")} className="flex items-center gap-2">
           <Button asChild variant="outline" size="icon">
-            <Link href={`/calendar?month=${win.prev}`} aria-label="Previous month">
+            <Link href={`/calendar?month=${win.prev}`} aria-label={t("calendar.previous")}>
               <ChevronLeft className="size-4" aria-hidden="true" />
             </Link>
           </Button>
           <span className="min-w-36 text-center font-medium">{title}</span>
           <Button asChild variant="outline" size="icon">
-            <Link href={`/calendar?month=${win.next}`} aria-label="Next month">
+            <Link href={`/calendar?month=${win.next}`} aria-label={t("calendar.next")}>
               <ChevronRight className="size-4" aria-hidden="true" />
             </Link>
           </Button>
@@ -61,7 +58,7 @@ export default async function CalendarPage({
 
       {error ? (
         <p role="alert" className="text-sm text-destructive">
-          The calendar could not be read: {error.message}
+          {t("calendar.error", { message: error.message })}
         </p>
       ) : days.length === 0 ? (
         <Card>
@@ -69,10 +66,8 @@ export default async function CalendarPage({
             <span className="rounded-full bg-muted p-3">
               <CalendarDays className="size-6 text-muted-foreground" aria-hidden="true" />
             </span>
-            <p className="font-medium">Nothing in {title}</p>
-            <p className="max-w-md text-sm text-muted-foreground">
-              No holiday, exam, fee due date or notice falls in this month.
-            </p>
+            <p className="font-medium">{t("calendar.emptyTitle", { month: title })}</p>
+            <p className="max-w-md text-sm text-muted-foreground">{t("calendar.emptyBody")}</p>
           </CardContent>
         </Card>
       ) : (
@@ -81,14 +76,14 @@ export default async function CalendarPage({
             <li key={day} className="grid gap-3 rounded-xl border border-border bg-card p-4 sm:grid-cols-[9rem_1fr]">
               <p className={`text-sm font-medium ${day === schoolDay ? "text-primary" : ""}`}>
                 {formatDate(day, locale, { weekday: "short", day: "numeric", month: "short" })}
-                {day === schoolDay && <span className="ms-2 text-xs">Today</span>}
+                {day === schoolDay && <span className="ms-2 text-xs">{t("calendar.today")}</span>}
               </p>
               <ul className="flex flex-col gap-2">
                 {entries.map((e, i) => {
                   const Icon = ICONS[e.kind as keyof typeof ICONS] ?? CalendarDays;
                   const until =
                     e.ends_on && e.ends_on !== e.starts_on
-                      ? ` · until ${formatDate(e.ends_on, locale, { day: "numeric", month: "short" })}`
+                      ? ` · ${t("calendar.until", { date: formatDate(e.ends_on, locale, { day: "numeric", month: "short" }) })}`
                       : "";
                   const body = (
                     <span className="flex flex-wrap items-center gap-2">

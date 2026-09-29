@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useUnsavedChangesGuard } from "@/components/forms/use-unsaved-changes-guard";
 import { formatCell, parseCell, type TestMarkInput } from "@/lib/validations/class-tests";
+import { useI18n } from "@/components/providers/i18n-provider";
 import { saveTestMarks, type SheetRow } from "../actions";
 
 /**
@@ -16,6 +17,7 @@ import { saveTestMarks, type SheetRow } from "../actions";
  */
 export function TestSheet({ testId, maxMarks, rows }: { testId: string; maxMarks: number; rows: SheetRow[] }) {
   const router = useRouter();
+  const { t } = useI18n();
   const [saving, startTransition] = useTransition();
   const [status, setStatus] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -41,7 +43,7 @@ export function TestSheet({ testId, maxMarks, rows }: { testId: string; maxMarks
     for (const r of rows) {
       const v = parseCell(draft[r.studentId] ?? "");
       if (v === "invalid") {
-        setError(`${r.studentName}: type a number or AB.`);
+        setError(t("classTests.sheet.invalid", { name: r.studentName }));
         return;
       }
       after.push({ studentId: r.studentId, ...v });
@@ -53,8 +55,8 @@ export function TestSheet({ testId, maxMarks, rows }: { testId: string; maxMarks
         return;
       }
       setStatus(
-        `${result.data.saved} mark${result.data.saved === 1 ? "" : "s"} saved` +
-          (result.data.cleared > 0 ? `, ${result.data.cleared} cleared` : ""),
+        t.plural("classTests.sheet.saved", result.data.saved) +
+          (result.data.cleared > 0 ? `, ${t("classTests.sheet.cleared", { count: result.data.cleared })}` : ""),
       );
       router.refresh();
     });
@@ -69,7 +71,7 @@ export function TestSheet({ testId, maxMarks, rows }: { testId: string; maxMarks
               {error}
             </span>
           ) : (
-            <span className="text-muted-foreground">{status ?? `Out of ${maxMarks}. Type AB for absent.`}</span>
+            <span className="text-muted-foreground">{status ?? t("classTests.sheet.hint", { max: maxMarks })}</span>
           )}
         </p>
         <Button onClick={save} disabled={saving || changed === 0 || invalid.length > 0}>
@@ -78,16 +80,16 @@ export function TestSheet({ testId, maxMarks, rows }: { testId: string; maxMarks
           ) : (
             <Save className="size-4" aria-hidden="true" />
           )}
-          {changed === 0 ? "Nothing changed" : `Save ${changed} mark${changed === 1 ? "" : "s"}`}
+          {changed === 0 ? t("classTests.sheet.nothingChanged") : t.plural("classTests.sheet.save", changed)}
         </Button>
       </div>
       <div className="overflow-x-auto rounded-lg border border-border">
         <table className="w-full text-sm">
           <thead className="bg-muted/50">
             <tr>
-              <th scope="col" className="w-16 p-2 text-start font-medium">Roll</th>
-              <th scope="col" className="p-2 text-start font-medium">Student</th>
-              <th scope="col" className="w-32 p-2 text-start font-medium">Marks</th>
+              <th scope="col" className="w-16 p-2 text-start font-medium">{t("classTests.col.roll")}</th>
+              <th scope="col" className="p-2 text-start font-medium">{t("classTests.col.student")}</th>
+              <th scope="col" className="w-32 p-2 text-start font-medium">{t("classTests.col.marks")}</th>
             </tr>
           </thead>
           <tbody>
@@ -106,7 +108,7 @@ export function TestSheet({ testId, maxMarks, rows }: { testId: string; maxMarks
                       }}
                       value={raw}
                       inputMode="decimal"
-                      aria-label={`Marks for ${r.studentName}`}
+                      aria-label={t("classTests.sheet.marksFor", { name: r.studentName })}
                       aria-invalid={bad || undefined}
                       className={`h-8 w-24 font-mono ${bad ? "border-destructive" : ""}`}
                       onChange={(e) => setDraft((prev) => ({ ...prev, [r.studentId]: e.target.value }))}

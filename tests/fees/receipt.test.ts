@@ -20,6 +20,7 @@ const STRINGS: ReceiptStrings = {
   againstInvoice: "Against invoice",
   onAccount: "Paid on account, not against a particular invoice",
   reversed: "This receipt was reversed on",
+  roll: "Roll",
 };
 
 function receipt(overrides: Partial<Parameters<typeof renderReceipt>[0]> = {}) {
@@ -80,8 +81,9 @@ describe("a fee receipt", () => {
     }
   });
 
-  it("refuses a script the font cannot draw, as the invoice does", async () => {
-    await expect(renderReceipt(receipt(), "hi", STRINGS)).rejects.toBeInstanceOf(UnrenderableDocument);
+  it("draws Hindi, and refuses a script the fonts cannot draw, as the invoice does", async () => {
+    expect((await PDFDocument.load(await renderReceipt(receipt(), "hi", STRINGS))).getPageCount()).toBe(1);
+    await expect(renderReceipt(receipt(), "ur", STRINGS)).rejects.toBeInstanceOf(UnrenderableDocument);
   });
 
   it("names the file after the receipt number", () => {

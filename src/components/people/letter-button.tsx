@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { FileText, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import { useI18n } from "@/components/providers/i18n-provider";
 
 type Result<T> = { ok: true; data: T } | { ok: false; error: string };
 
@@ -30,6 +31,7 @@ export function LetterButton({
   issue: () => Promise<Result<{ id: string; serialNo: string }>>;
 }) {
   const router = useRouter();
+  const { t } = useI18n();
   const [pending, startTransition] = useTransition();
 
   if (existing) {
@@ -51,7 +53,7 @@ export function LetterButton({
         startTransition(async () => {
           const result = await issue();
           if (result.ok) {
-            toast.success(`${label} ${result.data.serialNo} issued`);
+            toast.success(t("letters.issued", { label, serial: result.data.serialNo }));
             router.push(`/certificates/${result.data.id}`);
           } else {
             // The engine's refusals are written for a person ("Nothing filled

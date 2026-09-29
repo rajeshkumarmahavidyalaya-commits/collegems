@@ -87,6 +87,10 @@ export type InvoiceStrings = {
   noPayments: string;
   cancelled: string;
   producedOn: string;
+  /** "due", before the due date. */
+  due: string;
+  /** "Roll", before the roll number. */
+  roll: string;
 };
 
 export function invoiceFileName(invoiceNumber: string): string {
@@ -130,7 +134,7 @@ export async function renderInvoice(
   sheet.row(
     [
       { text: doc.sessionName ?? "", width: 0.5 },
-      { text: `${day(doc.invoice.issueDate)} · due ${day(doc.invoice.dueDate)}`, width: 0.5, align: "end" },
+      { text: `${day(doc.invoice.issueDate)} · ${s.due} ${day(doc.invoice.dueDate)}`, width: 0.5, align: "end" },
     ],
     { size: 9, tone: "quiet" },
   );
@@ -151,7 +155,7 @@ export async function renderInvoice(
     const who = [
       doc.student.admissionNumber,
       doc.student.sectionLabel,
-      doc.student.rollNumber ? `Roll ${doc.student.rollNumber}` : null,
+      doc.student.rollNumber ? `${s.roll} ${doc.student.rollNumber}` : null,
       doc.student.guardianName,
     ]
       .filter(Boolean)

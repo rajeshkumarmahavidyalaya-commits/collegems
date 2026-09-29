@@ -108,6 +108,8 @@ export const reportCardSchema = z.object({
   behaviour: z
     .array(z.object({ name: z.string(), kind: z.string(), grade: z.string() }))
     .optional(),
+  /** The college's own words for its grades (0307), printed under them. */
+  behaviour_legend: z.string().optional(),
 });
 export type ReportCard = z.infer<typeof reportCardSchema>;
 

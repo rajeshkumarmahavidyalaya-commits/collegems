@@ -48,6 +48,8 @@ export type ReceiptStrings = {
   againstInvoice: string;
   onAccount: string;
   reversed: string;
+  /** "Roll", before the roll number. */
+  roll: string;
 };
 
 export function receiptFileName(receiptNumber: string): string {
@@ -116,7 +118,7 @@ export async function renderReceipt(
     const who = [
       doc.student.admissionNumber,
       doc.student.sectionLabel,
-      doc.student.rollNumber ? `Roll ${doc.student.rollNumber}` : null,
+      doc.student.rollNumber ? `${s.roll} ${doc.student.rollNumber}` : null,
       doc.student.guardianName,
     ]
       .filter(Boolean)

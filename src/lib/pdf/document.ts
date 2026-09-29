@@ -1,6 +1,8 @@
-import { PDFDocument, PDFFont, PDFPage, rgb } from "pdf-lib";
-import fontkit from "@pdf-lib/fontkit";
-import { documentFont, unrenderable, unrenderableMessage } from "./font";
+import { PDFDocument, PDFPage, rgb } from "pdf-lib";
+import { UnrenderableDocument } from "./font";
+import { Typeset, graphemes, type Face } from "./typeset";
+
+export { UnrenderableDocument };
 
 /**
  * The layout primitive every PDF in this product is drawn with.
@@ -29,7 +31,7 @@ import { documentFont, unrenderable, unrenderableMessage } from "./font";
  * measure. It is deliberately not a rendering of the web page, which already
  * has an answer — `window.print()` and the `@media print` block in
  * `globals.css`, which uses the reader's own system fonts and therefore prints
- * scripts this file's single embedded font cannot.
+ * scripts this file's two embedded faces (Latin, Devanagari) cannot — Urdu.
  *
  * Both are kept. They fail in opposite directions and a school needs both:
  * printing is for paper in their own tray; a file is for an attachment, a
@@ -89,8 +91,7 @@ export class Sheet {
 
   private constructor(
     private readonly doc: PDFDocument,
-    private readonly font: PDFFont,
-    private readonly covered: ReadonlySet<number>,
+    private readonly fonts: Typeset,
   ) {
     this.page = doc.addPage([A4.width, A4.height]);
     this.pages.push(this.page);
@@ -99,10 +100,7 @@ export class Sheet {
 
   static async create(): Promise<Sheet> {
     const doc = await PDFDocument.create();
-    doc.registerFontkit(fontkit);
-    const { bytes, covered } = await documentFont();
-    const font = await doc.embedFont(bytes, { subset: true });
-    return new Sheet(doc, font, covered);
+    return new Sheet(doc, await Typeset.open(doc));
   }
 
   /** The measure — how wide a line of this document is. */
@@ -112,17 +110,13 @@ export class Sheet {
 
   /**
    * The check that stops a blank document, called once per string on the way
-   * in. Throws rather than returning a result: every caller's correct response
-   * is the same sentence, and a boolean here is a boolean somebody ignores.
+   * in: the face that can draw all of it, or `UnrenderableDocument` naming
+   * what neither font can. Throws rather than returning a result: every
+   * caller's correct response is the same sentence, and a boolean here is a
+   * boolean somebody ignores.
    */
-  private checked(text: string): string {
-    const missing = unrenderable(text, this.covered);
-    if (missing.length > 0) throw new UnrenderableDocument(missing);
-    return text;
-  }
-
-  private widthOf(line: string, size: number): number {
-    return this.font.widthOfTextAtSize(line, size);
+  private checked(text: string): Face {
+    return this.fonts.pick(text);
   }
 
   /**
@@ -132,7 +126,7 @@ export class Sheet {
    * — is broken rather than allowed to run off the page, because a document
    * that loses its right-hand edge is worse than one with an ugly break.
    */
-  private wrap(text: string, size: number, width: number): string[] {
+  private wrap(face: Face, text: string, size: number, width: number): string[] {
     const lines: string[] = [];
     for (const paragraph of text.split("\n")) {
       if (paragraph.trim() === "") {
@@ -142,18 +136,18 @@ export class Sheet {
       let line = "";
       for (const word of paragraph.split(/\s+/)) {
         const candidate = line === "" ? word : `${line} ${word}`;
-        if (this.widthOf(candidate, size) <= width) {
+        if (face.width(candidate, size) <= width) {
           line = candidate;
           continue;
         }
         if (line !== "") lines.push(line);
-        if (this.widthOf(word, size) <= width) {
+        if (face.width(word, size) <= width) {
           line = word;
           continue;
         }
         let chunk = "";
-        for (const ch of word) {
-          if (this.widthOf(chunk + ch, size) > width && chunk !== "") {
+        for (const ch of graphemes(word)) {
+          if (face.width(chunk + ch, size) > width && chunk !== "") {
             lines.push(chunk);
             chunk = ch;
           } else {
@@ -196,19 +190,20 @@ export class Sheet {
 
     this.y -= options.above ?? 0;
 
-    for (const line of this.wrap(this.checked(raw), size, this.measure)) {
+    const face = this.checked(raw);
+    for (const line of this.wrap(face, raw, size, this.measure)) {
       // Leave room for the footer's rule and line.
       if (this.y - leading < MARGIN + 28) this.turn();
       this.y -= leading;
       if (line !== "") {
-        const w = this.widthOf(line, size);
+        const w = face.width(line, size);
         const x =
           align === "center"
             ? MARGIN + (this.measure - w) / 2
             : align === "end"
               ? MARGIN + this.measure - w
               : MARGIN;
-        this.page.drawText(line, { x, y: this.y, size, font: this.font, color });
+        face.draw(this.page, line, { x, y: this.y, size, color });
       }
     }
     return this;
@@ -238,24 +233,28 @@ export class Sheet {
     let x = MARGIN;
     for (const cell of cells) {
       const width = this.measure * cell.width;
-      const text = this.fit(this.checked(cell.text), size, width);
-      const w = this.widthOf(text, size);
+      const face = this.checked(cell.text);
+      const text = this.fit(face, cell.text, size, width);
+      const w = face.width(text, size);
       const at =
         cell.align === "end" ? x + width - w : cell.align === "center" ? x + (width - w) / 2 : x;
       if (text !== "") {
-        this.page.drawText(text, { x: at, y: this.y, size, font: this.font, color });
+        face.draw(this.page, text, { x: at, y: this.y, size, color });
       }
       x += width;
     }
     return this;
   }
 
-  /** Shorten to fit, with an ellipsis — the font is checked to have one. */
-  private fit(text: string, size: number, width: number): string {
-    if (this.widthOf(text, size) <= width) return text;
+  /**
+   * Shorten to fit, with an ellipsis — both fonts are checked to have one —
+   * cutting between graphemes so a conjunct is never split.
+   */
+  private fit(face: Face, text: string, size: number, width: number): string {
+    if (face.width(text, size) <= width) return text;
     let out = "";
-    for (const ch of text) {
-      if (this.widthOf(`${out}${ch}\u2026`, size) > width) break;
+    for (const ch of graphemes(text)) {
+      if (face.width(`${out}${ch}\u2026`, size) > width) break;
       out += ch;
     }
     return `${out}\u2026`;
@@ -316,14 +315,9 @@ export class Sheet {
     });
     this.y -= 13;
     const size = 9;
-    const w = this.widthOf(this.checked(caption), size);
-    this.page.drawText(caption, {
-      x: x + (width - w) / 2,
-      y: this.y,
-      size,
-      font: this.font,
-      color: QUIET,
-    });
+    const face = this.checked(caption);
+    const w = face.width(caption, size);
+    face.draw(this.page, caption, { x: x + (width - w) / 2, y: this.y, size, color: QUIET });
     return this;
   }
 
@@ -339,44 +333,26 @@ export class Sheet {
     const size = 8;
     const total = this.pages.length;
     this.pages.forEach((page, i) => {
-      const left = this.checked(footer);
+      const face = this.checked(footer);
       page.drawLine({
         start: { x: MARGIN, y: MARGIN + 18 },
         end: { x: MARGIN + this.measure, y: MARGIN + 18 },
         thickness: 0.5,
         color: RULE,
       });
-      page.drawText(left, { x: MARGIN, y: MARGIN + 6, size, font: this.font, color: QUIET });
+      face.draw(page, footer, { x: MARGIN, y: MARGIN + 6, size, color: QUIET });
       if (total > 1) {
         const right = `Page ${i + 1} of ${total}`;
-        page.drawText(right, {
-          x: MARGIN + this.measure - this.widthOf(right, size),
+        this.fonts.latin.draw(page, right, {
+          x: MARGIN + this.measure - this.fonts.latin.width(right, size),
           y: MARGIN + 6,
           size,
-          font: this.font,
           color: QUIET,
         });
       }
     });
+    await this.fonts.flush();
     return this.doc.save();
-  }
-}
-
-/**
- * Raised when the document font has no glyph for something the document says.
- *
- * A named class rather than a plain `Error` because the route handler answers
- * it with 422 and the sentence, while anything else is a 500 — *this build
- * cannot print your script* and *something broke* are different answers and
- * only one of them tells the person what to do.
- */
-export class UnrenderableDocument extends Error {
-  readonly missing: string[];
-
-  constructor(missing: string[]) {
-    super(unrenderableMessage(missing));
-    this.name = "UnrenderableDocument";
-    this.missing = missing;
   }
 }
 

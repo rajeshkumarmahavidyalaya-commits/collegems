@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 
 import { NAV_GROUPS, SETUP_ORDER, navForRole, splitSetup } from "@/components/app-shell/nav-config";
 import { SETUP_STEPS } from "@/lib/validations/setup";
-import { cellKey, planBehaviourSave } from "@/lib/validations/behaviour";
+import { cellKey, parseScale, planBehaviourSave, scaleLegend } from "@/lib/validations/behaviour";
 import { formatCell, parseCell, planTestMarks } from "@/lib/validations/class-tests";
 
 /**
@@ -241,5 +241,101 @@ describe("class tests", () => {
     const page = src("src/app/(app)/class-tests/page.tsx");
     expect(page).toMatch(/ctx\?\.roleTier === "student"/);
     expect(page).not.toMatch(/roleCode/);
+  });
+});
+
+describe("the behaviour scale is the college's (0307)", () => {
+  it("a missing or malformed setting reads as CBSE's five points", () => {
+    for (const v of [null, undefined, {}, "x", { points: "lots" }]) {
+      expect(parseScale(v).grades).toEqual(["A", "B", "C", "D", "E"]);
+    }
+    expect(scaleLegend(parseScale(null))).toBe(
+      "A Outstanding · B Very good · C Good · D Fair · E Needs improvement",
+    );
+  });
+
+  it("clamps to three to five points and keeps the college's own words", () => {
+    expect(parseScale({ points: 3, A: "Excellent" })).toEqual({
+      grades: ["A", "B", "C"],
+      meaning: { A: "Excellent", B: "Very good", C: "Good" },
+    });
+    expect(parseScale({ points: 9 }).grades).toHaveLength(5);
+    expect(parseScale({ points: 1 }).grades).toHaveLength(3);
+    // A blank word is not a word; the default stands.
+    expect(parseScale({ points: 4, D: "  " }).meaning.D).toBe("Fair");
+  });
+
+  it("the database holds new grades to the scale, and never refuses an unchanged one", () => {
+    const m = SQL.find((s) => s.f.startsWith("0307_"))!.sql;
+    expect(m).toMatch(/before insert or update of grade on public\.behaviour_ratings/);
+    const { body } = latest("behaviour_ratings_in_scale");
+    // A publish cascades exam_status onto every row; that must not be refused.
+    expect(body).toMatch(/if tg_op = 'UPDATE' and new\.grade = old\.grade then\s+return new;/);
+    expect(body).toMatch(/left\('ABCDE', v_points\)/);
+  });
+
+  it("the setting is declared, so /settings can edit it, gated on exams.manage", () => {
+    const m = SQL.find((s) => s.f.startsWith("0307_"))!.sql;
+    expect(m).toMatch(/'exams\.behaviour_scale',/);
+    expect(m).toMatch(/'exams\.manage',\s*85/);
+  });
+
+  it("the grid offers the scale's letters and every report card prints the scale's words", () => {
+    expect(src("src/app/(app)/exams/[examId]/behaviour/behaviour-grid.tsx")).toMatch(/scale\.grades\.map\(/);
+    const actions = src("src/app/(app)/exams/report-card-actions.ts");
+    expect(actions.match(/getBehaviourScale\(\)/g)?.length).toBe(2);
+    expect(actions.match(/card\.behaviour_legend = /g)?.length).toBe(2);
+    expect(src("src/components/report-card/report-card-sheet.tsx")).toMatch(/card\.behaviour_legend/);
+    expect(src("src/lib/pdf/report-card.ts")).toMatch(/card\.behaviour_legend/);
+  });
+});
+
+describe("class tests have a report and a place on the record (0307)", () => {
+  it("the report is an invoker with no hand-written tenant filter, and a total order for paging", () => {
+    const { header, body } = latest("report_class_tests");
+    expect(header).not.toMatch(/security definer/);
+    expect(body).not.toMatch(/tenant_id\s*=/);
+    expect(body).toMatch(/order by ct\.held_on desc, ct\.id, p\.first_name, p\.last_name, m\.student_id/);
+    // Not enrolments: a subject teacher reads only their own class's.
+    expect(body).not.toMatch(/public\.enrolments/);
+  });
+
+  it("is catalogued for staff, on exams.grade, never exams.view", () => {
+    const m = SQL.find((s) => s.f.startsWith("0307_"))!.sql;
+    expect(m).toMatch(/'classtests\.marks', 'Class test marks'/);
+    expect(m).toMatch(/'Exams', 'exams\.grade', 'report_class_tests'/);
+    expect(m).toMatch(/36, 'staff'/);
+    expect(m).toMatch(/"href": "\/class-tests\/\{test_id\}"/);
+  });
+
+  it("the student record shows recent marks through the same action the family screen uses", () => {
+    const page = src("src/app/(app)/students/[id]/page.tsx");
+    expect(page).toMatch(/myChildrenTestMarks\(id, 8\)/);
+    expect(page).toMatch(/testMarks\.length > 0 &&/);
+  });
+});
+
+describe("the new screens speak the reader's language", () => {
+  const FILES = [
+    "src/app/(app)/calendar/page.tsx",
+    "src/app/(app)/class-tests/page.tsx",
+    "src/app/(app)/class-tests/new-test-dialog.tsx",
+    "src/app/(app)/class-tests/[testId]/page.tsx",
+    "src/app/(app)/class-tests/[testId]/test-sheet.tsx",
+    "src/app/(app)/exams/[examId]/behaviour/page.tsx",
+    "src/app/(app)/exams/[examId]/behaviour/behaviour-grid.tsx",
+    "src/app/(app)/exams/[examId]/behaviour/traits-editor.tsx",
+    "src/app/(app)/students/[id]/admitted/page.tsx",
+  ];
+
+  /**
+   * A heading, a column title or a button written as bare English text in JSX.
+   * Generous by design: it looks for a capitalised English word between `>`
+   * and `<`, which is how every one of these screens first shipped.
+   */
+  it.each(FILES)("%s draws no bare English text", (file) => {
+    const code = src(file);
+    const bare = [...code.matchAll(/>\s*([A-Z][a-z]+(?: [a-z']+)+)\s*</g)].map((m) => m[1]);
+    expect(bare).toEqual([]);
   });
 });

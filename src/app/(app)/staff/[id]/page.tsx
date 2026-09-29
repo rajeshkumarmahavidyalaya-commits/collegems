@@ -118,7 +118,7 @@ export default async function StaffDetailPage({ params }: { params: Promise<{ id
           )}
           {canIssueLetter && (!hasLeft || letter) && (
             <LetterButton
-              label="Appointment letter"
+              label={t("letters.appointment")}
               existing={letter}
               issue={issueLetter.bind(null, "appointment", staff.id)}
             />

@@ -187,7 +187,11 @@ describe("the document font", () => {
    */
   it("keeps the font path where the bundler can see it", () => {
     const source = readFileSync(join(ROOT, "src/lib/pdf/font.ts"), "utf8");
-    expect(source).toMatch(/join\(\s*process\.cwd\(\)\s*,\s*"[^"$`]+\.ttf"\s*\)/);
+    const literals = [...source.matchAll(/join\(\s*process\.cwd\(\)\s*,\s*"([^"$`]+\.ttf)"\s*\)/g)].map((m) => m[1]);
+    expect(literals).toEqual([
+      "src/lib/pdf/fonts/WorkSans-Regular.ttf",
+      "src/lib/pdf/fonts/NotoSansDevanagari-Regular.ttf",
+    ]);
     // No template literal and no concatenation in the path.
     expect(source).not.toMatch(/join\(\s*process\.cwd\(\)\s*,\s*`/);
   });
@@ -238,10 +242,11 @@ describe("the document font", () => {
     const dir = join(ROOT, "src/lib/pdf/fonts");
     const files = readdirSync(dir);
     expect(files.some((f) => /OFL|LICEN[CS]E/i.test(f))).toBe(true);
-    const ttf = files.filter((f) => f.endsWith(".ttf"));
-    expect(ttf.length, "one weight, deliberately").toBe(1);
-    // Comfortably over any web slice (16–80 kB) and under a CJK face.
-    expect(statSync(join(dir, ttf[0])).size).toBeGreaterThan(100_000);
+    const ttf = files.filter((f) => f.endsWith(".ttf")).sort();
+    // One weight per script, deliberately: Latin, and Devanagari for Hindi.
+    expect(ttf).toEqual(["NotoSansDevanagari-Regular.ttf", "WorkSans-Regular.ttf"]);
+    // Each comfortably over any web slice (16–80 kB) and under a CJK face.
+    for (const f of ttf) expect(statSync(join(dir, f)).size, f).toBeGreaterThan(100_000);
   });
 });
 
@@ -271,8 +276,13 @@ describe("a rendered certificate", () => {
    */
   it("refuses a script it cannot draw instead of shipping a blank page", async () => {
     await expect(
-      renderCertificate(certificate({ body: "यह प्रमाणित" })),
+      renderCertificate(certificate({ body: "یہ تصدیق کی جاتی ہے" })),
     ).rejects.toBeInstanceOf(UnrenderableDocument);
+  });
+
+  it("draws a Hindi certificate rather than refusing it", async () => {
+    const bytes = await renderCertificate(certificate({ body: "प्रमाणित किया जाता है कि कृष्ण क्षत्रिय इस विद्यालय के छात्र हैं।" }));
+    expect((await PDFDocument.load(bytes)).getPageCount()).toBe(1);
   });
 
   it("turns the page and numbers it only when there is a second one", async () => {
@@ -383,7 +393,7 @@ describe("the sheet", () => {
   it("checks the footer too, not only the body", async () => {
     const sheet = await Sheet.create();
     sheet.text("fine");
-    await expect(sheet.finish("हर")).rejects.toBeInstanceOf(UnrenderableDocument);
+    await expect(sheet.finish("ہر")).rejects.toBeInstanceOf(UnrenderableDocument);
   });
 });
 
@@ -403,6 +413,8 @@ const STRINGS: InvoiceStrings = {
   noPayments: "No payment has been credited against this invoice.",
   cancelled: "This invoice has been cancelled",
   producedOn: "Produced",
+  due: "due",
+  roll: "Roll",
 };
 
 /** IN-2025-00001 from the demo college, to the rupee. */
@@ -509,17 +521,18 @@ describe("a rendered invoice", () => {
   });
 
   /**
-   * The limitation, asserted rather than left to be discovered.
-   *
-   * `formatDate(d, "hi")` returns Devanagari month names, which the document
-   * font has no glyphs for — so a Hindi reader is **refused with a sentence**
-   * instead of handed a bill with blanks where its dates should be. If this
-   * ever stops throwing, either the font gained Devanagari (good, and the
-   * English-only `pdf.invoice.*` keys are then owed translations) or the
-   * coverage check stopped working (bad, and a family is holding a blank).
+   * The limitation, asserted rather than left to be discovered — and moved one
+   * script along. A Hindi bill is drawn now (Devanagari month names and all);
+   * an Urdu one is **refused with a sentence** instead of handed over with
+   * blanks where its dates should be, because the renderer has no Arabic face
+   * and no right-to-left layout. If the second ever stops throwing, either it
+   * gained both (good, and say so in `font.ts`) or the coverage check stopped
+   * working (bad, and a family is holding a blank).
    */
-  it("refuses a locale the document font cannot draw, and says so", async () => {
-    await expect(renderInvoice(invoice(), "hi", STRINGS)).rejects.toBeInstanceOf(
+  it("draws a Hindi bill, and refuses an Urdu one with a sentence", async () => {
+    const hindi = await renderInvoice(invoice(), "hi", STRINGS);
+    expect((await PDFDocument.load(hindi)).getPageCount()).toBe(1);
+    await expect(renderInvoice(invoice(), "ur", STRINGS)).rejects.toBeInstanceOf(
       UnrenderableDocument,
     );
   });
@@ -724,7 +737,7 @@ describe("a rendered report card", () => {
   it("refuses a script it cannot draw instead of shipping a blank card", async () => {
     await expect(
       renderReportCard(cardDoc(liveCard((c) => {
-        c.student.name = "हर माह";
+        c.student.name = "ہر ماہ";
       }))),
     ).rejects.toBeInstanceOf(UnrenderableDocument);
   });
@@ -903,7 +916,7 @@ describe("a rendered identity card", () => {
 
   /** The font check reaches a card too, not only a document. */
   it("refuses a script it cannot draw", async () => {
-    await expect(renderIdCard(idCard({ fullName: "\u0939\u0930 \u092e\u093e\u0939" }))).rejects.toBeInstanceOf(
+    await expect(renderIdCard(idCard({ fullName: "\u06c1\u0631 \u0645\u0627\u06c1" }))).rejects.toBeInstanceOf(
       UnrenderableDocument,
     );
   });

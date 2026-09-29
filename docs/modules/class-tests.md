@@ -59,7 +59,21 @@ teacher's sheets show 25 children, the same count the administrator sees.
 ## Not done
 
 - Class tests are not on the report card, deliberately.
-- There is no class-test report in `/reports` yet.
+
+## The report, and the record (0307)
+
+`classtests.marks` in `/reports` lists every mark since a date (the last 90 days
+by default), optionally for one class. Each row gives the class, subject, test,
+child, mark, out of, percent, and who was absent. The test and the child are
+links. It is gated on `exams.grade` with audience `staff`, and it is an invoker
+with no tenant filter written by hand. It deliberately does not read
+`enrolments`, which a subject teacher can see only for their own class, so there
+is no roll-number column that would quietly go blank.
+
+The student's record shows the eight most recent class-test marks, through the
+same action the family's screen uses, so the two cannot disagree.
+
+The screens are in English, Hindi and Urdu.
 
 ## A mark carries its year (0306)
 

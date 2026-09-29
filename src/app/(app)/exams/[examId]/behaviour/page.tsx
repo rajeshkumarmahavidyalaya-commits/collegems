@@ -4,9 +4,10 @@ import { ArrowLeft, FileText } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { hasPermission } from "@/lib/auth/permissions";
+import { getT } from "@/lib/i18n/server";
 import { listSections } from "../../../students/actions";
 import { getExam } from "../../actions";
-import { getBehaviourSheet, listTraits } from "../../behaviour-actions";
+import { getBehaviourScale, getBehaviourSheet, listTraits } from "../../behaviour-actions";
 import { BehaviourGrid } from "./behaviour-grid";
 import { TraitsEditor } from "./traits-editor";
 
@@ -31,18 +32,20 @@ export default async function BehaviourPage({
   const { examId } = await params;
   const { section } = await searchParams;
 
-  const [exam, sections, canRemark, canManage] = await Promise.all([
+  const [exam, sections, canRemark, canManage, t] = await Promise.all([
     getExam(examId),
     listSections(),
     hasPermission("exams.remark"),
     hasPermission("exams.manage"),
+    getT(),
   ]);
   if (!exam) notFound();
 
   const chosen = section && sections.some((s) => s.id === section) ? section : null;
-  const [sheet, allTraits] = await Promise.all([
+  const [sheet, allTraits, scale] = await Promise.all([
     chosen ? getBehaviourSheet(examId, chosen) : Promise.resolve(null),
     canManage ? listTraits() : Promise.resolve([]),
+    getBehaviourScale(),
   ]);
   const frozen = exam.status === "published";
 
@@ -50,25 +53,25 @@ export default async function BehaviourPage({
     <div className="flex flex-col gap-6">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-semibold">Behaviour and skills</h1>
+          <h1 className="text-2xl font-semibold">{t("behaviour.title")}</h1>
           <p className="max-w-2xl text-sm text-muted-foreground">
             {exam.name} ·{" "}
             {frozen
-              ? "These results are published, so the grades are frozen. Unpublish the exam to change them."
-              : "A grade from A to E for each child on each trait, printed on the report card."}
+              ? t("behaviour.frozen")
+              : t("behaviour.intro", { top: scale.grades[scale.grades.length - 1] })}
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
           <Button asChild variant="outline">
             <Link href={`/exams/${examId}/report-cards${chosen ? `?section=${chosen}` : ""}`}>
               <FileText className="size-4" aria-hidden="true" />
-              Report cards
+              {t("behaviour.reportCards")}
             </Link>
           </Button>
           <Button asChild variant="outline">
             <Link href={`/exams/${examId}`}>
               <ArrowLeft className="size-4 rtl:rotate-180" aria-hidden="true" />
-              Back to exam
+              {t("behaviour.backToExam")}
             </Link>
           </Button>
         </div>
@@ -82,6 +85,7 @@ export default async function BehaviourPage({
         traits={sheet?.traits ?? []}
         students={sheet?.students ?? []}
         grades={sheet?.grades ?? {}}
+        scale={scale}
         frozen={frozen}
         canGrade={canRemark || canManage}
       />
@@ -89,11 +93,8 @@ export default async function BehaviourPage({
       {canManage && (
         <Card>
           <CardHeader>
-            <CardTitle>What the college grades</CardTitle>
-            <CardDescription>
-              The traits every class is graded on. Tap one to retire it; its past grades stay on
-              the cards they were printed on.
-            </CardDescription>
+            <CardTitle>{t("behaviour.traitsTitle")}</CardTitle>
+            <CardDescription>{t("behaviour.traitsDescription")}</CardDescription>
           </CardHeader>
           <CardContent>
             <TraitsEditor traits={allTraits} />

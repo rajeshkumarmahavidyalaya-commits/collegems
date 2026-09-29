@@ -23,12 +23,13 @@ import { SubjectsView } from "@/components/electives/subjects-view";
 import { getSubjectsFor } from "../../my-subjects/actions";
 import { saveChoiceFor } from "../../academics/electives/actions";
 import { getLocale } from "@/lib/i18n/server";
-import { formatCurrency } from "@/lib/i18n/format";
+import { formatCurrency, formatDate } from "@/lib/i18n/format";
 import { isCurrentArrangement } from "@/lib/validations/arrangements";
 import { formatStopTime } from "@/lib/validations/transport-display";
 import { ArrangeButton, LibraryCardButton } from "@/components/people/arrange-controls";
 import { bedOptions, busStopOptions, giveBed, giveBusSeat, giveLibraryCard } from "../arrangement-actions";
 import { LetterButton } from "@/components/people/letter-button";
+import { myChildrenTestMarks } from "../../class-tests/actions";
 import { findLetter, issueLetter } from "../../certificates/actions";
 
 export const metadata = { title: "Student" };
@@ -82,6 +83,9 @@ export default async function StudentDetailPage({
     // rather than numbering a second.
     findLetter("admission", id),
   ]);
+  // The last few class test marks (0304), through their own policies: a card
+  // that is empty for somebody who may not read them is simply not drawn.
+  const testMarks = await myChildrenTestMarks(id, 8);
   const schoolDay = (todayRes.data as string | null) ?? new Date().toISOString().slice(0, 10);
   const seat = (busRes.data ?? []).find((r) => isCurrentArrangement(r, schoolDay)) ?? null;
   const bed = (bedRes.data ?? []).find((r) => isCurrentArrangement(r, schoolDay)) ?? null;
@@ -174,7 +178,7 @@ export default async function StudentDetailPage({
           </Button>
           {canIssueLetter && (
             <LetterButton
-              label="Admission letter"
+              label={t("admitted.letter.title")}
               existing={letter}
               issue={issueLetter.bind(null, "admission", student.id)}
             />
@@ -461,6 +465,30 @@ export default async function StudentDetailPage({
           )}
         </CardContent>
       </Card>
+
+      {testMarks.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle>{t("classTests.title")}</CardTitle>
+            <CardDescription>{t("classTests.recordCard")}</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <ul className="grid gap-2">
+              {testMarks.map((m, i) => (
+                <li key={i} className="flex flex-wrap items-center justify-between gap-2 rounded-lg border p-3 text-sm">
+                  <span className="min-w-0">
+                    <span className="font-medium">{m.subjectName}</span> · {m.title}
+                    <span className="text-muted-foreground"> · {formatDate(m.heldOn, locale)}</span>
+                  </span>
+                  <span className="font-mono tabular-nums">
+                    {m.absent ? t("classTests.absent") : t("classTests.outOf", { marks: m.marks ?? "", max: m.maxMarks })}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }

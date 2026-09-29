@@ -391,13 +391,11 @@ is a real argument and is *not* what this does. It would mean a family and the
 office holding two differently-worded copies of one bill with no way to say
 which is authoritative. Named rather than left as an accident.
 
-A consequence, honest rather than hidden: **a Hindi or Urdu reader gets the
-422**, because `formatDate` returns Devanagari month names. The message says so
-and points at printing, which uses the reader's own system fonts and works.
-`tests/pdf/document.test.ts` asserts that refusal, so if it ever stops throwing
-either the font gained Devanagari (good — and the English-only `pdf.invoice.*`
-keys are then owed translations) or the coverage check stopped working (bad — a
-family is holding a blank).
+A consequence, honest rather than hidden: **an Urdu reader gets the 422**. A
+Hindi reader gets a Hindi bill (see *Hindi* below); Urdu is Arabic script, right
+to left, and the renderer has no face or layout for it. The message says so and
+points at printing, which uses the reader's own system fonts and works.
+`tests/pdf/document.test.ts` asserts both halves.
 
 The `pdf.invoice.*` keys are therefore **English only**, with the reason in the
 catalogue: translating a label the renderer cannot draw is *a correct string
@@ -419,7 +417,7 @@ Both are kept, because they fail in opposite directions:
 - **printing** renders in the reader's browser with the reader's system fonts,
   so it prints scripts `src/lib/pdf` cannot — and produces nothing anybody can
   attach to an email;
-- **the PDF** is a file, and is Latin-script only.
+- **the PDF** is a file, in Latin or Devanagari script.
 
 ---
 
@@ -530,3 +528,48 @@ that. Adding a PDF route is a line somebody writes on purpose.
 > true when it was written and is still true. The paragraph beside it, counting
 > the routes, was true when it was written and quietly stopped being true four
 > commits later. **The half that ages is the half that counts something.**
+
+---
+
+## Hindi
+
+A Hindi reader asking for a bill, a receipt, a salary slip, a report card, a
+certificate or an identity card now gets the file rather than the 422. Urdu is
+still refused (Arabic script and right-to-left layout are a second face and a
+bidi pass), and printing from the browser still handles it.
+
+**How a string is drawn.** `src/lib/pdf/typeset.ts` holds the document's two
+faces:
+
+- **Work Sans** draws any string it covers, as it always did. An English
+  document is unchanged: one subset font, around 5 kB.
+- **Noto Sans Devanagari** draws any string Work Sans cannot. It covers Latin,
+  digits, the rupee and the dashes too, so a Hindi line with an English name in
+  it uses one face rather than switching mid-line.
+- A string **neither** face covers is refused, with the characters named, as
+  before.
+
+**Three measured problems, and the fix for each:**
+
+| problem | how it was found | fix |
+|---|---|---|
+| pdf-lib's `drawText` left gaps in words and detached the `ि` matra | rendering the page with pdf.js and looking at it. The earlier note in `font.ts` said the combination worked, based on glyph counts | each glyph gets its own text matrix: its advance plus its GPOS offset, taken from upstream fontkit's layout |
+| a line starting in Latin (`PS-001 · मार्च`) was shaped as Latin, leaving a bare halant | the same rendering, in the footer | shape one script run at a time (`scriptRuns`), naming the script |
+| embedding the face (~220 kB, ~90 kB compressed) in every document | — | Devanagari runs are recorded and written at `finish()`/`flush()`, so the face is embedded only when a run exists |
+
+**What is not right yet.** The text layer, which is what copy and search read,
+comes out garbled for conjuncts: pdf-lib's ToUnicode map does not describe a
+ligature glyph by the characters it stands for. The page reads correctly; a
+search inside the file for a Hindi word may not find it.
+
+`tests/pdf/hindi.test.ts` checks four things:
+
+- every Hindi string in the catalogue shapes with no `.notdef`;
+- the script runs split where they should;
+- glyph *x* positions equal advance plus offset, to two decimal places;
+- an English file stays under 20 kB and a Hindi one carries the face.
+
+The invoice and receipt labels (`pdf.invoice.*`, `pdf.receipt.*`,
+`pdf.refund.*`, `pdf.roll`) are translated into Hindi and Urdu. The report card
+and certificate renderers still draw a few structural words in English (for
+example *Page 1 of 2*); a certificate's body is the college's own template.

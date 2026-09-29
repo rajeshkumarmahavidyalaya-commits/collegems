@@ -23,6 +23,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { useI18n } from "@/components/providers/i18n-provider";
 import { createTest, type TeachingOption } from "./actions";
 
 /**
@@ -31,6 +32,7 @@ import { createTest, type TeachingOption } from "./actions";
  */
 export function NewTestDialog({ options, today }: { options: TeachingOption[]; today: string }) {
   const router = useRouter();
+  const { t } = useI18n();
   const [open, setOpen] = useState(false);
   const [pending, startTransition] = useTransition();
   const [pick, setPick] = useState(options[0] ? `${options[0].sectionId}|${options[0].subjectId}` : "");
@@ -43,7 +45,7 @@ export function NewTestDialog({ options, today }: { options: TeachingOption[]; t
     startTransition(async () => {
       const result = await createTest({ sectionId, subjectId, title, heldOn, maxMarks: Number(max) });
       if (result.ok) {
-        toast.success("Test set. Enter the marks.");
+        toast.success(t("classTests.new.done"));
         setOpen(false);
         router.push(`/class-tests/${result.data.id}`);
       } else {
@@ -57,15 +59,13 @@ export function NewTestDialog({ options, today }: { options: TeachingOption[]; t
       <DialogTrigger asChild>
         <Button disabled={options.length === 0}>
           <Plus className="size-4" aria-hidden="true" />
-          Set a test
+          {t("classTests.new.button")}
         </Button>
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Set a class test</DialogTitle>
-          <DialogDescription>
-            A weekly test, a quiz, a unit test. The marks reach the family as soon as you enter them.
-          </DialogDescription>
+          <DialogTitle>{t("classTests.new.title")}</DialogTitle>
+          <DialogDescription>{t("classTests.new.description")}</DialogDescription>
         </DialogHeader>
         <form
           id="new-test"
@@ -76,10 +76,10 @@ export function NewTestDialog({ options, today }: { options: TeachingOption[]; t
           }}
         >
           <div className="flex flex-col gap-1.5">
-            <Label htmlFor="test-class">Class and subject</Label>
+            <Label htmlFor="test-class">{t("classTests.new.classAndSubject")}</Label>
             <Select value={pick} onValueChange={setPick}>
               <SelectTrigger id="test-class">
-                <SelectValue placeholder="Choose" />
+                <SelectValue placeholder={t("classTests.new.choose")} />
               </SelectTrigger>
               <SelectContent>
                 {options.map((o) => (
@@ -91,23 +91,23 @@ export function NewTestDialog({ options, today }: { options: TeachingOption[]; t
             </Select>
           </div>
           <div className="flex flex-col gap-1.5">
-            <Label htmlFor="test-title">Title</Label>
+            <Label htmlFor="test-title">{t("classTests.new.testTitle")}</Label>
             <Input
               id="test-title"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              placeholder="Unit 3 test"
+              placeholder={t("classTests.new.titlePlaceholder")}
               maxLength={120}
               required
             />
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div className="flex flex-col gap-1.5">
-              <Label htmlFor="test-date">Held on</Label>
+              <Label htmlFor="test-date">{t("classTests.new.heldOn")}</Label>
               <Input id="test-date" type="date" value={heldOn} onChange={(e) => setHeldOn(e.target.value)} />
             </div>
             <div className="flex flex-col gap-1.5">
-              <Label htmlFor="test-max">Out of</Label>
+              <Label htmlFor="test-max">{t("classTests.new.outOf")}</Label>
               <Input
                 id="test-max"
                 type="number"
@@ -122,7 +122,7 @@ export function NewTestDialog({ options, today }: { options: TeachingOption[]; t
         </form>
         <DialogFooter>
           <Button type="submit" form="new-test" disabled={pending || !pick || title.trim() === ""}>
-            Set the test
+            {t("classTests.new.submit")}
           </Button>
         </DialogFooter>
       </DialogContent>

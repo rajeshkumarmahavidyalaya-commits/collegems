@@ -256,9 +256,9 @@ export function ReportCardSheet({
                 );
               })}
             </div>
-            <p className="mt-2 text-xs text-muted-foreground">
-              A Outstanding · B Very good · C Good · D Fair · E Needs improvement
-            </p>
+            {card.behaviour_legend && (
+              <p className="mt-2 text-xs text-muted-foreground">{card.behaviour_legend}</p>
+            )}
           </div>
         ) : null}
 

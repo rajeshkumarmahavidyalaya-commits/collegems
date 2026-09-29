@@ -304,12 +304,17 @@ export type FamilyTestMark = {
  * row-scoped policies. Two reads rather than an embed across the composite
  * key, as getMyPayslips does.
  */
-export async function myChildrenTestMarks(): Promise<FamilyTestMark[]> {
+export async function myChildrenTestMarks(studentId?: string, limit = 500): Promise<FamilyTestMark[]> {
   const supabase = await createClient();
-  const { data: marks } = await supabase
+  let q = supabase
     .from("class_test_marks")
     .select("student_id, test_id, marks, absent, max_marks")
-    .limit(500);
+    .order("created_at", { ascending: false })
+    .limit(limit);
+  // One child's, for their record page. RLS still decides: a family reads
+  // their own, staff on the exams permissions read any, anybody else nothing.
+  if (studentId && UUID.test(studentId)) q = q.eq("student_id", studentId);
+  const { data: marks } = await q;
   const rows = marks ?? [];
   if (rows.length === 0) return [];
 

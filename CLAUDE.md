@@ -2562,9 +2562,20 @@ And two about writing it down, both re-commits of rules already here:
   that the tracer can follow a string literal and not a computed path, and the
   *executable* half is a guard on the literal.
 
-Printing remains the answer for a script the font cannot draw, and the honest
-limitation is stated rather than hidden: a Hindi or Urdu reader asking for a
-file gets the refusal, because `formatDate` returns Devanagari month names.
+Printing remains the answer for a script the fonts cannot draw, and the honest
+limitation is stated rather than hidden: an Urdu reader asking for a file gets
+the refusal.
+
+**Hindi is drawn now, and the first check said it already was.** `font.ts`
+recorded upstream fontkit with `subset: false` as working, "correctly shaped",
+on the evidence of glyph counts. Rendered and looked at, pdf-lib's `drawText`
+left gaps inside words and stood the `ि` matra apart from its consonant.
+`typeset.ts` now places each glyph itself, at its advance plus its GPOS offset.
+The rendering found a second defect the first fix did not: fontkit picks its
+shaper from the first letter, so *"PS-001 · मार्च"* was shaped as Latin, with a
+bare halant. Text is shaped one script run at a time. **A glyph count is not a
+rendering; look at the page.** The Devanagari face (Noto Sans Devanagari, about
+90 kB compressed) is embedded only in a document that uses it.
 
 See `docs/modules/pdf.md`.
 

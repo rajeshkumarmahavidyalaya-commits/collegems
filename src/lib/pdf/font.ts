@@ -1,6 +1,7 @@
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import fontkit from "@pdf-lib/fontkit";
+import * as upstreamFontkit from "fontkit";
 
 /**
  * The one font a document is drawn with, and the check that stops it lying.
@@ -33,25 +34,34 @@ import fontkit from "@pdf-lib/fontkit";
  * renderer asks the font what it can draw **before** drawing and refuses with
  * the characters named.
  *
- * ## What it would take to print Hindi
+ * ## How Hindi is printed (and why it took three libraries' worth of care)
  *
- * Written down because the next person will ask, and because two of the three
- * obstacles are library bugs rather than design decisions. Measured, all three:
+ * Written down because every step below was measured, and two of the
+ * obstacles are library bugs rather than design decisions:
  *
  *   - `@pdf-lib/fontkit` (the companion package pdf-lib's own documentation
  *     tells you to install) **throws `ReferenceError: regeneratorRuntime is not
  *     defined`** the instant its Indic syllable state machine runs. Its UMD
  *     bundle ships a Babel-transpiled generator without the polyfill. Latin
  *     text never reaches that code path, so the bug is invisible until
- *     somebody's Hindi certificate.
+ *     somebody's Hindi certificate. It stays for Work Sans, which is Latin only.
  *   - Upstream `fontkit` shapes the same word correctly — `हिन्दी` is 6
  *     codepoints and 5 glyphs, `क्ष` is 3 and 1, no `.notdef` — but pdf-lib's
  *     embedder calls a subsetting API it no longer has, so `subset: true`
- *     throws `_this.subset.encodeStream is not a function`.
- *   - `registerFontkit(upstreamFontkit)` with **`subset: false`** works end to
- *     end: 69,639 bytes, 486 ms, correctly shaped. The one combination that
- *     works is the one nobody would pick — the other package, with the option
- *     you would turn *on* to save bytes turned off.
+ *     throws `_this.subset.encodeStream is not a function`. With
+ *     **`subset: false`** it embeds: the whole Devanagari face, ~90 kB
+ *     compressed, paid only by a document that contains Devanagari.
+ *   - **And pdf-lib then draws the glyphs at their advances and ignores their
+ *     GPOS offsets.** The shaping is right and the placement is not: a vowel
+ *     sign that the font positions against its consonant lands where the
+ *     previous glyph ended. Measured over the Hindi catalogue, **171 of 591
+ *     strings** carry a non-zero offset, the `े` matra alone in 98 of them.
+ *     So `typeset.ts` lays the glyphs out itself, from upstream fontkit's
+ *     positions, one text matrix per glyph.
+ *
+ * Urdu stays refused. It is Arabic script, right to left and joined, which is
+ * a second font and a bidi pass — and a Latin-only file would print it
+ * back to front, which is worse than the sentence below.
  *
  * And a fourth obstacle that is nobody's bug: **a web-font subset is cut for a
  * browser, which can load two files and fall back between them. A PDF embeds
@@ -71,6 +81,14 @@ import fontkit from "@pdf-lib/fontkit";
  * few grams of ink.
  */
 const FONT_FILE = join(process.cwd(), "src/lib/pdf/fonts/WorkSans-Regular.ttf");
+
+/**
+ * Noto Sans Devanagari, for any string Work Sans cannot draw. It also covers
+ * Latin, digits, the rupee and the dashes, so a Hindi line with a child's name
+ * in English is one face rather than two. OFL, licence beside it. A literal,
+ * like the one above, so the file tracer can follow it.
+ */
+const DEVANAGARI_FILE = join(process.cwd(), "src/lib/pdf/fonts/NotoSansDevanagari-Regular.ttf");
 
 export type DocumentFont = {
   bytes: Uint8Array;
@@ -98,6 +116,80 @@ export async function documentFont(): Promise<DocumentFont> {
     cached = { bytes, covered: new Set(parsed.characterSet) };
   }
   return cached;
+}
+
+/** A shaped glyph run from upstream fontkit: ids, and where each one goes. */
+export type ShapedRun = {
+  glyphs: { id: number }[];
+  positions: { xAdvance: number; xOffset: number; yOffset: number }[];
+};
+
+export type ShapingFont = DocumentFont & {
+  unitsPerEm: number;
+  layout(text: string): ShapedRun;
+};
+
+let devanagari: ShapingFont | null = null;
+
+/**
+ * The Devanagari face, parsed once per process with **upstream** fontkit,
+ * because that is the one whose Indic shaper runs (see above). Its `layout` is
+ * what `typeset.ts` places glyph by glyph.
+ */
+export async function devanagariFont(): Promise<ShapingFont> {
+  if (!devanagari) {
+    const bytes = new Uint8Array(await readFile(DEVANAGARI_FILE));
+    const parsed = upstreamFontkit.create(Buffer.from(bytes)) as unknown as {
+      characterSet: number[];
+      unitsPerEm: number;
+      layout(text: string, features?: unknown, script?: string): ShapedRun;
+    };
+    devanagari = {
+      bytes,
+      covered: new Set(parsed.characterSet),
+      unitsPerEm: parsed.unitsPerEm,
+      // Shaped a script run at a time, with the script named: fontkit picks
+      // its shaper from the *first* letter it meets, so "PS-001 · मार्च" left
+      // to itself is shaped as Latin and prints मार्‌च with a bare halant.
+      layout: (text) => {
+        const out: ShapedRun = { glyphs: [], positions: [] };
+        for (const run of scriptRuns(text)) {
+          const shaped = parsed.layout(run.text, undefined, run.devanagari ? "deva" : "latn");
+          out.glyphs.push(...shaped.glyphs);
+          out.positions.push(...shaped.positions);
+        }
+        return out;
+      },
+    };
+  }
+  return devanagari;
+}
+
+const isDevanagari = (cp: number) => (cp >= 0x0900 && cp <= 0x097f) || (cp >= 0xa8e0 && cp <= 0xa8ff);
+/** A letter of some other script: Latin, mostly. Digits, spaces and punctuation are neither. */
+const isOtherLetter = (ch: string) => /\p{L}|\p{M}/u.test(ch) && !isDevanagari(ch.codePointAt(0)!);
+
+/**
+ * `text` cut where it changes between Devanagari and another script. Spaces,
+ * digits and punctuation belong to whichever run they are in, so a sentence
+ * is one run and only a Latin *word* inside it is a second — which is how a
+ * shaper expects to be fed.
+ */
+export function scriptRuns(text: string): { text: string; devanagari: boolean }[] {
+  const runs: { text: string; devanagari: boolean }[] = [];
+  for (const ch of text) {
+    const cp = ch.codePointAt(0)!;
+    const kind = isDevanagari(cp) ? true : isOtherLetter(ch) ? false : null;
+    const last = runs[runs.length - 1];
+    if (last && (kind === null || kind === last.devanagari)) last.text += ch;
+    else runs.push({ text: ch, devanagari: kind ?? false });
+  }
+  // A run of only punctuation at the start takes the script of what follows.
+  if (runs.length > 1 && !/\p{L}/u.test(runs[0].text)) {
+    runs[1].text = runs[0].text + runs[1].text;
+    runs.shift();
+  }
+  return runs;
 }
 
 /**
@@ -141,9 +233,28 @@ export function unrenderableMessage(missing: string[]): string {
   const shown = missing.slice(0, 12).map((c) => `“${c}”`).join(", ");
   const more = missing.length > 12 ? ` and ${missing.length - 12} more` : "";
   return (
-    `This document cannot be turned into a PDF: the document font has no ` +
+    `This document cannot be turned into a PDF: the document fonts have no ` +
     `${missing.length === 1 ? "glyph" : "glyphs"} for ${shown}${more}. ` +
-    `PDFs are produced in Latin script only — printing the page from your ` +
-    `browser uses your own system fonts and will render it correctly.`
+    `PDFs are produced in Latin and Devanagari (Hindi) script — printing the ` +
+    `page from your browser uses your own system fonts and will render it correctly.`
   );
+}
+
+/**
+ * Raised when neither document font has a glyph for something the document
+ * says.
+ *
+ * A named class rather than a plain `Error` because the route handler answers
+ * it with 422 and the sentence, while anything else is a 500 — *this build
+ * cannot print your script* and *something broke* are different answers and
+ * only one of them tells the person what to do.
+ */
+export class UnrenderableDocument extends Error {
+  readonly missing: string[];
+
+  constructor(missing: string[]) {
+    super(unrenderableMessage(missing));
+    this.name = "UnrenderableDocument";
+    this.missing = missing;
+  }
 }

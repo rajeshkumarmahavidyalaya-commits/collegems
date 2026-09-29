@@ -15,6 +15,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { useI18n } from "@/components/providers/i18n-provider";
 import { addTrait, setTraitActive, type BehaviourTrait } from "../../behaviour-actions";
 
 /**
@@ -24,6 +25,7 @@ import { addTrait, setTraitActive, type BehaviourTrait } from "../../behaviour-a
  */
 export function TraitsEditor({ traits }: { traits: BehaviourTrait[] }) {
   const router = useRouter();
+  const { t } = useI18n();
   const [pending, startTransition] = useTransition();
   const [name, setName] = useState("");
   const [kind, setKind] = useState("behaviour");
@@ -32,7 +34,7 @@ export function TraitsEditor({ traits }: { traits: BehaviourTrait[] }) {
     startTransition(async () => {
       const result = await addTrait({ name, kind });
       if (result.ok) {
-        toast.success(`"${name.trim()}" added`);
+        toast.success(t("behaviour.added", { name: name.trim() }));
         setName("");
         router.refresh();
       } else {
@@ -41,9 +43,9 @@ export function TraitsEditor({ traits }: { traits: BehaviourTrait[] }) {
     });
   }
 
-  function toggle(t: BehaviourTrait) {
+  function toggle(trait: BehaviourTrait) {
     startTransition(async () => {
-      const result = await setTraitActive(t.id, !t.isActive);
+      const result = await setTraitActive(trait.id, !trait.isActive);
       if (result.ok) router.refresh();
       else toast.error(result.error);
     });
@@ -52,18 +54,18 @@ export function TraitsEditor({ traits }: { traits: BehaviourTrait[] }) {
   return (
     <div className="flex flex-col gap-4">
       <ul className="flex flex-wrap gap-2">
-        {traits.map((t) => (
-          <li key={t.id}>
+        {traits.map((trait) => (
+          <li key={trait.id}>
             <button
               type="button"
               disabled={pending}
-              onClick={() => toggle(t)}
+              onClick={() => toggle(trait)}
               className="rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-              aria-label={t.isActive ? `Retire ${t.name}` : `Restore ${t.name}`}
-              title={t.isActive ? "Retire: stop grading this" : "Restore"}
+              aria-label={trait.isActive ? t("behaviour.retire", { name: trait.name }) : t("behaviour.restore", { name: trait.name })}
+              title={trait.isActive ? t("behaviour.retireHint") : t("behaviour.restoreHint")}
             >
-              <Badge variant={t.isActive ? "secondary" : "outline"} className={t.isActive ? "" : "line-through"}>
-                {t.name} · {t.kind === "skill" ? "skill" : "behaviour"}
+              <Badge variant={trait.isActive ? "secondary" : "outline"} className={trait.isActive ? "" : "line-through"}>
+                {trait.name} · {trait.kind === "skill" ? t("behaviour.kind.skill") : t("behaviour.kind.behaviour")}
               </Badge>
             </button>
           </li>
@@ -77,31 +79,31 @@ export function TraitsEditor({ traits }: { traits: BehaviourTrait[] }) {
         }}
       >
         <div className="flex flex-col gap-1.5">
-          <Label htmlFor="trait-name">New trait</Label>
+          <Label htmlFor="trait-name">{t("behaviour.newTrait")}</Label>
           <Input
             id="trait-name"
             value={name}
             onChange={(e) => setName(e.target.value)}
-            placeholder="e.g. Yoga"
+            placeholder={t("behaviour.newTraitPlaceholder")}
             maxLength={80}
             className="w-56"
           />
         </div>
         <div className="flex flex-col gap-1.5">
-          <Label htmlFor="trait-kind">Kind</Label>
+          <Label htmlFor="trait-kind">{t("behaviour.kind")}</Label>
           <Select value={kind} onValueChange={setKind}>
             <SelectTrigger id="trait-kind" className="w-36">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="behaviour">Behaviour</SelectItem>
-              <SelectItem value="skill">Skill</SelectItem>
+              <SelectItem value="behaviour">{t("behaviour.kind.behaviour")}</SelectItem>
+              <SelectItem value="skill">{t("behaviour.kind.skill")}</SelectItem>
             </SelectContent>
           </Select>
         </div>
         <Button type="submit" variant="outline" disabled={pending || name.trim().length === 0}>
           <Plus className="size-4" aria-hidden="true" />
-          Add
+          {t("behaviour.add")}
         </Button>
       </form>
     </div>

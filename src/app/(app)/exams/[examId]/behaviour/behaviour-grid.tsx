@@ -14,13 +14,14 @@ import {
 } from "@/components/ui/select";
 import { useUnsavedChangesGuard } from "@/components/forms/use-unsaved-changes-guard";
 import {
-  BEHAVIOUR_GRADES,
-  GRADE_MEANING,
   cellKey,
   planBehaviourSave,
+  scaleLegend,
   type BehaviourGrade,
+  type BehaviourScale,
   type GradeMap,
 } from "@/lib/validations/behaviour";
+import { useI18n } from "@/components/providers/i18n-provider";
 import { saveBehaviour, type BehaviourStudent, type BehaviourTrait } from "../../behaviour-actions";
 
 /**
@@ -35,6 +36,7 @@ export function BehaviourGrid({
   traits,
   students,
   grades,
+  scale,
   frozen,
   canGrade,
 }: {
@@ -44,10 +46,12 @@ export function BehaviourGrid({
   traits: BehaviourTrait[];
   students: BehaviourStudent[];
   grades: GradeMap;
+  scale: BehaviourScale;
   frozen: boolean;
   canGrade: boolean;
 }) {
   const router = useRouter();
+  const { t } = useI18n();
   const [pending, startTransition] = useTransition();
   const [saving, setSaving] = useState(false);
   const [status, setStatus] = useState<string | null>(null);
@@ -68,6 +72,10 @@ export function BehaviourGrid({
       return next;
     });
   }
+
+  // The grade a class that behaved usually gets: the second letter of the
+  // college's own scale (B on every scale this product allows).
+  const usual = scale.grades[1] ?? scale.grades[0];
 
   /** Fill a whole column with one grade -- the common case for a class that behaved. */
   function fillColumn(traitId: string, grade: BehaviourGrade) {
@@ -93,7 +101,7 @@ export function BehaviourGrid({
     }
     const { saved, cleared } = result.data;
     setStatus(
-      `${saved} grade${saved === 1 ? "" : "s"} saved` + (cleared > 0 ? `, ${cleared} cleared` : ""),
+      t.plural("behaviour.saved", saved) + (cleared > 0 ? `, ${t("behaviour.cleared", { count: cleared })}` : ""),
     );
     router.refresh();
   }
@@ -102,7 +110,7 @@ export function BehaviourGrid({
     <div className="flex flex-col gap-4">
       <div className="flex flex-wrap items-end justify-between gap-3 rounded-lg border border-border bg-card p-4">
         <div className="flex flex-col gap-1.5">
-          <Label htmlFor="behaviour-section">Class</Label>
+          <Label htmlFor="behaviour-section">{t("behaviour.class")}</Label>
           <Select
             value={sectionId ?? undefined}
             onValueChange={(next) =>
@@ -110,7 +118,7 @@ export function BehaviourGrid({
             }
           >
             <SelectTrigger id="behaviour-section" className="w-[16rem] cursor-pointer">
-              <SelectValue placeholder="Choose a class" />
+              <SelectValue placeholder={t("behaviour.chooseClass")} />
             </SelectTrigger>
             <SelectContent>
               {sections.map((s) => (
@@ -128,13 +136,13 @@ export function BehaviourGrid({
             ) : (
               <Save className="size-4" aria-hidden="true" />
             )}
-            {changes === 0 ? "Nothing changed" : `Save ${changes} change${changes === 1 ? "" : "s"}`}
+            {changes === 0 ? t("behaviour.nothingChanged") : t.plural("behaviour.save", changes)}
           </Button>
         ) : null}
       </div>
 
       <p className="text-xs text-muted-foreground">
-        {BEHAVIOUR_GRADES.map((g) => `${g} ${GRADE_MEANING[g]}`).join(" · ")}
+        {scaleLegend(scale)}
       </p>
 
       <p aria-live="polite" className="min-h-5 text-sm">
@@ -148,35 +156,35 @@ export function BehaviourGrid({
       </p>
 
       {!sectionId ? (
-        <Empty title="Choose a class" body="Grades are given a class at a time, by the teacher who knows the children." />
+        <Empty title={t("behaviour.chooseClass")} body={t("behaviour.emptyClassBody")} />
       ) : pending ? (
         <div className="h-64 animate-pulse rounded-lg border border-border bg-muted" />
       ) : traits.length === 0 ? (
-        <Empty title="No traits to grade" body="Add what the college grades -- discipline, sport, art -- in the list below." />
+        <Empty title={t("behaviour.noTraitsTitle")} body={t("behaviour.noTraitsBody")} />
       ) : students.length === 0 ? (
-        <Empty title="Nobody in this class" body="This class has no active enrolments in the year this exam belongs to." />
+        <Empty title={t("behaviour.nobodyTitle")} body={t("behaviour.nobodyBody")} />
       ) : (
         <div className="overflow-x-auto rounded-lg border border-border">
           <table className="w-full text-sm">
             <thead className="bg-muted/50">
               <tr>
                 <th scope="col" className="sticky start-0 bg-muted/50 p-2 text-start font-medium">
-                  Student
+                  {t("behaviour.student")}
                 </th>
-                {traits.map((t) => (
-                  <th key={t.id} scope="col" className="min-w-28 p-2 text-start align-bottom font-medium">
+                {traits.map((trait) => (
+                  <th key={trait.id} scope="col" className="min-w-28 p-2 text-start align-bottom font-medium">
                     <span className="block text-xs text-muted-foreground">
-                      {t.kind === "skill" ? "Skill" : "Behaviour"}
+                      {trait.kind === "skill" ? t("behaviour.kind.skill") : t("behaviour.kind.behaviour")}
                     </span>
-                    {t.name}
+                    {trait.name}
                     {!disabled && (
                       <button
                         type="button"
                         className="mt-1 block text-xs font-normal text-primary underline-offset-2 hover:underline"
-                        onClick={() => fillColumn(t.id, "B")}
-                        aria-label={`Give B for ${t.name} to everybody not yet graded`}
+                        onClick={() => fillColumn(trait.id, usual)}
+                        aria-label={t("behaviour.fillBlanksLabel", { grade: usual, trait: trait.name })}
                       >
-                        Fill blanks with B
+                        {t("behaviour.fillBlanks", { grade: usual })}
                       </button>
                     )}
                   </th>
@@ -190,28 +198,33 @@ export function BehaviourGrid({
                     <span className="font-mono text-muted-foreground">{s.rollNumber ?? "—"}</span>{" "}
                     {s.studentName}
                   </th>
-                  {traits.map((t) => {
-                    const value = draft[cellKey(s.studentId, t.id)] ?? "-";
+                  {traits.map((trait) => {
+                    const value: string = draft[cellKey(s.studentId, trait.id)] ?? "-";
                     return (
-                      <td key={t.id} className="p-1.5">
+                      <td key={trait.id} className="p-1.5">
                         <Select
                           value={value}
                           disabled={disabled}
-                          onValueChange={(v) => setCell(s.studentId, t.id, v)}
+                          onValueChange={(v) => setCell(s.studentId, trait.id, v)}
                         >
                           <SelectTrigger
                             className="h-8 w-20 cursor-pointer"
-                            aria-label={`${t.name} for ${s.studentName}`}
+                            aria-label={t("behaviour.cellLabel", { trait: trait.name, name: s.studentName })}
                           >
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
                             <SelectItem value="-">—</SelectItem>
-                            {BEHAVIOUR_GRADES.map((g) => (
+                            {scale.grades.map((g) => (
                               <SelectItem key={g} value={g}>
-                                {g} · {GRADE_MEANING[g]}
+                                {g} · {scale.meaning[g]}
                               </SelectItem>
                             ))}
+                            {/* A grade given before the scale shrank stays
+                                visible rather than blank (0307). */}
+                            {value !== "-" && !scale.grades.includes(value as BehaviourGrade) && (
+                              <SelectItem value={value}>{value}</SelectItem>
+                            )}
                           </SelectContent>
                         </Select>
                       </td>

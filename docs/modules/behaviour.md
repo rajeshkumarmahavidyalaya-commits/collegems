@@ -39,8 +39,29 @@ The card function (`exams_report_cards`) is unchanged. The two card loaders
 attach each child's grades from `behaviour_ratings` through its own policies, so
 the screen, the class PDF and the single-child PDF all show them.
 
-## Not done
+## The scale is the college's (0307)
 
-- The scale is fixed at A to E. A school that grades A to C uses the first three.
-  A scale with different words would need its own catalogue row.
-- The labels are English only.
+`exams.behaviour_scale` is a settings row, edited under Settings by anybody with
+`exams.manage`. It says how many grades there are (3, 4 or 5, so A to C, A to D
+or A to E) and what each letter means. A missing or malformed value reads as
+CBSE's five points and five words, which is what 0303 shipped.
+
+- **The grid** offers only the scale's letters. A grade given before the scale
+  shrank is still shown, not blanked.
+- **The report card**, on screen and in both PDFs, prints the college's own
+  words under the grades.
+- **The database** holds new grades to the scale with a `BEFORE INSERT OR
+  UPDATE OF grade` trigger, because the grid writes through a plain upsert that
+  no function sees. The refusal names the scale: *"This college grades behaviour
+  and skills from A to C, so D is not a grade it gives."* An unchanged grade is
+  never refused: publishing an exam cascades `exam_status` onto every row, and a
+  college that moved from five points to three must still be able to publish.
+- The table's CHECK still allows A to E. The CHECK says what a grade *can* be;
+  the setting says what this college *uses*. Changing the scale does not rewrite
+  grades already given.
+
+Probed with the scale set to 3 points: D refused with the sentence, C accepted,
+the publish cascade not blocked.
+
+The screens are in English, Hindi and Urdu. The scale's words are the college's
+own and are printed as the college typed them.

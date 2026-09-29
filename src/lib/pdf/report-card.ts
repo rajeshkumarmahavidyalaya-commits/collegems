@@ -308,11 +308,9 @@ function writeCard(sheet: Sheet, doc: ReportCardDocument): void {
         { size: 10 },
       );
     }
-    sheet.text("A Outstanding · B Very good · C Good · D Fair · E Needs improvement", {
-      size: 8.5,
-      tone: "quiet",
-      above: 4,
-    });
+    if (card.behaviour_legend) {
+      sheet.text(card.behaviour_legend, { size: 8.5, tone: "quiet", above: 4 });
+    }
   }
 
   if (card.remark) {

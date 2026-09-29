@@ -4,7 +4,8 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { parseCard, remarkSchema, type ReportCard } from "@/lib/validations/report-cards";
 import type { ActionResult } from "../library/actions";
-import { behaviourForCards } from "./behaviour-actions";
+import { behaviourForCards, getBehaviourScale } from "./behaviour-actions";
+import { scaleLegend } from "@/lib/validations/behaviour";
 
 function fail(message: string): ActionResult<never> {
   return { ok: false, error: message };
@@ -39,11 +40,18 @@ export async function getSectionCards(
     const card = parseCard(row);
     if (card) cards.push(card);
   }
-  const behaviour = await behaviourForCards(
-    examId,
-    cards.map((c) => c.student.id),
-  );
-  for (const card of cards) card.behaviour = behaviour[card.student.id] ?? [];
+  const [behaviour, scale] = await Promise.all([
+    behaviourForCards(
+      examId,
+      cards.map((c) => c.student.id),
+    ),
+    getBehaviourScale(),
+  ]);
+  const legend = scaleLegend(scale);
+  for (const card of cards) {
+    card.behaviour = behaviour[card.student.id] ?? [];
+    card.behaviour_legend = legend;
+  }
   return { cards, unreadable: rows.length - cards.length };
 }
 
@@ -61,7 +69,14 @@ export async function getStudentCard(
   // answer. The caller renders it.
   if (error) return null;
   const card = parseCard(data);
-  if (card) card.behaviour = (await behaviourForCards(examId, [card.student.id]))[card.student.id] ?? [];
+  if (card) {
+    const [behaviour, scale] = await Promise.all([
+      behaviourForCards(examId, [card.student.id]),
+      getBehaviourScale(),
+    ]);
+    card.behaviour = behaviour[card.student.id] ?? [];
+    card.behaviour_legend = scaleLegend(scale);
+  }
   return card;
 }
 
