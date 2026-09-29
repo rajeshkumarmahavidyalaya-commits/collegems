@@ -39,6 +39,7 @@ const EVERY_ROLE_ON_PURPOSE = new Map<string, string>([
   ["/reports", "report_list() narrows the catalogue to what the caller's matrix allows."],
   ["/notifications", "Every account has an inbox."],
   ["/notices", "The board is the point; notice_matches_me(audience) decides who sees what."],
+  ["/calendar", "school_calendar() reads each source through its own policies, so a seat sees its own dates."],
   ["/library/books", "The catalogue is a catalogue."],
   ["/settings/language", "Somebody who cannot read the page needs this most."],
   ["/assistant", "It reads with the asker's own token, so RLS and the matrix scope each seat's answers."],

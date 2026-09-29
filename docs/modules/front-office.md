@@ -330,3 +330,9 @@ email lowercased.
   An email would be a message addressed to an address nobody has verified,
   which makes it a way to send mail to strangers from the college's name.
 
+
+## A report (0297)
+
+**Admission enquiries** (`frontoffice.enquiries`) lists the pipeline since a
+date (90 days back by default, a visible parameter rather than a silent
+window), newest first, with source, stage and the next follow-up.

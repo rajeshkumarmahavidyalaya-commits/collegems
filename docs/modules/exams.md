@@ -381,8 +381,15 @@ row shows a running total once every part is filled in.
 - **No re-evaluation or supplementary exams.** A correction today means
   unpublish, fix, republish — which is audited, and is the honest workflow, but
   is not the same as a recorded re-evaluation request.
-- **Nothing notifies anybody.** `exam.results_published` exists in the
-  notification catalog and no code calls `notify_send` with it yet.
-- **No reports.** The reporting kernel has no exam read models yet; a
-  "results by class" or "subject-wise pass rate" report is a function plus a
-  catalog row.
+- ~~**Nothing notifies anybody.**~~ Built in `0219`: publishing calls
+  `exams_announce_results`, which tells each child's family, and the toast
+  says both facts (*"Published 42 results and told 40 families"*).
+- ~~**No reports.**~~ `exams.results` (each child's result) and, since `0297`,
+  `exams.subjects` (*How each paper went*: sat, absent, passed, pass rate,
+  average and highest per exam, class and subject). The second reads the
+  engine's frozen verdict in `exam_results.detail`, so grace counts exactly as
+  it did on the card, and it is gated on `exams.grade`.
+  A result counts only where the caller can read the child's enrolment
+  (`0299`): a teacher probed on `0297` saw their own class beside a
+  class-less row of 272 children they do not teach, which is rule 4's
+  invoker-over-row-ownership lie. The administrator's 96 rows did not move.

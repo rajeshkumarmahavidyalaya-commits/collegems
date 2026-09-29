@@ -168,3 +168,10 @@ child in a bed.**
   All real; all separate tables rather than columns here.
 - **Nothing notifies anybody** — a placement, a room change or a child signed
   out is exactly what `notify_send` is for, and no code calls it yet.
+
+## A report (0297)
+
+**Who is in which room** (`hostel.residents`) lists every child in a bed on a
+day, hostel by hostel and room by room, with their class and fare. It is
+gated on `hostel.allocate`, because allocations are row-owned for a family and
+`hostel.view` would answer a parent with their own child.

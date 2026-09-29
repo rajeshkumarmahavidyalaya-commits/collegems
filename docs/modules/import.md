@@ -163,10 +163,10 @@ cleaning a spreadsheet without being the person who creates two hundred students
   genuinely unusual headings has to be renamed. A mapping step is the obvious
   next thing.
 - **No Excel files.** `.xlsx` needs a parser; CSV needs none.
-- **No guardian records are created.** The guardian's name and phone are
-  captured and validated and then *not written*, because a guardian is a `people`
-  row with its own linking rules — see rule 5. Recorded as a gap rather than
-  guessed at.
+- ~~**No guardian records are created.**~~ Fixed in `0221`: `import_apply_run`
+  calls `guardian_add`, the one definition of a guardian, so an imported child
+  arrives with their family linked (and, since `0236`, the guardian holds the
+  spreadsheet's email).
 
 ---
 

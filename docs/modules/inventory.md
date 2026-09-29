@@ -400,3 +400,9 @@ Measured, before and after, whole build: `/inventory` **238 → 247 kB** — the
 Radix Popover behind the picker, now shared with three other routes, plus the
 dialog. `/inventory/[itemId]` **195 → 195 kB**: the undo branch is free.
 `First Load JS shared by all` is 103 kB either way.
+
+## A report (0297)
+
+**Stock in the store** (`inventory.stock`) wraps `stock_on_hand`, the one
+definition of quantity, with items below their reorder level first and the
+value at average cost. It can show only what is below reorder, or only assets.

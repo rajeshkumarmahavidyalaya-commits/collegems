@@ -498,3 +498,50 @@ export async function savePostingRule(input: unknown, id?: string): Promise<Acti
   revalidatePath("/accounts");
   return { ok: true, data: undefined };
 }
+
+// ---------------------------------------------------------------------------
+// An expense or an income in one form (0297)
+// ---------------------------------------------------------------------------
+
+/**
+ * "Electricity bill, 4,500, paid in cash" without writing a voucher.
+ * `accounts_record_cash` builds the same two-line voucher and posts it through
+ * the one posting function, so the books cannot tell the difference -- which
+ * is the point. The amount arrives as the person typed it and is checked here
+ * as well as in Postgres: the client is a convenience, the function the gate.
+ */
+export async function recordCash(input: {
+  kind: "expense" | "income";
+  accountId: string;
+  paidViaId: string;
+  amount: string;
+  on: string;
+  narration: string;
+}): Promise<ActionResult<{ number: string }>> {
+  const uuid = /^[0-9a-f-]{36}$/i;
+  if (input.kind !== "expense" && input.kind !== "income") return fail("Record an expense or an income.");
+  if (!uuid.test(input.accountId)) return fail(`Choose what the ${input.kind} was for.`);
+  if (!uuid.test(input.paidViaId)) return fail("Choose the cash or bank account.");
+  const amount = Number(input.amount);
+  if (input.amount.trim() === "" || !Number.isFinite(amount) || amount <= 0) {
+    return fail("Enter an amount greater than zero.");
+  }
+  if (input.on && !/^\d{4}-\d{2}-\d{2}$/.test(input.on)) return fail("Pick a date.");
+
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("accounts_record_cash", {
+    p_kind: input.kind,
+    p_account_id: input.accountId,
+    p_paid_via_id: input.paidViaId,
+    p_amount: amount,
+    // Null takes the school's today; the generated types cannot say a
+    // function argument is nullable.
+    p_on: (input.on || null) as string,
+    p_narration: input.narration,
+  });
+  if (error) return fail(error.message);
+
+  revalidatePath("/accounts");
+  revalidatePath("/accounts/vouchers");
+  return { ok: true, data: { number: data as string } };
+}

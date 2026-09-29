@@ -1,6 +1,7 @@
 import type { LucideIcon } from "lucide-react";
 import type { MessageKey } from "@/lib/i18n/messages/en";
 import {
+  CalendarDays,
   AlarmClock,
   ArrowUpNarrowWide,
   BadgePercent,
@@ -677,6 +678,15 @@ export const NAV_GROUPS: NavGroup[] = [
         messageKey: "nav.notices",
         href: "/notices",
         icon: ClipboardList,
+      },
+      // No `roles`, for the notice board's reason: school_calendar() is an
+      // invoker over holidays, exams, fee due dates and notices, so each seat
+      // sees the dates its own policies allow (0297).
+      {
+        title: "School calendar",
+        messageKey: "nav.calendar",
+        href: "/calendar",
+        icon: CalendarDays,
       },
     ],
   },

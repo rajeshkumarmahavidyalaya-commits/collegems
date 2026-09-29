@@ -8125,6 +8125,17 @@ export type Database = {
       }
       accounts_next_voucher_number: { Args: never; Returns: string }
       accounts_post_voucher: { Args: { p_voucher_id: string }; Returns: string }
+      accounts_record_cash: {
+        Args: {
+          p_account_id: string
+          p_amount: number
+          p_kind: string
+          p_narration: string
+          p_on: string
+          p_paid_via_id: string
+        }
+        Returns: string
+      }
       accounts_reverse_voucher: {
         Args: { p_date?: string; p_narration?: string; p_voucher_id: string }
         Returns: string
@@ -10675,7 +10686,19 @@ export type Database = {
           to_ts: string
         }[]
       }
+      report_enquiries: {
+        Args: { p_params: Json }
+        Returns: {
+          row_data: Json
+        }[]
+      }
       report_exam_results: {
+        Args: { p_params: Json }
+        Returns: {
+          row_data: Json
+        }[]
+      }
+      report_exam_subjects: {
         Args: { p_params: Json }
         Returns: {
           row_data: Json
@@ -10694,6 +10717,18 @@ export type Database = {
         }[]
       }
       report_fee_defaulters: {
+        Args: { p_params: Json }
+        Returns: {
+          row_data: Json
+        }[]
+      }
+      report_hostel_residents: {
+        Args: { p_params: Json }
+        Returns: {
+          row_data: Json
+        }[]
+      }
+      report_inventory_stock: {
         Args: { p_params: Json }
         Returns: {
           row_data: Json
@@ -10906,6 +10941,17 @@ export type Database = {
           has_tenant_id: boolean
           rls_enabled: boolean
           table_name: string
+        }[]
+      }
+      school_calendar: {
+        Args: { p_from: string; p_to: string }
+        Returns: {
+          detail: string
+          ends_on: string
+          href: string
+          kind: string
+          starts_on: string
+          title: string
         }[]
       }
       set_my_locale: { Args: { p_locale: string }; Returns: string }

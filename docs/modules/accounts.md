@@ -188,6 +188,20 @@ screen exists to produce.
 
 ---
 
+## An expense or an income in one form (0297, 0298)
+
+*Record an expense* and *Record an income* on `/accounts` take what it was for,
+the amount, the cash or bank account, the date and a line of narration.
+`accounts_record_cash` builds the two-line voucher and posts it through
+`accounts_post_voucher`, so it is numbered, reversible and in the trial
+balance exactly like a voucher written by hand. It refuses without
+`accounts.post`, refuses an account of the wrong type in a sentence, and
+refuses a date no academic year covers.
+
+`0298` corrected where it files the voucher: under the current year, as the
+voucher book's other door does, rather than the year its date falls in. The
+two doors had disagreed, and the ledger's reports are date-ranged anyway.
+
 ## What is not built
 
 - **Accrual accounting.** As above: invoices are not posted as receivables. The
