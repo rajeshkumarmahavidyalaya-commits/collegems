@@ -293,3 +293,82 @@ export async function getCertificate(id: string) {
     .maybeSingle();
   return data;
 }
+
+/**
+ * The two letters a job ends in (0300): an admission letter is about a
+ * student, an appointment letter about a member of staff. Which column the
+ * person sits in follows from the kind, so a caller cannot ask for a staff
+ * letter about a child.
+ */
+const LETTER_SUBJECT = { admission: "student", appointment: "staff" } as const;
+export type LetterKind = keyof typeof LETTER_SUBJECT;
+
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/** The live letter of this kind for this person, if one has been issued. */
+export async function findLetter(
+  kind: LetterKind,
+  subjectId: string,
+): Promise<{ id: string; serialNo: string } | null> {
+  if (!(kind in LETTER_SUBJECT) || !UUID.test(subjectId)) return null;
+  const supabase = await createClient();
+  const column = LETTER_SUBJECT[kind] === "student" ? "student_id" : "staff_id";
+  const { data } = await supabase
+    .from("certificates")
+    .select("id, serial_no")
+    .eq("kind", kind)
+    .eq(column, subjectId)
+    .eq("status", "issued")
+    .order("issued_on", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  return data ? { id: data.id, serialNo: data.serial_no } : null;
+}
+
+/**
+ * Issue the letter in one click, through the same engine as every certificate:
+ * `certificate_issue` previews again server-side and refuses in a sentence --
+ * no class yet, a letter already live -- which is passed through as written.
+ * The college's own default wording of that kind is used; a letter has no
+ * boxes for anybody to fill, which is what makes one click honest.
+ */
+export async function issueLetter(
+  kind: LetterKind,
+  subjectId: string,
+): Promise<ActionResult<{ id: string; serialNo: string }>> {
+  if (!(kind in LETTER_SUBJECT) || !UUID.test(subjectId)) {
+    return { ok: false, error: "That letter cannot be issued from here." };
+  }
+
+  const supabase = await createClient();
+  const { data: templates } = await supabase
+    .from("certificate_templates")
+    .select("id, is_default")
+    .eq("kind", kind)
+    .eq("subject", LETTER_SUBJECT[kind])
+    .eq("is_active", true)
+    .order("is_default", { ascending: false })
+    .order("name")
+    .limit(1);
+
+  const template = templates?.[0];
+  if (!template) {
+    return {
+      ok: false,
+      error: `This college has no ${kind} letter wording. Add one under Certificates.`,
+    };
+  }
+
+  const { data, error } = await supabase.rpc("certificate_issue", {
+    p_subject_id: subjectId,
+    p_template_id: template.id,
+  });
+  if (error) return { ok: false, error: error.message };
+
+  const row = data as { id: string; serial_no: string } | null;
+  if (!row) return { ok: false, error: "The letter was not created." };
+
+  revalidatePath("/certificates");
+  revalidatePath(LETTER_SUBJECT[kind] === "student" ? `/students/${subjectId}` : `/staff/${subjectId}`);
+  return { ok: true, data: { id: row.id, serialNo: row.serial_no } };
+}

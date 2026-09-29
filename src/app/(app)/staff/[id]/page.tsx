@@ -21,6 +21,8 @@ import { GiveLoginControl } from "./give-login-control";
 import { listRoles } from "../../settings/team/actions";
 import { createClient } from "@/lib/supabase/server";
 import { getT } from "@/lib/i18n/server";
+import { LetterButton } from "@/components/people/letter-button";
+import { findLetter, issueLetter } from "../../certificates/actions";
 
 export const metadata = { title: "Staff record" };
 
@@ -52,11 +54,14 @@ export default async function StaffDetailPage({ params }: { params: Promise<{ id
   // `staff.view` — rule 8 again, and the reason this is not read alongside the
   // record: `staff_record` does not project `photo_path`, so it is a column it
   // does not return rather than a second answer to a question it answers.
-  const [photo, canAssignSeat, canSeeTransport, canGiveCard] = await Promise.all([
+  const [photo, canAssignSeat, canSeeTransport, canGiveCard, canIssueLetter, letter] = await Promise.all([
     staffPhotoUrl(staff.id),
     hasPermission("transport.assign"),
     hasPermission("transport.view"),
     hasPermission("library.manage"),
+    hasPermission("certificates.issue"),
+    // The appointment letter (0300), if one is live.
+    findLetter("appointment", staff.id),
   ]);
   // The seat through `transport_for_staff` (0293), an invoker read: the
   // assignment policies decide, so a caller who may not see it gets nothing.
@@ -110,6 +115,13 @@ export default async function StaffDetailPage({ params }: { params: Promise<{ id
                 {t("idCard.printOne")}
               </Link>
             </Button>
+          )}
+          {canIssueLetter && (!hasLeft || letter) && (
+            <LetterButton
+              label="Appointment letter"
+              existing={letter}
+              issue={issueLetter.bind(null, "appointment", staff.id)}
+            />
           )}
           {canManage && (
             <>

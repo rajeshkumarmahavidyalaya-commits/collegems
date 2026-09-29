@@ -2,8 +2,10 @@
 
 import { useEffect, useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import {
   AlertTriangle,
+  FileText,
   BanknoteArrowUp,
   CircleDollarSign,
   Lock,
@@ -368,6 +370,13 @@ function PayslipRow({
               aria-controls={`slip-${row.payslipId}`}
             >
               {isOpen ? "Hide" : "Open"}
+            </Button>
+            {/* The slip as paper (0300): printable and a PDF, for a draft too,
+                which prints marked DRAFT so it is never filed as the real one. */}
+            <Button asChild variant="ghost" size="icon" title="Salary slip">
+              <Link href={`/payroll/slips/${row.payslipId}`} aria-label={`${row.staffName}'s salary slip`}>
+                <FileText className="size-4" aria-hidden="true" />
+              </Link>
             </Button>
             {isDraft && canProcess && (
               <>

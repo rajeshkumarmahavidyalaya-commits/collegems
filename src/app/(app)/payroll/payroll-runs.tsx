@@ -317,7 +317,14 @@ export function MyPayslips({
               <TableBody>
                 {payslips.map((p) => (
                   <TableRow key={p.id}>
-                    <TableCell className="font-medium">{formatMonth(p.periodMonth)}</TableCell>
+                    <TableCell className="font-medium">
+                      <Link
+                        href={`/payroll/slips/${p.id}`}
+                        className="underline-offset-2 hover:underline"
+                      >
+                        {formatMonth(p.periodMonth)}
+                      </Link>
+                    </TableCell>
                     <TableCell className="text-end font-mono tabular-nums">
                       {formatCurrency(p.grossEarnings)}
                     </TableCell>

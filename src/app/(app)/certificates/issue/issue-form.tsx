@@ -58,8 +58,12 @@ export function IssueCertificateForm({
   const router = useRouter();
   const [subjectId, setSubjectId] = useState("");
   const [selectedStudent, setSelectedStudent] = useState<PickedStudent | null>(null);
+  // The letters (0300) sort first by kind and are issued from the records in
+  // one click, so they are not what this form opens on.
   const [templateId, setTemplateId] = useState(
-    templates.find((t) => t.isDefault)?.id ?? templates[0]?.id ?? "",
+    templates.find((t) => t.isDefault && t.kind !== "admission" && t.kind !== "appointment")?.id ??
+      templates[0]?.id ??
+      "",
   );
   const [issuedOn, setIssuedOn] = useState(() => new Date().toISOString().slice(0, 10));
   const [extra, setExtra] = useState<Record<string, string>>({});

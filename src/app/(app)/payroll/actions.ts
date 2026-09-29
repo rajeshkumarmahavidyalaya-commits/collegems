@@ -4,6 +4,8 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { paymentSchema, payslipEditSchema } from "@/lib/validations/hr";
 import type { ActionResult } from "../library/actions";
+import { getUserContext } from "@/lib/auth/context";
+import type { PayslipDocumentInput } from "@/lib/pdf/payslip";
 
 function fail(message: string): ActionResult<never> {
   return { ok: false, error: message };
@@ -311,36 +313,129 @@ export async function discardPayroll(runId: string): Promise<ActionResult> {
   return { ok: true, data: undefined };
 }
 
-/** A person's own payslips, once they are real. A draft is still being argued about. */
+/**
+ * A person's own payslips, once they are real. A draft is still being argued about.
+ *
+ * The month is the slip's own column (0300). It used to be read from
+ * `payroll_runs`, which only admin and accountant may read, so to the teacher
+ * this list is for every month came back blank.
+ */
 export async function getMyPayslips(): Promise<
   { id: string; periodMonth: string; netPay: number; grossEarnings: number }[]
 > {
   const supabase = await createClient();
 
-  // Two queries rather than an embed: `payslips` reaches `payroll_runs`
-  // through a composite (tenant_id, run_id, run_status) key, and embedding
-  // across a composite key is not something this project has been able to
-  // verify from its test environment.
   const { data: slips } = await supabase
     .from("payslips")
-    .select("id, run_id, gross_earnings, net_pay")
-    .eq("run_status", "finalised");
+    .select("id, period_month, gross_earnings, net_pay")
+    .eq("run_status", "finalised")
+    .order("period_month", { ascending: false })
+    .order("id");
 
-  if (!slips?.length) return [];
+  return (slips ?? []).map((p) => ({
+    id: p.id,
+    periodMonth: p.period_month,
+    grossEarnings: Number(p.gross_earnings),
+    netPay: Number(p.net_pay),
+  }));
+}
 
-  const { data: runs } = await supabase
-    .from("payroll_runs")
-    .select("id, period_month")
-    .in("id", slips.map((s) => s.run_id));
+export type PayslipDocument = PayslipDocumentInput & { id: string; staffId: string };
 
-  const month = new Map((runs ?? []).map((r) => [r.id, r.period_month]));
+/**
+ * One salary slip, as the paper a member of staff is handed (0300).
+ *
+ * Every read goes through the caller's own policies: an administrator or
+ * accountant reads any slip, a member of staff their own **finalised** ones,
+ * and anybody else gets null -- which the page turns into a 404 that claims
+ * nothing, because under RLS "no such slip" and "not your slip" are the same
+ * answer. The month is the slip's own column (0300), not the run's: the run
+ * carries every salary structure in the college and is not theirs to read.
+ */
+export async function getPayslipDocument(payslipId: string): Promise<PayslipDocument | null> {
+  if (!/^[0-9a-f-]{36}$/i.test(payslipId)) return null;
+  const supabase = await createClient();
 
-  return slips
-    .map((p) => ({
-      id: p.id,
-      periodMonth: month.get(p.run_id) ?? "",
-      grossEarnings: Number(p.gross_earnings),
-      netPay: Number(p.net_pay),
-    }))
-    .sort((a, b) => b.periodMonth.localeCompare(a.periodMonth));
+  const { data: slip, error } = await supabase
+    .from("payslips")
+    .select(
+      "id, staff_id, run_status, period_month, working_days, employed_days, paid_days, lop_days, gross_earnings, total_deductions, net_pay, note",
+    )
+    .eq("id", payslipId)
+    .maybeSingle();
+  if (error) throw new Error(error.message);
+  if (!slip) return null;
+
+  const [ctx, linesRes, staffRes, directoryRes, paymentsRes, profileRes] = await Promise.all([
+    getUserContext(),
+    supabase
+      .from("payslip_lines")
+      .select("code, name, kind, amount, sort_order")
+      .eq("payslip_id", slip.id)
+      .order("sort_order"),
+    supabase
+      .from("staff")
+      .select("employee_code, designation, department")
+      .eq("id", slip.staff_id)
+      .maybeSingle(),
+    // The name through the staff directory, which every member may read
+    // (0184); people's own policies are not what this document is about.
+    supabase.rpc("staff_directory"),
+    supabase
+      .from("payroll_payments")
+      .select("amount, paid_on, method")
+      .eq("payslip_id", slip.id)
+      .order("paid_on"),
+    supabase.from("settings").select("value").eq("key", "school.profile").maybeSingle(),
+  ]);
+  if (linesRes.error) throw new Error(linesRes.error.message);
+
+  const name =
+    (directoryRes.data ?? []).find((d) => d.staff_id === slip.staff_id)?.full_name ?? "";
+  const profile = (profileRes.data?.value ?? {}) as Record<string, string | null>;
+  const payments = paymentsRes.data ?? [];
+  const lastPayment = [...payments].reverse().find((p) => Number(p.amount) > 0) ?? null;
+
+  return {
+    id: slip.id,
+    staffId: slip.staff_id,
+    school: {
+      name: ctx?.tenantName ?? "",
+      addressLine1: profile.address_line1 ?? null,
+      addressLine2: profile.address_line2 ?? null,
+      city: profile.city ?? null,
+      state: profile.state ?? null,
+      postalCode: profile.postal_code ?? null,
+      phone: profile.phone ?? null,
+      email: profile.email ?? null,
+      website: profile.website ?? null,
+    },
+    periodMonth: slip.period_month,
+    draft: slip.run_status !== "finalised",
+    staff: {
+      name,
+      employeeCode: staffRes.data?.employee_code ?? "",
+      designation: staffRes.data?.designation ?? "",
+      department: staffRes.data?.department ?? null,
+    },
+    days: {
+      working: Number(slip.working_days),
+      employed: Number(slip.employed_days),
+      paid: Number(slip.paid_days),
+      lop: Number(slip.lop_days),
+    },
+    earnings: (linesRes.data ?? [])
+      .filter((l) => l.kind === "earning")
+      .map((l) => ({ name: l.name, amount: Number(l.amount) })),
+    deductions: (linesRes.data ?? [])
+      .filter((l) => l.kind === "deduction")
+      .map((l) => ({ name: l.name, amount: Number(l.amount) })),
+    gross: Number(slip.gross_earnings),
+    totalDeductions: Number(slip.total_deductions),
+    net: Number(slip.net_pay),
+    paid: payments.reduce((sum, p) => sum + Number(p.amount), 0),
+    lastPaidOn: lastPayment?.paid_on ?? null,
+    lastMethod: lastPayment?.method ?? null,
+    note: slip.note,
+  };
 }

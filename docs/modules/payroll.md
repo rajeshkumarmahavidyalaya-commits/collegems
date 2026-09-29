@@ -341,3 +341,31 @@ admin logins. Accountant, teacher and self-service RLS on these tables is
 asserted structurally — the policies exist, and the ones that must be absent
 verifiably are — but no accountant has signed in to prove the separation of
 duties end to end. That is the first thing to test with a real second account.
+
+---
+
+## The salary slip (0300)
+
+`/payroll/slips/[payslipId]` shows one payslip as the paper a member of staff is
+handed. It has Print and a PDF (`src/lib/pdf/payslip.ts`). A slip from a draft
+run prints marked DRAFT. Links to it:
+
+- **the run register**: one icon per row, for the payroll office;
+- **My pay**: each month, for the person themselves.
+
+RLS is the only gate. The payroll office reads any slip; a member of staff reads
+only their own finalised slips.
+
+### A payslip did not know its own month
+
+Probed as the demo college's teacher: 2 finalised slips readable, all 12 lines,
+and **0 payroll runs**, because runs are readable only by admin and accountant.
+The month lives on the run, so My pay listed two salaries against blank months.
+
+Letting staff read the run would have been the wrong fix. `rules_snapshot` holds
+every salary structure in the college, and a policy grants whole rows. Instead
+`payslips.period_month` carries the month through the composite key
+`(tenant_id, run_id, run_status, period_month)`. A BEFORE INSERT trigger fills
+it in, because the payroll functions that insert payslips do not know the month.
+Probed: an insert sending 1999-01-01 is stored with the run's month, and an
+update to a wrong month is refused by the key.

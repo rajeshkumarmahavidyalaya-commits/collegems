@@ -28,6 +28,8 @@ import { isCurrentArrangement } from "@/lib/validations/arrangements";
 import { formatStopTime } from "@/lib/validations/transport-display";
 import { ArrangeButton, LibraryCardButton } from "@/components/people/arrange-controls";
 import { bedOptions, busStopOptions, giveBed, giveBusSeat, giveLibraryCard } from "../arrangement-actions";
+import { LetterButton } from "@/components/people/letter-button";
+import { findLetter, issueLetter } from "../../certificates/actions";
 
 export const metadata = { title: "Student" };
 
@@ -68,13 +70,17 @@ export default async function StudentDetailPage({
   // the office already is. Both reads are the modules' own invoker functions,
   // so RLS decides what comes back; "current" is the one shared definition.
   const supabase0 = await createClient();
-  const [busRes, bedRes, todayRes, canAssignBus, canAllocateBed, canGiveCard] = await Promise.all([
+  const [busRes, bedRes, todayRes, canAssignBus, canAllocateBed, canGiveCard, canIssueLetter, letter] = await Promise.all([
     supabase0.rpc("transport_for_student", { p_student_id: id }),
     supabase0.rpc("hostel_for_student", { p_student_id: id }),
     supabase0.rpc("mobile_today"),
     hasPermission("transport.assign"),
     hasPermission("hostel.allocate"),
     hasPermission("library.manage"),
+    hasPermission("certificates.issue"),
+    // The admission letter (0300), if one is live: the button then opens it
+    // rather than numbering a second.
+    findLetter("admission", id),
   ]);
   const schoolDay = (todayRes.data as string | null) ?? new Date().toISOString().slice(0, 10);
   const seat = (busRes.data ?? []).find((r) => isCurrentArrangement(r, schoolDay)) ?? null;
@@ -166,6 +172,13 @@ export default async function StudentDetailPage({
               {t("idCard.printOne")}
             </Link>
           </Button>
+          {canIssueLetter && (
+            <LetterButton
+              label="Admission letter"
+              existing={letter}
+              issue={issueLetter.bind(null, "admission", student.id)}
+            />
+          )}
           {/* The counter with this child already chosen (0290): the clerk was
               just looking at them, and should not have to type their name. */}
           {canCollectFees && (

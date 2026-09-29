@@ -4878,6 +4878,7 @@ export type Database = {
           net_pay: number
           note: string | null
           paid_days: number
+          period_month: string
           run_id: string
           run_status: string
           staff_id: string
@@ -4897,6 +4898,7 @@ export type Database = {
           net_pay?: number
           note?: string | null
           paid_days?: number
+          period_month?: string
           run_id: string
           run_status: string
           staff_id: string
@@ -4916,6 +4918,7 @@ export type Database = {
           net_pay?: number
           note?: string | null
           paid_days?: number
+          period_month?: string
           run_id?: string
           run_status?: string
           staff_id?: string

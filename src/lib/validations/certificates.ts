@@ -13,12 +13,19 @@ import type { Translator } from "@/lib/i18n/translate";
  * document with `{{father_name}}` printed on it.
  */
 
+// The CHECK on certificate_templates.kind is the list (0101); this is the
+// labels for it. `experience` and `service` (0245) were missing here for
+// fifty migrations and printed as the raw word on the register.
 export const CERTIFICATE_KINDS = [
   "transfer",
   "bonafide",
   "character",
   "study",
   "conduct",
+  "experience",
+  "service",
+  "admission",
+  "appointment",
   "custom",
 ] as const;
 export type CertificateKind = (typeof CERTIFICATE_KINDS)[number];
@@ -29,6 +36,10 @@ export const KIND_LABEL: Record<CertificateKind, string> = {
   character: "Character certificate",
   study: "Study certificate",
   conduct: "Conduct certificate",
+  experience: "Experience certificate",
+  service: "Service certificate",
+  admission: "Admission letter",
+  appointment: "Appointment letter",
   custom: "Other",
 };
 

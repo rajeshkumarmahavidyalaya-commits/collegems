@@ -388,3 +388,38 @@ The prefix was only corrected on sequences that had issued nothing:
 | `src/app/(app)/certificates/` | register, issue, printable document |
 | `tests/certificates/certificate-forms.test.ts` | the client half, without a database |
 | `tests/certificates/certificates-db.test.ts` | freezing, numbering and the transfer rules, through real RLS |
+
+---
+
+## Letters are certificates too (0300, 0301)
+
+An **admission letter** (`kind = 'admission'`, about a student) and an
+**appointment letter** (`kind = 'appointment'`, about a member of staff) are
+templates like any other: wording as data, a gapless serial, a frozen body, a
+PDF. Neither needed engine code. Each prints only values the database always has
+for that person; a child with no class leaves `{{class.label}}` standing and the
+preview names it, because an admission letter without a class is not one.
+
+They are issued in one click from the student's or staff member's record
+(`LetterButton`, drawn only for `certificates.issue`). Once issued, the button
+opens that letter. The engine refuses a second live letter, the same rule that
+applies to transfer, service and experience certificates.
+
+`certificate_preview` no longer warns about outstanding fees on an admission
+letter (0301). That warning is for a leaving document, and on a letter to a child
+admitted that morning it fired every time.
+
+### A college founded today had no certificates at all
+
+Every shipped template had been written as `insert ... select from tenants`,
+which reaches only colleges that already exist. `platform_start_school` never
+seeded any, and there is no template editor. So a college that signed up after
+0248 could issue nothing. The shipped wording is now data,
+`reference.certificate_template_defaults` (seven rows), and an AFTER INSERT
+trigger on `tenants` copies it into each new college. It never overwrites a
+college's own wording. Probed in a rolled-back transaction: a new college gets 7
+templates.
+
+`CERTIFICATE_KINDS` in `certificates.ts` was also missing `experience` and
+`service`, so the register printed the raw word for them. A test now compares
+the TypeScript list with the CHECK.
