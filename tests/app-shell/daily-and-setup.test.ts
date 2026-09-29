@@ -25,7 +25,12 @@ describe("the daily menu and the setup menu", () => {
     const { daily, setup } = splitSetup(navForRole("admin"));
     const everyday = daily.reduce((n, g) => n + g.items.length, 0);
     expect(setup.length).toBeGreaterThanOrEqual(15);
-    expect(everyday).toBeLessThanOrEqual(40);
+    // 42, not 40: the school calendar (0297) and class tests (0304) are
+    // everyday screens a family reaches too, so neither can fold into Setup
+    // (the next test forbids it), and hiding a daily screen there to meet a
+    // count would make the menu worse, not shorter. Raise this only for a
+    // screen that is genuinely used every day, and say which.
+    expect(everyday).toBeLessThanOrEqual(42);
   });
 
   it("never marks a screen a family uses as setup", () => {

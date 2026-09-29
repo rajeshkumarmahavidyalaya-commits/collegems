@@ -15,12 +15,19 @@ export default async function MarksPage({
 }) {
   const { examId, paperId } = await params;
 
-  const [exam, papers, rows, canGrade] = await Promise.all([
+  // The class list comes from teaching_roster (0304), which refuses anybody who
+  // does not teach this paper, in a sentence. That sentence is shown, rather
+  // than an empty sheet that reads like an empty class.
+  const [exam, papers, sheet, canGrade] = await Promise.all([
     getExam(examId),
     listPapers(examId),
-    getMarkSheet(paperId),
+    getMarkSheet(paperId).then(
+      (rows) => ({ rows, refused: null as string | null }),
+      (error: Error) => ({ rows: [], refused: error.message }),
+    ),
     hasPermission("exams.grade"),
   ]);
+  const rows = sheet.rows;
 
   const paper = papers.find((p) => p.id === paperId);
   if (!exam || !paper) notFound();
@@ -52,15 +59,22 @@ export default async function MarksPage({
         </Button>
       </div>
 
-      <MarksGrid
-        examSubjectId={paper.id}
-        maxMarks={paper.maxMarks}
-        passMarks={paper.passMarks}
-        components={paper.components}
-        rows={rows}
-        canEdit={canGrade}
-        isPublished={exam.status === "published"}
-      />
+      {sheet.refused ? (
+        <p role="alert" className="rounded-md border border-border bg-card p-4 text-sm">
+          {sheet.refused} Marks for a paper are entered by the teacher of that subject in that class,
+          its class teacher, or the exams office.
+        </p>
+      ) : (
+        <MarksGrid
+          examSubjectId={paper.id}
+          maxMarks={paper.maxMarks}
+          passMarks={paper.passMarks}
+          components={paper.components}
+          rows={rows}
+          canEdit={canGrade}
+          isPublished={exam.status === "published"}
+        />
+      )}
     </div>
   );
 }

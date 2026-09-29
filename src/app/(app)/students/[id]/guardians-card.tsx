@@ -139,7 +139,7 @@ export function GuardiansCard({
   }
 
   return (
-    <Card>
+    <Card id="guardians" className="scroll-mt-20">
       <CardHeader className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <CardTitle>Guardians</CardTitle>

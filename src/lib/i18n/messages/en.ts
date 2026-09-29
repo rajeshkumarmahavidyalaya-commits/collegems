@@ -60,6 +60,7 @@ export const en = {
   "nav.scanCard": "Scan a card",
   "nav.biometric": "Attendance readers",
   "nav.onlineTests": "Online tests",
+  "nav.classTests": "Class tests",
   "nav.fees": "Fees",
   "nav.familyFees": "Fees",
   "nav.accounts": "Accounts",

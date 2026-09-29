@@ -393,3 +393,14 @@ row shows a running total once every part is filled in.
   (`0299`): a teacher probed on `0297` saw their own class beside a
   class-less row of 272 children they do not teach, which is rule 4's
   invoker-over-row-ownership lie. The administrator's 96 rows did not move.
+
+## A subject teacher's marks sheet (0304)
+
+`exams_mark_sheet` now takes its class list from `teaching_roster`. Before this,
+a teacher who taught a subject in a class they were not class teacher of saw an
+empty sheet (probed: roll 25, sheet 0), because the enrolments policy only
+covers a teacher's own class. Somebody who does not teach the paper now gets a
+sentence instead of an empty sheet. See `docs/modules/class-tests.md`.
+
+Behaviour and skills grades (0303) print on the report card beside the marks.
+See `docs/modules/behaviour.md`.

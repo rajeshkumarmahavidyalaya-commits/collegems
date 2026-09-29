@@ -290,6 +290,31 @@ function writeCard(sheet: Sheet, doc: ReportCardDocument): void {
     },
   ]);
 
+  // Behaviour and skills (0303), in two columns: a trait and its letter.
+  if (card.behaviour && card.behaviour.length > 0) {
+    sheet.rule(14, 10);
+    sheet.row([{ text: "Behaviour and skills", width: 1 }], { size: 9, tone: "quiet" });
+    const list = card.behaviour;
+    for (let i = 0; i < list.length; i += 2) {
+      const a = list[i];
+      const b = list[i + 1];
+      sheet.row(
+        [
+          { text: a.name, width: 0.4 },
+          { text: a.grade, width: 0.1, align: "end" },
+          { text: b ? b.name : "", width: 0.4 },
+          { text: b ? b.grade : "", width: 0.1, align: "end" },
+        ],
+        { size: 10 },
+      );
+    }
+    sheet.text("A Outstanding · B Very good · C Good · D Fair · E Needs improvement", {
+      size: 8.5,
+      tone: "quiet",
+      above: 4,
+    });
+  }
+
   if (card.remark) {
     sheet.rule(14, 10);
     sheet.row([{ text: "Class teacher's remark", width: 1 }], { size: 9, tone: "quiet" });

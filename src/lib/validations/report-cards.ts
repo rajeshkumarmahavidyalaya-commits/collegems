@@ -100,6 +100,14 @@ export const reportCardSchema = z.object({
       updated_at: z.string().nullable(),
     })
     .nullable(),
+  /**
+   * Behaviour and skills (0303). Not part of the SQL card: attached by the
+   * loaders from behaviour_ratings' own policies, so a family sees their
+   * child's grades only once the exam is published.
+   */
+  behaviour: z
+    .array(z.object({ name: z.string(), kind: z.string(), grade: z.string() }))
+    .optional(),
 });
 export type ReportCard = z.infer<typeof reportCardSchema>;
 

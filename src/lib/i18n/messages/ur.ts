@@ -43,6 +43,7 @@ export const ur: Messages = {
   "nav.scanCard": "کارڈ اسکین کریں",
   "nav.biometric": "حاضری ریڈر",
   "nav.onlineTests": "آن لائن ٹیسٹ",
+  "nav.classTests": "جماعتی ٹیسٹ",
   "nav.fees": "فیس",
   "nav.familyFees": "فیس",
   "nav.accounts": "حسابات",

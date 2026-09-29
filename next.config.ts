@@ -54,6 +54,7 @@ const nextConfig: NextConfig = {
     "/(app)/exams/[examId]/report-cards/pdf": ["./src/lib/pdf/fonts/**"],
     "/(app)/fees/invoices/[invoiceId]/pdf": ["./src/lib/pdf/fonts/**"],
     "/(app)/fees/receipts/[entryId]/pdf": ["./src/lib/pdf/fonts/**"],
+    "/(app)/payroll/slips/[payslipId]/pdf": ["./src/lib/pdf/fonts/**"],
     "/(app)/report-card/[studentId]/[examId]/pdf": ["./src/lib/pdf/fonts/**"],
     "/(app)/staff/[id]/id-card/pdf": ["./src/lib/pdf/fonts/**"],
     "/(app)/staff/id-cards/pdf": ["./src/lib/pdf/fonts/**"],

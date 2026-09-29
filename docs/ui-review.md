@@ -935,3 +935,25 @@ imports nothing from `@/app` (rule 8's split).
 `tests/people/records-as-hub.test.ts` pins it. It was checked by planting two
 of the defects this found back in: the manifest's `studentId` filter and the
 edit dialog's empty fee head. Both were caught.
+
+## After an admission, and setup order (the eSkooly comparison)
+
+- **The admitted screen** (`/students/[id]/admitted`). Saving a new admission
+  lands here instead of on the record. It shows each next step with whether it
+  is done:
+  - the admission letter, issued in one click;
+  - the first fee;
+  - the family's login (invite in one click, through the Team screen's own
+    `invite()`);
+  - a bus seat and a hostel bed;
+  - the ID card.
+  Each step is drawn only for the permission its write needs.
+- **Setup in build order** (0302). The first-run checklist and the collapsed
+  Setup menu both follow the order a college is built in: details, classes,
+  subjects, fees, staff, students, timetable, logins. Fees now come before
+  students, so the admission fee has something to bill. Two steps are new: staff
+  records and the timetable. `SETUP_ORDER` in `nav-config.ts` holds the menu
+  order; an entry not listed there keeps its place after the listed ones.
+- The super admin's everyday menu is now 41 entries, and the guard's cap went
+  from 40 to 42. The calendar and class tests are daily screens that families
+  also use, so neither can fold into Setup.

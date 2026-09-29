@@ -43,6 +43,7 @@ export const hi: Messages = {
   "nav.scanCard": "कार्ड स्कैन करें",
   "nav.biometric": "उपस्थिति रीडर",
   "nav.onlineTests": "ऑनलाइन परीक्षा",
+  "nav.classTests": "कक्षा परीक्षाएँ",
   "nav.fees": "शुल्क",
   "nav.familyFees": "शुल्क",
   "nav.accounts": "लेखा",

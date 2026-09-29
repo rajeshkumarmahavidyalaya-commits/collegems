@@ -323,6 +323,16 @@ export const NAV_GROUPS: NavGroup[] = [
         icon: FileQuestion,
         roles: ["admin", "teacher", "parent", "student"],
       },
+      // Class tests (0304): the subject teacher sets and marks them, the family
+      // reads their own child's marks. Not an accountant or a librarian --
+      // neither is a candidate for exams.grade, and the policies give them no row.
+      {
+        title: "Class tests",
+        messageKey: "nav.classTests",
+        href: "/class-tests",
+        icon: ClipboardCheck,
+        roles: ["admin", "teacher", "parent", "student"],
+      },
       // Staff only. The page reads nothing -- it turns a code into an address
       // and the record page decides -- but a family has no card to scan, and a
       // student or guardian scanning their own would only arrive where the menu
@@ -799,10 +809,50 @@ export function navForRole(roleCode: string): NavGroup[] {
  * Takes the already-filtered tree -- `navForRole` stays the only filter (its
  * two call sites are guarded) -- and moves nothing between roles.
  */
+/**
+ * The order a college sets itself up in, which is the order the Setup section
+ * reads (the eSkooly comparison: its menu runs General settings, Classes,
+ * Subjects, Students, Employees, Fees...). The college first, then the year and
+ * its classes, then what they pay, then the people, then the rest. An entry not
+ * listed here keeps its place after the listed ones, so adding a setup screen
+ * cannot make one disappear -- only land at the end until somebody places it.
+ */
+export const SETUP_ORDER: readonly string[] = [
+  "/settings/school",
+  "/academics/sessions",
+  "/academics",
+  "/academics/electives",
+  "/fees/setup",
+  "/fees/instalments",
+  "/fees/concessions",
+  "/hr/salary",
+  "/students/import",
+  "/settings/team",
+  "/settings/permissions",
+  "/transport/assignments",
+  "/students/id-cards",
+  "/staff/id-cards",
+  "/promotion",
+  "/notifications/channels",
+  "/notifications/schedules",
+  "/notifications/log",
+  "/hr/biometric",
+  "/settings/plan",
+];
+
 export function splitSetup(groups: NavGroup[]): { daily: NavGroup[]; setup: NavItem[] } {
   const daily = groups
     .map((group) => ({ ...group, items: group.items.filter((item) => !item.setup) }))
     .filter((group) => group.items.length > 0);
-  const setup = groups.flatMap((group) => group.items.filter((item) => item.setup));
+  const rank = (href: string) => {
+    const i = SETUP_ORDER.indexOf(href);
+    return i === -1 ? SETUP_ORDER.length : i;
+  };
+  // A stable sort: unlisted entries keep the menu's own order among themselves.
+  const setup = groups
+    .flatMap((group) => group.items.filter((item) => item.setup))
+    .map((item, i) => ({ item, i }))
+    .sort((a, b) => rank(a.item.href) - rank(b.item.href) || a.i - b.i)
+    .map(({ item }) => item);
   return { daily, setup };
 }

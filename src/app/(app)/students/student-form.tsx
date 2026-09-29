@@ -123,7 +123,10 @@ export function StudentForm({
       router.refresh();
       return;
     }
-    router.push(`/students/${result.data.id}`);
+    // A new admission ends on the admitted screen (0300's round): the letter,
+    // the first fee, the family's login and the bus, in one place. An edit
+    // goes back to the record it came from.
+    router.push(isEdit ? `/students/${result.data.id}` : `/students/${result.data.id}/admitted`);
     router.refresh();
   }
 

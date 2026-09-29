@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowLeft, CalendarDays, LayoutGrid, MessageSquare, ScrollText, Scale } from "lucide-react";
+import { ArrowLeft, CalendarDays, LayoutGrid, MessageSquare, ScrollText, Scale, Star } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { hasPermission } from "@/lib/auth/permissions";
@@ -93,6 +93,12 @@ export default async function ExamPage({ params }: { params: Promise<{ examId: s
             <Link href={`/exams/${examId}/remarks`}>
               <MessageSquare className="size-4" aria-hidden="true" />
               Remarks
+            </Link>
+          </Button>
+          <Button asChild variant="outline">
+            <Link href={`/exams/${examId}/behaviour`}>
+              <Star className="size-4" aria-hidden="true" />
+              Behaviour &amp; skills
             </Link>
           </Button>
           <Button asChild variant="outline">

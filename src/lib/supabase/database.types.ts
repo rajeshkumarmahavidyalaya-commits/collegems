@@ -264,6 +264,125 @@ export type Database = {
           },
         ]
       }
+      behaviour_ratings: {
+        Row: {
+          created_at: string
+          exam_id: string
+          exam_status: string
+          grade: string
+          id: string
+          rated_by: string | null
+          session_id: string
+          student_id: string
+          tenant_id: string
+          trait_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          exam_id: string
+          exam_status?: string
+          grade: string
+          id?: string
+          rated_by?: string | null
+          session_id: string
+          student_id: string
+          tenant_id: string
+          trait_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          exam_id?: string
+          exam_status?: string
+          grade?: string
+          id?: string
+          rated_by?: string | null
+          session_id?: string
+          student_id?: string
+          tenant_id?: string
+          trait_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "behaviour_ratings_exam_fkey"
+            columns: ["tenant_id", "exam_id", "exam_status"]
+            isOneToOne: false
+            referencedRelation: "exams"
+            referencedColumns: ["tenant_id", "id", "status"]
+          },
+          {
+            foreignKeyName: "behaviour_ratings_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "academic_sessions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "behaviour_ratings_student_fkey"
+            columns: ["tenant_id", "student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["tenant_id", "id"]
+          },
+          {
+            foreignKeyName: "behaviour_ratings_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "behaviour_ratings_trait_fkey"
+            columns: ["tenant_id", "trait_id"]
+            isOneToOne: false
+            referencedRelation: "behaviour_traits"
+            referencedColumns: ["tenant_id", "id"]
+          },
+        ]
+      }
+      behaviour_traits: {
+        Row: {
+          created_at: string
+          id: string
+          is_active: boolean
+          kind: string
+          name: string
+          sort: number
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          kind: string
+          name: string
+          sort?: number
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          kind?: string
+          name?: string
+          sort?: number
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "behaviour_traits_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       biometric_devices: {
         Row: {
           created_at: string
@@ -779,6 +898,134 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "class_rooms_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      class_test_marks: {
+        Row: {
+          absent: boolean
+          created_at: string
+          entered_by: string | null
+          id: string
+          marks: number | null
+          max_marks: number
+          session_id: string
+          student_id: string
+          tenant_id: string
+          test_id: string
+          updated_at: string
+        }
+        Insert: {
+          absent?: boolean
+          created_at?: string
+          entered_by?: string | null
+          id?: string
+          marks?: number | null
+          max_marks: number
+          session_id: string
+          student_id: string
+          tenant_id: string
+          test_id: string
+          updated_at?: string
+        }
+        Update: {
+          absent?: boolean
+          created_at?: string
+          entered_by?: string | null
+          id?: string
+          marks?: number | null
+          max_marks?: number
+          session_id?: string
+          student_id?: string
+          tenant_id?: string
+          test_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "class_test_marks_student_fkey"
+            columns: ["tenant_id", "student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["tenant_id", "id"]
+          },
+          {
+            foreignKeyName: "class_test_marks_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "class_test_marks_test_fkey"
+            columns: ["tenant_id", "test_id", "max_marks", "session_id"]
+            isOneToOne: false
+            referencedRelation: "class_tests"
+            referencedColumns: ["tenant_id", "id", "max_marks", "session_id"]
+          },
+        ]
+      }
+      class_tests: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          held_on: string
+          id: string
+          max_marks: number
+          section_id: string
+          session_id: string
+          subject_id: string
+          tenant_id: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          held_on: string
+          id?: string
+          max_marks: number
+          section_id: string
+          session_id: string
+          subject_id: string
+          tenant_id: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          held_on?: string
+          id?: string
+          max_marks?: number
+          section_id?: string
+          session_id?: string
+          subject_id?: string
+          tenant_id?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "class_tests_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "academic_sessions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "class_tests_taught_fkey"
+            columns: ["tenant_id", "session_id", "section_id", "subject_id"]
+            isOneToOne: false
+            referencedRelation: "section_subjects"
+            referencedColumns: ["tenant_id", "session_id", "section_id", "subject_id"]
+          },
+          {
+            foreignKeyName: "class_tests_tenant_id_fkey"
             columns: ["tenant_id"]
             isOneToOne: false
             referencedRelation: "tenants"
@@ -8390,6 +8637,35 @@ export type Database = {
           status: string
         }[]
       }
+      class_test_create: {
+        Args: {
+          p_held_on: string
+          p_max_marks: number
+          p_section_id: string
+          p_subject_id: string
+          p_title: string
+        }
+        Returns: string
+      }
+      class_test_enrolled: {
+        Args: { p_student_id: string; p_test_id: string }
+        Returns: boolean
+      }
+      class_test_i_teach: {
+        Args: { p_section_id: string; p_session_id: string; p_subject_id: string }
+        Returns: boolean
+      }
+      class_test_sheet: {
+        Args: { p_test_id: string }
+        Returns: {
+          absent: boolean
+          admission_number: string
+          marks: number
+          roll_number: string
+          student_id: string
+          student_name: string
+        }[]
+      }
       concession_award: {
         Args: {
           p_concession_id: string
@@ -11574,6 +11850,15 @@ export type Database = {
           session_name: string
           subject_id: string
           teacher_name: string
+        }[]
+      }
+      teaching_roster: {
+        Args: { p_section_id: string; p_subject_id?: string }
+        Returns: {
+          admission_number: string
+          roll_number: string
+          student_id: string
+          student_name: string
         }[]
       }
       team_logins: {

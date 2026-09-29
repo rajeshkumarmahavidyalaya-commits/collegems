@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowLeft, Download, FileText, MessageSquare } from "lucide-react";
+import { ArrowLeft, Download, FileText, MessageSquare, Star } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { hasPermission } from "@/lib/auth/permissions";
 import { listSections } from "../../../students/actions";
@@ -66,6 +66,12 @@ export default async function ReportCardsPage({
             <Link href={`/exams/${examId}/remarks`}>
               <MessageSquare className="size-4" aria-hidden="true" />
               Remarks
+            </Link>
+          </Button>
+          <Button asChild variant="outline">
+            <Link href={`/exams/${examId}/behaviour${chosen ? `?section=${chosen}` : ""}`}>
+              <Star className="size-4" aria-hidden="true" />
+              Behaviour &amp; skills
             </Link>
           </Button>
           <Button asChild variant="outline">

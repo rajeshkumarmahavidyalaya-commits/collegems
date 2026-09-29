@@ -1,4 +1,4 @@
-import { readFileSync } from "node:fs";
+import { readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { SETUP_STEPS, parseSetupProgress, setupSentence } from "@/lib/validations/setup";
@@ -8,15 +8,25 @@ import { SETUP_STEPS, parseSetupProgress, setupSentence } from "@/lib/validation
  * must hold to its terms: tenant filtered by hand in every step, each step
  * gated on a permission, booleans out, and no anonymous caller.
  */
-const SQL = readFileSync(
-  join(process.cwd(), "supabase/migrations/0284_what_is_left_before_a_college_is_ready.sql"),
-  "utf8",
-).replace(/--.*$/gm, "");
+// The latest definition, not 0284's: migrations are immutable and `create or
+// replace` is how they change, so a test pinned to the first file stops
+// checking the function the day it is redefined (0302 did).
+const DIR = join(process.cwd(), "supabase/migrations");
+const LATEST = readdirSync(DIR)
+  .filter((f) => f.endsWith(".sql"))
+  .sort()
+  .filter((f) => /create or replace function public\.setup_progress\(\)/.test(readFileSync(join(DIR, f), "utf8")))
+  .pop()!;
+const SQL = readFileSync(join(DIR, LATEST), "utf8").replace(/--.*$/gm, "");
 const body = SQL.split("$function$")[1];
 
 describe("setup_progress keeps to the definer's terms", () => {
   it("filters every table it reads by the caller's tenant", () => {
-    const reads = [...body.matchAll(/from public\.(\w+) (\w+)\s+where ([^)]*)/g)];
+    // The clause runs to the first unbalanced ")" or ";". It used to stop at
+    // the first ")" of any kind, so 0302's `where up.id = auth.uid() and
+    // up.tenant_id = v_tenant` was cut at `auth.uid(` and reported a correct
+    // filter as missing: the instrument, not the function.
+    const reads = [...body.matchAll(/from public\.(\w+) (\w+)\s+where ((?:[^();]|\([^()]*\))*)/g)];
     expect(reads.length).toBeGreaterThanOrEqual(8);
     for (const [, table, alias, where] of reads) {
       expect(where, table).toContain(`${alias}.tenant_id = v_tenant`);
@@ -26,13 +36,17 @@ describe("setup_progress keeps to the definer's terms", () => {
   it("gates each step on a permission and returns only booleans", () => {
     const steps = [...body.matchAll(/'key', '(\w+)', 'done',/g)].map((m) => m[1]);
     expect(steps.sort()).toEqual(Object.keys(SETUP_STEPS).sort());
-    expect(body.match(/role_has_permission\('/g)?.length).toBe(5);
+    // One gate per group of steps: settings, academics (classes and
+    // subjects), fees, staff, students, academics again (timetable), users.
+    expect(body.match(/role_has_permission\('/g)?.length).toBe(7);
     expect(body).not.toMatch(/jsonb_agg|array_agg|'id'/);
   });
 
   it("is closed to anonymous callers", () => {
     expect(SQL).toMatch(/security definer/);
-    expect(SQL).toMatch(/revoke all on function public\.setup_progress\(\) from public, anon;/);
+    // The revoke lives in 0284; `create or replace` keeps it.
+    const first = readFileSync(join(DIR, "0284_what_is_left_before_a_college_is_ready.sql"), "utf8");
+    expect(first).toMatch(/revoke all on function public\.setup_progress\(\) from public, anon;/);
   });
 });
 

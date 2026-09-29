@@ -235,6 +235,33 @@ export function ReportCardSheet({
           />
         </dl>
 
+        {card.behaviour && card.behaviour.length > 0 ? (
+          <div data-print="keep" className="border-t border-border py-4">
+            <h3 className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+              Behaviour and skills
+            </h3>
+            <div className="mt-2 grid gap-x-8 gap-y-1 sm:grid-cols-2">
+              {(["behaviour", "skill"] as const).map((kind) => {
+                const rows = card.behaviour!.filter((b) => b.kind === kind);
+                if (rows.length === 0) return null;
+                return (
+                  <dl key={kind} className="grid grid-cols-[1fr_auto] gap-x-4 gap-y-1 text-sm">
+                    {rows.map((b) => (
+                      <div key={b.name} className="contents">
+                        <dt>{b.name}</dt>
+                        <dd className="text-end font-mono font-medium">{b.grade}</dd>
+                      </div>
+                    ))}
+                  </dl>
+                );
+              })}
+            </div>
+            <p className="mt-2 text-xs text-muted-foreground">
+              A Outstanding · B Very good · C Good · D Fair · E Needs improvement
+            </p>
+          </div>
+        ) : null}
+
         {card.remark ? (
           <div data-print="keep" className="border-t border-border pt-4">
             <h3 className="text-xs font-medium uppercase tracking-wide text-muted-foreground">

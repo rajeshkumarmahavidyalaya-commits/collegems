@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { parseCard, remarkSchema, type ReportCard } from "@/lib/validations/report-cards";
 import type { ActionResult } from "../library/actions";
+import { behaviourForCards } from "./behaviour-actions";
 
 function fail(message: string): ActionResult<never> {
   return { ok: false, error: message };
@@ -38,6 +39,11 @@ export async function getSectionCards(
     const card = parseCard(row);
     if (card) cards.push(card);
   }
+  const behaviour = await behaviourForCards(
+    examId,
+    cards.map((c) => c.student.id),
+  );
+  for (const card of cards) card.behaviour = behaviour[card.student.id] ?? [];
   return { cards, unreadable: rows.length - cards.length };
 }
 
@@ -54,7 +60,9 @@ export async function getStudentCard(
   // "These results have not been published yet") is not a crash — it is the
   // answer. The caller renders it.
   if (error) return null;
-  return parseCard(data);
+  const card = parseCard(data);
+  if (card) card.behaviour = (await behaviourForCards(examId, [card.student.id]))[card.student.id] ?? [];
+  return card;
 }
 
 export type PublishedResultRow = {

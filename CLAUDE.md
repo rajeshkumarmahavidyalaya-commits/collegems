@@ -1099,6 +1099,26 @@ college, either a default row or `ADMINISTRATOR_ALONE` with a reason. **A
 default written as a literal list inside a function is a default nobody
 updates.**
 
+**It happened again with certificates (`0300`), one level lower still.** Every
+template had been shipped as `insert ... select from tenants`. That reaches the
+colleges that exist when the migration runs and never the ones founded later,
+so a college that signed up after `0248` could issue no certificate at all, and
+there is no template editor. The shipped wording is now
+`reference.certificate_template_defaults`, copied into each new college by an
+AFTER INSERT trigger on `tenants`. The behaviour traits (`0303`) followed the
+same shape from the start. **A default seeded by a migration is a default for
+yesterday's colleges.**
+
+**And a subject teacher could not read the class they teach (`0304`).** The
+only teacher policy on `enrolments` is keyed on the class teacher. So
+`exams_mark_sheet`, an invoker, showed a subject teacher an empty sheet for
+every other class they taught: roll 25, sheet 0. Widening that policy would
+have brought back `0201`'s fabricated 0% attendance coverage, because
+`attendance_records` stays class-teacher-only. So the narrower caller gets their
+own question instead: `teaching_roster()`, a definer that answers only somebody
+who teaches that subject there, filters by tenant by hand, returns four columns
+and refuses anybody else in a sentence. See `docs/modules/class-tests.md`.
+
 #### …and the sweep run the other way finds the screen that asked for nothing
 
 The two checks above ask whether a permission is used and whether it is used for

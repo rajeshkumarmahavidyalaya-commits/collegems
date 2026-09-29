@@ -45,14 +45,21 @@ export async function SetupChecklist() {
       </CardHeader>
       <CardContent>
         <ol className="flex flex-col divide-y divide-border">
-          {steps.map((s) => {
+          {steps.map((s, i) => {
             const step = SETUP_STEPS[s.key];
             return (
               <li key={s.key} className="flex items-center gap-3 py-2.5">
                 {s.done ? (
                   <CircleCheck className="size-5 shrink-0 text-primary" aria-hidden="true" />
                 ) : (
-                  <Circle className="size-5 shrink-0 text-muted-foreground" aria-hidden="true" />
+                  // The step's number: the list is the order a college is
+                  // built in (0302), so it reads as a path, not a pile.
+                  <span className="relative flex size-5 shrink-0 items-center justify-center">
+                    <Circle className="absolute size-5 text-muted-foreground" aria-hidden="true" />
+                    <span className="text-[10px] font-medium text-muted-foreground" aria-hidden="true">
+                      {i + 1}
+                    </span>
+                  </span>
                 )}
                 <div className="min-w-0 flex-1">
                   <p className={s.done ? "text-sm text-muted-foreground line-through" : "text-sm font-medium"}>
