@@ -592,10 +592,8 @@ export const en = {
   "renewals.blurb.hostel": "Every child with a bed this year, proposed into the same room.",
 
   // The fee bill and receipt as **files** — `src/lib/pdf/invoice.ts` and
-  // `receipt.ts`. Translated into Hindi once the renderer gained a Devanagari
-  // face (see `src/lib/pdf/font.ts`). Urdu is translated too and a Urdu PDF is
-  // still refused (Arabic script, right to left), so those keys wait for the
-  // renderer rather than for a translator.
+  // `receipt.ts`, in all three languages: the renderer draws Devanagari and
+  // Arabic script, Urdu right to left (see `src/lib/pdf/typeset.ts`).
   "pdf.invoice.heading": "Fee invoice",
   "pdf.invoice.billedTo": "Billed to",
   "pdf.invoice.charges": "Charges",
@@ -884,6 +882,61 @@ export const en = {
   "letters.issued": "{label} {serial} issued",
   "classTests.recordCard": "The most recent marks from weekly and unit tests.",
   "letters.appointment": "Appointment letter",
+
+  // The report card, on screen and as a file; and the page count on every PDF.
+  "pdf.pageOf": "Page {page} of {total}",
+  "reportCard.aria": "Report card for {name}",
+  "reportCard.provisional": "Provisional.",
+  "reportCard.provisionalScreen": "These results have not been published, so they can still change and no position has been worked out. Do not hand this to a parent.",
+  "reportCard.provisionalStamp": "PROVISIONAL",
+  "reportCard.provisionalPdf": "These results have not been published. They can still change, and no position has been worked out. This is not a card to give to a family.",
+  "reportCard.session": "Session {name}",
+  "reportCard.student": "Student",
+  "reportCard.class": "Class",
+  "reportCard.roll": "Roll number",
+  "reportCard.admission": "Admission number",
+  "reportCard.caption": "Subject-wise marks for {name} in {exam}",
+  "reportCard.subject": "Subject",
+  "reportCard.marks": "Marks",
+  "reportCard.outOf": "Out of",
+  "reportCard.passMark": "Pass mark",
+  "reportCard.result": "Result",
+  "reportCard.noPapers": "No papers were recorded for this exam.",
+  "reportCard.additional": "(additional)",
+  "reportCard.absent": "Absent",
+  "reportCard.pass": "Pass",
+  "reportCard.fail": "Fail",
+  "reportCard.total": "Total",
+  "reportCard.totalValue": "{obtained} of {max}",
+  "reportCard.percentage": "Percentage",
+  "reportCard.grade": "Grade",
+  "reportCard.notGraded": "Not graded",
+  "reportCard.position": "Position",
+  "reportCard.noRank": "This school does not rank",
+  "reportCard.rankLater": "Positions are worked out when results are published.",
+  "reportCard.rank.section": "{position} of {size} in the section",
+  "reportCard.rank.class_level": "{position} of {size} in the class",
+  "reportCard.rank.school": "{position} of {size} in the school",
+  "reportCard.rank.cohort": "{position} of {size} in the cohort",
+  "reportCard.attendance": "Attendance",
+  "reportCard.attendanceDays": "{present} of {marked} days",
+  "reportCard.attendanceNone": "No register was taken in this period",
+  "reportCard.attendanceNotRecorded": "Not recorded for this card",
+  "reportCard.presentPercent": "{percent}% present",
+  "reportCard.upTo": "up to {date}",
+  "reportCard.noteNotCounted": "Not counted towards the aggregate",
+  "reportCard.noteGrace.one": "Includes {count} grace mark",
+  "reportCard.noteGrace.other": "Includes {count} grace marks",
+  "reportCard.behaviour": "Behaviour and skills",
+  "reportCard.remark": "Class teacher's remark",
+  "reportCard.classTeacher": "Class teacher: {name}",
+  "reportCard.classTeacherNone": "Class teacher not recorded",
+  "reportCard.classTeacherSign": "Class teacher",
+  "reportCard.published": "Published {date}",
+  "reportCard.publishedBare": "Published",
+  "reportCard.notPublished": "Not yet published",
+  "reportCard.footerProvisional": "PROVISIONAL — not published",
+  "reportCard.setTitle": "Report cards",
 } as const;
 
 export type MessageKey = keyof typeof en;

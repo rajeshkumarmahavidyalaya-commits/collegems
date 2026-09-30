@@ -1,4 +1,5 @@
 import { Sheet, pdfFileName } from "./document";
+import { RTL_LETTER } from "./font";
 
 /**
  * A certificate, as a file.
@@ -48,7 +49,10 @@ export function certificateFileName(serialNo: string): string {
 }
 
 export async function renderCertificate(doc: CertificateDocument): Promise<Uint8Array> {
-  const sheet = await Sheet.create();
+  // The certificate is in the school's own wording, not the reader's language,
+  // so its direction follows the body: an Urdu template is laid out right to
+  // left for everybody, an English one left to right for everybody.
+  const sheet = await Sheet.create({ direction: RTL_LETTER.test(doc.body) ? "rtl" : "ltr" });
   const school = doc.snapshot["school.name"]?.trim() || "";
   const address = doc.snapshot["school.address"]?.trim() || "";
 

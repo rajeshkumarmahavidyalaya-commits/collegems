@@ -1,3 +1,4 @@
+import { directionOf } from "@/lib/i18n/config";
 import { getIdCards } from "../actions";
 import { hasPermission } from "@/lib/auth/permissions";
 import { getT, getLocale } from "@/lib/i18n/server";
@@ -59,7 +60,7 @@ export async function GET(request: Request) {
       }),
       result.school,
     );
-    const bytes = await renderIdCards(docs);
+    const bytes = await renderIdCards(docs, directionOf(t.locale));
     const label = result.cards[0].className ?? "class";
 
     return new Response(Buffer.from(bytes), {

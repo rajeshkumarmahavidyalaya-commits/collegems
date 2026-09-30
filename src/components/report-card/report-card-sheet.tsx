@@ -40,7 +40,7 @@ export function ReportCardSheet({
   // built from it rather than fetched, so the component stays pure.
   const t = createTranslator(locale);
   const papers = card.papers ?? [];
-  const rank = rankSentence(card.rank);
+  const rank = rankSentence(card.rank, t);
   const attendance = attendancePercent(card.attendance);
   const failed = card.totals.result === "fail";
   const incomplete = card.totals.result === "incomplete";
@@ -49,7 +49,7 @@ export function ReportCardSheet({
     <article
       data-print="page"
       className="rounded-lg border border-border bg-card text-card-foreground shadow-sm"
-      aria-label={`Report card for ${card.student.name}`}
+      aria-label={t("reportCard.aria", { name: card.student.name })}
     >
       <div data-print="sheet" className="p-6 sm:p-8">
         {card.provisional ? (
@@ -62,9 +62,8 @@ export function ReportCardSheet({
               className="mt-0.5 size-4 shrink-0 text-[color:var(--color-accent)]"
             />
             <p className="text-sm">
-              <span className="font-semibold">Provisional.</span> These results have not been
-              published, so they can still change and no position has been worked out. Do not hand
-              this to a parent.
+              <span className="font-semibold">{t("reportCard.provisional")}</span>{" "}
+              {t("reportCard.provisionalScreen")}
             </p>
           </div>
         ) : null}
@@ -72,38 +71,38 @@ export function ReportCardSheet({
         <header className="border-b border-border pb-4">
           <h2 className="font-mono text-lg font-semibold tracking-tight">{card.school.name}</h2>
           <p className="text-sm text-muted-foreground">
-            {card.exam.name} · Session {card.session.name}
+            {card.exam.name} · {t("reportCard.session", { name: card.session.name })}
           </p>
         </header>
 
         <dl className="grid grid-cols-2 gap-x-6 gap-y-3 border-b border-border py-4 sm:grid-cols-4">
-          <Field label="Student" value={card.student.name} />
-          <Field label="Class" value={card.student.section} />
-          <Field label="Roll number" value={card.student.roll_number} />
-          <Field label="Admission number" value={card.student.admission_number} />
+          <Field label={t("reportCard.student")} value={card.student.name} />
+          <Field label={t("reportCard.class")} value={card.student.section} />
+          <Field label={t("reportCard.roll")} value={card.student.roll_number} />
+          <Field label={t("reportCard.admission")} value={card.student.admission_number} />
         </dl>
 
         <div className="overflow-x-auto py-4">
           <table className="w-full min-w-[32rem] border-collapse text-sm">
             <caption className="sr-only">
-              Subject-wise marks for {card.student.name} in {card.exam.name}
+              {t("reportCard.caption", { name: card.student.name, exam: card.exam.name })}
             </caption>
             <thead>
               <tr className="border-b border-border text-start">
                 <th scope="col" className="py-2 pe-3 font-medium">
-                  Subject
+                  {t("reportCard.subject")}
                 </th>
                 <th scope="col" className="py-2 pe-3 text-end font-medium">
-                  Marks
+                  {t("reportCard.marks")}
                 </th>
                 <th scope="col" className="py-2 pe-3 text-end font-medium">
-                  Out of
+                  {t("reportCard.outOf")}
                 </th>
                 <th scope="col" className="py-2 pe-3 text-end font-medium">
-                  Pass mark
+                  {t("reportCard.passMark")}
                 </th>
                 <th scope="col" className="py-2 font-medium">
-                  Result
+                  {t("reportCard.result")}
                 </th>
               </tr>
             </thead>
@@ -111,12 +110,12 @@ export function ReportCardSheet({
               {papers.length === 0 ? (
                 <tr>
                   <td colSpan={5} className="py-6 text-center text-muted-foreground">
-                    No papers were recorded for this exam.
+                    {t("reportCard.noPapers")}
                   </td>
                 </tr>
               ) : (
                 papers.map((paper, index) => {
-                  const note = paperNote(paper);
+                  const note = paperNote(paper, t);
                   return (
                     <tr
                       key={`${paper.code ?? paper.subject}-${index}`}
@@ -125,7 +124,7 @@ export function ReportCardSheet({
                       <th scope="row" className="py-2 pe-3 text-start font-normal">
                         <span className="font-medium">{paper.subject}</span>
                         {paper.optional ? (
-                          <span className="ms-2 text-xs text-muted-foreground">(additional)</span>
+                          <span className="ms-2 text-xs text-muted-foreground">{t("reportCard.additional")}</span>
                         ) : null}
                         {paper.components && paper.components.length > 0 ? (
                           // The working, on the card. A parent looking at 68/100
@@ -164,11 +163,11 @@ export function ReportCardSheet({
                             black and white more often than it is read on a
                             screen. */}
                         {paper.absent ? (
-                          <span className="text-muted-foreground">Absent</span>
+                          <span className="text-muted-foreground">{t("reportCard.absent")}</span>
                         ) : paper.passed ? (
-                          <span>Pass</span>
+                          <span>{t("reportCard.pass")}</span>
                         ) : (
-                          <span className="font-medium text-destructive">Fail</span>
+                          <span className="font-medium text-destructive">{t("reportCard.fail")}</span>
                         )}
                       </td>
                     </tr>
@@ -181,25 +180,25 @@ export function ReportCardSheet({
 
         <dl className="grid grid-cols-2 gap-x-6 gap-y-3 border-y border-border py-4 sm:grid-cols-4">
           <Field
-            label="Total"
-            value={`${Number(card.totals.obtained)} of ${Number(card.totals.max)}`}
+            label={t("reportCard.total")}
+            value={t("reportCard.totalValue", { obtained: Number(card.totals.obtained), max: Number(card.totals.max) })}
             mono
           />
-          <Field label="Percentage" value={formatPercent(card.totals.percentage)} mono />
+          <Field label={t("reportCard.percentage")} value={formatPercent(card.totals.percentage)} mono />
           <Field
-            label="Grade"
+            label={t("reportCard.grade")}
             value={
               card.totals.grade
                 ? card.totals.grade_point !== null
                   ? `${card.totals.grade} (${Number(card.totals.grade_point)})`
                   : card.totals.grade
-                : "Not graded"
+                : t("reportCard.notGraded")
             }
             mono
           />
           <div>
             <dt className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-              Result
+              {t("reportCard.result")}
             </dt>
             <dd className="mt-1">
               <Badge
@@ -214,22 +213,17 @@ export function ReportCardSheet({
 
         <dl className="grid grid-cols-1 gap-x-6 gap-y-3 py-4 sm:grid-cols-2">
           <Field
-            label="Position"
-            value={rank ?? "This school does not rank"}
-            hint={
-              card.provisional && !rank
-                ? "Positions are worked out when results are published."
-                : undefined
-            }
+            label={t("reportCard.position")}
+            value={rank ?? t("reportCard.noRank")}
+            hint={card.provisional && !rank ? t("reportCard.rankLater") : undefined}
           />
           <Field
-            label="Attendance"
-            value={attendanceSentence(card.attendance)}
+            label={t("reportCard.attendance")}
+            value={attendanceSentence(card.attendance, t)}
             hint={
               attendance !== null
-                ? `${attendance}% present${
-                    card.attendance?.upto ? `, up to ${card.attendance.upto}` : ""
-                  }`
+                ? t("reportCard.presentPercent", { percent: attendance }) +
+                  (card.attendance?.upto ? `, ${t("reportCard.upTo", { date: card.attendance.upto })}` : "")
                 : undefined
             }
           />
@@ -238,7 +232,7 @@ export function ReportCardSheet({
         {card.behaviour && card.behaviour.length > 0 ? (
           <div data-print="keep" className="border-t border-border py-4">
             <h3 className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-              Behaviour and skills
+              {t("reportCard.behaviour")}
             </h3>
             <div className="mt-2 grid gap-x-8 gap-y-1 sm:grid-cols-2">
               {(["behaviour", "skill"] as const).map((kind) => {
@@ -265,7 +259,7 @@ export function ReportCardSheet({
         {card.remark ? (
           <div data-print="keep" className="border-t border-border pt-4">
             <h3 className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-              Class teacher&apos;s remark
+              {t("reportCard.remark")}
             </h3>
             <p className="mt-1 text-sm">{card.remark.text}</p>
           </div>
@@ -274,13 +268,13 @@ export function ReportCardSheet({
         <footer className="mt-6 flex flex-wrap items-end justify-between gap-4 border-t border-border pt-4 text-xs text-muted-foreground">
           <p>
             {card.student.class_teacher
-              ? `Class teacher: ${card.student.class_teacher}`
-              : "Class teacher not recorded"}
+              ? t("reportCard.classTeacher", { name: card.student.class_teacher })
+              : t("reportCard.classTeacherNone")}
           </p>
           <p>
             {card.exam.published_at
-              ? `Published ${formatDate(card.exam.published_at, locale)}`
-              : "Not yet published"}
+              ? t("reportCard.published", { date: formatDate(card.exam.published_at, locale) })
+              : t("reportCard.notPublished")}
           </p>
         </footer>
       </div>

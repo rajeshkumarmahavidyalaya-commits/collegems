@@ -61,7 +61,7 @@ export async function renderReceipt(
   locale: Locale,
   s: ReceiptStrings,
 ): Promise<Uint8Array> {
-  const sheet = await Sheet.create();
+  const sheet = await Sheet.create({ locale });
 
   sheet.text(doc.school.name, { size: 16, leading: 1.25 });
   const address = [

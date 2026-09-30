@@ -1,3 +1,4 @@
+import { directionOf } from "@/lib/i18n/config";
 import { getStaffCards } from "../actions";
 import { getT } from "@/lib/i18n/server";
 import { staffFace } from "@/lib/validations/id-card";
@@ -34,7 +35,7 @@ export async function GET(request: Request) {
       result.cards.map((card) => ({ ...staffFace(card, t), photoPath: card.photoPath })),
       result.school,
     );
-    const bytes = await renderIdCards(docs);
+    const bytes = await renderIdCards(docs, directionOf(t.locale));
 
     return new Response(Buffer.from(bytes), {
       headers: {

@@ -1,4 +1,6 @@
 import { z } from "zod";
+import type { Translator } from "@/lib/i18n/translator";
+import { formatOrdinal } from "@/lib/i18n/format";
 
 /**
  * Phase 3.2 — the report card.
@@ -163,8 +165,15 @@ const SCOPE_WORDS: Record<string, string> = {
  * the size of the cohort it was taken over is the single most misread number on
  * a report card.
  */
-export function rankSentence(rank: ReportCard["rank"]): string | null {
+export function rankSentence(rank: ReportCard["rank"], t?: Translator): string | null {
   if (!rank) return null;
+  if (t) {
+    const scope = rank.scope in SCOPE_WORDS ? rank.scope : "cohort";
+    return t(`reportCard.rank.${scope}` as Parameters<Translator>[0], {
+      position: formatOrdinal(rank.position, t),
+      size: rank.cohort_size,
+    });
+  }
   const where = SCOPE_WORDS[rank.scope] ?? "in the cohort";
   return `${ordinal(rank.position)} of ${rank.cohort_size} ${where}`;
 }
@@ -181,7 +190,12 @@ export function attendancePercent(a: ReportCard["attendance"]): number | null {
 }
 
 /** "172 of 180 days", or a sentence saying why there is no figure. */
-export function attendanceSentence(a: ReportCard["attendance"]): string {
+export function attendanceSentence(a: ReportCard["attendance"], t?: Translator): string {
+  if (t) {
+    if (!a) return t("reportCard.attendanceNotRecorded");
+    if (a.marked <= 0) return t("reportCard.attendanceNone");
+    return t("reportCard.attendanceDays", { present: a.present + a.late, marked: a.marked });
+  }
   if (!a) return "Not recorded for this card";
   if (a.marked <= 0) return "No register was taken in this period";
   return `${a.present + a.late} of ${a.marked} days`;
@@ -199,8 +213,13 @@ export function paperMark(paper: CardPaper): string {
  * substituted. The engine already wrote the sentence; this only decides whether
  * there is one worth printing.
  */
-export function paperNote(paper: CardPaper): string | null {
+export function paperNote(paper: CardPaper, t?: Translator): string | null {
   if (paper.note && paper.note.trim() !== "") return paper.note;
+  if (t) {
+    if (!paper.counted) return t("reportCard.noteNotCounted");
+    if (paper.grace && paper.grace > 0) return t.plural("reportCard.noteGrace", paper.grace);
+    return null;
+  }
   if (!paper.counted) return "Not counted towards the aggregate";
   if (paper.grace && paper.grace > 0) return `Includes ${paper.grace} grace mark(s)`;
   return null;

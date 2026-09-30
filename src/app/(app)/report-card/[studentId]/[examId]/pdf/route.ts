@@ -49,7 +49,7 @@ export async function GET(
       card,
       resultLabel: resultLabel(card.totals.result, t),
       publishedOn: card.exam.published_at ? formatDate(card.exam.published_at, locale) : null,
-    });
+    }, locale);
 
     return new Response(Buffer.from(bytes), {
       headers: {

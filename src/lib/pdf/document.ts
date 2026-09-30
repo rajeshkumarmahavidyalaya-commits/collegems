@@ -1,6 +1,9 @@
 import { PDFDocument, PDFPage, rgb } from "pdf-lib";
 import { UnrenderableDocument } from "./font";
 import { Typeset, graphemes, type Face } from "./typeset";
+import { DEFAULT_LOCALE, directionOf, type Direction, type Locale } from "@/lib/i18n/config";
+import { createTranslator } from "@/lib/i18n/translate";
+import type { Translator } from "@/lib/i18n/translator";
 
 export { UnrenderableDocument };
 
@@ -31,7 +34,7 @@ export { UnrenderableDocument };
  * measure. It is deliberately not a rendering of the web page, which already
  * has an answer — `window.print()` and the `@media print` block in
  * `globals.css`, which uses the reader's own system fonts and therefore prints
- * scripts this file's two embedded faces (Latin, Devanagari) cannot — Urdu.
+ * scripts this file's three embedded faces (Latin, Devanagari, Arabic) cannot.
  *
  * Both are kept. They fail in opposite directions and a school needs both:
  * printing is for paper in their own tray; a file is for an attachment, a
@@ -92,15 +95,32 @@ export class Sheet {
   private constructor(
     private readonly doc: PDFDocument,
     private readonly fonts: Typeset,
+    /** `rtl` mirrors the layout: text sits on the right, a row runs right to left. */
+    readonly direction: Direction,
+    private readonly t: Translator,
   ) {
     this.page = doc.addPage([A4.width, A4.height]);
     this.pages.push(this.page);
     this.y = A4.height - MARGIN;
   }
 
-  static async create(): Promise<Sheet> {
+  /**
+   * A new document in the reader's language. `locale` decides the direction
+   * (Urdu runs right to left) and the words the sheet writes itself (*Page 1
+   * of 2*); `direction` overrides it for a document whose words are not the
+   * reader's, such as a certificate in the school's own wording.
+   */
+  static async create(options: { locale?: Locale; direction?: Direction } = {}): Promise<Sheet> {
+    const locale = options.locale ?? DEFAULT_LOCALE;
+    const direction = options.direction ?? directionOf(locale);
     const doc = await PDFDocument.create();
-    return new Sheet(doc, await Typeset.open(doc));
+    return new Sheet(doc, await Typeset.open(doc, { direction }), direction, createTranslator(locale));
+  }
+
+  /** `start` and `end` as the page sees them: swapped in a right-to-left document. */
+  private side(align: "start" | "center" | "end"): "left" | "center" | "right" {
+    if (align === "center") return "center";
+    return (align === "start") === (this.direction === "ltr") ? "left" : "right";
   }
 
   /** The measure — how wide a line of this document is. */
@@ -197,10 +217,11 @@ export class Sheet {
       this.y -= leading;
       if (line !== "") {
         const w = face.width(line, size);
+        const side = this.side(align);
         const x =
-          align === "center"
+          side === "center"
             ? MARGIN + (this.measure - w) / 2
-            : align === "end"
+            : side === "right"
               ? MARGIN + this.measure - w
               : MARGIN;
         face.draw(this.page, line, { x, y: this.y, size, color });
@@ -230,18 +251,21 @@ export class Sheet {
     if (this.y - leading < MARGIN + 28) this.turn();
     this.y -= leading;
 
-    let x = MARGIN;
+    // Cells run from the start edge: left to right, or right to left.
+    const rtl = this.direction === "rtl";
+    let edge = rtl ? MARGIN + this.measure : MARGIN;
     for (const cell of cells) {
       const width = this.measure * cell.width;
+      const x = rtl ? edge - width : edge;
       const face = this.checked(cell.text);
       const text = this.fit(face, cell.text, size, width);
       const w = face.width(text, size);
-      const at =
-        cell.align === "end" ? x + width - w : cell.align === "center" ? x + (width - w) / 2 : x;
+      const side = this.side(cell.align ?? "start");
+      const at = side === "right" ? x + width - w : side === "center" ? x + (width - w) / 2 : x;
       if (text !== "") {
         face.draw(this.page, text, { x: at, y: this.y, size, color });
       }
-      x += width;
+      edge = rtl ? x : x + width;
     }
     return this;
   }
@@ -306,7 +330,7 @@ export class Sheet {
     } else {
       this.y = Math.min(flowed, FOOT);
     }
-    const x = side === "end" ? MARGIN + this.measure - width : MARGIN;
+    const x = this.side(side) === "right" ? MARGIN + this.measure - width : MARGIN;
     this.page.drawLine({
       start: { x, y: this.y },
       end: { x: x + width, y: this.y },
@@ -340,15 +364,14 @@ export class Sheet {
         thickness: 0.5,
         color: RULE,
       });
-      face.draw(page, footer, { x: MARGIN, y: MARGIN + 6, size, color: QUIET });
+      const rtl = this.direction === "rtl";
+      const footerW = face.width(footer, size);
+      face.draw(page, footer, { x: rtl ? MARGIN + this.measure - footerW : MARGIN, y: MARGIN + 6, size, color: QUIET });
       if (total > 1) {
-        const right = `Page ${i + 1} of ${total}`;
-        this.fonts.latin.draw(page, right, {
-          x: MARGIN + this.measure - this.fonts.latin.width(right, size),
-          y: MARGIN + 6,
-          size,
-          color: QUIET,
-        });
+        const pageOf = this.t("pdf.pageOf", { page: i + 1, total });
+        const pageFace = this.checked(pageOf);
+        const w = pageFace.width(pageOf, size);
+        pageFace.draw(page, pageOf, { x: rtl ? MARGIN : MARGIN + this.measure - w, y: MARGIN + 6, size, color: QUIET });
       }
     });
     await this.fonts.flush();

@@ -1,6 +1,7 @@
 import { PDFDocument, PDFImage, PDFPage, rgb } from "pdf-lib";
 import { pdfFileName } from "./document";
 import { Typeset, graphemes, type Face } from "./typeset";
+import type { Direction } from "@/lib/i18n/config";
 import { qrModules } from "@/lib/id-card/qr";
 
 /**
@@ -162,8 +163,12 @@ function drawCard(
     tone: "ink" | "quiet" = "ink",
   ): void => {
     const face = fonts.pick(text);
-    face.draw(page, fit(face, text, size, width), {
-      x,
+    const shown = fit(face, text, size, width);
+    // Right to left, each box keeps its place and its text sits at its right
+    // edge; the photograph and the code stay where a card printer expects them.
+    const at = fonts.direction === "rtl" ? x + width - face.width(shown, size) : x;
+    face.draw(page, shown, {
+      x: at,
       y,
       size,
       color: tone === "quiet" ? QUIET : INK,
@@ -251,13 +256,13 @@ function drawCard(
   }
 }
 
-async function open(): Promise<{ doc: PDFDocument; fonts: Typeset }> {
+async function open(direction: Direction): Promise<{ doc: PDFDocument; fonts: Typeset }> {
   const doc = await PDFDocument.create();
-  return { doc, fonts: await Typeset.open(doc) };
+  return { doc, fonts: await Typeset.open(doc, { direction }) };
 }
 
-export async function renderIdCard(card: CardDocument): Promise<Uint8Array> {
-  const { doc, fonts } = await open();
+export async function renderIdCard(card: CardDocument, direction: Direction = "ltr"): Promise<Uint8Array> {
+  const { doc, fonts } = await open(direction);
   const photo = await embedPhoto(doc, card.photo);
   drawCard(doc.addPage([CR80.width, CR80.height]), fonts, card, photo);
   await fonts.flush();
@@ -274,8 +279,8 @@ export async function renderIdCard(card: CardDocument): Promise<Uint8Array> {
  * rule 13 already settled that shape: *refuse an oversized input rather than
  * truncating it*, because nobody notices until April.
  */
-export async function renderIdCards(cards: CardDocument[]): Promise<Uint8Array> {
-  const { doc, fonts } = await open();
+export async function renderIdCards(cards: CardDocument[], direction: Direction = "ltr"): Promise<Uint8Array> {
+  const { doc, fonts } = await open(direction);
   for (const card of cards) {
     const photo = await embedPhoto(doc, card.photo);
     drawCard(doc.addPage([CR80.width, CR80.height]), fonts, card, photo);

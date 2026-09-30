@@ -26,10 +26,10 @@ import { UnrenderableDocument } from "@/lib/pdf/document";
  * as an accident, because it is the kind of thing somebody will want to change
  * and should change deliberately.
  *
- * A consequence, and it is honest rather than hidden: an Urdu reader gets
- * the 422 below, because the renderer has a Latin and a Devanagari face and no
- * Arabic one (a Hindi reader gets a Hindi bill). The message says so and points
- * at printing, which uses the reader's own system fonts and works.
+ * A Hindi reader gets a Hindi bill and an Urdu reader an Urdu one, laid out
+ * right to left. A name in a script none of the three faces covers gets the
+ * 422 below, which says so and points at printing, which uses the reader's own
+ * system fonts and works.
  */
 export async function GET(
   _request: Request,

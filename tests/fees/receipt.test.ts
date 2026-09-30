@@ -81,9 +81,21 @@ describe("a fee receipt", () => {
     }
   });
 
-  it("draws Hindi, and refuses a script the fonts cannot draw, as the invoice does", async () => {
-    expect((await PDFDocument.load(await renderReceipt(receipt(), "hi", STRINGS))).getPageCount()).toBe(1);
-    await expect(renderReceipt(receipt(), "ur", STRINGS)).rejects.toBeInstanceOf(UnrenderableDocument);
+  it("draws Hindi and Urdu, and refuses a script no face covers", async () => {
+    for (const locale of ["hi", "ur"] as const) {
+      expect((await PDFDocument.load(await renderReceipt(receipt(), locale, STRINGS))).getPageCount(), locale).toBe(1);
+    }
+    await expect(
+      renderReceipt(receipt({
+        student: {
+          fullName: "தமிழ் பள்ளி",
+          admissionNumber: "SOS-2025-0001",
+          sectionLabel: null,
+          rollNumber: null,
+          guardianName: null,
+        },
+      }), "en", STRINGS),
+    ).rejects.toBeInstanceOf(UnrenderableDocument);
   });
 
   it("names the file after the receipt number", () => {

@@ -191,6 +191,7 @@ describe("the document font", () => {
     expect(literals).toEqual([
       "src/lib/pdf/fonts/WorkSans-Regular.ttf",
       "src/lib/pdf/fonts/NotoSansDevanagari-Regular.ttf",
+      "src/lib/pdf/fonts/NotoNaskhArabic-Regular.ttf",
     ]);
     // No template literal and no concatenation in the path.
     expect(source).not.toMatch(/join\(\s*process\.cwd\(\)\s*,\s*`/);
@@ -243,8 +244,8 @@ describe("the document font", () => {
     const files = readdirSync(dir);
     expect(files.some((f) => /OFL|LICEN[CS]E/i.test(f))).toBe(true);
     const ttf = files.filter((f) => f.endsWith(".ttf")).sort();
-    // One weight per script, deliberately: Latin, and Devanagari for Hindi.
-    expect(ttf).toEqual(["NotoSansDevanagari-Regular.ttf", "WorkSans-Regular.ttf"]);
+    // One weight per script, deliberately: Latin, Devanagari for Hindi, Naskh for Urdu.
+    expect(ttf).toEqual(["NotoNaskhArabic-Regular.ttf", "NotoSansDevanagari-Regular.ttf", "WorkSans-Regular.ttf"]);
     // Each comfortably over any web slice (16–80 kB) and under a CJK face.
     for (const f of ttf) expect(statSync(join(dir, f)).size, f).toBeGreaterThan(100_000);
   });
@@ -276,7 +277,7 @@ describe("a rendered certificate", () => {
    */
   it("refuses a script it cannot draw instead of shipping a blank page", async () => {
     await expect(
-      renderCertificate(certificate({ body: "یہ تصدیق کی جاتی ہے" })),
+      renderCertificate(certificate({ body: "தமிழ் பள்ளி" })),
     ).rejects.toBeInstanceOf(UnrenderableDocument);
   });
 
@@ -393,7 +394,7 @@ describe("the sheet", () => {
   it("checks the footer too, not only the body", async () => {
     const sheet = await Sheet.create();
     sheet.text("fine");
-    await expect(sheet.finish("ہر")).rejects.toBeInstanceOf(UnrenderableDocument);
+    await expect(sheet.finish("தமிழ் பள்ளி")).rejects.toBeInstanceOf(UnrenderableDocument);
   });
 });
 
@@ -521,20 +522,17 @@ describe("a rendered invoice", () => {
   });
 
   /**
-   * The limitation, asserted rather than left to be discovered — and moved one
-   * script along. A Hindi bill is drawn now (Devanagari month names and all);
-   * an Urdu one is **refused with a sentence** instead of handed over with
-   * blanks where its dates should be, because the renderer has no Arabic face
-   * and no right-to-left layout. If the second ever stops throwing, either it
-   * gained both (good, and say so in `font.ts`) or the coverage check stopped
-   * working (bad, and a family is holding a blank).
+   * The limitation, asserted rather than left to be discovered — and moved two
+   * scripts along. Hindi and Urdu bills are drawn now (month names and all);
+   * a script none of the three faces covers is **refused with a sentence**
+   * instead of handed over with blanks where its words should be. The refusal
+   * cases elsewhere in this file use Tamil for that reason.
    */
-  it("draws a Hindi bill, and refuses an Urdu one with a sentence", async () => {
-    const hindi = await renderInvoice(invoice(), "hi", STRINGS);
-    expect((await PDFDocument.load(hindi)).getPageCount()).toBe(1);
-    await expect(renderInvoice(invoice(), "ur", STRINGS)).rejects.toBeInstanceOf(
-      UnrenderableDocument,
-    );
+  it("draws a Hindi bill and an Urdu one", async () => {
+    for (const locale of ["hi", "ur"] as const) {
+      const bytes = await renderInvoice(invoice(), locale, STRINGS);
+      expect((await PDFDocument.load(bytes)).getPageCount(), locale).toBe(1);
+    }
   });
 });
 
@@ -737,7 +735,7 @@ describe("a rendered report card", () => {
   it("refuses a script it cannot draw instead of shipping a blank card", async () => {
     await expect(
       renderReportCard(cardDoc(liveCard((c) => {
-        c.student.name = "ہر ماہ";
+        c.student.name = "தமிழ் பள்ளி";
       }))),
     ).rejects.toBeInstanceOf(UnrenderableDocument);
   });
@@ -916,7 +914,7 @@ describe("a rendered identity card", () => {
 
   /** The font check reaches a card too, not only a document. */
   it("refuses a script it cannot draw", async () => {
-    await expect(renderIdCard(idCard({ fullName: "\u06c1\u0631 \u0645\u0627\u06c1" }))).rejects.toBeInstanceOf(
+    await expect(renderIdCard(idCard({ fullName: "தமிழ் பள்ளி" }))).rejects.toBeInstanceOf(
       UnrenderableDocument,
     );
   });

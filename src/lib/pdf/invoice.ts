@@ -102,7 +102,7 @@ export async function renderInvoice(
   locale: Locale,
   s: InvoiceStrings,
 ): Promise<Uint8Array> {
-  const sheet = await Sheet.create();
+  const sheet = await Sheet.create({ locale });
   const money = (n: number) => formatCurrency(n, locale);
   const day = (d: string | null) => (d ? formatDate(d, locale) : "—");
 

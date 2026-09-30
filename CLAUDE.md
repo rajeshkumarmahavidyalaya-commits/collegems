@@ -2577,6 +2577,16 @@ bare halant. Text is shaped one script run at a time. **A glyph count is not a
 rendering; look at the page.** The Devanagari face (Noto Sans Devanagari, about
 90 kB compressed) is embedded only in a document that uses it.
 
+**And Urdu followed, which is a direction rather than a font.** Noto Naskh
+Arabic draws it; `bidi-js` orders each line; the sheet mirrors from the
+reader's locale, and a certificate from its own wording. The typesetter cuts a
+line by direction and then by font coverage, which is what puts `₹` (absent
+from Naskh) inside an Urdu line. Copy and search get two mechanisms, an
+`ActualText` span per run and the drawn glyphs registered in the font's
+ToUnicode map, because pdf-lib maps only nominal glyphs, and pdf.js extracted a
+whole Urdu bill with no Urdu in it. A script none of the three faces covers is
+still refused, named.
+
 See `docs/modules/pdf.md`.
 
 ### …and the queue itself, which had 0 rows for 235 migrations

@@ -67,7 +67,7 @@ export async function renderPayslip(
   locale: Locale,
   s: PayslipStrings,
 ): Promise<Uint8Array> {
-  const sheet = await Sheet.create();
+  const sheet = await Sheet.create({ locale });
   const money = (n: number) => formatCurrency(n, locale);
 
   sheet.text(doc.school.name, { size: 16, leading: 1.25 });

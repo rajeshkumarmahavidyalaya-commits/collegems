@@ -1,3 +1,4 @@
+import { directionOf } from "@/lib/i18n/config";
 import { getStaffCard } from "../../../id-cards/actions";
 import { getT } from "@/lib/i18n/server";
 import { photoBytes } from "@/lib/storage/photos";
@@ -56,7 +57,7 @@ export async function GET(
       schoolName: school.name,
       sessionName: school.sessionName,
       photo,
-    });
+    }, directionOf(t.locale));
 
     return new Response(Buffer.from(bytes), {
       headers: {

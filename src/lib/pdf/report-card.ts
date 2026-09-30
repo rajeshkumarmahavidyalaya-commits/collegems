@@ -1,4 +1,7 @@
 import { Sheet, pdfFileName } from "./document";
+import { DEFAULT_LOCALE, type Locale } from "@/lib/i18n/config";
+import { createTranslator } from "@/lib/i18n/translate";
+import type { Translator } from "@/lib/i18n/translator";
 import {
   attendancePercent,
   attendanceSentence,
@@ -79,9 +82,9 @@ const SUBJECT = 0.42;
 const FIGURE = 0.13;
 const OUTCOME = 0.19;
 
-function outcomeWord(paper: CardPaper): string {
-  if (paper.absent) return "Absent";
-  return paper.passed ? "Pass" : "Fail";
+function outcomeWord(paper: CardPaper, t: Translator): string {
+  if (paper.absent) return t("reportCard.absent");
+  return paper.passed ? t("reportCard.pass") : t("reportCard.fail");
 }
 
 /**
@@ -134,27 +137,35 @@ function componentLine(paper: CardPaper): string | null {
  * embedding the font. In one file it is 5.5 s — still far past a request, so it
  * stays queued work, but for a different reason than the one written down.
  */
-export async function renderReportCards(docs: ReportCardDocument[]): Promise<Uint8Array> {
-  const sheet = await Sheet.create();
+export async function renderReportCards(
+  docs: ReportCardDocument[],
+  locale: Locale = DEFAULT_LOCALE,
+): Promise<Uint8Array> {
+  const sheet = await Sheet.create({ locale });
+  const t = createTranslator(locale);
   docs.forEach((doc, i) => {
     if (i > 0) sheet.newPage();
-    writeCard(sheet, doc);
+    writeCard(sheet, doc, t);
   });
-  return finishWith(sheet, docs[0], false);
+  return finishWith(sheet, docs[0], false, t);
 }
 
-export async function renderReportCard(doc: ReportCardDocument): Promise<Uint8Array> {
-  const sheet = await Sheet.create();
-  writeCard(sheet, doc);
-  return finishWith(sheet, doc, true);
+export async function renderReportCard(
+  doc: ReportCardDocument,
+  locale: Locale = DEFAULT_LOCALE,
+): Promise<Uint8Array> {
+  const sheet = await Sheet.create({ locale });
+  const t = createTranslator(locale);
+  writeCard(sheet, doc, t);
+  return finishWith(sheet, doc, true, t);
 }
 
-function writeCard(sheet: Sheet, doc: ReportCardDocument): void {
+function writeCard(sheet: Sheet, doc: ReportCardDocument, t: Translator): void {
   const { card } = doc;
   const papers = card.papers ?? [];
 
   sheet.text(card.school.name, { size: 17, leading: 1.25, align: "center" });
-  sheet.text(`${card.exam.name} · Session ${card.session.name}`, {
+  sheet.text(`${card.exam.name} · ${t("reportCard.session", { name: card.session.name })}`, {
     size: 9.5,
     leading: 1.35,
     align: "center",
@@ -168,34 +179,33 @@ function writeCard(sheet: Sheet, doc: ReportCardDocument): void {
     // The certificate's CANCELLED block, doing the same job for the opposite
     // reason: that one says a document already handed over has been retracted,
     // this one says a document has not been handed over yet.
-    sheet.text("PROVISIONAL", { size: 12, align: "center" });
+    sheet.text(t("reportCard.provisionalStamp"), { size: 12, align: "center" });
     sheet.text(
-      "These results have not been published. They can still change, and no position " +
-        "has been worked out. This is not a card to give to a family.",
+      t("reportCard.provisionalPdf"),
       { size: 9.5, leading: 1.45, align: "center", tone: "quiet", above: 4 },
     );
     sheet.rule(14, 18);
   }
 
   sheet.row([
-    { text: "Student", width: 0.22 },
+    { text: t("reportCard.student"), width: 0.22 },
     { text: card.student.name, width: 0.78 },
   ]);
   if (card.student.section) {
     sheet.row([
-      { text: "Class", width: 0.22 },
+      { text: t("reportCard.class"), width: 0.22 },
       { text: card.student.section, width: 0.78 },
     ]);
   }
   if (card.student.roll_number) {
     sheet.row([
-      { text: "Roll number", width: 0.22 },
+      { text: t("reportCard.roll"), width: 0.22 },
       { text: card.student.roll_number, width: 0.78 },
     ]);
   }
   if (card.student.admission_number) {
     sheet.row([
-      { text: "Admission number", width: 0.22 },
+      { text: t("reportCard.admission"), width: 0.22 },
       { text: card.student.admission_number, width: 0.78 },
     ]);
   }
@@ -204,18 +214,18 @@ function writeCard(sheet: Sheet, doc: ReportCardDocument): void {
 
   sheet.row(
     [
-      { text: "Subject", width: SUBJECT },
-      { text: "Marks", width: FIGURE, align: "end" },
-      { text: "Out of", width: FIGURE, align: "end" },
-      { text: "Pass mark", width: FIGURE, align: "end" },
-      { text: "Result", width: OUTCOME, align: "end" },
+      { text: t("reportCard.subject"), width: SUBJECT },
+      { text: t("reportCard.marks"), width: FIGURE, align: "end" },
+      { text: t("reportCard.outOf"), width: FIGURE, align: "end" },
+      { text: t("reportCard.passMark"), width: FIGURE, align: "end" },
+      { text: t("reportCard.result"), width: OUTCOME, align: "end" },
     ],
     { size: 9, tone: "quiet" },
   );
   sheet.rule(6, 4);
 
   if (papers.length === 0) {
-    sheet.text("No papers were recorded for this exam.", {
+    sheet.text(t("reportCard.noPapers"), {
       size: 10,
       tone: "quiet",
       align: "center",
@@ -226,7 +236,7 @@ function writeCard(sheet: Sheet, doc: ReportCardDocument): void {
   for (const paper of papers) {
     sheet.row([
       {
-        text: paper.optional ? `${paper.subject} (additional)` : paper.subject,
+        text: paper.optional ? `${paper.subject} ${t("reportCard.additional")}` : paper.subject,
         width: SUBJECT,
       },
       { text: paperMark(paper), width: FIGURE, align: "end" },
@@ -234,39 +244,39 @@ function writeCard(sheet: Sheet, doc: ReportCardDocument): void {
       { text: String(Number(paper.pass)), width: FIGURE, align: "end" },
       // A word, never a colour: a card is photocopied in black and white more
       // often than it is read on a screen. Same decision the screen makes.
-      { text: outcomeWord(paper), width: OUTCOME, align: "end" },
+      { text: outcomeWord(paper, t), width: OUTCOME, align: "end" },
     ]);
 
     const parts = componentLine(paper);
     if (parts) sheet.row([{ text: parts, width: 1 }], { size: 8.5, leading: 1.3, tone: "quiet" });
 
-    const note = paperNote(paper);
+    const note = paperNote(paper, t);
     if (note) sheet.row([{ text: note, width: 1 }], { size: 8.5, leading: 1.3, tone: "quiet" });
   }
 
   sheet.rule(12, 12);
 
   sheet.row([
-    { text: "Total", width: 0.28 },
-    { text: `${Number(card.totals.obtained)} of ${Number(card.totals.max)}`, width: 0.72 },
+    { text: t("reportCard.total"), width: 0.28 },
+    { text: t("reportCard.totalValue", { obtained: Number(card.totals.obtained), max: Number(card.totals.max) }), width: 0.72 },
   ]);
   sheet.row([
-    { text: "Percentage", width: 0.28 },
+    { text: t("reportCard.percentage"), width: 0.28 },
     { text: `${Number(card.totals.percentage).toFixed(1)}%`, width: 0.72 },
   ]);
   sheet.row([
-    { text: "Grade", width: 0.28 },
+    { text: t("reportCard.grade"), width: 0.28 },
     {
       text: card.totals.grade
         ? card.totals.grade_point !== null
           ? `${card.totals.grade} (${Number(card.totals.grade_point)})`
           : card.totals.grade
-        : "Not graded",
+        : t("reportCard.notGraded"),
       width: 0.72,
     },
   ]);
   sheet.row([
-    { text: "Result", width: 0.28 },
+    { text: t("reportCard.result"), width: 0.28 },
     { text: doc.resultLabel, width: 0.72 },
   ]);
 
@@ -274,18 +284,18 @@ function writeCard(sheet: Sheet, doc: ReportCardDocument): void {
   // have abolished class position outright and a blank reads as a number the
   // school failed to work out (rule 12).
   sheet.row([
-    { text: "Position", width: 0.28 },
-    { text: rankSentence(card.rank) ?? "This school does not rank", width: 0.72 },
+    { text: t("reportCard.position"), width: 0.28 },
+    { text: rankSentence(card.rank, t) ?? t("reportCard.noRank"), width: 0.72 },
   ]);
 
   const percent = attendancePercent(card.attendance);
   sheet.row([
-    { text: "Attendance", width: 0.28 },
+    { text: t("reportCard.attendance"), width: 0.28 },
     {
       text:
         percent === null
-          ? attendanceSentence(card.attendance)
-          : `${attendanceSentence(card.attendance)} · ${percent}% present`,
+          ? attendanceSentence(card.attendance, t)
+          : `${attendanceSentence(card.attendance, t)} · ${t("reportCard.presentPercent", { percent })}`,
       width: 0.72,
     },
   ]);
@@ -293,7 +303,7 @@ function writeCard(sheet: Sheet, doc: ReportCardDocument): void {
   // Behaviour and skills (0303), in two columns: a trait and its letter.
   if (card.behaviour && card.behaviour.length > 0) {
     sheet.rule(14, 10);
-    sheet.row([{ text: "Behaviour and skills", width: 1 }], { size: 9, tone: "quiet" });
+    sheet.row([{ text: t("reportCard.behaviour"), width: 1 }], { size: 9, tone: "quiet" });
     const list = card.behaviour;
     for (let i = 0; i < list.length; i += 2) {
       const a = list[i];
@@ -315,11 +325,11 @@ function writeCard(sheet: Sheet, doc: ReportCardDocument): void {
 
   if (card.remark) {
     sheet.rule(14, 10);
-    sheet.row([{ text: "Class teacher's remark", width: 1 }], { size: 9, tone: "quiet" });
+    sheet.row([{ text: t("reportCard.remark"), width: 1 }], { size: 9, tone: "quiet" });
     sheet.text(card.remark.text, { size: 10.5, leading: 1.5, above: 2 });
   }
 
-  sheet.signature(card.student.class_teacher ?? "Class teacher", "start");
+  sheet.signature(card.student.class_teacher ?? t("reportCard.classTeacherSign"), "start");
 }
 
 /**
@@ -339,14 +349,18 @@ function writeCard(sheet: Sheet, doc: ReportCardDocument): void {
  * child's name: a footer naming Aryan Pandey on twenty-five other children's
  * sheets is worse than no name at all.
  */
-export function reportCardFooter(doc: ReportCardDocument | undefined, single: boolean): string {
-  if (!doc) return "Report cards";
+export function reportCardFooter(
+  doc: ReportCardDocument | undefined,
+  single: boolean,
+  t: Translator = createTranslator(DEFAULT_LOCALE),
+): string {
+  if (!doc) return t("reportCard.setTitle");
   const { card } = doc;
   const stamp = card.provisional
-    ? "PROVISIONAL — not published"
+    ? t("reportCard.footerProvisional")
     : doc.publishedOn
-      ? `Published ${doc.publishedOn}`
-      : "Published";
+      ? t("reportCard.published", { date: doc.publishedOn })
+      : t("reportCard.publishedBare");
   const identity = single ? `${card.student.name} · ${card.exam.name}` : card.exam.name;
   return `${identity} · ${stamp}`;
 }
@@ -355,6 +369,7 @@ function finishWith(
   sheet: Sheet,
   doc: ReportCardDocument | undefined,
   single: boolean,
+  t: Translator,
 ): Promise<Uint8Array> {
-  return sheet.finish(reportCardFooter(doc, single));
+  return sheet.finish(reportCardFooter(doc, single, t));
 }

@@ -4,9 +4,10 @@ import { inflateSync } from "node:zlib";
 import { PDFArray, PDFDocument, PDFRawStream } from "pdf-lib";
 import { describe, expect, it } from "vitest";
 
-import { devanagariFont, documentFont, scriptRuns, unrenderable, unrenderableMessage } from "@/lib/pdf/font";
+import { arabicFont, devanagariFont, documentFont, scriptRuns, unrenderable, unrenderableMessage } from "@/lib/pdf/font";
 import { Sheet } from "@/lib/pdf/document";
 import { hi } from "@/lib/i18n/messages/hi";
+import { ur } from "@/lib/i18n/messages/ur";
 
 /**
  * Hindi PDFs, pinned without a database.
@@ -50,6 +51,7 @@ function streams(doc: PDFDocument): string {
 
 /** Every Hindi string in the catalogue, placeholders and all. */
 const HINDI = Object.values(hi as Record<string, string>).filter((v) => /[ऀ-ॿ]/.test(v));
+const URDU = Object.values(ur as Record<string, string>).filter((v) => /[\u0600-\u06ff]/.test(v));
 
 describe("Hindi in a PDF", () => {
   it("the Devanagari face covers every Hindi string the product has, with no .notdef", async () => {
@@ -113,18 +115,94 @@ describe("Hindi in a PDF", () => {
     expect(hindiBytes.length).toBeGreaterThan(60_000);
   });
 
-  it("Urdu is still refused, and the sentence says which scripts are printed", async () => {
-    const [{ covered: latin }, deva] = await Promise.all([documentFont(), devanagariFont()]);
-    expect(unrenderable("یہ درست ہے", latin).length).toBeGreaterThan(0);
-    expect(unrenderable("یہ درست ہے", deva.covered).length).toBeGreaterThan(0);
-    expect(unrenderableMessage(["ی"])).toMatch(/Devanagari/);
+  it("a script no face covers is refused, and the sentence names the scripts that are printed", async () => {
+    const [{ covered: latin }, deva, arab] = await Promise.all([documentFont(), devanagariFont(), arabicFont()]);
+    for (const set of [latin, deva.covered, arab.covered]) {
+      expect(unrenderable("தமிழ்", set).length).toBeGreaterThan(0);
+    }
+    expect(unrenderableMessage(["த"])).toMatch(/Devanagari \(Hindi\) and Arabic \(Urdu\)/);
     const sheet = await Sheet.create();
-    expect(() => sheet.text("یہ درست ہے")).toThrow(/cannot be turned into a PDF/);
+    expect(() => sheet.text("தமிழ்")).toThrow(/cannot be turned into a PDF/);
   });
 
-  it("the licence travels with the face", () => {
-    const licence = readFileSync(join(ROOT, "src/lib/pdf/fonts/OFL-NotoSansDevanagari.txt"), "utf8");
-    expect(licence).toMatch(/SIL Open Font License, Version 1\.1/);
-    expect(licence).toMatch(/Noto Project Authors/);
+  it("the Naskh face covers every Urdu string the product has, with no .notdef", async () => {
+    const font = await arabicFont();
+    expect(URDU.length).toBeGreaterThan(500);
+    for (const text of URDU) {
+      // The rupee sign is the one character Naskh lacks; the typesetter draws
+      // it from Work Sans mid-line.
+      expect(unrenderable(text.replace(/₹/g, ""), font.covered), text).toEqual([]);
+      expect(font.layout(text, true).glyphs.some((g) => g.id === 0), text).toBe(false);
+    }
+  });
+});
+
+describe("Urdu in a PDF", () => {
+  /** x of the first text matrix of each Span, in the order the stream writes them. */
+  function spans(raw: string): { text: string; x: number }[] {
+    const out: { text: string; x: number }[] = [];
+    for (const m of raw.matchAll(/\/Span <<\s*\/ActualText <FEFF([0-9A-F]*)>\s*>> BDC[\s\S]*?1 0 0 1 ([\d.-]+) [\d.-]+ Tm/g)) {
+      const hex = m[1];
+      let text = "";
+      for (let i = 0; i < hex.length; i += 4) text += String.fromCharCode(parseInt(hex.slice(i, i + 4), 16));
+      out.push({ text, x: Number(m[2]) });
+    }
+    return out;
+  }
+
+  it("carries the words it drew as ActualText, so copy and search read characters, not glyph ids", async () => {
+    const sheet = await Sheet.create({ locale: "ur" });
+    sheet.text("فیس بل");
+    const raw = streams(await PDFDocument.load(await sheet.finish("x")));
+    expect(spans(raw).map((s) => s.text)).toContain("فیس بل");
+  });
+
+  it("lays a mixed line out right to left: the Urdu word to the right of the Latin one", async () => {
+    const sheet = await Sheet.create({ locale: "ur" });
+    // Logical order: Urdu word, then a Latin number. On the page the Urdu is
+    // rightmost, so its span starts further right than the Latin text.
+    sheet.text("رسید RC-2026-00001");
+    const raw = streams(await PDFDocument.load(await sheet.finish("x")));
+    const urdu = spans(raw).find((s) => s.text.includes("رسید"))!;
+    const latin = [...raw.matchAll(/1 0 0 1 ([\d.-]+) [\d.-]+ Tm\s*<[0-9A-F]+> Tj/g)].map((m) => Number(m[1]));
+    expect(urdu).toBeDefined();
+    expect(Math.min(...latin)).toBeLessThan(urdu.x);
+  });
+
+  it("mirrors a row: in Urdu the first cell is on the right", async () => {
+    const at = async (locale: "en" | "ur") => {
+      const sheet = await Sheet.create({ locale });
+      sheet.row([{ text: "AAAA", width: 0.5 }, { text: "BBBB", width: 0.5 }]);
+      const raw = streams(await PDFDocument.load(await sheet.finish("x")));
+      return [...raw.matchAll(/1 0 0 1 ([\d.-]+) ([\d.-]+) Tm/g)].map((m) => Number(m[1]));
+    };
+    const [enFirst, enSecond] = await at("en");
+    const [urFirst, urSecond] = await at("ur");
+    expect(enFirst).toBeLessThan(enSecond);
+    expect(urFirst).toBeGreaterThan(urSecond);
+  });
+
+  it("numbers its pages in the reader's language", async () => {
+    const sheet = await Sheet.create({ locale: "ur" });
+    for (let i = 0; i < 80; i++) sheet.text("سطر");
+    const raw = streams(await PDFDocument.load(await sheet.finish("x")));
+    expect(spans(raw).some((s) => s.text === "صفحہ 1 از 2" || s.text.includes("صفحہ"))).toBe(true);
+  });
+
+  it("an English document carries neither shaped face", async () => {
+    const english = await Sheet.create();
+    english.text("Fee receipt — ₹1,234.00");
+    const raw = streams(await PDFDocument.load(await english.finish("RC-2026-00001")));
+    expect(raw).not.toMatch(/ActualText/);
+  });
+});
+
+describe("the licence", () => {
+  it("travels with each face", () => {
+    for (const file of ["OFL-NotoSansDevanagari.txt", "OFL-NotoNaskhArabic.txt"]) {
+      const licence = readFileSync(join(ROOT, "src/lib/pdf/fonts", file), "utf8");
+      expect(licence, file).toMatch(/SIL Open Font License, Version 1\.1/);
+      expect(licence, file).toMatch(/Noto Project Authors/);
+    }
   });
 });

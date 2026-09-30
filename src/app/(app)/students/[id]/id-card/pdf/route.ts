@@ -1,3 +1,4 @@
+import { directionOf } from "@/lib/i18n/config";
 import { getIdCard } from "../../../id-cards/actions";
 import { hasPermission } from "@/lib/auth/permissions";
 import { getT, getLocale } from "@/lib/i18n/server";
@@ -86,7 +87,7 @@ export async function GET(
       schoolName: school.name,
       sessionName: school.sessionName,
       photo,
-    });
+    }, directionOf(t.locale));
 
     return new Response(Buffer.from(bytes), {
       headers: {

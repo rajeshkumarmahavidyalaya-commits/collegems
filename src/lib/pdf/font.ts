@@ -59,9 +59,10 @@ import * as upstreamFontkit from "fontkit";
  *     So `typeset.ts` lays the glyphs out itself, from upstream fontkit's
  *     positions, one text matrix per glyph.
  *
- * Urdu stays refused. It is Arabic script, right to left and joined, which is
- * a second font and a bidi pass — and a Latin-only file would print it
- * back to front, which is worse than the sentence below.
+ * Urdu is drawn in Noto Naskh Arabic, through a bidi pass (`bidi-js`), with
+ * the whole sheet mirrored: see `typeset.ts` and `Sheet.create`. A script none
+ * of the three faces covers (Tamil, Bengali) is still refused with the
+ * characters named.
  *
  * And a fourth obstacle that is nobody's bug: **a web-font subset is cut for a
  * browser, which can load two files and fall back between them. A PDF embeds
@@ -89,6 +90,9 @@ const FONT_FILE = join(process.cwd(), "src/lib/pdf/fonts/WorkSans-Regular.ttf");
  * like the one above, so the file tracer can follow it.
  */
 const DEVANAGARI_FILE = join(process.cwd(), "src/lib/pdf/fonts/NotoSansDevanagari-Regular.ttf");
+
+/** Noto Naskh Arabic, for Urdu (see `arabicFont`). OFL, licence beside it. */
+const ARABIC_FILE = join(process.cwd(), "src/lib/pdf/fonts/NotoNaskhArabic-Regular.ttf");
 
 export type DocumentFont = {
   bytes: Uint8Array;
@@ -126,7 +130,17 @@ export type ShapedRun = {
 
 export type ShapingFont = DocumentFont & {
   unitsPerEm: number;
-  layout(text: string): ShapedRun;
+  /**
+   * Shape `text`. For a right-to-left run (`rtl`), fontkit returns the glyphs
+   * already in visual order, left to right, which is the order they are drawn.
+   */
+  layout(text: string, rtl?: boolean): ShapedRun;
+};
+
+type Parsed = {
+  characterSet: number[];
+  unitsPerEm: number;
+  layout(text: string, features?: unknown, script?: string, language?: string, direction?: string): ShapedRun;
 };
 
 let devanagari: ShapingFont | null = null;
@@ -139,11 +153,7 @@ let devanagari: ShapingFont | null = null;
 export async function devanagariFont(): Promise<ShapingFont> {
   if (!devanagari) {
     const bytes = new Uint8Array(await readFile(DEVANAGARI_FILE));
-    const parsed = upstreamFontkit.create(Buffer.from(bytes)) as unknown as {
-      characterSet: number[];
-      unitsPerEm: number;
-      layout(text: string, features?: unknown, script?: string): ShapedRun;
-    };
+    const parsed = upstreamFontkit.create(Buffer.from(bytes)) as unknown as Parsed;
     devanagari = {
       bytes,
       covered: new Set(parsed.characterSet),
@@ -163,6 +173,34 @@ export async function devanagariFont(): Promise<ShapingFont> {
     };
   }
   return devanagari;
+}
+
+let arabic: ShapingFont | null = null;
+
+/**
+ * Noto Naskh Arabic, for Urdu. It covers every Urdu string in the catalogue,
+ * Latin and digits, and not the rupee sign, which `typeset.ts` draws from Work
+ * Sans in the middle of an Urdu line.
+ *
+ * Naskh rather than Nastaliq, deliberately: Nastaliq is how Urdu is usually
+ * printed, and its cursive attachment stacks each word diagonally with large
+ * vertical offsets, which this renderer's line height and wrapping were not
+ * built for. Naskh is legible Urdu, used by newspapers online and by most
+ * phones' fallback fonts. Named here so a school that asks is told why.
+ */
+export async function arabicFont(): Promise<ShapingFont> {
+  if (!arabic) {
+    const bytes = new Uint8Array(await readFile(ARABIC_FILE));
+    const parsed = upstreamFontkit.create(Buffer.from(bytes)) as unknown as Parsed;
+    arabic = {
+      bytes,
+      covered: new Set(parsed.characterSet),
+      unitsPerEm: parsed.unitsPerEm,
+      layout: (text, rtl = false) =>
+        parsed.layout(text, undefined, rtl ? "arab" : "latn", undefined, rtl ? "rtl" : "ltr"),
+    };
+  }
+  return arabic;
 }
 
 const isDevanagari = (cp: number) => (cp >= 0x0900 && cp <= 0x097f) || (cp >= 0xa8e0 && cp <= 0xa8ff);
@@ -191,6 +229,9 @@ export function scriptRuns(text: string): { text: string; devanagari: boolean }[
   }
   return runs;
 }
+
+/** Right-to-left letters: Arabic and its supplements, and the presentation forms. */
+export const RTL_LETTER = /[\u0590-\u08ff\ufb1d-\ufdff\ufe70-\ufeff]/u;
 
 /**
  * Characters in `text` that the document font cannot draw, in the order a
@@ -235,8 +276,8 @@ export function unrenderableMessage(missing: string[]): string {
   return (
     `This document cannot be turned into a PDF: the document fonts have no ` +
     `${missing.length === 1 ? "glyph" : "glyphs"} for ${shown}${more}. ` +
-    `PDFs are produced in Latin and Devanagari (Hindi) script — printing the ` +
-    `page from your browser uses your own system fonts and will render it correctly.`
+    `PDFs are produced in Latin, Devanagari (Hindi) and Arabic (Urdu) script — ` +
+    `printing the page from your browser uses your own system fonts and will render it correctly.`
   );
 }
 

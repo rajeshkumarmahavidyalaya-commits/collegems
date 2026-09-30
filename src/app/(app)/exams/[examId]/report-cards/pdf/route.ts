@@ -71,6 +71,7 @@ export async function GET(
         resultLabel: resultLabel(card.totals.result, t),
         publishedOn: card.exam.published_at ? formatDate(card.exam.published_at, locale) : null,
       })),
+      locale,
     );
 
     // The class, not a child: this file is opened by an office, and

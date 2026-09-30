@@ -391,11 +391,10 @@ is a real argument and is *not* what this does. It would mean a family and the
 office holding two differently-worded copies of one bill with no way to say
 which is authoritative. Named rather than left as an accident.
 
-A consequence, honest rather than hidden: **an Urdu reader gets the 422**. A
-Hindi reader gets a Hindi bill (see *Hindi* below); Urdu is Arabic script, right
-to left, and the renderer has no face or layout for it. The message says so and
-points at printing, which uses the reader's own system fonts and works.
-`tests/pdf/document.test.ts` asserts both halves.
+A Hindi reader gets a Hindi bill and an Urdu reader an Urdu one, laid out right
+to left (see *Hindi* and *Urdu* below). A name in a script none of the three
+faces covers (Tamil, Bengali) gets the 422 with the characters named, and the
+message points at printing, which uses the reader's own system fonts and works.
 
 The `pdf.invoice.*` keys are therefore **English only**, with the reason in the
 catalogue: translating a label the renderer cannot draw is *a correct string
@@ -417,7 +416,7 @@ Both are kept, because they fail in opposite directions:
 - **printing** renders in the reader's browser with the reader's system fonts,
   so it prints scripts `src/lib/pdf` cannot — and produces nothing anybody can
   attach to an email;
-- **the PDF** is a file, in Latin or Devanagari script.
+- **the PDF** is a file, in Latin, Devanagari or Arabic script.
 
 ---
 
@@ -534,9 +533,8 @@ that. Adding a PDF route is a line somebody writes on purpose.
 ## Hindi
 
 A Hindi reader asking for a bill, a receipt, a salary slip, a report card, a
-certificate or an identity card now gets the file rather than the 422. Urdu is
-still refused (Arabic script and right-to-left layout are a second face and a
-bidi pass), and printing from the browser still handles it.
+certificate or an identity card now gets the file rather than the 422. Urdu
+followed; see the next section.
 
 **How a string is drawn.** `src/lib/pdf/typeset.ts` holds the document's two
 faces:
@@ -557,10 +555,9 @@ faces:
 | a line starting in Latin (`PS-001 · मार्च`) was shaped as Latin, leaving a bare halant | the same rendering, in the footer | shape one script run at a time (`scriptRuns`), naming the script |
 | embedding the face (~220 kB, ~90 kB compressed) in every document | — | Devanagari runs are recorded and written at `finish()`/`flush()`, so the face is embedded only when a run exists |
 
-**What is not right yet.** The text layer, which is what copy and search read,
-comes out garbled for conjuncts: pdf-lib's ToUnicode map does not describe a
-ligature glyph by the characters it stands for. The page reads correctly; a
-search inside the file for a Hindi word may not find it.
+**The text layer** (what copy and search read) had the same problem one level
+down: pdf-lib maps only each code point's nominal glyph, so a conjunct had no
+characters at all. See *Copy and search* below.
 
 `tests/pdf/hindi.test.ts` checks four things:
 
@@ -573,3 +570,55 @@ The invoice and receipt labels (`pdf.invoice.*`, `pdf.receipt.*`,
 `pdf.refund.*`, `pdf.roll`) are translated into Hindi and Urdu. The report card
 and certificate renderers still draw a few structural words in English (for
 example *Page 1 of 2*); a certificate's body is the college's own template.
+
+---
+
+## Urdu
+
+An Urdu reader gets their bill, receipt, salary slip, report card and identity
+card in Urdu, laid out right to left.
+
+- **The face.** Noto Naskh Arabic. It covers all 750 Urdu strings in the
+  catalogue, digits and Latin, and not the rupee sign. Naskh rather than
+  Nastaliq, deliberately: Nastaliq is how Urdu is usually printed, and its
+  diagonal cursive stacking needs line heights and wrapping this renderer was
+  not built for. Naskh is legible Urdu and what most phones fall back to.
+- **The line.** `typeset.ts` runs each line through the Unicode bidi algorithm
+  (`bidi-js`), cuts it into runs of one direction, and each run into pieces of
+  one font: Naskh, then Work Sans, then Devanagari. That is how `₹` sits in an
+  Urdu line although Naskh lacks it. Parentheses are mirrored in right-to-left
+  runs.
+- **The page.** `Sheet.create({ locale })` takes the direction from the
+  reader's locale. In Urdu, text sits on the right, a table row runs right to
+  left, the signature and footer swap sides, and the page count reads
+  *صفحہ 1 از 2*. An ID card keeps its photograph and code where a card printer
+  expects them and right-aligns each text box.
+- **Certificates** follow their own wording, not the reader: an English
+  template is laid out left to right for everybody, an Urdu one right to left.
+- **One thing that looks wrong and is not:** in `فیس ₹1,500.00 باقی ہے` the
+  rupee sign lands to the right of the number. Next to Arabic letters, the
+  digits are Arabic numbers under the bidi algorithm, which a currency sign does
+  not join. A browser shows the same line the same way.
+
+`tests/pdf/hindi.test.ts` pins the face's coverage, the mirrored row (verified
+by planting a sheet that ignores the direction), the right-to-left order of a
+mixed line, and the translated page count.
+
+## Copy and search
+
+Two mechanisms, because each covers what the other cannot:
+
+- **Every shaped run is a `/Span` with an `/ActualText`** of the characters it
+  stands for. That is the PDF's own mechanism for a glyph that is several
+  characters, and it is exact.
+- **The glyphs actually drawn are registered** in the embedded font's width
+  table and ToUnicode map (`registerGlyphs`), so an extractor that ignores
+  ActualText still finds characters. Measured with pdf.js: the Hindi bill
+  extracts as readable words (with the `ि` matra in visual order, as PDF
+  extraction usually shows it); the Urdu bill extracts as Arabic letters with
+  some noise, because Naskh draws the dots of ب ت ث as separate glyphs that
+  stand for no character, and one dotless base glyph serves all three.
+
+pdf.js is the only extractor this sandbox can run, and it does not read
+ActualText, so the exact half is asserted on the file's structure rather than
+measured in a viewer.

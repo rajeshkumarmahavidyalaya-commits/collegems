@@ -1,4 +1,5 @@
 import { intlTag, type Locale } from "./config";
+import type { Translator } from "./translator";
 
 /**
  * Dates, times, numbers and money, in the reader's locale.
@@ -167,4 +168,21 @@ export function formatWeekday(
     : ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"][
         isoWeekday - 1
       ];
+}
+
+/**
+ * `1` → *1st* in English, and the bare numeral in Hindi and Urdu, whose `other`
+ * ordinal key is `{n}`. `Intl.PluralRules(..., { type: "ordinal" })` decides the
+ * category, which gets the English teens right on its own. Moved here from the
+ * schedules module when the report card's rank line became its second caller.
+ */
+export function formatOrdinal(n: number, t: Translator): string {
+  let category = "other";
+  try {
+    category = new Intl.PluralRules(intlTag(t.locale), { type: "ordinal" }).select(n);
+  } catch {
+    // No ICU ordinal data: `other`, which is "{n}th" in English and the bare
+    // numeral everywhere else. Never a wrong suffix.
+  }
+  return t(`schedules.ordinal.${category}` as Parameters<Translator>[0], { n });
 }

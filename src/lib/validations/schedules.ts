@@ -1,6 +1,6 @@
 import { z } from "zod";
 import type { Translator } from "@/lib/i18n/translate";
-import { formatWeekday } from "@/lib/i18n/format";
+import { formatOrdinal, formatWeekday } from "@/lib/i18n/format";
 import { intlTag } from "@/lib/i18n/config";
 import { labelFor } from "./labels";
 
@@ -92,16 +92,7 @@ export function formatRunAt(runAt: string): string {
  * than what it replaced, which is not a trade worth making when `Intl` will
  * answer the question.
  */
-function ordinal(n: number, t: Translator): string {
-  let category = "other";
-  try {
-    category = new Intl.PluralRules(intlTag(t.locale), { type: "ordinal" }).select(n);
-  } catch {
-    // No ICU ordinal data: fall through to `other`, which is "{n}th" in English
-    // and the bare numeral everywhere else. Never a wrong suffix.
-  }
-  return t(`schedules.ordinal.${category}` as Parameters<Translator>[0], { n });
-}
+const ordinal = formatOrdinal;
 
 /**
  * One sentence for the three columns.
