@@ -288,6 +288,9 @@ export type DeliveryRow = {
   lastError: string | null;
   sentAt: string | null;
   readAt: string | null;
+  /** The provider's report after accepting it (0309); null until one arrives. */
+  receiptStatus: string | null;
+  receiptDetail: string | null;
 };
 
 /**
@@ -301,7 +304,7 @@ export async function listDeliveries(notificationId: string): Promise<DeliveryRo
 
   const { data: deliveries, error } = await supabase
     .from("notification_deliveries")
-    .select("id, recipient_user_id, channel, address, status, attempts, last_error, sent_at, read_at")
+    .select("id, recipient_user_id, channel, address, status, attempts, last_error, sent_at, read_at, receipt_status, receipt_detail")
     .eq("notification_id", notificationId)
     .order("channel");
 
@@ -331,6 +334,8 @@ export async function listDeliveries(notificationId: string): Promise<DeliveryRo
     lastError: d.last_error,
     sentAt: d.sent_at,
     readAt: d.read_at,
+    receiptStatus: d.receipt_status,
+    receiptDetail: d.receipt_detail,
   }));
 }
 

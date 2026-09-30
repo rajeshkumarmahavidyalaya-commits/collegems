@@ -236,6 +236,11 @@ const sms: Driver = {
     const from = dlt?.header ?? fromAddress ?? Deno.env.get("TWILIO_FROM_NUMBER")!;
 
     const form = new URLSearchParams({ To: address, From: from, Body: body });
+    // Ask Twilio to report what happened next (0309). `notify-receipts` checks
+    // the report's signature against exactly this URL, so it is built in one
+    // place, from one variable.
+    const receipts = Deno.env.get("NOTIFY_RECEIPTS_URL");
+    if (receipts) form.set("StatusCallback", `${receipts}?provider=twilio`);
 
     const response = await fetch(
       `https://api.twilio.com/2010-04-01/Accounts/${encodeURIComponent(sid)}/Messages.json`,

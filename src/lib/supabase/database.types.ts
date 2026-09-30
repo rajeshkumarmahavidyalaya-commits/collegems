@@ -4413,6 +4413,9 @@ export type Database = {
           provider_ref: string | null
           provider_template: string | null
           read_at: string | null
+          receipt_at: string | null
+          receipt_detail: string | null
+          receipt_status: string | null
           recipient_user_id: string | null
           sent_at: string | null
           status: string
@@ -4433,6 +4436,9 @@ export type Database = {
           provider_ref?: string | null
           provider_template?: string | null
           read_at?: string | null
+          receipt_at?: string | null
+          receipt_detail?: string | null
+          receipt_status?: string | null
           recipient_user_id?: string | null
           sent_at?: string | null
           status?: string
@@ -4453,6 +4459,9 @@ export type Database = {
           provider_ref?: string | null
           provider_template?: string | null
           read_at?: string | null
+          receipt_at?: string | null
+          receipt_detail?: string | null
+          receipt_status?: string | null
           recipient_user_id?: string | null
           sent_at?: string | null
           status?: string
@@ -10453,6 +10462,23 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      notification_outcome_counts: {
+        Args: never
+        Returns: {
+          daily_limit: number
+          remaining: number
+          reported_7d: number
+          undelivered_7d: number
+          waiting: number
+        }[]
+      }
+      notification_outcome_problems: {
+        Args: never
+        Returns: {
+          message: string
+          severity: string
+        }[]
+      }
       notify_channel_report: {
         Args: {
           p_channel: string
@@ -10497,6 +10523,9 @@ export type Database = {
           provider_ref: string | null
           provider_template: string | null
           read_at: string | null
+          receipt_at: string | null
+          receipt_detail: string | null
+          receipt_status: string | null
           recipient_user_id: string | null
           sent_at: string | null
           status: string
@@ -10552,6 +10581,15 @@ export type Database = {
           skipped: number
           subject: string
         }[]
+      }
+      notify_record_receipt: {
+        Args: {
+          p_channel: string
+          p_detail?: string
+          p_ref: string
+          p_state: string
+        }
+        Returns: number
       }
       notify_record_result: {
         Args: {
@@ -11308,6 +11346,7 @@ export type Database = {
         }[]
       }
       setup_progress: { Args: never; Returns: Json }
+      sms_daily_remaining: { Args: { p_tenant_id: string }; Returns: number }
       sms_dlt_problems: {
         Args: never
         Returns: {

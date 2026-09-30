@@ -64,6 +64,7 @@ import {
   channelHasDriver,
   channelLabel,
   relativeTime,
+  receiptLabel,
   statusLabel,
   templateVariables,
 } from "@/lib/validations/notifications-display";
@@ -437,6 +438,12 @@ function OutboxCard({
                           </TableCell>
                           <TableCell>
                             <StatusBadge status={d.status} />
+                            <ReceiptLine
+                              channel={d.channel}
+                              status={d.status}
+                              receipt={d.receiptStatus}
+                              detail={d.receiptDetail}
+                            />
                             {d.lastError && (
                               <p className="mt-1 max-w-xs text-xs text-muted-foreground">
                                 {d.lastError}
@@ -488,6 +495,47 @@ function CountChip({
       <span className="font-mono tabular-nums">{count}</span>
       {label}
     </span>
+  );
+}
+
+/**
+ * What the provider said happened after it accepted the message (0309). Only
+ * SMS and email report back, and only once sent; "awaiting" is drawn for those
+ * alone, so a push or in-app message never looks as if it is waiting for a
+ * report that no provider will send. Text beside the colour, as everywhere.
+ */
+function ReceiptLine({
+  channel,
+  status,
+  receipt,
+  detail,
+}: {
+  channel: string;
+  status: string;
+  receipt: string | null;
+  detail: string | null;
+}) {
+  const { t } = useI18n();
+  if (status !== "sent" || (channel !== "sms" && channel !== "email")) return null;
+  if (!receipt) {
+    return (
+      <p className="mt-1 text-xs text-muted-foreground">
+        {t("delivery.receipt.awaiting")}
+      </p>
+    );
+  }
+  return (
+    <p
+      className={cn(
+        "mt-1 text-xs",
+        receipt === "delivered"
+          ? "text-emerald-700 dark:text-emerald-400"
+          : "text-destructive",
+      )}
+    >
+      {receiptLabel(receipt, t)}
+      {detail ? ` · ${detail}` : ""}
+    </p>
   );
 }
 

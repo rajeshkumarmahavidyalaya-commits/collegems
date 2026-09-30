@@ -94,6 +94,19 @@ export const DELIVERY_STATUSES = [
 
 export type DeliveryStatus = (typeof DELIVERY_STATUSES)[number]["value"];
 
+/**
+ * What the provider reported after accepting a message (0309). A second
+ * column beside the status rather than a sixth status: *sent* is what the
+ * dispatcher did, and this is what happened next, so a message can be both
+ * sent and not delivered -- which is the case this exists to show.
+ */
+export const RECEIPT_STATUSES = [
+  { value: "delivered", label: "Delivered", tone: "success" },
+  { value: "undelivered", label: "Not delivered", tone: "danger" },
+  { value: "bounced", label: "Bounced", tone: "danger" },
+  { value: "complained", label: "Marked as spam", tone: "danger" },
+] as const;
+
 // ---------------------------------------------------------------------------
 // Whether a channel actually sends, which has three parts
 // ---------------------------------------------------------------------------
@@ -243,6 +256,11 @@ export function channelHasDriver(value: string) {
 export function statusLabel(value: string, t: Translator) {
   const found = DELIVERY_STATUSES.find((s) => s.value === value);
   return found ? labelFor(`delivery.status.${value}`, found.label, t) : value;
+}
+
+export function receiptLabel(value: string, t: Translator) {
+  const found = RECEIPT_STATUSES.find((s) => s.value === value);
+  return found ? labelFor(`delivery.receipt.${value}`, found.label, t) : value;
 }
 
 export function audienceKindLabel(value: string, t: Translator) {

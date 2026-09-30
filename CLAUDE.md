@@ -3046,6 +3046,16 @@ the payload does not fill). Twilio sends under the registered header; with
 has not been exercised against the live gateway, which needs a registered
 account, and says so in `docs/modules/notifications.md`.
 
+**And "sent" is the dispatcher's word, not the carrier's (`0309`).** A
+provider's delivery report is recorded in `receipt_status`, beside `status` and
+never in it: two accounts from two parties. `notify-receipts` is rule 6's
+webhook shape. It verifies the report before parsing it, fails closed, and
+trusts the report only for the `provider_ref` this system wrote. A college's
+`notifications.sms_daily_limit` holds SMS in the queue rather than dropping
+them. It is applied where work is claimed, and a capped college is excluded
+*inside* the locked query, because ranking after the lock let one college's
+backlog starve everybody else's email. See `docs/modules/notifications.md`.
+
 ### A notice is not a notification
 
 The board is the module built on top of this one, and the line between them is

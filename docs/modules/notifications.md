@@ -442,21 +442,14 @@ and there is no single place a new permission would otherwise reach them from.
 
 ## What is not built
 
-- **No delivery-status callbacks.** `provider_ref` is stored and is what such a
-  callback would match on, but nothing consumes a provider webhook yet, so
-  "sent" means the provider accepted it — not that it arrived. With DLT this
-  matters more: a carrier that drops a mismatched message does so after the
-  gateway has accepted it.
-- **No spend limits.** A school with a misconfigured audience can send a lot of
-  SMS. A per-tenant daily cap belongs next to `notification_channel_settings`
-  and is not built.
 - **No per-notification read receipts for the sender** beyond the delivery log's
   counts — `read_at` is stored per delivery, but the log rolls up status rather
   than showing who has opened what. That is a product decision to revisit, not
   an oversight.
 
-(Two lines that stood here are no longer true and were removed: every channel
-has a driver, and the modules raise their events — see *Nine events declared*.)
+(Four lines that stood here are no longer true and were removed: every channel
+has a driver, the modules raise their events — see *Nine events declared* — and
+delivery reports and a daily SMS limit are built, below.)
 
 ## SMS in India: DLT (0308)
 
@@ -658,3 +651,85 @@ reason rather than quietly excluded.
 Still unraised because their modules have no announcement decision yet: a
 homework publish, a hostel placement, a renewed bus seat, an overdue enquiry
 follow-up. Each is now one small definer function in the shape above.
+
+## A daily SMS limit, and what actually arrived (0309)
+
+### The limit
+
+`notifications.sms_daily_limit` is the college's own number: at most this many
+SMS leave in one day, **the college's day** (`tenants.timezone`). Empty means no
+limit, which is the behaviour before 0309.
+
+- **Over the limit, messages wait; they are not dropped.** Rule 10's *a held
+  channel keeps its queue*: a message held by the limit is tomorrow's first
+  batch, still subject to its kind's `stale_after`.
+- **It is applied where work is claimed**, `notify_claim_deliveries`, because
+  every send passes through it. Postgres refuses a window function beside
+  `FOR UPDATE`, so candidates are locked first and each college's remaining
+  budget is applied one level up.
+- **A capped college contributes no SMS to the claim window at all.** The first
+  draft ranked after locking, so one college's waiting SMS could fill the
+  window and starve every other college's email. Excluding them inside the
+  locked query is the fix.
+- `sms_daily_remaining(tenant)` counts SMS sent today plus those being sent now.
+  A failed attempt that went back to the queue is not counted, since a provider
+  does not bill a message it refused. It takes a tenant, so it is revoked from
+  everybody holding a JWT.
+
+Probed in a rolled-back transaction: a limit of 2 with 5 queued SMS: the first
+claim took 2, the second took 0, and 3 stayed queued.
+
+### Receipts
+
+"Sent" has meant *the provider accepted it*. With DLT that is further from the
+truth: a carrier drops a mismatched message after the gateway has accepted it.
+Providers report the outcome afterwards, and `notify-receipts` (an Edge
+Function) records it.
+
+- **Beside the status, not in it.** `status` stays the dispatcher's account of
+  what it did; `receipt_status` (`delivered`, `undelivered`, `bounced`,
+  `complained`), `receipt_at` and `receipt_detail` are the provider's account of
+  what happened next. A message can be *sent* and *not delivered*, which is the
+  case this exists to show.
+- **Rule 6's webhook shape.** Deployed with JWT verification off (no provider
+  can present one), the raw body verified before it is parsed, a missing secret
+  a `503` rather than a skipped check, comparisons constant-time. The report is
+  trusted for a reference and an outcome only: `notify_record_receipt` (definer,
+  revoked from every JWT role) finds the delivery by the `provider_ref` this
+  system stored when it sent, so a report for a message this system never sent
+  matches nothing, and no report can name a college.
+- **Nothing overwrites a complaint**: it is the one outcome a college must not
+  lose.
+- **The delivery log** shows the outcome under each sent SMS and email, or
+  *awaiting a delivery report*, in all three languages. Push and in-app get no
+  such line, because no provider reports on them.
+- **The critic** `notifications.outcomes` (on `/checks`, for `settings.manage`)
+  says when today's limit is holding messages back, and how many messages the
+  providers reported as not delivered in the last week. Its counts come from a
+  definer that filters by college itself (rule 4's invoker lie).
+
+One URL, `…/functions/v1/notify-receipts?provider=…`:
+
+| provider | proof | secrets on the Edge Function |
+|---|---|---|
+| `twilio` | `X-Twilio-Signature` over `NOTIFY_RECEIPTS_URL?provider=twilio` + the form | `TWILIO_AUTH_TOKEN`, `NOTIFY_RECEIPTS_URL` |
+| `resend` | Svix headers, 5-minute tolerance | `RESEND_WEBHOOK_SECRET` |
+| `msg91` | `&token=` in the URL | `MSG91_RECEIPT_TOKEN` |
+
+`NOTIFY_RECEIPTS_URL` must also be set on `notify-dispatch`: the Twilio driver
+sends it as each message's `StatusCallback`, and the signature is computed over
+exactly that URL. For Resend, add the URL as a webhook in its dashboard; for
+MSG91, set the delivery-report URL in its panel with the token appended. MSG91's
+webhook carries no signature, so the token in the URL is the only proof it
+offers, which is weaker, and it is stated here rather than hidden.
+
+**What was and was not verified.** The database half was probed: a receipt with
+the wrong channel matched 0 rows, *undelivered* matched 1, an unknown reference
+matched 0, and *delivered* after a complaint matched 0. The signatures are
+checked in `tests/notifications/receipts.test.ts` against an independent Node
+implementation of each provider's documented algorithm, with a negative control
+for each (a tampered body, a wrong key, a stale timestamp). **No live provider has
+called the function.** No provider is connected on this deployment, and the
+sandbox cannot reach the Supabase host. MSG91's report shape in particular is
+read from its documentation, defensively.
+
