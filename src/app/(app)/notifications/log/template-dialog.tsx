@@ -101,6 +101,7 @@ export function TemplateDialog({
   const variables = templateVariables(`${subject ?? ""} ${body ?? ""}`);
   // WhatsApp is the one channel where the text below is *not* what gets sent.
   const isWhatsApp = channel === "whatsapp";
+  const isSms = channel === "sms";
 
   function onSubmit(input: TemplateInput) {
     startTransition(async () => {
@@ -186,9 +187,28 @@ export function TemplateDialog({
               description={
                 isWhatsApp
                   ? "What the delivery log will show. WhatsApp sends Meta's approved copy of the template below, not this text — keep them saying the same thing."
-                  : "Use {{variable}} for values the sending module supplies."
+                  : isSms
+                    ? "Use {{variable}} for values the sending module supplies. If this college sends SMS only through DLT-registered templates, this must be the registered text, with {{variable}} where the registry has {#var#}."
+                    : "Use {{variable}} for values the sending module supplies."
               }
             />
+
+            {isSms && (
+              <div className="flex flex-col gap-3 rounded-md border border-dashed p-3">
+                <p className="text-xs text-muted-foreground">
+                  Indian carriers deliver an SMS only when it matches a template
+                  registered on the DLT registry. Once registration is switched on
+                  under Settings, this event&rsquo;s SMS is sent only through the
+                  template with this ID, and skipped with a reason without one.
+                </p>
+                <TextField
+                  control={form.control}
+                  name="providerTemplateName"
+                  label="DLT template ID"
+                  description="The 19-digit content template ID from the DLT registry. Leave it empty outside India."
+                />
+              </div>
+            )}
 
             {isWhatsApp && (
               <div className="flex flex-col gap-4 rounded-md border border-dashed p-3">

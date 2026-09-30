@@ -393,11 +393,11 @@ export async function saveTemplate(
     subject: parsed.data.subject?.trim() || null,
     body: parsed.data.body,
     is_active: parsed.data.isActive,
-    // A CHECK refuses a provider template on any channel but WhatsApp, so the
-    // null is not defensive tidying — it is what keeps the constraint quiet
-    // when somebody switches an existing row's channel.
+    // A CHECK refuses a provider template on any channel but WhatsApp and SMS
+    // (0308), so the null is not defensive tidying — it is what keeps the
+    // constraint quiet when somebody switches an existing row's channel.
     provider_template_name:
-      parsed.data.channel === "whatsapp"
+      parsed.data.channel === "whatsapp" || parsed.data.channel === "sms"
         ? parsed.data.providerTemplateName?.trim() || null
         : null,
     provider_template_locale: parsed.data.providerTemplateLocale?.trim() || "en",

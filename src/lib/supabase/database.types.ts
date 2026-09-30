@@ -1022,7 +1022,12 @@ export type Database = {
             columns: ["tenant_id", "session_id", "section_id", "subject_id"]
             isOneToOne: false
             referencedRelation: "section_subjects"
-            referencedColumns: ["tenant_id", "session_id", "section_id", "subject_id"]
+            referencedColumns: [
+              "tenant_id",
+              "session_id",
+              "section_id",
+              "subject_id",
+            ]
           },
           {
             foreignKeyName: "class_tests_tenant_id_fkey"
@@ -5145,7 +5150,7 @@ export type Database = {
           net_pay?: number
           note?: string | null
           paid_days?: number
-          period_month?: string
+          period_month: string
           run_id: string
           run_status: string
           staff_id: string
@@ -5177,10 +5182,10 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "payslips_run_fkey"
-            columns: ["tenant_id", "run_id", "run_status"]
+            columns: ["tenant_id", "run_id", "run_status", "period_month"]
             isOneToOne: false
             referencedRelation: "payroll_runs"
-            referencedColumns: ["tenant_id", "id", "status"]
+            referencedColumns: ["tenant_id", "id", "status", "period_month"]
           },
           {
             foreignKeyName: "payslips_staff_fkey"
@@ -8503,6 +8508,8 @@ export type Database = {
           native_name: string
         }[]
       }
+      behaviour_scale_points: { Args: never; Returns: number }
+      behaviour_seed_traits: { Args: { p_tenant_id: string }; Returns: number }
       biometric_device_register: { Args: { p_name: string }; Returns: Json }
       biometric_device_retire: { Args: { p_id: string }; Returns: undefined }
       biometric_ingest: {
@@ -8609,6 +8616,10 @@ export type Database = {
           severity: string
         }[]
       }
+      certificate_seed_defaults: {
+        Args: { p_tenant_id: string }
+        Returns: number
+      }
       certificate_snapshot: {
         Args: { p_extra?: Json; p_issued_on?: string; p_student_id: string }
         Returns: Json
@@ -8652,7 +8663,11 @@ export type Database = {
         Returns: boolean
       }
       class_test_i_teach: {
-        Args: { p_section_id: string; p_session_id: string; p_subject_id: string }
+        Args: {
+          p_section_id: string
+          p_session_id: string
+          p_subject_id: string
+        }
         Returns: boolean
       }
       class_test_sheet: {
@@ -10952,6 +10967,12 @@ export type Database = {
           row_data: Json
         }[]
       }
+      report_class_tests: {
+        Args: { p_params: Json }
+        Returns: {
+          row_data: Json
+        }[]
+      }
       report_concessions: {
         Args: { p_params: Json }
         Returns: {
@@ -11287,6 +11308,13 @@ export type Database = {
         }[]
       }
       setup_progress: { Args: never; Returns: Json }
+      sms_dlt_problems: {
+        Args: never
+        Returns: {
+          message: string
+          severity: string
+        }[]
+      }
       sms_segments: { Args: { p_text: string }; Returns: number }
       staff_admit: {
         Args: {

@@ -3031,14 +3031,20 @@ downstream was miscounted, because `invitation_apply` totals only what it queued
 > was counting. `0234` makes it **null, not zero**: *"this cost nothing"* and
 > *"there is no cost, because there is no message"* are different facts.
 
-**And the thing this deliberately does not build: DLT.** Indian carriers accept
-transactional SMS only from a sender ID and template registered with the TRAI
-registry — the same shape as WhatsApp's approved templates, and modelled nowhere
-here, not by this work and not by the three events that have defaulted to SMS
-since `0033`. Named rather than papered over, with the honest cost:
-`notification_templates` already carries the `provider_template_name` and
-`provider_template_params` columns WhatsApp uses, so it is a driver change plus a
-per-tenant sender ID setting, not a new concept.
+**And DLT, which this section once named as deliberately not built, is built
+(`0308`), at exactly the cost it predicted.** Indian carriers deliver an SMS
+only when it matches a template registered with the TRAI registry, under a
+registered header and entity. `notifications.sms_dlt` is the college's
+registration, off by default; an SMS template's `provider_template_name` holds
+its 19-digit DLT ID; and one `BEFORE INSERT` trigger on `notification_deliveries`
+decides for **both** writers of an SMS, `notify_send_for` and the invitation
+raiser, because rule 6 already asks *what else reaches this row?* A college that
+requires DLT gets each SMS re-rendered from its registered template with the
+IDs frozen on, or skipped with a sentence (no template, no header, a variable
+the payload does not fill). Twilio sends under the registered header; with
+`SMS_PROVIDER=msg91`, MSG91 takes the template ID per message. The MSG91 driver
+has not been exercised against the live gateway, which needs a registered
+account, and says so in `docs/modules/notifications.md`.
 
 ### A notice is not a notification
 

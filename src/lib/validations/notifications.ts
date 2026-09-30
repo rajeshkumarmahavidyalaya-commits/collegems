@@ -145,8 +145,14 @@ export const templateSchema = z
     /** Which payload keys fill Meta's {{1}}, {{2}} — in that order. */
     providerTemplateParams: z.array(z.string().max(60)).max(10).optional(),
   })
-  .refine((v) => v.channel === "whatsapp" || !v.providerTemplateName?.trim(), {
-    message: "Only WhatsApp uses a registered template name",
+  .refine((v) => v.channel === "whatsapp" || v.channel === "sms" || !v.providerTemplateName?.trim(), {
+    message: "Only WhatsApp and SMS use a registered template",
+    path: ["providerTemplateName"],
+  })
+  // SMS (0308): the DLT content template ID, which is 19 digits. The CHECK on
+  // the table says the same; this says it before the round trip, in words.
+  .refine((v) => v.channel !== "sms" || !v.providerTemplateName?.trim() || /^\d{19}$/.test(v.providerTemplateName.trim()), {
+    message: "A DLT template ID is the 19-digit number the registry gave this template",
     path: ["providerTemplateName"],
   });
 

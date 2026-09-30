@@ -135,21 +135,54 @@ const email: Driver = {
 };
 
 // ---------------------------------------------------------------------------
-// SMS -- Twilio
+// SMS -- Twilio, or MSG91 for an Indian gateway (0308)
 // ---------------------------------------------------------------------------
+
+/**
+ * What 0308's trigger froze onto a delivery for a college that sends SMS only
+ * through DLT-registered templates: the content template ID, the header and
+ * the principal entity ID. Absent for every other college.
+ */
+type Dlt = { template_id: string; header: string; entity_id: string };
+
+function dltOf(params: unknown): Dlt | null {
+  const dlt = (params as { dlt?: Partial<Dlt> } | null)?.dlt;
+  return dlt && dlt.template_id && dlt.header && dlt.entity_id ? (dlt as Dlt) : null;
+}
+
+/**
+ * `SMS_PROVIDER=msg91` sends through MSG91, which takes the DLT template ID on
+ * each message (an Indian gateway that matches by ID); anything else is Twilio,
+ * which matches a message to its registered template by content, so for Twilio
+ * the registered header is simply the sender. Either way the body is already
+ * the registered text: the trigger rendered it from the template.
+ */
+const usesMsg91 = () => Deno.env.get("SMS_PROVIDER") === "msg91";
 
 const sms: Driver = {
   channel: "sms",
-  provider: "twilio",
+  get provider() {
+    return usesMsg91() ? "msg91" : "twilio";
+  },
 
   configure(fromAddress) {
+    if (usesMsg91()) {
+      if (!Deno.env.get("MSG91_AUTH_KEY")) {
+        return {
+          ok: false,
+          reason:
+            "SMS_PROVIDER is msg91 but MSG91_AUTH_KEY is not set on this Edge Function.",
+        };
+      }
+      return { ok: true };
+    }
     const sid = Deno.env.get("TWILIO_ACCOUNT_SID");
     const token = Deno.env.get("TWILIO_AUTH_TOKEN");
     if (!sid || !token) {
       return {
         ok: false,
         reason:
-          "No SMS gateway is connected. Set TWILIO_ACCOUNT_SID and TWILIO_AUTH_TOKEN on this Edge Function to enable SMS.",
+          "No SMS gateway is connected. Set TWILIO_ACCOUNT_SID and TWILIO_AUTH_TOKEN (or SMS_PROVIDER=msg91 and MSG91_AUTH_KEY) on this Edge Function to enable SMS.",
       };
     }
     if (!fromAddress && !Deno.env.get("TWILIO_FROM_NUMBER")) {
@@ -162,10 +195,45 @@ const sms: Driver = {
     return { ok: true };
   },
 
-  async send({ address, body, fromAddress }) {
+  async send({ address, body, fromAddress, providerParams }) {
+    const dlt = dltOf(providerParams);
+
+    if (usesMsg91()) {
+      // MSG91 delivers in India only through a registered template, so a
+      // delivery without one cannot be sent. The trigger skips these at
+      // compose time once the college switches registration on; this is the
+      // sentence for the college that has not.
+      if (!dlt) {
+        return {
+          ok: false,
+          error:
+            "MSG91 sends only DLT-registered templates. Switch on SMS registration under Settings and give this event's SMS template its DLT template ID.",
+        };
+      }
+      const query = new URLSearchParams({
+        authkey: Deno.env.get("MSG91_AUTH_KEY")!,
+        mobiles: address.replace(/^\+/, ""),
+        message: body,
+        sender: dlt.header,
+        route: "4",
+        country: "0",
+        DLT_TE_ID: dlt.template_id,
+        response: "json",
+      });
+      const response = await fetch(`https://api.msg91.com/api/sendhttp.php?${query}`);
+      if (!response.ok) return { ok: false, error: await errorText(response) };
+      const payload = (await response.json().catch(() => ({}))) as { type?: string; message?: string };
+      if (payload.type && payload.type !== "success") {
+        return { ok: false, error: short(payload.message ?? "MSG91 refused the message") };
+      }
+      return { ok: true, ref: payload.message ?? null };
+    }
+
     const sid = Deno.env.get("TWILIO_ACCOUNT_SID")!;
     const token = Deno.env.get("TWILIO_AUTH_TOKEN")!;
-    const from = fromAddress ?? Deno.env.get("TWILIO_FROM_NUMBER")!;
+    // A registered header is the sender an Indian carrier expects; otherwise
+    // the school's number, then the deployment's.
+    const from = dlt?.header ?? fromAddress ?? Deno.env.get("TWILIO_FROM_NUMBER")!;
 
     const form = new URLSearchParams({ To: address, From: from, Body: body });
 

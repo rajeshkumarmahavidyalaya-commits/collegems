@@ -442,17 +442,11 @@ and there is no single place a new permission would otherwise reach them from.
 
 ## What is not built
 
-- ~~**No driver for any external channel.**~~ Email (Resend) and SMS (Twilio)
-  have drivers; WhatsApp and push do not, and say so rather than queueing in
-  silence. Adding one is a file in `supabase/functions/notify-dispatch/drivers.ts`
-  and a line in `DRIVERS` — no migration, no application change. That is what
-  rule 10 was for.
 - **No delivery-status callbacks.** `provider_ref` is stored and is what such a
   callback would match on, but nothing consumes a provider webhook yet, so
-  "sent" means the provider accepted it — not that it arrived.
-- **No scheduled run is configured.** The dispatcher is deployed and can be run
-  from the Channels screen; wiring a cron to invoke it with the service role is
-  a deployment step, not a code change.
+  "sent" means the provider accepted it — not that it arrived. With DLT this
+  matters more: a carrier that drops a mismatched message does so after the
+  gateway has accepted it.
 - **No spend limits.** A school with a misconfigured audience can send a lot of
   SMS. A per-tenant daily cap belongs next to `notification_channel_settings`
   and is not built.
@@ -460,10 +454,45 @@ and there is no single place a new permission would otherwise reach them from.
   counts — `read_at` is stored per delivery, but the log rolls up status rather
   than showing who has opened what. That is a product decision to revisit, not
   an oversight.
-- **No modules emit notifications yet.** The service is built and proven; wiring
-  `attendance.absent`, `fees.invoice_raised` and `library.book_overdue` into
-  their modules is the next step, and each is a single `notify_send` call at the
-  point the event becomes true.
+
+(Two lines that stood here are no longer true and were removed: every channel
+has a driver, and the modules raise their events — see *Nine events declared*.)
+
+## SMS in India: DLT (0308)
+
+Indian carriers deliver an SMS only when it matches a template registered on the
+TRAI DLT registry, sent under a registered six-character header by a registered
+principal entity. A mismatched message is accepted by the gateway, charged, and
+dropped by the carrier.
+
+- **The college's registration** is the `notifications.sms_dlt` setting: whether
+  SMS goes only through registered templates, the PE ID and the header. Off by
+  default, so a college outside India, or one whose gateway matches by content,
+  is unchanged.
+- **A template's DLT ID** is `provider_template_name` on its SMS template, the
+  column WhatsApp already uses for Meta's template name. It must be 19 digits,
+  in the table and in the form. The template's body is the registered text,
+  with `{{variable}}` where the registry has `{#var#}`.
+- **One trigger decides**, `notification_deliveries_sms_dlt`, because two
+  functions write SMS deliveries (`notify_send_for` and the invitation raiser)
+  and a rule in one of them is a rule the other forgets. For a college that
+  requires DLT, a queued SMS is re-rendered from the registered template with
+  the notification's own payload, and the template ID, header and PE ID are
+  frozen onto it; or it is **skipped with a sentence**: no registered template
+  for the event, no PE ID or header, or a variable the payload does not fill.
+- **The drivers.** Twilio matches content itself, so it is sent under the
+  registered header. `SMS_PROVIDER=msg91` (with `MSG91_AUTH_KEY`) sends through
+  MSG91, which takes the DLT template ID and header on each message. **The MSG91
+  path has not been run against the live gateway**, which needs a registered
+  account; the request shape is MSG91's documented `sendhttp` API.
+- **The critic**, `sms_dlt_problems()` on the checks page, names each SMS event
+  with no registered template before the evening a fee reminder goes to nobody.
+
+Probed in a rolled-back transaction on the demo college: off, queued as before;
+on with no template, skipped with the reason; a template ID of `announcement`
+refused by the CHECK; a registered template, *"Dear parent, school is closed on
+Friday - RKM"* with the three IDs frozen; a payload missing `{{text}}`, skipped
+naming it. `tests/notifications/sms-dlt.test.ts` pins the shape.
 
 ---
 
