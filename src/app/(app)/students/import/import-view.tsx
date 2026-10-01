@@ -27,6 +27,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { applySentence, IMPORT_COLUMNS, MAX_IMPORT_ROWS, parseCsv, rowStatus } from "@/lib/validations/import-display";
+import { ROLL_FILE_ACCEPT, readRollFile } from "@/lib/import/read-file";
 import {
   applyImport,
   discardImport,
@@ -88,8 +89,12 @@ function UploadCard() {
     setError(null);
     setNotice(null);
 
-    const text = await file.text();
-    const parsed = parseCsv(text);
+    const read = await readRollFile(file);
+    if (!read.ok) {
+      setError(read.error);
+      return;
+    }
+    const parsed = parseCsv(read.text);
 
     if (!parsed.ok) {
       setError(parsed.error);
@@ -119,7 +124,7 @@ function UploadCard() {
       <CardHeader>
         <CardTitle>Upload a file</CardTitle>
         <CardDescription className="max-w-2xl">
-          A CSV with a heading row. At most {MAX_IMPORT_ROWS} rows — a longer file is refused rather
+          An Excel workbook (.xlsx, first sheet) or a CSV, with a heading row. At most {MAX_IMPORT_ROWS} rows — a longer file is refused rather
           than truncated, because silently importing the first {MAX_IMPORT_ROWS} of nine hundred
           children is the worst possible outcome.
         </CardDescription>
@@ -131,7 +136,7 @@ function UploadCard() {
             id="import-file"
             ref={inputRef}
             type="file"
-            accept=".csv,text/csv"
+            accept={ROLL_FILE_ACCEPT}
             className="cursor-pointer"
             disabled={pending}
             onChange={(event) => {

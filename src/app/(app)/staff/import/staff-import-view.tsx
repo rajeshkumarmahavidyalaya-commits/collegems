@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState, useTransition } from "react";
+import { ROLL_FILE_ACCEPT, readRollFile } from "@/lib/import/read-file";
 import Link from "next/link";
 import { Download, Loader2, Trash2, Upload } from "lucide-react";
 import { toast } from "sonner";
@@ -140,11 +141,14 @@ export function StaffImportView() {
               <Input
                 id="staff-import-file"
                 type="file"
-                accept=".csv,text/csv"
+                accept={ROLL_FILE_ACCEPT}
                 className="max-w-xs cursor-pointer"
                 onChange={async (event) => {
                   const file = event.target.files?.[0];
-                  if (file) load(await file.text());
+                  if (!file) return;
+                  const read = await readRollFile(file);
+                  if (read.ok) load(read.text);
+                  else setError(read.error);
                 }}
               />
             </div>

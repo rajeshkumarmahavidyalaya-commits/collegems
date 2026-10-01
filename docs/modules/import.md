@@ -162,7 +162,15 @@ cleaning a spreadsheet without being the person who creates two hundred students
 - **No column mapping screen.** Headings are matched by alias; a file with
   genuinely unusual headings has to be renamed. A mapping step is the obvious
   next thing.
-- **No Excel files.** `.xlsx` needs a parser; CSV needs none.
+- ~~**No Excel files.**~~ Built: both importers take an Excel workbook
+  (`.xlsx`, first sheet) as well as a CSV. `src/lib/import/xlsx.ts` reads the
+  zip and its XML directly -- no spreadsheet library, `fflate` to unzip, loaded
+  only when an Excel file is chosen -- and turns the sheet into the CSV text
+  the existing parser already reads, so an Excel upload and a CSV upload cannot
+  disagree about a row. Date cells become dates (the cell's format decides,
+  both Excel calendars), a number typed as text keeps its leading zero, and the
+  old binary `.xls` is refused with a sentence asking for `.xlsx` or `.csv`.
+  `tests/import/xlsx.test.ts` builds workbooks from the XML Excel writes.
 - ~~**No guardian records are created.**~~ Fixed in `0221`: `import_apply_run`
   calls `guardian_add`, the one definition of a guardian, so an imported child
   arrives with their family linked (and, since `0236`, the guardian holds the
