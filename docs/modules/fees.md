@@ -833,10 +833,12 @@ Probed in a rolled-back transaction:
   falling due does not raise anything by itself; somebody opens the screen and
   runs a class. Scheduling that is genuinely a `jobs` concern, and so is
   whole-school billing.
-- **Part periods are not pro-rated.** A child admitted on the 20th, or a bus
-  arrangement starting mid-month, is charged the whole period. Doing better
-  needs a policy document of its own (calendar days? school days? a grace
-  threshold?) — rule 12 work, not a patch.
+- **Class fees for a part period are not pro-rated.** A child admitted on the
+  20th is charged the period's structure fees in full. Bus and hostel fees
+  *are* pro-rated since `0317` (`fees.part_month`, by calendar day, on by
+  default), because a seat has dates of its own and an enrolment's tuition is
+  a school's policy question of a different kind (an admission fee, a term
+  already taught).
 - **Whole-school invoicing is not offered**, only per-section, for the same
   reason.
 - **Staff library fines are not collectable here.** Library fines for *student*

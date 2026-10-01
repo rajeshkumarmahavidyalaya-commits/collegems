@@ -275,9 +275,19 @@ admissions desk.
   has never divided or multiplied by it. A transport `monthly_fare` is one
   instalment on one invoice, consistent with that. Turning `frequency` into
   arithmetic is a real gap and a **pre-existing** one; it is not fixed here.
-- **Pro-rating a part month.** A child who joins on the 20th is billed the full
-  monthly fare. Doing better needs a policy document (calendar days? school
-  days? a grace threshold?), which is rule 12 work.
+- ~~**Pro-rating a part month.**~~ Built in `0317`. The sentence that stood
+  here (*"a child who joins on the 20th is billed the full monthly fare"*) was
+  wrong in the other direction: the instalment asked whether the seat was
+  running on the period's **first day**, so a child who joined on the 20th was
+  billed **nothing** for that month, and one who left on the 3rd paid the whole
+  of it. Now every arrangement that overlaps the instalment's dates is billed,
+  by the day (`fare x days ridden / days in the period`, and the line says
+  *"12 of 31 days"*) or, if the college switches `fees.part_month` off, in full
+  for any month started, with a replaced seat giving way to its successor so a
+  change of stop is never two months. Calendar days, deliberately: a bus runs
+  on the days the school is shut too, and nobody can check a school-day count
+  against a bill. `transport_fee_lines` keeps answering the one-day question for
+  every other reader.
 - **GPS, live tracking, or an attendance register on the bus.** All three are
   real products; none is a schema change to this module.
 - **Vehicle documents** — insurance, fitness, permit expiry — and the reminders

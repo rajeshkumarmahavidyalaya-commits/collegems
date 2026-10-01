@@ -160,8 +160,11 @@ child in a bed.**
   multi-row check on the write path for rooms, the same shape as the allocation
   check; it is visible rather than silent, which is why it is a gap and not a
   bug.
-- **No pro-rating.** A child placed on the 20th pays the whole month, exactly as
-  with transport. Both need the same policy document.
+- ~~**No pro-rating.**~~ Built in `0317`, with transport and under the same
+  setting (`fees.part_month`). As with transport, the old behaviour was the
+  opposite of what this line said: a bed from the 20th was billed nothing for
+  its first month. Measured: the one live bed starting mid-month (4 Sep) now
+  bills 27 of 30 days, 4,050.00 of 4,500.00.
 - **No room-change history as a first-class move.** Moving a child is end one
   stay, start another — correct, audited, and two clicks instead of one.
 - **No mess or laundry charges**, no visitor log, no leave/out-pass register.

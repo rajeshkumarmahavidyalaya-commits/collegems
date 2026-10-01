@@ -9858,6 +9858,14 @@ export type Database = {
           fee_head_id: string
         }[]
       }
+      hostel_fee_lines_for_period: {
+        Args: { p_from: string; p_student_id: string; p_to: string }
+        Returns: {
+          amount: number
+          description: string
+          fee_head_id: string
+        }[]
+      }
       hostel_for_student: {
         Args: { p_student_id: string }
         Returns: {
@@ -12154,6 +12162,14 @@ export type Database = {
       }
       transport_fee_lines: {
         Args: { p_as_of?: string; p_student_id: string }
+        Returns: {
+          amount: number
+          description: string
+          fee_head_id: string
+        }[]
+      }
+      transport_fee_lines_for_period: {
+        Args: { p_from: string; p_student_id: string; p_to: string }
         Returns: {
           amount: number
           description: string
