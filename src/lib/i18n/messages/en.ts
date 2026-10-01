@@ -612,6 +612,7 @@ export const en = {
   "pdf.invoice.producedOn": "Produced",
   "pdf.invoice.due": "due",
   "pdf.roll": "Roll",
+  "pdf.routine.heading": "Class routine",
   "pdf.receipt.heading": "Fee receipt",
   "pdf.refund.heading": "Refund receipt",
   "pdf.receipt.receivedFrom": "Received from",

@@ -198,14 +198,25 @@ export async function saveHomework(
   return { ok: true, data: { id: data.id } };
 }
 
-export async function publishHomework(id: string): Promise<ActionResult<{ created: number }>> {
+export async function publishHomework(
+  id: string,
+): Promise<ActionResult<{ created: number; announced: boolean; announceError: string | null }>> {
   const supabase = await createClient();
   const { data, error } = await supabase.rpc("homework_publish", { p_homework_id: id });
   if (error) return fail(error.message);
 
+  // Tell the class and their families (0314). A failed announcement is not a
+  // failed publish -- the homework is set either way -- so it is reported
+  // beside the success rather than turned into an error.
+  const { data: note, error: noteError } = await supabase.rpc("homework_announce", { p_homework_id: id });
+  const announced = !noteError && Boolean((note as unknown as { notification_id?: string | null } | null)?.notification_id);
+
   revalidatePath("/homework");
   revalidatePath(`/homework/${id}`);
-  return { ok: true, data: { created: data ?? 0 } };
+  return {
+    ok: true,
+    data: { created: data ?? 0, announced, announceError: noteError ? noteError.message : null },
+  };
 }
 
 export async function unpublishHomework(id: string): Promise<ActionResult> {

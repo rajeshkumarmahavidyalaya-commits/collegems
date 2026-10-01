@@ -9722,6 +9722,7 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      homework_announce: { Args: { p_homework_id: string }; Returns: Json }
       homework_for_student: {
         Args: { p_include_done?: boolean; p_student_id?: string }
         Returns: {
@@ -11164,6 +11165,12 @@ export type Database = {
       report_param_uuid: {
         Args: { p_name: string; p_params: Json }
         Returns: string
+      }
+      report_room_use: {
+        Args: { p_params: Json }
+        Returns: {
+          row_data: Json
+        }[]
       }
       report_run: {
         Args: {

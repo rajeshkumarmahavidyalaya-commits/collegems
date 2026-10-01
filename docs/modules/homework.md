@@ -215,11 +215,12 @@ and a stored flag would then be a fact about a deadline that no longer exists.
 
 ## What is not built
 
-- **No notification on publish.** Setting homework does not call `notify_send`
-  yet. It should, and it is one line — the reason it is not there is that a
-  school setting eight pieces of homework on a Monday would send eight
-  notifications to every parent, and batching that is a policy question (rule
-  12) rather than an omission to patch over.
+- ~~**No notification on publish.**~~ Built (`0314`): publishing raises
+  `homework.assigned` through `homework_announce` -- definer, gated on
+  `homework.manage`, its own words, addressed to the children enrolled in the
+  class and their families. In-app by default (a school that wants an SMS per
+  piece of homework says so in the notification settings), and a failed
+  announcement is reported beside the publish rather than failing it.
 - **Staff cannot hand anything in.** `homework_submissions.student_id` is
   `not null`, which is correct — homework is set to children.
 - **No plagiarism, no rubric, no per-question marking.** A rubric is the

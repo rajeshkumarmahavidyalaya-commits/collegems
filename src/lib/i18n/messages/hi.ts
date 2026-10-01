@@ -394,6 +394,7 @@ export const hi: Messages = {
   "pdf.invoice.producedOn": "तैयार किया गया",
   "pdf.invoice.due": "देय",
   "pdf.roll": "अनुक्रमांक",
+  "pdf.routine.heading": "कक्षा की समय-सारणी",
   "pdf.receipt.heading": "शुल्क रसीद",
   "pdf.refund.heading": "वापसी रसीद",
   "pdf.receipt.receivedFrom": "किससे प्राप्त",

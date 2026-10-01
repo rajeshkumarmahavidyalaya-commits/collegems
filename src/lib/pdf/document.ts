@@ -64,6 +64,12 @@ export type Cell = {
 
 export type RowOptions = {
   size?: number;
+  /**
+   * Points kept clear at the end of each cell, so a dense grid (a class
+   * routine has seven columns) never runs one cell's text into the next.
+   * Zero by default, which is how every existing document was laid out.
+   */
+  gap?: number;
   leading?: number;
   tone?: "ink" | "quiet";
   above?: number;
@@ -258,7 +264,7 @@ export class Sheet {
       const width = this.measure * cell.width;
       const x = rtl ? edge - width : edge;
       const face = this.checked(cell.text);
-      const text = this.fit(face, cell.text, size, width);
+      const text = this.fit(face, cell.text, size, Math.max(width - (options.gap ?? 0), 0));
       const w = face.width(text, size);
       const side = this.side(cell.align ?? "start");
       const at = side === "right" ? x + width - w : side === "center" ? x + (width - w) / 2 : x;

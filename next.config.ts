@@ -60,6 +60,7 @@ const nextConfig: NextConfig = {
     "/(app)/staff/id-cards/pdf": ["./src/lib/pdf/fonts/**"],
     "/(app)/students/[id]/id-card/pdf": ["./src/lib/pdf/fonts/**"],
     "/(app)/students/id-cards/pdf": ["./src/lib/pdf/fonts/**"],
+    "/(app)/timetable/pdf": ["./src/lib/pdf/fonts/**"],
   },
 
   /**

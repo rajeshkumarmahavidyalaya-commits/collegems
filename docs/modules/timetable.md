@@ -283,7 +283,12 @@ which is where somebody will notice.
 - ~~**No substitute-teacher log.**~~ Built as the substitution roster,
   `/timetable/substitutions` -- see [substitutions.md](./substitutions.md).
   (Corrected on 1 Oct 2026.)
-- **No room-utilisation view.** The data supports it (`timetable_busy_in_slot`
-  already answers the per-period question); nothing renders it.
-- **No printable routine.** The grid prints acceptably through the global print
-  stylesheet, but there is no per-class handout layout.
+- ~~**No room-utilisation view.**~~ Built (`0314`) as the **How much each
+  room is used** report: every room this year, emptiest first, with periods
+  booked out of the periods the college teaches, the share, and the classes
+  using it. A report rather than a screen, per rule 11.
+- ~~**No printable routine.**~~ Built: *Download PDF* beside the class picker,
+  `/timetable/pdf?section=…`, from the same read path the grid uses. Periods down
+  the page, teaching days across, the subject in each cell with the teacher and
+  room under it; in English, Hindi and Urdu (mirrored), looked at as rendered
+  pages rather than counted.

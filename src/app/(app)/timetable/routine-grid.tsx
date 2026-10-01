@@ -9,6 +9,7 @@ import {
   Coffee,
   Copy,
   DoorOpen,
+  Download,
   Loader2,
   Plus,
   RotateCcw,
@@ -189,6 +190,16 @@ export function RoutineGrid({
             </span>{" "}
             of {possible} periods filled ({fillRate(filled, possible)}%)
           </p>
+        )}
+
+        {sectionId && (
+          // A plain link: the browser downloads the file, no script needed.
+          <Button asChild variant="outline" size="sm" className={canManage ? undefined : "ms-auto"}>
+            <a href={`/timetable/pdf?section=${encodeURIComponent(sectionId)}`}>
+              <Download className="size-3.5" aria-hidden="true" />
+              Download PDF
+            </a>
+          </Button>
         )}
 
         {canManage && (

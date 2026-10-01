@@ -114,10 +114,16 @@ export function HomeworkList({
         toast.error(result.error);
         return;
       }
-      toast.success(
+      // Both facts on one toast: saying only the first is how a school comes
+      // to believe the families were told (rule 10).
+      const set =
         result.data.created === 1
-          ? "Set. One student now has this to do."
-          : `Set. ${result.data.created} students now have this to do.`,
+          ? "Set. One student now has this to do"
+          : `Set. ${result.data.created} students now have this to do`;
+      toast.success(
+        result.data.announced
+          ? `${set}, and the class and their families have been told.`
+          : `${set}. Nobody was notified${result.data.announceError ? `: ${result.data.announceError}` : ""}.`,
       );
       router.refresh();
     });

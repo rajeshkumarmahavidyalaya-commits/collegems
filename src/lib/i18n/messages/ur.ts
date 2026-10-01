@@ -394,6 +394,7 @@ export const ur: Messages = {
   "pdf.invoice.producedOn": "تیار کیا گیا",
   "pdf.invoice.due": "واجب الادا",
   "pdf.roll": "رول نمبر",
+  "pdf.routine.heading": "جماعت کا نظام الاوقات",
   "pdf.receipt.heading": "فیس رسید",
   "pdf.refund.heading": "واپسی رسید",
   "pdf.receipt.receivedFrom": "موصول از",
