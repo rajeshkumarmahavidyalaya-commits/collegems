@@ -17,7 +17,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { componentTotal, componentTotalProblem } from "@/lib/validations/exams";
+import { componentTotal, componentTotalProblem } from "@/lib/validations/exams-display";
 import { savePaperComponents, type PaperRow } from "./actions";
 
 type Draft = { code: string; name: string; maxMarks: string; passMarks: string };

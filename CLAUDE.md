@@ -4285,6 +4285,15 @@ for the one export:** `/promotion/[runId]` had no dialog at all and dropped 32
 kB when `DecisionBadge` stopped being imported from the planner's form module.
 See `docs/performance.md`.
 
+**And the same mistake was in twenty-five more modules (1 Oct 2026).** Zod
+(126 kB) was on 45 screens that validated nothing, reached through a label.
+Each schema module now has a `-display` half, and
+`tests/performance/display-modules-stay-light.test.ts` keeps a client
+component from importing anything but a schema from a module that loads zod.
+Forms load zod on first validation through `lazyZodResolver`; the server
+action is still the gate. Heaviest route 225 → 204 kB, and about 1.1 MB less
+across all routes. See `docs/performance.md`.
+
 **Measure before and after, and say the number.** `npm run build` prints First
 Load JS per route, `ls -S .next/static/chunks` says what is actually big, and
 `.next/app-build-manifest.json` says which routes carry it — which is the

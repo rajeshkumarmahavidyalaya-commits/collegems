@@ -33,7 +33,9 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { emptyLine, formatColumn, isBalanced, outOfBalanceBy, sourceKindLabel, toAmount, totalCredit, totalDebit, voucherStatusLabel, type VoucherLineInput } from "@/lib/validations/accounts";
+import { emptyLine } from "@/lib/validations/accounts-display";
+import { type VoucherLineInput } from "@/lib/validations/accounts";
+import { formatColumn, isBalanced, outOfBalanceBy, sourceKindLabel, toAmount, totalCredit, totalDebit, voucherStatusLabel } from "@/lib/validations/accounts-display";
 import {
   createVoucher,
   reverseVoucher,

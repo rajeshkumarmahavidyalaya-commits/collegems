@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 
 import { useForm } from "react-hook-form";
 
-import { zodResolver } from "@hookform/resolvers/zod";
+import { lazyZodResolver } from "@/lib/forms/lazy-resolver";
 
 import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
@@ -36,21 +36,8 @@ import {
   TextareaField,
 } from "@/components/forms/form-fields";
 
-import {
-  formatQuantity,
-  itemSchema,
-  kindTakesCost,
-  MOVEMENT_KINDS,
-  movementDirection,
-  movementKindOptions,
-  movementSchema,
-  saleSchema,
-  saleTotal,
-  stockSentence,
-  type ItemInput,
-  type MovementInput,
-  type SaleInput,
-} from "@/lib/validations/inventory";
+import { formatQuantity, kindTakesCost, MOVEMENT_KINDS, movementDirection, movementKindOptions, saleTotal, stockSentence } from "@/lib/validations/inventory-display";
+import type { ItemInput, MovementInput, SaleInput } from "@/lib/validations/inventory";
 import {
   StudentPicker,
   type PickedStudent,
@@ -89,7 +76,7 @@ export function MovementDialog({
   const [pending, startTransition] = useTransition();
 
   const form = useForm<MovementInput>({
-    resolver: zodResolver(movementSchema),
+    resolver: lazyZodResolver<MovementInput>(() => import("@/lib/validations/inventory").then((m) => m.movementSchema)),
     values: {
       itemId: item?.itemId ?? "",
       kind: "receipt",
@@ -310,7 +297,7 @@ export function SellDialog({
   const [studentError, setStudentError] = useState<string | null>(null);
 
   const form = useForm<SaleInput>({
-    resolver: zodResolver(saleSchema),
+    resolver: lazyZodResolver<SaleInput>(() => import("@/lib/validations/inventory").then((m) => m.saleSchema)),
     values: {
       itemId: item?.itemId ?? "",
       studentId: student?.id ?? "",
@@ -508,7 +495,7 @@ export function ItemDialog({
   const [newCategory, setNewCategory] = useState("");
 
   const form = useForm<ItemInput>({
-    resolver: zodResolver(itemSchema),
+    resolver: lazyZodResolver<ItemInput>(() => import("@/lib/validations/inventory").then((m) => m.itemSchema)),
     values: {
       sku: item?.sku ?? "",
       name: item?.name ?? "",

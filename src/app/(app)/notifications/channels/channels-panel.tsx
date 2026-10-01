@@ -26,15 +26,10 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import { PLATFORMS } from "@/lib/validations/mobile";
+import { PLATFORMS } from "@/lib/validations/mobile-display";
 import { useI18n } from "@/components/providers/i18n-provider";
-import {
-  CHANNELS,
-  channelLabel,
-  channelState,
-  relativeTime,
-  type ChannelStatus,
-} from "@/lib/validations/notifications";
+import { CHANNELS, channelLabel, channelState, relativeTime } from "@/lib/validations/notifications-display";
+import { type ChannelStatus } from "@/lib/validations/notifications";
 import {
   dispatchQueuedNow,
   retryFailedDeliveries,

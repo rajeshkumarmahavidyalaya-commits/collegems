@@ -1,4 +1,6 @@
 import { z } from "zod";
+import { PLATFORMS } from "./mobile-display";
+export { PLATFORMS } from "./mobile-display";
 
 /**
  * The mobile API's contract, written down where a test can hold it.
@@ -169,14 +171,10 @@ export const mobileBootstrapSchema = z
   .passthrough();
 
 export type MobileBootstrap = z.infer<typeof mobileBootstrapSchema>;
-export type MobileHome = z.infer<typeof mobileHomeSchema>;
-export type MobileStudentCard = z.infer<typeof mobileStudentCardSchema>;
 
-export const PLATFORMS = [
-  { value: "ios", label: "iPhone / iPad" },
-  { value: "android", label: "Android" },
-  { value: "web", label: "Web push" },
-] as const;
+export type MobileHome = z.infer<typeof mobileHomeSchema>;
+
+export type MobileStudentCard = z.infer<typeof mobileStudentCardSchema>;
 
 export type Platform = (typeof PLATFORMS)[number]["value"];
 
@@ -194,6 +192,7 @@ export const deviceRegistrationSchema = z.object({
   deviceName: z.string().max(80).optional(),
   locale: z.string().max(20).optional(),
 });
+
 export type DeviceRegistrationInput = z.infer<typeof deviceRegistrationSchema>;
 
 /**

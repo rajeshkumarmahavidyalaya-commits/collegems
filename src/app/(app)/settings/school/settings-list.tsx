@@ -16,13 +16,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  inputType,
-  originSentence,
-  toFormValue,
-  toJsonValue,
-  type SettingType,
-} from "@/lib/validations/settings";
+import { inputType, originSentence, toFormValue, toJsonValue } from "@/lib/validations/settings-display";
+import { type SettingType } from "@/lib/validations/settings";
 import { saveSetting, type SettingRow } from "./actions";
 
 export function SettingsList({

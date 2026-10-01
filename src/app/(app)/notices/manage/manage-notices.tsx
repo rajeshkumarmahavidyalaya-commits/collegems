@@ -31,16 +31,9 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { announceAgain, publishNotice, saveNotice, withdrawNotice } from "../actions";
-import {
-  categoryLabel,
-  categoryTone,
-  NOTICE_CATEGORIES,
-  publishSentence,
-  statusTone,
-  STATUS_LABEL,
-  type NoticeCategory,
-  type NoticeStatus,
-} from "@/lib/validations/notices";
+import { categoryLabel, categoryTone, NOTICE_CATEGORIES, statusTone, STATUS_LABEL } from "@/lib/validations/notices-display";
+import { publishSentence } from "@/lib/validations/notices-display";
+import { type NoticeCategory, type NoticeStatus } from "@/lib/validations/notices";
 
 type NoticeRow = {
   id: string;

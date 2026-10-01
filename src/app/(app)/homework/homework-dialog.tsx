@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 
 import { useForm } from "react-hook-form";
 
-import { zodResolver } from "@hookform/resolvers/zod";
+import { lazyZodResolver } from "@/lib/forms/lazy-resolver";
 
 import { toast } from "sonner";
 
@@ -34,7 +34,7 @@ import {
   TextareaField,
 } from "@/components/forms/form-fields";
 
-import { homeworkSchema, type HomeworkInput } from "@/lib/validations/homework";
+import type { HomeworkInput } from "@/lib/validations/homework";
 import {
   saveHomework,
   type CurriculumOption,
@@ -64,7 +64,7 @@ export function HomeworkDialog({
   const [pending, startTransition] = useTransition();
 
   const form = useForm<HomeworkInput>({
-    resolver: zodResolver(homeworkSchema),
+    resolver: lazyZodResolver<HomeworkInput>(() => import("@/lib/validations/homework").then((m) => m.homeworkSchema)),
     values: {
       sectionId: homework?.sectionId ?? "",
       subjectId: homework?.subjectId ?? "",

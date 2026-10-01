@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useRef } from "react";
 import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
+import { lazyZodResolver } from "@/lib/forms/lazy-resolver";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -12,12 +12,8 @@ import { Form } from "@/components/ui/form";
 import { SelectField, TextField } from "@/components/forms/form-fields";
 import { ErrorSummary } from "@/components/forms/error-summary";
 import { useUnsavedChangesGuard } from "@/components/forms/use-unsaved-changes-guard";
-import {
-  GENDERS,
-  STUDENT_STATUSES,
-  studentSchema,
-  type StudentInput,
-} from "@/lib/validations/students";
+import { GENDERS, STUDENT_STATUSES } from "@/lib/validations/students-display";
+import type { StudentInput } from "@/lib/validations/students";
 import { admitStudent, updateStudent } from "./actions";
 
 export function StudentForm({
@@ -63,7 +59,7 @@ export function StudentForm({
   };
 
   const form = useForm<StudentInput>({
-    resolver: zodResolver(studentSchema),
+    resolver: lazyZodResolver<StudentInput>(() => import("@/lib/validations/students").then((m) => m.studentSchema)),
     defaultValues: student ?? blank,
   });
 

@@ -1,7 +1,4 @@
 import { z } from "zod";
-import { labelFor, optionsFor } from "./labels";
-import type { Translator } from "@/lib/i18n/translate";
-
 /**
  * Phase 2.3 — staff attendance, leave, and payroll.
  *
@@ -11,30 +8,8 @@ import type { Translator } from "@/lib/i18n/translate";
  * the engine, so the thing that judges a document and the thing that evaluates
  * it cannot drift. What is left here is the boundary the browser owns.
  */
-
-export const ATTENDANCE_STATUSES = [
-  { value: "present", label: "Present", short: "P", tone: "success" },
-  { value: "absent", label: "Absent", short: "A", tone: "danger" },
-  { value: "half_day", label: "Half day", short: "H", tone: "warning" },
-  { value: "on_leave", label: "On leave", short: "L", tone: "info" },
-  // Not a synonym for present: a teacher at a district sports meet is out of
-  // the building and fully paid, and a register that cannot say so gets them
-  // marked absent by whoever is covering the front desk.
-  { value: "on_duty", label: "On duty", short: "D", tone: "info" },
-] as const;
-
-export const LEAVE_STATUSES = [
-  { value: "pending", label: "Awaiting a decision", tone: "warning" },
-  { value: "approved", label: "Approved", tone: "success" },
-  { value: "rejected", label: "Refused", tone: "danger" },
-  { value: "cancelled", label: "Withdrawn", tone: "muted" },
-] as const;
-
-export const RUN_STATUSES = [
-  { value: "draft", label: "Draft", tone: "muted" },
-  { value: "finalised", label: "Finalised", tone: "success" },
-  { value: "discarded", label: "Discarded", tone: "muted" },
-] as const;
+import { ATTENDANCE_STATUSES } from "./hr-display";
+export { ATTENDANCE_STATUSES, LEAVE_STATUSES, RUN_STATUSES, PAYMENT_METHODS, paymentMethodLabel, formatOverrides, attendanceLabel, attendanceStatusOptions, leaveStatusLabel, runStatusLabel, formatDays, monthValue, leaveDays } from "./hr-display";
 
 export const COMPONENT_KINDS = [
   { value: "earning", label: "Earning" },
@@ -67,6 +42,7 @@ export const leaveTypeSchema = z.object({
   allowsHalfDay: z.boolean(),
   isActive: z.boolean(),
 });
+
 export type LeaveTypeInput = z.infer<typeof leaveTypeSchema>;
 
 export const leaveRequestSchema = z
@@ -89,6 +65,7 @@ export const leaveRequestSchema = z
     message: "A single day cannot be half at both ends. Take the whole day instead.",
     path: ["halfDayEnd"],
   });
+
 export type LeaveRequestInput = z.infer<typeof leaveRequestSchema>;
 
 // ---------------------------------------------------------------------------
@@ -105,12 +82,14 @@ export const attendanceEntrySchema = z.object({
   checkOut: z.union([clockTime, z.literal("")]).optional(),
   note: z.string().max(200).optional(),
 });
+
 export type AttendanceEntryInput = z.infer<typeof attendanceEntrySchema>;
 
 export const attendanceSheetSchema = z.object({
   date: isoDate,
   entries: z.array(attendanceEntrySchema),
 });
+
 export type AttendanceSheetInput = z.infer<typeof attendanceSheetSchema>;
 
 // ---------------------------------------------------------------------------
@@ -131,6 +110,7 @@ export const salaryComponentSchema = z.object({
   percent: z.number().min(0).max(1000).optional(),
   cap: z.number().min(0).optional(),
 });
+
 export type SalaryComponent = z.infer<typeof salaryComponentSchema>;
 
 export const salaryDocumentSchema = z.object({
@@ -143,6 +123,7 @@ export const salaryDocumentSchema = z.object({
     .optional(),
   rounding: z.enum(["nearest_rupee"]).optional(),
 });
+
 export type SalaryDocument = z.infer<typeof salaryDocumentSchema>;
 
 export const salaryStructureSchema = z.object({
@@ -152,6 +133,7 @@ export const salaryStructureSchema = z.object({
   /** The document arrives as JSON text from a code editor, so parsing is the gate. */
   components: z.string().min(2, "The document cannot be empty"),
 });
+
 export type SalaryStructureInput = z.infer<typeof salaryStructureSchema>;
 
 export const salaryAssignmentSchema = z
@@ -168,14 +150,8 @@ export const salaryAssignmentSchema = z
     message: "The last day cannot be before the first",
     path: ["effectiveTo"],
   });
-export type SalaryAssignmentInput = z.infer<typeof salaryAssignmentSchema>;
 
-export const PAYMENT_METHODS = [
-  { value: "bank_transfer", label: "Bank transfer" },
-  { value: "cash", label: "Cash" },
-  { value: "cheque", label: "Cheque" },
-  { value: "other", label: "Other" },
-] as const;
+export type SalaryAssignmentInput = z.infer<typeof salaryAssignmentSchema>;
 
 export const paymentSchema = z.object({
   payslipId: z.string().uuid(),
@@ -190,14 +166,8 @@ export const paymentSchema = z.object({
   ]).optional(),
   note: z.string().max(300).optional(),
 });
-export type PaymentInput = z.infer<typeof paymentSchema>;
 
-// Not `fees-display.PAYMENT_METHODS`: a school pays its staff by four means
-// and collects fees by seven. Same name, different vocabulary, different keys.
-export function paymentMethodLabel(value: string, t: Translator) {
-  const found = PAYMENT_METHODS.find((m) => m.value === value);
-  return found ? labelFor(`hr.method.${value}`, found.label, t) : value;
-}
+export type PaymentInput = z.infer<typeof paymentSchema>;
 
 export const payslipEditSchema = z.object({
   payslipId: z.string().uuid(),
@@ -205,6 +175,7 @@ export const payslipEditSchema = z.object({
   totalDeductions: z.string(),
   note: z.string().max(300).optional(),
 });
+
 export type PayslipEditInput = z.infer<typeof payslipEditSchema>;
 
 /**
@@ -259,73 +230,7 @@ export function parseOverrides(
   return { ok: true, overrides };
 }
 
-export function formatOverrides(overrides: Record<string, unknown> | null | undefined): string {
-  if (!overrides) return "";
-  return Object.entries(overrides)
-    .map(([code, value]) => `${code} = ${value}`)
-    .join("\n");
-}
-
-// ---------------------------------------------------------------------------
-// Display helpers
-// ---------------------------------------------------------------------------
-
-// The null branch is not a status. "Nobody marked this person" and "this
-// person was absent" are different facts and the register must not collapse
-// them -- rule 11's three-states rule, in one helper.
-export function attendanceLabel(value: string | null, t: Translator) {
-  if (!value) return t("hr.attendance.unmarked");
-  const found = ATTENDANCE_STATUSES.find((s) => s.value === value);
-  return found ? labelFor(`hr.attendance.${value}`, found.label, t) : value;
-}
-
-/** The same five, for the register's button row. `short` and `tone` survive. */
-export function attendanceStatusOptions(t: Translator) {
-  return optionsFor(ATTENDANCE_STATUSES, "hr.attendance", t);
-}
-
 export function attendanceTone(value: string | null) {
   if (!value) return "muted";
   return ATTENDANCE_STATUSES.find((s) => s.value === value)?.tone ?? "muted";
-}
-
-export function leaveStatusLabel(value: string, t: Translator) {
-  const found = LEAVE_STATUSES.find((s) => s.value === value);
-  return found ? labelFor(`hr.leaveStatus.${value}`, found.label, t) : value;
-}
-
-export function runStatusLabel(value: string, t: Translator) {
-  const found = RUN_STATUSES.find((s) => s.value === value);
-  return found ? labelFor(`hr.runStatus.${value}`, found.label, t) : value;
-}
-
-/** `22` not `22.0`, `21.5` not `21.50`. Days are read, not computed with. */
-export function formatDays(value: number | string | null | undefined) {
-  if (value === null || value === undefined) return "—";
-  const n = Number(value);
-  return Number.isInteger(n) ? String(n) : n.toFixed(1);
-}
-
-/** The first of the month, for the payroll picker. */
-export function monthValue(date: Date = new Date()): string {
-  return `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, "0")}-01`;
-}
-
-/**
- * Days in a leave request, matching `hr_leave_days()` exactly. Half days only
- * ever sit at the ends of a range, which is what makes this arithmetic rather
- * than a loop — and what the two booleans encode.
- */
-export function leaveDays(
-  startsOn: string,
-  endsOn: string,
-  halfStart = false,
-  halfEnd = false,
-): number {
-  const start = Date.parse(`${startsOn}T00:00:00Z`);
-  const end = Date.parse(`${endsOn}T00:00:00Z`);
-  if (Number.isNaN(start) || Number.isNaN(end) || end < start) return 0;
-
-  const whole = Math.round((end - start) / 86_400_000) + 1;
-  return Math.max(whole - (halfStart ? 0.5 : 0) - (halfEnd ? 0.5 : 0), 0.5);
 }

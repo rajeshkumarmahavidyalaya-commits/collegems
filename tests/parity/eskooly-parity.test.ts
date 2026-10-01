@@ -79,9 +79,12 @@ describe("setup runs in the order a college is built", () => {
   const keys = [...body.matchAll(/'key', '([a-z_]+)'/g)].map((m) => m[1]);
 
   it("in build order, with the staff and timetable steps", () => {
-    expect(file).toMatch(/^0302_/);
+    expect(file).toMatch(/^0310_/);
+    // 0310 added the year (second: every later step reads it) and messages
+    // (before the invitations it is what delivers).
     expect(keys).toEqual([
-      "profile", "classes", "subjects", "fees", "staff", "students", "timetable", "staff_logins", "family_logins",
+      "profile", "year", "classes", "subjects", "fees", "staff", "students", "timetable", "messages",
+      "staff_logins", "family_logins",
     ]);
   });
 

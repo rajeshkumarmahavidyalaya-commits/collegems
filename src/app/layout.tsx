@@ -12,7 +12,11 @@ import "./globals.css";
 const firaSans = Fira_Sans({
   variable: "--font-fira-sans",
   subsets: ["latin"],
-  weight: ["300", "400", "500", "600", "700"],
+  // Only the weights the interface uses: `font-normal`, `font-medium` and
+  // `font-semibold`. Counted on 1 Oct 2026, `font-light` and `font-bold`
+  // appear nowhere, and each weight is another font file preloaded on every
+  // page. A `<strong>` falls to 600, the nearest weight present.
+  weight: ["400", "500", "600"],
   display: "swap",
 });
 

@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { todayIso } from "@/lib/validations/substitutions";
+import { todayIso } from "@/lib/validations/substitutions-display";
 
 /**
  * The day the whole screen is about.

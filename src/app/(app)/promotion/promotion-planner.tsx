@@ -50,15 +50,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
-import {
-  DECISIONS,
-  EVALUATION_ORDER,
-  EXAM_KINDS_FOR_PROMOTION,
-  ON_MISSING_RESULT,
-  laterYears,
-  type PromotionFormInput,
-  tallySentence,
-} from "@/lib/validations/promotion";
+import { DECISIONS, EVALUATION_ORDER, EXAM_KINDS_FOR_PROMOTION, ON_MISSING_RESULT, laterYears, tallySentence } from "@/lib/validations/promotion-display";
+import { type PromotionFormInput } from "@/lib/validations/promotion";
 import {
   previewPromotion,
   rollForwardSections,

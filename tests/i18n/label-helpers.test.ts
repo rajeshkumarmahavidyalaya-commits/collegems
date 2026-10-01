@@ -30,13 +30,13 @@ import { KIND_DESCRIPTION, kindDescription, scheduleSentence } from "@/lib/valid
  * never lowered — the only way it can fail is that somebody's work was undone.
  */
 const LOCALE_AWARE = new Set([
-  "notices.categoryLabel",
+  "notices-display.categoryLabel",
   "live-classes-display.lessonStatusLabel",
   "online-tests-display.sittingStateLabel",
   // The family-facing batch: the badges a parent or a student actually reads.
-  "attendance.statusLabel",
-  "student-leave.kindLabel",
-  "student-leave.statusLabel",
+  "attendance-display.statusLabel",
+  "student-leave-display.kindLabel",
+  "student-leave-display.statusLabel",
   "exams-display.examKindLabel",
   "exams-display.resultLabel",
   "homework-display.submissionStatusLabel",
@@ -48,32 +48,32 @@ const LOCALE_AWARE = new Set([
   "notifications-display.statusLabel",
   "notifications-display.audienceKindLabel",
   // The staff daily-work batch.
-  "timetable.periodLabel",
-  "substitutions.periodLabel",
+  "timetable-display.periodLabel",
+  "substitutions-display.periodLabel",
   // Moved out of `substitutions` by `0266`: six modules had written their own
   // `severityTone` beside this module's copy of the vocabulary, so how bad a
   // finding is now has one home. `substitutions` re-exports it, and this list
   // names the **definition**.
   "severity.severityLabel",
-  "substitutions.reasonLabel",
+  "substitutions-display.reasonLabel",
   "staff-display.staffStatusLabel",
-  "certificates.kindLabel",
+  "certificates-display.kindLabel",
   // The money-and-stores batch: payroll, the journal, the fee calendar, the
   // store ledger. Three more names that mean different things in different
   // modules -- `hr.PAYMENT_METHODS` is four ways to pay a teacher and
   // `fees-display.PAYMENT_METHODS` is seven ways to take a fee -- which is why
   // each has its own key prefix rather than a shared one.
   "homework-display.dueLabel",
-  "hr.paymentMethodLabel",
-  "hr.attendanceLabel",
-  "hr.leaveStatusLabel",
-  "hr.runStatusLabel",
-  "accounts.accountTypeLabel",
-  "accounts.voucherStatusLabel",
-  "accounts.sourceKindLabel",
-  "fees.frequencyLabel",
-  "concessions.kindLabel",
-  "concessions.statusLabel",
+  "hr-display.paymentMethodLabel",
+  "hr-display.attendanceLabel",
+  "hr-display.leaveStatusLabel",
+  "hr-display.runStatusLabel",
+  "accounts-display.accountTypeLabel",
+  "accounts-display.voucherStatusLabel",
+  "accounts-display.sourceKindLabel",
+  "fees-display.frequencyLabel",
+  "concessions-display.kindLabel",
+  "concessions-display.statusLabel",
   "inventory-display.movementLabel",
   // The office batch, and the last of them. Everything above is a screen a
   // family reaches; these are the ones only staff see -- the admissions funnel,
@@ -89,7 +89,7 @@ const LOCALE_AWARE = new Set([
   "promotion-display.decisionLabel",
   "promotion-display.leftBehindLabel",
   "renewals.renewalKindLabel",
-  "schedules.kindLabel",
+  "schedules-display.kindLabel",
   "transport-display.directionLabel",
 ]);
 

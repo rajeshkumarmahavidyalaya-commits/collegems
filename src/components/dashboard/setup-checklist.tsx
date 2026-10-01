@@ -2,7 +2,7 @@ import Link from "next/link";
 import { ArrowRight, CircleCheck, Circle, Rocket } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { createClient } from "@/lib/supabase/server";
-import { SETUP_STEPS, parseSetupProgress, setupSentence } from "@/lib/validations/setup";
+import { SETUP_STEPS, parseSetupProgress, setupSentence, stepCount } from "@/lib/validations/setup";
 
 /**
  * "Get your college ready" -- the first-run steps whoever is signed in may act
@@ -66,7 +66,12 @@ export async function SetupChecklist() {
                     {step.label}
                     <span className="sr-only">{s.done ? " (done)" : " (not done yet)"}</span>
                   </p>
-                  {!s.done && <p className="text-xs text-muted-foreground">{step.hint}</p>}
+                  {!s.done && (
+                    <p className="text-xs text-muted-foreground">
+                      {stepCount(s) && <span className="font-medium text-foreground">{stepCount(s)} · </span>}
+                      {step.hint}
+                    </p>
+                  )}
                 </div>
                 {!s.done && (
                   <Link

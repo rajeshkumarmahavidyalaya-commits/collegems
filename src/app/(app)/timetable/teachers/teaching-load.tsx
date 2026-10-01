@@ -22,7 +22,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { GRID_WEEKDAYS, periodLabel, toClockTime } from "@/lib/validations/timetable";
+import { GRID_WEEKDAYS, periodLabel } from "@/lib/validations/timetable-display";
+import { toClockTime } from "@/lib/validations/academics-display";
 import { getTeacherRoutine, type TeacherLoadRow, type TeacherRoutineEntry } from "../actions";
 import { useI18n } from "@/components/providers/i18n-provider";
 

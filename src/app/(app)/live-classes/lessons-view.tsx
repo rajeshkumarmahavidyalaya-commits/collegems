@@ -4,7 +4,7 @@ import { useEffect, useState, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
+import { lazyZodResolver } from "@/lib/forms/lazy-resolver";
 import { CalendarPlus, ExternalLink, Loader2, Video, XCircle } from "lucide-react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
@@ -21,15 +21,8 @@ import { Form } from "@/components/ui/form";
 import { ErrorSummary } from "@/components/forms/error-summary";
 import { SelectField, TextField, TextareaField } from "@/components/forms/form-fields";
 import { useI18n } from "@/components/providers/i18n-provider";
-import {
-  LIVE_CLASS_PROVIDERS,
-  cancelSchema,
-  joinState,
-  lessonStatusLabel,
-  providerName,
-  scheduleSchema,
-  type ScheduleInput,
-} from "@/lib/validations/live-classes";
+import { LIVE_CLASS_PROVIDERS, joinState, lessonStatusLabel, providerName } from "@/lib/validations/live-classes-display";
+import type { ScheduleInput } from "@/lib/validations/live-classes";
 import { cancelLesson, scheduleLesson, type Course, type Lesson } from "./actions";
 
 /** A lesson with its times already written where the college is, by the page. */
@@ -143,7 +136,7 @@ function CancelDialog({ lesson, onClose }: { lesson: ShownLesson | null; onClose
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const form = useForm<{ id: string; reason: string }>({
-    resolver: zodResolver(cancelSchema),
+    resolver: lazyZodResolver(() => import("@/lib/validations/live-classes").then((m) => m.cancelSchema)),
     values: { id: lesson?.id ?? "", reason: "" },
   });
 
@@ -200,7 +193,7 @@ export function ScheduleButton({ courses }: { courses: Course[] }) {
   const [open, setOpen] = useState(false);
   const [pending, startTransition] = useTransition();
   const form = useForm<ScheduleInput>({
-    resolver: zodResolver(scheduleSchema),
+    resolver: lazyZodResolver<ScheduleInput>(() => import("@/lib/validations/live-classes").then((m) => m.scheduleSchema)),
     defaultValues: {
       course: courses[0]?.value ?? "",
       title: "",

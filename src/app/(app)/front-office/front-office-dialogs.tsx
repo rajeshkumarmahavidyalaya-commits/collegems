@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 
 import { useForm } from "react-hook-form";
 
-import { zodResolver } from "@hookform/resolvers/zod";
+import { lazyZodResolver } from "@/lib/forms/lazy-resolver";
 
 import { Loader2, Phone, UserCheck } from "lucide-react";
 import { toast } from "sonner";
@@ -31,19 +31,8 @@ import {
   TextareaField,
 } from "@/components/forms/form-fields";
 
-import {
-  convertSchema,
-  ENQUIRY_SOURCES,
-  enquirySchema,
-  FOLLOW_UP_CHANNELS,
-  FOLLOW_UP_OUTCOMES,
-  followUpSchema,
-  visitorSchema,
-  type ConvertInput,
-  type EnquiryInput,
-  type FollowUpInput,
-  type VisitorInput,
-} from "@/lib/validations/front-office";
+import type { ConvertInput, EnquiryInput, FollowUpInput, VisitorInput } from "@/lib/validations/front-office";
+import { ENQUIRY_SOURCES, FOLLOW_UP_CHANNELS, FOLLOW_UP_OUTCOMES } from "@/lib/validations/front-office-display";
 import {
   checkInVisitor,
   convertEnquiry,
@@ -75,7 +64,7 @@ export function EnquiryDialog({
   const [pending, startTransition] = useTransition();
 
   const form = useForm<EnquiryInput>({
-    resolver: zodResolver(enquirySchema),
+    resolver: lazyZodResolver<EnquiryInput>(() => import("@/lib/validations/front-office").then((m) => m.enquirySchema)),
     values: {
       applicantFirstName: "",
       applicantLastName: "",
@@ -260,7 +249,7 @@ export function FollowUpDialog({
   const [pending, startTransition] = useTransition();
 
   const form = useForm<FollowUpInput>({
-    resolver: zodResolver(followUpSchema),
+    resolver: lazyZodResolver<FollowUpInput>(() => import("@/lib/validations/front-office").then((m) => m.followUpSchema)),
     values: {
       enquiryId: enquiry?.id ?? "",
       note: "",
@@ -397,7 +386,7 @@ export function ConvertDialog({
   const [pending, startTransition] = useTransition();
 
   const form = useForm<ConvertInput>({
-    resolver: zodResolver(convertSchema),
+    resolver: lazyZodResolver<ConvertInput>(() => import("@/lib/validations/front-office").then((m) => m.convertSchema)),
     values: {
       enquiryId: enquiry?.id ?? "",
       admissionNumber: "",
@@ -514,7 +503,7 @@ export function VisitorDialog({
   const [pending, startTransition] = useTransition();
 
   const form = useForm<VisitorInput>({
-    resolver: zodResolver(visitorSchema),
+    resolver: lazyZodResolver<VisitorInput>(() => import("@/lib/validations/front-office").then((m) => m.visitorSchema)),
     values: {
       visitorName: "",
       purpose: "",

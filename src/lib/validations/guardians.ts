@@ -1,31 +1,8 @@
 import { z } from "zod";
-import { labelFor, optionsFor } from "./labels";
+import { labelFor } from "./labels";
 import type { Translator } from "@/lib/i18n/translate";
-
-/**
- * The guardian write path's client half.
- *
- * ## The list, and why there are two copies of it
- *
- * `guardian_student.relationship` has carried
- * `check (relationship in ('father', 'mother', 'guardian', 'other'))` since
- * migration `0003`, and the convention says *"a list of valid values belongs in
- * one place, and the constraint is usually that place"*.
- *
- * A `<Select>` cannot ask a CHECK what to draw, so there is a second copy here
- * — and the honest thing is to say which one is load-bearing. **The constraint
- * is.** This array decides what the office is *offered*; Postgres decides what
- * is *stored*, and since migration `0222` it says so in words rather than by
- * constraint name. `tests/students/guardians.test.ts` reads the migration and
- * fails if the two ever stop agreeing, which is the only way a second copy is
- * safe to keep.
- */
-export const GUARDIAN_RELATIONSHIPS = [
-  { value: "father", label: "Father" },
-  { value: "mother", label: "Mother" },
-  { value: "guardian", label: "Guardian" },
-  { value: "other", label: "Other" },
-] as const;
+import { GUARDIAN_RELATIONSHIPS } from "./guardians-display";
+export { GUARDIAN_RELATIONSHIPS, relationshipOptions } from "./guardians-display";
 
 export type GuardianRelationship = (typeof GUARDIAN_RELATIONSHIPS)[number]["value"];
 
@@ -42,11 +19,6 @@ export function relationshipLabel(relationship: string, t: Translator): string {
   const known = GUARDIAN_RELATIONSHIPS.find((r) => r.value === relationship);
   if (!known) return relationship;
   return labelFor(`guardians.relationship.${relationship}`, known.label, t);
-}
-
-/** The picker's options — the constant's second reader, per `optionsFor`. */
-export function relationshipOptions(t: Translator) {
-  return optionsFor(GUARDIAN_RELATIONSHIPS, "guardians.relationship", t);
 }
 
 /**
@@ -96,6 +68,7 @@ export const guardianSchema = z.object({
   isPrimary: z.boolean(),
   canPickup: z.boolean(),
 });
+
 export type GuardianInput = z.infer<typeof guardianSchema>;
 
 /** Linking somebody who already exists — which is what a sibling is (rule 5). */
@@ -105,4 +78,5 @@ export const guardianLinkSchema = z.object({
   isPrimary: z.boolean(),
   canPickup: z.boolean(),
 });
+
 export type GuardianLinkInput = z.infer<typeof guardianLinkSchema>;

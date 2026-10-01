@@ -3,7 +3,7 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
+import { lazyZodResolver } from "@/lib/forms/lazy-resolver";
 import { AlertTriangle, Calculator, Pencil, Plus, Sigma, UserCog } from "lucide-react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
@@ -32,7 +32,8 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ErrorSummary } from "@/components/forms/error-summary";
 import { SelectField, TextField, TextareaField } from "@/components/forms/form-fields";
-import { formatOverrides, salaryAssignmentSchema, salaryStructureSchema, type SalaryAssignmentInput, type SalaryStructureInput } from "@/lib/validations/hr";
+import { formatOverrides } from "@/lib/validations/hr-display";
+import type { SalaryAssignmentInput, SalaryStructureInput } from "@/lib/validations/hr";
 import { useI18n } from "@/components/providers/i18n-provider";
 import {
   saveAssignment,
@@ -380,7 +381,7 @@ function StructureDialog({
   const [pending, startTransition] = useTransition();
 
   const form = useForm<SalaryStructureInput>({
-    resolver: zodResolver(salaryStructureSchema),
+    resolver: lazyZodResolver<SalaryStructureInput>(() => import("@/lib/validations/hr").then((m) => m.salaryStructureSchema)),
     values: {
       name: structure?.name ?? "",
       description: structure?.description ?? "",
@@ -500,7 +501,7 @@ function AssignmentDialog({
   const [pending, startTransition] = useTransition();
 
   const form = useForm<SalaryAssignmentInput>({
-    resolver: zodResolver(salaryAssignmentSchema),
+    resolver: lazyZodResolver<SalaryAssignmentInput>(() => import("@/lib/validations/hr").then((m) => m.salaryAssignmentSchema)),
     values: {
       staffId: assignment?.staffId ?? "",
       structureId: assignment?.structureId ?? "",

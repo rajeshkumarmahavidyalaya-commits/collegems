@@ -463,7 +463,9 @@ the declaration of intent beside it.
   first, path in the row, signed URL after a permission check) plus a rule 10
   change to carry an attachment on a delivery. Two modules' surface, named
   rather than half-built.
-- **A whole class at once.** 302 report cards is **10.4 s** by the measurement
+- **A whole school at once.** One class is built: report cards and ID cards
+  download per section, bounded by the section. What is not built is the
+  whole school in one file. 302 report cards is **10.4 s** by the measurement
   above, which is exactly what rule 7 says to queue. This measurement is what
   made the queue worth building — `0242`–`0244`, see
   [jobs.md](./jobs.md) — and `report_cards.render` is still not one of its

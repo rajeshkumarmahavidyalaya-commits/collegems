@@ -3,7 +3,7 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
+import { lazyZodResolver } from "@/lib/forms/lazy-resolver";
 import { Loader2, MapPin, Pencil, Plus, Printer, Trash2, Users } from "lucide-react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
@@ -30,7 +30,8 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ErrorSummary } from "@/components/forms/error-summary";
 import { TextField } from "@/components/forms/form-fields";
-import { directionLabel, formatStopTime, stopSchema, type StopInput } from "@/lib/validations/transport";
+import { directionLabel, formatStopTime } from "@/lib/validations/transport-display";
+import type { StopInput } from "@/lib/validations/transport";
 import { deleteStop, saveStop, type ManifestRow, type StopRow } from "../actions";
 import { useI18n } from "@/components/providers/i18n-provider";
 
@@ -368,7 +369,7 @@ function StopDialog({
   const [pending, startTransition] = useTransition();
 
   const form = useForm<StopInput>({
-    resolver: zodResolver(stopSchema),
+    resolver: lazyZodResolver<StopInput>(() => import("@/lib/validations/transport").then((m) => m.stopSchema)),
     values: {
       name: stop?.name ?? "",
       landmark: stop?.landmark ?? "",

@@ -4,7 +4,7 @@ import { useState } from "react";
 
 import { useForm } from "react-hook-form";
 
-import { zodResolver } from "@hookform/resolvers/zod";
+import { lazyZodResolver } from "@/lib/forms/lazy-resolver";
 
 import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
@@ -33,22 +33,8 @@ import {
 
 import { ErrorSummary } from "@/components/forms/error-summary";
 
-import {
-  SLOT_KINDS,
-  SUBJECT_KINDS,
-  classRoomSchema,
-  holidaySchema,
-  sectionSubjectSchema,
-  subjectSchema,
-  newSubjectSchema,
-  timeSlotSchema,
-  toClockTime,
-  type ClassRoomInput,
-  type HolidayInput,
-  type SectionSubjectInput,
-  type SubjectInput,
-  type TimeSlotInput,
-} from "@/lib/validations/academics";
+import { SLOT_KINDS, SUBJECT_KINDS, toClockTime } from "@/lib/validations/academics-display";
+import type { ClassRoomInput, HolidayInput, SectionSubjectInput, SubjectInput, TimeSlotInput } from "@/lib/validations/academics";
 import {
   saveAssignment,
   saveClassRoom,
@@ -104,7 +90,7 @@ export function SubjectDialog({
   const form = useForm<SubjectInput>({
     // Only a new subject asks for its classes: after that, which classes study
     // it (and who teaches each) is edited on "Who teaches what".
-    resolver: zodResolver(subject ? subjectSchema : newSubjectSchema),
+    resolver: lazyZodResolver<SubjectInput>(() => import("@/lib/validations/academics").then((m) => subject ? m.subjectSchema : m.newSubjectSchema)),
     values: {
       name: subject?.name ?? "",
       code: subject?.code ?? "",
@@ -295,7 +281,7 @@ export function AssignmentDialog({
   const [serverError, setServerError] = useState<string | null>(null);
 
   const form = useForm<SectionSubjectInput>({
-    resolver: zodResolver(sectionSubjectSchema),
+    resolver: lazyZodResolver<SectionSubjectInput>(() => import("@/lib/validations/academics").then((m) => m.sectionSubjectSchema)),
     values: {
       sectionId: assignment?.sectionId ?? "",
       subjectId: assignment?.subjectId ?? "",
@@ -401,7 +387,7 @@ export function TimeSlotDialog({
   const [serverError, setServerError] = useState<string | null>(null);
 
   const form = useForm<TimeSlotInput>({
-    resolver: zodResolver(timeSlotSchema),
+    resolver: lazyZodResolver<TimeSlotInput>(() => import("@/lib/validations/academics").then((m) => m.timeSlotSchema)),
     values: {
       kind:
         (slot?.kind as "class" | "exam") ?? (defaultKind as "class" | "exam"),
@@ -525,7 +511,7 @@ export function ClassRoomDialog({
   const [serverError, setServerError] = useState<string | null>(null);
 
   const form = useForm<ClassRoomInput>({
-    resolver: zodResolver(classRoomSchema),
+    resolver: lazyZodResolver<ClassRoomInput>(() => import("@/lib/validations/academics").then((m) => m.classRoomSchema)),
     values: {
       name: room?.name ?? "",
       capacity: room?.capacity ?? 40,
@@ -622,7 +608,7 @@ export function HolidayDialog({
   const [serverError, setServerError] = useState<string | null>(null);
 
   const form = useForm<HolidayInput>({
-    resolver: zodResolver(holidaySchema),
+    resolver: lazyZodResolver<HolidayInput>(() => import("@/lib/validations/academics").then((m) => m.holidaySchema)),
     values: {
       name: holiday?.name ?? "",
       startsOn: holiday?.startsOn ?? todayIso(),

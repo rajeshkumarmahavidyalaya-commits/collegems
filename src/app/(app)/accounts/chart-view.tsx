@@ -4,7 +4,7 @@ import { useMemo, useState, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
+import { lazyZodResolver } from "@/lib/forms/lazy-resolver";
 import {
   AlertTriangle,
   BookOpenCheck,
@@ -40,7 +40,8 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ErrorSummary } from "@/components/forms/error-summary";
 import { SelectField, TextField, TextareaField } from "@/components/forms/form-fields";
-import { accountSchema, accountTypeLabel, accountTypeOptions, formatBalance, formatColumn, type AccountInput } from "@/lib/validations/accounts";
+import type { AccountInput } from "@/lib/validations/accounts";
+import { accountTypeLabel, accountTypeOptions, formatBalance, formatColumn } from "@/lib/validations/accounts-display";
 import { useI18n } from "@/components/providers/i18n-provider";
 import { startJob } from "../settings/jobs/actions";
 import {
@@ -438,7 +439,7 @@ function AccountDialog({
   const [pending, startTransition] = useTransition();
 
   const form = useForm<AccountInput>({
-    resolver: zodResolver(accountSchema),
+    resolver: lazyZodResolver<AccountInput>(() => import("@/lib/validations/accounts").then((m) => m.accountSchema)),
     values: {
       code: account?.code ?? "",
       name: account?.name ?? "",

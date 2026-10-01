@@ -200,11 +200,15 @@ themselves rather than leaning on RLS.
 
 ## Not built
 
-- **A PDF.** Queued work, per rule 7. The print stylesheet is the answer today.
+- ~~**A PDF.**~~ Built: one card at `/report-card/[studentId]/[examId]/pdf`,
+  and a whole class at `/exams/[examId]/report-cards/pdf?section=…`, in
+  English, Hindi and Urdu. Rule 7 decided it by measurement, not by the word
+  *PDF* -- see [pdf.md](./pdf.md). (Corrected on 1 Oct 2026.)
 - **A school crest, address or principal's signature block.** `tenants` carries
   a name and nothing else; adding branding is a settings module, not this one.
 - **Consolidated cards** across several exams in a session (a "final" card that
   aggregates the unit tests and the annual). That needs a weighting policy of
   its own and is a rules document, not a query.
-- **Co-scholastic grades** — conduct, punctuality, activities. Real cards carry
-  them; they are `exam_components`-shaped work and are recorded as a gap.
+- ~~**Co-scholastic grades**~~ — built as *behaviour and skills* (`0303`,
+  `0307`): per-college traits, graded on the college's own scale, frozen on
+  publish and printed on every card. See [behaviour.md](./behaviour.md).

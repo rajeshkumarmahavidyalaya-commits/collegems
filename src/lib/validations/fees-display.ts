@@ -152,3 +152,39 @@ export const FEE_FREQUENCIES = [
 export function frequencyOptions(t: Translator) {
   return optionsFor(FEE_FREQUENCIES, "fees.frequency", t);
 }
+
+// Moved from `fees.ts` so a screen can use these without loading zod.
+
+export function frequencyLabel(value: string, t: Translator) {
+  const found = FEE_FREQUENCIES.find((f) => f.value === value);
+  return found ? labelFor(`fees.frequency.${value}`, found.label, t) : value;
+}
+
+/**
+ * "Monthly and annual", "One-time, monthly and annual" — the list a person
+ * reads, in the order the constant declares rather than the order the array
+ * happens to arrive in.
+ */
+export function collectsSentence(collects: string[]): string {
+  const ordered = FEE_FREQUENCIES.filter((f) => collects.includes(f.value)).map(
+    (f) => f.label,
+  );
+  if (ordered.length === 0) return "Nothing";
+  if (ordered.length === 1) return ordered[0];
+  return `${ordered.slice(0, -1).join(", ")} and ${ordered[ordered.length - 1].toLowerCase()}`;
+}
+
+/**
+ * Whether a set of periods would ever bill a given frequency. A school that
+ * configures twelve monthly periods and no opening one never collects its
+ * annual tuition, and finds out in March — so the setup screen says so.
+ */
+export function uncollectedFrequencies(
+  periods: { collects: string[]; isActive: boolean }[],
+  used: string[],
+): string[] {
+  const covered = new Set(
+    periods.filter((p) => p.isActive).flatMap((p) => p.collects),
+  );
+  return used.filter((f) => !covered.has(f));
+}

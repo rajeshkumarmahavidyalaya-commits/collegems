@@ -25,7 +25,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { allowedDirections, directionLabel, formatStopTime, type Direction } from "@/lib/validations/transport";
+import { allowedDirections, directionLabel, formatStopTime } from "@/lib/validations/transport-display";
+import { type Direction } from "@/lib/validations/transport";
 import { useI18n } from "@/components/providers/i18n-provider";
 import {
   assignStaffSeat,

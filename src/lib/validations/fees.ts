@@ -1,10 +1,4 @@
 import { z } from "zod";
-
-import { labelFor } from "./labels";
-import type { Translator } from "@/lib/i18n/translate";
-import { FEE_FREQUENCIES } from "./fees-display";
-
-
 // The vocabulary and the display helpers live in a Zod-free module so that a
 // component wanting only `formatMoney` does not pull 91 kB of schema library
 // into its route. Re-exported here so callers that want both import once.
@@ -28,6 +22,7 @@ export type { EntryType } from "./fees-display";
  * amount and the RPCs do the signing. Every form here takes a positive number,
  * the way a person types it at a cash desk.
  */
+export { frequencyLabel, collectsSentence, uncollectedFrequencies } from "./fees-display";
 
 const isoDate = z
   .string()
@@ -63,6 +58,7 @@ export const paymentSchema = z.object({
   invoiceId: z.union([z.string().uuid(), z.literal("")]).optional(),
   note: z.string().max(300).optional(),
 });
+
 export type PaymentInput = z.infer<typeof paymentSchema>;
 
 export const refundSchema = z.object({
@@ -81,6 +77,7 @@ export const refundSchema = z.object({
   reference: z.string().max(100).optional(),
   note: z.string().max(300).optional(),
 });
+
 export type RefundInput = z.infer<typeof refundSchema>;
 
 /** Discounts, fines and write-offs. The reason is mandatory in Postgres too. */
@@ -91,6 +88,7 @@ export const adjustmentSchema = z.object({
   note: z.string().min(3, "Say why -- this is a permanent record").max(300),
   invoiceId: z.union([z.string().uuid(), z.literal("")]).optional(),
 });
+
 export type AdjustmentInput = z.infer<typeof adjustmentSchema>;
 
 export const reversalSchema = z.object({
@@ -122,6 +120,7 @@ export const feeHeadSchema = z.object({
    */
   billOnAdmission: z.boolean(),
 });
+
 export type FeeHeadInput = z.infer<typeof feeHeadSchema>;
 
 export const feeStructureSchema = z.object({
@@ -139,6 +138,7 @@ export const feeStructureSchema = z.object({
   // <Select> cannot hold an empty value.
   studentTypeId: z.union([z.literal("all"), z.string().uuid("Choose who pays this")]),
 });
+
 export type FeeStructureInput = z.infer<typeof feeStructureSchema>;
 
 export const generateInvoiceSchema = z.object({
@@ -179,46 +179,13 @@ export const instalmentSchema = z
       path: ["periodEnd"],
     },
   );
+
 export type InstalmentInput = z.infer<typeof instalmentSchema>;
 
 export const runInstalmentSchema = z.object({
   sectionId: z.string().uuid("Choose a class"),
   instalmentId: z.string().uuid("Choose a billing period"),
 });
-
-export function frequencyLabel(value: string, t: Translator) {
-  const found = FEE_FREQUENCIES.find((f) => f.value === value);
-  return found ? labelFor(`fees.frequency.${value}`, found.label, t) : value;
-}
-
-/**
- * "Monthly and annual", "One-time, monthly and annual" — the list a person
- * reads, in the order the constant declares rather than the order the array
- * happens to arrive in.
- */
-export function collectsSentence(collects: string[]): string {
-  const ordered = FEE_FREQUENCIES.filter((f) => collects.includes(f.value)).map(
-    (f) => f.label,
-  );
-  if (ordered.length === 0) return "Nothing";
-  if (ordered.length === 1) return ordered[0];
-  return `${ordered.slice(0, -1).join(", ")} and ${ordered[ordered.length - 1].toLowerCase()}`;
-}
-
-/**
- * Whether a set of periods would ever bill a given frequency. A school that
- * configures twelve monthly periods and no opening one never collects its
- * annual tuition, and finds out in March — so the setup screen says so.
- */
-export function uncollectedFrequencies(
-  periods: { collects: string[]; isActive: boolean }[],
-  used: string[],
-): string[] {
-  const covered = new Set(
-    periods.filter((p) => p.isActive).flatMap((p) => p.collects),
-  );
-  return used.filter((f) => !covered.has(f));
-}
 
 export const cancelInvoiceSchema = z.object({
   invoiceId: z.string().uuid(),
@@ -242,4 +209,5 @@ export const chargeSchema = z.object({
   dueDate: isoDate,
   feeHeadId: z.union([z.string().uuid(), z.literal("")]).optional(),
 });
+
 export type ChargeInput = z.infer<typeof chargeSchema>;

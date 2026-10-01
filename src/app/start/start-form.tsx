@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { checkSlug, startSchool, type StartActionState } from "./actions";
-import { SLUG_PATTERN, slugify } from "@/lib/validations/platform";
+import { SLUG_PATTERN, slugify } from "@/lib/validations/platform-display";
 
 const initialState: StartActionState = { error: null };
 

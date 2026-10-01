@@ -27,15 +27,10 @@ import {
 } from "../actions";
 import { StudentPicker, type PickedStudent } from "@/components/people/student-picker";
 import { useT } from "@/components/providers/i18n-provider";
-import {
-  KIND_CONSEQUENCE,
-  kindLabel,
-  missingRequiredFields,
-  parseTemplateFields,
-  sortProblems,
-  type CertificateKind,
-  type CertificatePreview,
-} from "@/lib/validations/certificates";
+import { KIND_CONSEQUENCE, kindLabel } from "@/lib/validations/certificates-display";
+import { missingRequiredFields, sortProblems } from "@/lib/validations/certificates-display";
+import { parseTemplateFields } from "@/lib/validations/certificates-display";
+import { type CertificateKind, type CertificatePreview } from "@/lib/validations/certificates";
 
 // `SubjectRow` comes from the action: id, name, reference, status — the same
 // four facts whether the reference is an admission number or an employee code.

@@ -1,9 +1,4 @@
 import { z } from "zod";
-import { formatCurrency } from "@/lib/i18n/format";
-import type { Locale } from "@/lib/i18n/config";
-import { labelFor, optionsFor } from "./labels";
-import type { Translator } from "@/lib/i18n/translate";
-
 /**
  * Phase 2.2 — the chart of accounts and double-entry vouchers.
  *
@@ -11,27 +6,9 @@ import type { Translator } from "@/lib/i18n/translate";
  * is the convenience and `accounts_post_voucher` is the gate: it is a fact
  * about several rows, so Postgres owns it.
  */
-
-export const ACCOUNT_TYPES = [
-  { value: "asset", label: "Asset", normal: "debit", sort: 1 },
-  { value: "liability", label: "Liability", normal: "credit", sort: 2 },
-  { value: "equity", label: "Equity", normal: "credit", sort: 3 },
-  { value: "income", label: "Income", normal: "credit", sort: 4 },
-  { value: "expense", label: "Expense", normal: "debit", sort: 5 },
-] as const;
-
-export const VOUCHER_STATUSES = [
-  { value: "draft", label: "Draft", tone: "muted" },
-  { value: "posted", label: "Posted", tone: "success" },
-  { value: "void", label: "Void", tone: "muted" },
-] as const;
-
-export const SOURCE_KINDS = [
-  { value: "manual", label: "Journal" },
-  { value: "fee_ledger", label: "Fee receipt" },
-  { value: "payroll_payment", label: "Salary payment" },
-  { value: "reversal", label: "Reversal" },
-] as const;
+import { ACCOUNT_TYPES, toAmount, totalCredit, totalDebit } from "./accounts-display";
+export { ACCOUNT_TYPES, VOUCHER_STATUSES, SOURCE_KINDS, toAmount, totalDebit, totalCredit, outOfBalanceBy, isBalanced, accountTypeLabel, accountTypeOptions, voucherStatusLabel, sourceKindLabel, formatColumn, formatBalance } from "./accounts-display";
+export { emptyLine } from "./accounts-display";
 
 const isoDate = z
   .string()
@@ -54,6 +31,7 @@ export const accountSchema = z.object({
   isActive: z.boolean(),
   description: z.string().max(300).optional(),
 });
+
 export type AccountInput = z.infer<typeof accountSchema>;
 
 /**
@@ -76,6 +54,7 @@ export const voucherLineSchema = z
     message: "Enter an amount on one side",
     path: ["debit"],
   });
+
 export type VoucherLineInput = z.infer<typeof voucherLineSchema>;
 
 export const voucherSchema = z
@@ -92,6 +71,7 @@ export const voucherSchema = z
     message: "A voucher of zero moves nothing",
     path: ["lines"],
   });
+
 export type VoucherInput = z.infer<typeof voucherSchema>;
 
 export const postingRuleSchema = z
@@ -105,91 +85,16 @@ export const postingRuleSchema = z
     message: "A rule cannot debit and credit the same account",
     path: ["creditAccountId"],
   });
+
 export type PostingRuleInput = z.infer<typeof postingRuleSchema>;
 
 // ---------------------------------------------------------------------------
 // Arithmetic
 // ---------------------------------------------------------------------------
 
-/** An empty or unparseable box is zero for totalling, never NaN. */
-export function toAmount(raw: string | null | undefined): number {
-  if (!raw) return 0;
-  const n = Number(String(raw).trim());
-  return Number.isFinite(n) && n > 0 ? n : 0;
-}
-
-export function totalDebit(lines: { debit: string }[]): number {
-  return lines.reduce((sum, l) => sum + toAmount(l.debit), 0);
-}
-
-export function totalCredit(lines: { credit: string }[]): number {
-  return lines.reduce((sum, l) => sum + toAmount(l.credit), 0);
-}
-
-/**
- * How far out a half-built voucher is. Shown live while somebody types, because
- * "out by 40.00" is the only number that helps when a journal will not post.
- */
-export function outOfBalanceBy(lines: { debit: string; credit: string }[]): number {
-  return Math.round((totalDebit(lines) - totalCredit(lines)) * 100) / 100;
-}
-
-export function isBalanced(lines: { debit: string; credit: string }[]): boolean {
-  return Math.abs(outOfBalanceBy(lines)) < 0.005 && totalDebit(lines) > 0;
-}
-
-// ---------------------------------------------------------------------------
-// Display
-// ---------------------------------------------------------------------------
-
-export function accountTypeLabel(value: string, t: Translator) {
-  const found = ACCOUNT_TYPES.find((entry) => entry.value === value);
-  return found ? labelFor(`accounts.type.${value}`, found.label, t) : value;
-}
-
-/** The same five, for a picker. A badge and its `<Select>` read one label. */
-export function accountTypeOptions(t: Translator) {
-  return optionsFor(ACCOUNT_TYPES, "accounts.type", t);
-}
-
 /** Which column an account's balance naturally sits in. */
 export function normalSide(accountType: string): "debit" | "credit" {
   return ACCOUNT_TYPES.find((t) => t.value === accountType)?.normal === "credit"
     ? "credit"
     : "debit";
-}
-
-export function voucherStatusLabel(value: string, t: Translator) {
-  const found = VOUCHER_STATUSES.find((s) => s.value === value);
-  return found ? labelFor(`accounts.voucherStatus.${value}`, found.label, t) : value;
-}
-
-export function sourceKindLabel(value: string, t: Translator) {
-  const found = SOURCE_KINDS.find((s) => s.value === value);
-  return found ? labelFor(`accounts.source.${value}`, found.label, t) : value;
-}
-
-/**
- * Zero renders as a dash in a ledger column, not as `₹0.00` clutter.
- *
- * The locale is a parameter because this is a pure helper with no component to
- * hang a hook on — and because a ledger read in Urdu groups its digits the way
- * that reader expects (rule 15).
- */
-export function formatColumn(value: number | string | null | undefined, locale: Locale) {
-  const n = Number(value ?? 0);
-  if (!Number.isFinite(n) || n === 0) return "—";
-  return formatCurrency(n, locale);
-}
-
-/** A negative balance is shown in brackets, as an accountant expects. */
-export function formatBalance(value: number | string | null | undefined, locale: Locale) {
-  const n = Number(value ?? 0);
-  if (!Number.isFinite(n)) return "—";
-  if (n < 0) return `(${formatCurrency(Math.abs(n), locale)})`;
-  return formatCurrency(n, locale);
-}
-
-export function emptyLine(): VoucherLineInput {
-  return { accountId: "", debit: "", credit: "", narration: "" };
 }

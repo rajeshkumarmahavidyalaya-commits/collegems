@@ -1,7 +1,4 @@
 import { z } from "zod";
-import { labelFor } from "./labels";
-import type { Translator } from "@/lib/i18n/translate";
-
 /**
  * The certificates module's client half.
  *
@@ -12,57 +9,12 @@ import type { Translator } from "@/lib/i18n/translate";
  * the screen believed, so nothing in this file can talk it into issuing a
  * document with `{{father_name}}` printed on it.
  */
-
-// The CHECK on certificate_templates.kind is the list (0101); this is the
-// labels for it. `experience` and `service` (0245) were missing here for
-// fifty migrations and printed as the raw word on the register.
-export const CERTIFICATE_KINDS = [
-  "transfer",
-  "bonafide",
-  "character",
-  "study",
-  "conduct",
-  "experience",
-  "service",
-  "admission",
-  "appointment",
-  "custom",
-] as const;
-export type CertificateKind = (typeof CERTIFICATE_KINDS)[number];
-
-export const KIND_LABEL: Record<CertificateKind, string> = {
-  transfer: "Transfer certificate",
-  bonafide: "Bonafide certificate",
-  character: "Character certificate",
-  study: "Study certificate",
-  conduct: "Conduct certificate",
-  experience: "Experience certificate",
-  service: "Service certificate",
-  admission: "Admission letter",
-  appointment: "Appointment letter",
-  custom: "Other",
-};
-
-/**
- * What issuing one *does*, in a sentence, shown next to the button.
- *
- * A transfer certificate is the only kind that changes a record, and somebody
- * clicking "Issue" on a Tuesday afternoon deserves to be told that before it
- * happens rather than to find the child missing from a class list in April.
- */
-export const KIND_CONSEQUENCE: Partial<Record<CertificateKind, string>> = {
-  transfer:
-    "Issuing this marks the student as transferred and takes them off the active roll. Cancelling the certificate puts them back.",
-};
-
-export function kindLabel(kind: string, t: Translator): string {
-  const fallback = KIND_LABEL[kind as CertificateKind];
-  return fallback ? labelFor(`certificate.kind.${kind}`, fallback, t) : kind;
-}
-
-// ---------------------------------------------------------------------------
-// The template's own extra fields
-// ---------------------------------------------------------------------------
+import { PROBLEM_SEVERITIES, type ProblemSeverity } from "./severity";
+export { PROBLEM_SEVERITIES, type ProblemSeverity };
+export { CERTIFICATE_KINDS, KIND_LABEL, KIND_CONSEQUENCE, kindLabel } from "./certificates-display";
+export type { CertificateKind } from "./certificates-display";
+export { sortProblems, missingRequiredFields, parseTemplateFields } from "./certificates-display";
+export type { TemplateField } from "./certificates-display";
 
 /**
  * Rules-as-data, per rule 12: a board that wants three more boxes on its
@@ -76,25 +28,21 @@ export const templateFieldSchema = z.object({
   required: z.boolean().optional().default(false),
   placeholder: z.string().optional(),
 });
-export type TemplateField = z.infer<typeof templateFieldSchema>;
 
-export function parseTemplateFields(raw: unknown): TemplateField[] {
-  const result = z.array(templateFieldSchema).safeParse(raw);
-  return result.success ? result.data : [];
-}
+// `TemplateField` and `parseTemplateFields` live in certificates-display.ts:
+// the issue form reads a template's fields to draw them, and that is not a
+// reason for the page to load zod. `templateFieldSchema` stays here for the
+// server; the test pins the two to the same answers.
 
 // ---------------------------------------------------------------------------
 // The preview
 // ---------------------------------------------------------------------------
 
-import { PROBLEM_SEVERITIES, type ProblemSeverity } from "./severity";
-
-export { PROBLEM_SEVERITIES, type ProblemSeverity };
-
 export const problemSchema = z.object({
   severity: z.enum(PROBLEM_SEVERITIES).catch("warning"),
   message: z.string(),
 });
+
 export type CertificateProblem = z.infer<typeof problemSchema>;
 
 export const previewSchema = z.object({
@@ -113,17 +61,12 @@ export const previewSchema = z.object({
    */
   can_issue: z.boolean(),
 });
+
 export type CertificatePreview = z.infer<typeof previewSchema>;
 
 export function parsePreview(raw: unknown): CertificatePreview | null {
   const parsed = previewSchema.safeParse(raw);
   return parsed.success ? parsed.data : null;
-}
-
-/** Errors first, then warnings, then notes — the order somebody acts in. */
-export function sortProblems(problems: CertificateProblem[]): CertificateProblem[] {
-  const rank: Record<ProblemSeverity, number> = { error: 0, warning: 1, info: 2 };
-  return [...problems].sort((a, b) => rank[a.severity] - rank[b.severity]);
 }
 
 export function countBySeverity(problems: CertificateProblem[]): Record<ProblemSeverity, number> {
@@ -152,6 +95,7 @@ export const issueCertificateSchema = z.object({
   issuedOn: z.string().min(1, "Choose the date of issue"),
   extra: z.record(z.string(), z.string()).default({}),
 });
+
 export type IssueCertificateInput = z.infer<typeof issueCertificateSchema>;
 
 export const cancelCertificateSchema = z.object({
@@ -168,12 +112,4 @@ export function cleanExtra(extra: Record<string, string>): Record<string, string
       .map(([k, v]) => [k, (v ?? "").trim()] as const)
       .filter(([, v]) => v !== ""),
   );
-}
-
-/** Which of a template's required fields have not been filled in yet. */
-export function missingRequiredFields(
-  fields: TemplateField[],
-  extra: Record<string, string>,
-): string[] {
-  return fields.filter((f) => f.required && !(extra[f.name] ?? "").trim()).map((f) => f.name);
 }

@@ -4,7 +4,7 @@ import { useState, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
+import { lazyZodResolver } from "@/lib/forms/lazy-resolver";
 import { Loader2, Plus } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -19,7 +19,7 @@ import {
 import { Form } from "@/components/ui/form";
 import { ErrorSummary } from "@/components/forms/error-summary";
 import { SelectField, TextField, TextareaField } from "@/components/forms/form-fields";
-import { createTestSchema, type CreateTestInput } from "@/lib/validations/online-tests";
+import type { CreateTestInput } from "@/lib/validations/online-tests";
 import { createTest, type Course } from "./actions";
 
 /**
@@ -32,7 +32,7 @@ export function NewTestButton({ courses }: { courses: Course[] }) {
   const [open, setOpen] = useState(false);
   const [pending, startTransition] = useTransition();
   const form = useForm<CreateTestInput>({
-    resolver: zodResolver(createTestSchema),
+    resolver: lazyZodResolver<CreateTestInput>(() => import("@/lib/validations/online-tests").then((m) => m.createTestSchema)),
     defaultValues: {
       course: courses[0]?.value ?? "",
       title: "",

@@ -18,7 +18,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { useI18n } from "@/components/providers/i18n-provider";
-import { ATTENDANCE_STATUSES, attendanceLabel, attendanceStatusOptions } from "@/lib/validations/hr";
+import { ATTENDANCE_STATUSES, attendanceLabel, attendanceStatusOptions } from "@/lib/validations/hr-display";
 import { markAttendance, type AttendanceRow } from "./actions";
 
 type Props = {

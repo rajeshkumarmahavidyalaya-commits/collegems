@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
+import { lazyZodResolver } from "@/lib/forms/lazy-resolver";
 import { Info, Loader2, Search, Send, Users } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -17,16 +17,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ErrorSummary } from "@/components/forms/error-summary";
 import { SelectField, TextField, TextareaField } from "@/components/forms/form-fields";
-import {
-  AUDIENCE_KINDS,
-  CHANNELS,
-  SECTION_WHO,
-  channelSends,
-  channelState,
-  composeSchema,
-  type ChannelStatus,
-  type ComposeInput,
-} from "@/lib/validations/notifications";
+import { AUDIENCE_KINDS, CHANNELS, SECTION_WHO, channelSends, channelState } from "@/lib/validations/notifications-display";
+import type { ChannelStatus, ComposeInput } from "@/lib/validations/notifications";
 import { previewAudience, sendNotification, type EventType } from "../actions";
 
 type Props = {
@@ -53,7 +45,7 @@ export function ComposeForm({
   const defaultEvent = eventTypes.find((e) => e.key === "general.announcement") ?? eventTypes[0];
 
   const form = useForm<ComposeInput>({
-    resolver: zodResolver(composeSchema),
+    resolver: lazyZodResolver<ComposeInput>(() => import("@/lib/validations/notifications").then((m) => m.composeSchema)),
     defaultValues: {
       eventKey: defaultEvent?.key ?? "",
       subject: "",
@@ -101,15 +93,18 @@ export function ComposeForm({
   });
 
   useEffect(() => {
-    const parsed = composeSchema.safeParse({ ...form.getValues(), body: "x", eventKey: "x" });
-    if (!parsed.success) {
-      setReach(null);
-      return;
-    }
-
     let cancelled = false;
     setReachPending(true);
     const timer = setTimeout(async () => {
+      // The schema arrives with the first preview rather than with the page.
+      const { composeSchema } = await import("@/lib/validations/notifications");
+      const parsed = composeSchema.safeParse({ ...form.getValues(), body: "x", eventKey: "x" });
+      if (cancelled) return;
+      if (!parsed.success) {
+        setReach(null);
+        setReachPending(false);
+        return;
+      }
       const result = await previewAudience(parsed.data);
       if (cancelled) return;
       setReach(result.ok ? result.data.count : null);

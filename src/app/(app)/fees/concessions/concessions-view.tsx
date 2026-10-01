@@ -28,12 +28,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { StudentPicker, type PickedStudent } from "@/components/people/student-picker";
 import { useI18n } from "@/components/providers/i18n-provider";
 
-import {
-  concessionSentence,
-  kindLabel,
-  statusLabel,
-  statusTone,
-} from "@/lib/validations/concessions";
+import { concessionSentence, kindLabel, statusLabel, statusTone } from "@/lib/validations/concessions-display";
 import {
   searchStudentsForConcession,
   awardConcession,

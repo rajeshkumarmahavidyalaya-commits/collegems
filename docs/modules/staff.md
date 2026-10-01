@@ -133,7 +133,5 @@ Two kinds of sentence, and they are not the same kind:
 - **Reassigning what a leaver taught.** `staff_exit` leaves the lessons
   unassigned and says so; choosing who takes them is rule 13's editable-preview
   shape, not an automatic one.
-- **Bulk staff import.** The students module has one; a school onboarding forty
-  teachers by hand will want the same. The import module's three rules —
-  re-judge every row after any edit, apply partially and record why, refuse an
-  oversized input rather than truncating it — port unchanged.
+- ~~**Bulk staff import.**~~ Built at `/staff/import` (`0289`). (Corrected on
+  1 Oct 2026.)

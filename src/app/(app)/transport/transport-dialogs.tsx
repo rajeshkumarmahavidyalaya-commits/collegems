@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 
 import { useForm } from "react-hook-form";
 
-import { zodResolver } from "@hookform/resolvers/zod";
+import { lazyZodResolver } from "@/lib/forms/lazy-resolver";
 
 import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
@@ -36,13 +36,8 @@ import {
   TextareaField,
 } from "@/components/forms/form-fields";
 
-import {
-  DIRECTIONS,
-  routeSchema,
-  vehicleSchema,
-  type RouteInput,
-  type VehicleInput,
-} from "@/lib/validations/transport";
+import { DIRECTIONS } from "@/lib/validations/transport-display";
+import type { RouteInput, VehicleInput } from "@/lib/validations/transport";
 import {
   createRoute,
   saveRoute,
@@ -74,7 +69,7 @@ export function RouteDialog({
   const [pending, startTransition] = useTransition();
 
   const form = useForm<RouteInput>({
-    resolver: zodResolver(routeSchema),
+    resolver: lazyZodResolver<RouteInput>(() => import("@/lib/validations/transport").then((m) => m.routeSchema)),
     values: {
       code: route?.code ?? "",
       name: route?.name ?? "",
@@ -286,7 +281,7 @@ export function VehicleDialog({
   const [pending, startTransition] = useTransition();
 
   const form = useForm<VehicleInput>({
-    resolver: zodResolver(vehicleSchema),
+    resolver: lazyZodResolver<VehicleInput>(() => import("@/lib/validations/transport").then((m) => m.vehicleSchema)),
     values: {
       registrationNumber: vehicle?.registrationNumber ?? "",
       model: vehicle?.model ?? "",

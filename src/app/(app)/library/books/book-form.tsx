@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
+import { lazyZodResolver } from "@/lib/forms/lazy-resolver";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -11,7 +11,7 @@ import { Form } from "@/components/ui/form";
 import { SelectField, TextField } from "@/components/forms/form-fields";
 import { ErrorSummary } from "@/components/forms/error-summary";
 import { useUnsavedChangesGuard } from "@/components/forms/use-unsaved-changes-guard";
-import { bookSchema, type BookInput } from "@/lib/validations/library";
+import type { BookInput } from "@/lib/validations/library";
 import { createBook, updateBook } from "../actions";
 
 export function BookForm({
@@ -25,7 +25,7 @@ export function BookForm({
   const isEdit = !!book;
 
   const form = useForm<BookInput>({
-    resolver: zodResolver(bookSchema),
+    resolver: lazyZodResolver<BookInput>(() => import("@/lib/validations/library").then((m) => m.bookSchema)),
     defaultValues: book ?? {
       title: "",
       author: "",

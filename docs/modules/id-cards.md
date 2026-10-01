@@ -323,10 +323,10 @@ second gate to produce it.
 
 ## Not built
 
-- **A barcode or QR code.** A card that can be scanned is a card the library and
-  the gate can use, which is a real feature and a real decision: what the code
-  encodes (an admission number? a uuid?) determines whether a photograph of a
-  card is enough to impersonate its holder.
+- ~~**A barcode or QR code.**~~ Built in Phase 3b: every card carries a QR
+  code (`src/lib/id-card/qr.ts`, drawn into the PDF by `src/lib/pdf/card.ts`)
+  and `/scan` reads it. (Corrected on 1 Oct 2026: this line said "not built"
+  for weeks after it was.)
 - **A back face.** School rules, an emergency number, a bus route. Easy, and it
   wants a school to choose the wording — which means `reference.settings_catalog`
   rather than a constant.

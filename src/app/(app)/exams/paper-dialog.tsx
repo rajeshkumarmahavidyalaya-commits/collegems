@@ -3,7 +3,7 @@
 import { useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
+import { lazyZodResolver } from "@/lib/forms/lazy-resolver";
 import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -21,7 +21,7 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { ErrorSummary } from "@/components/forms/error-summary";
 import { SelectField, TextField } from "@/components/forms/form-fields";
-import { examPaperSchema, type ExamPaperInput } from "@/lib/validations/exams";
+import type { ExamPaperInput } from "@/lib/validations/exams";
 import { savePaper, type PaperRow } from "./actions";
 
 /*
@@ -49,7 +49,7 @@ export function PaperDialog({
   const [pending, startTransition] = useTransition();
 
   const form = useForm<ExamPaperInput>({
-    resolver: zodResolver(examPaperSchema),
+    resolver: lazyZodResolver<ExamPaperInput>(() => import("@/lib/validations/exams").then((m) => m.examPaperSchema)),
     values: {
       sectionId: paper?.sectionId ?? sections[0]?.id ?? "",
       subjectId: paper?.subjectId ?? subjects[0]?.id ?? "",

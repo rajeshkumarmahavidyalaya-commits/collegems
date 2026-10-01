@@ -3,7 +3,7 @@
 import { useEffect, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
+import { lazyZodResolver } from "@/lib/forms/lazy-resolver";
 import { toast } from "sonner";
 import { Loader2, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -21,7 +21,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { SelectField, TextField } from "@/components/forms/form-fields";
 import { ErrorSummary } from "@/components/forms/error-summary";
-import { guardianSchema, type GuardianInput } from "@/lib/validations/guardians";
+import type { GuardianInput } from "@/lib/validations/guardians";
 import { addGuardian, linkGuardian, searchGuardians, updateGuardian } from "../guardian-actions";
 import type { GuardianSearchResult } from "../guardian-actions";
 
@@ -125,7 +125,7 @@ export function GuardianFormDialog({
   const isEdit = !!draft;
 
   const form = useForm<GuardianInput>({
-    resolver: zodResolver(guardianSchema),
+    resolver: lazyZodResolver<GuardianInput>(() => import("@/lib/validations/guardians").then((m) => m.guardianSchema)),
     defaultValues: draft ?? EMPTY,
   });
 

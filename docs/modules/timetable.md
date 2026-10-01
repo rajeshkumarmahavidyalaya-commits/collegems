@@ -280,9 +280,9 @@ which is where somebody will notice.
   since `0019`, defaulting to `0` (whole day). Now that periods exist per class
   per day, wiring the register to them is a follow-on change in the attendance
   module.
-- **No substitute-teacher log.** A period's teacher can be changed, but the
-  change is not recorded as "X covered for Y on this date" — that needs a date,
-  not a weekday, and belongs with staff attendance.
+- ~~**No substitute-teacher log.**~~ Built as the substitution roster,
+  `/timetable/substitutions` -- see [substitutions.md](./substitutions.md).
+  (Corrected on 1 Oct 2026.)
 - **No room-utilisation view.** The data supports it (`timetable_busy_in_slot`
   already answers the per-period question); nothing renders it.
 - **No printable routine.** The grid prints acceptably through the global print

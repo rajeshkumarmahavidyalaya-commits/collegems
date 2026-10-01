@@ -47,7 +47,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { BUCKET_LIMITS, BUCKETS } from "@/lib/storage/constants";
-import { MATERIAL_KINDS, materialKindLabel, materialKindOptions } from "@/lib/validations/homework";
+import { MATERIAL_KINDS, materialKindLabel, materialKindOptions } from "@/lib/validations/homework-display";
 import {
   deleteStudyMaterial,
   materialDownloadUrl,

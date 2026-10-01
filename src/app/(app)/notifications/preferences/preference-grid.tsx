@@ -7,12 +7,8 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
-import {
-  CHANNELS,
-  channelLabel,
-  channelState,
-  type ChannelStatus,
-} from "@/lib/validations/notifications";
+import { CHANNELS, channelLabel, channelState } from "@/lib/validations/notifications-display";
+import { type ChannelStatus } from "@/lib/validations/notifications";
 import { setPreference, type EventType, type PreferenceRow } from "../actions";
 import { useT } from "@/components/providers/i18n-provider";
 

@@ -1,6 +1,4 @@
 import { z } from "zod";
-
-
 // Moved to `exams-display.ts` so a screen that only draws a badge or fills a
 // select does not ship Zod; re-exported here so every existing import keeps
 // working.
@@ -25,6 +23,9 @@ export {
  * thing that criticises them must never drift apart, and only one of them can
  * live next to the evaluation order.
  */
+import { parseMarkCell } from "./exams-display";
+export { componentTotal, componentTotalProblem, parseMarkCell, enteredCount } from "./exams-display";
+export type { MarkCell } from "./exams-display";
 
 export const AGGREGATE_METHODS = [
   {
@@ -63,6 +64,7 @@ export const examSchema = z
     message: "The last day cannot be before the first",
     path: ["endsOn"],
   });
+
 export type ExamInput = z.infer<typeof examSchema>;
 
 export const examPaperSchema = z
@@ -86,6 +88,7 @@ export const examPaperSchema = z
     message: "The pass mark cannot exceed the maximum",
     path: ["passMarks"],
   });
+
 export type ExamPaperInput = z.infer<typeof examPaperSchema>;
 
 /**
@@ -114,6 +117,7 @@ export const examComponentSchema = z
     message: "The minimum cannot exceed this part's maximum",
     path: ["passMarks"],
   });
+
 export type ExamComponentInput = z.infer<typeof examComponentSchema>;
 
 /**
@@ -138,32 +142,8 @@ export const examComponentSetSchema = z
       v.components.length,
     { message: "Two parts share a code", path: ["components"] },
   );
+
 export type ExamComponentSetInput = z.infer<typeof examComponentSetSchema>;
-
-/**
- * The other half of "the parts add up to the paper" — said in the browser while
- * somebody is typing, so the total under the form moves as they go. Postgres
- * still enforces it; this only means nobody presses Save to find out.
- */
-export function componentTotal(components: { maxMarks: number }[]) {
-  return components.reduce(
-    (sum, c) => sum + (Number.isFinite(c.maxMarks) ? c.maxMarks : 0),
-    0,
-  );
-}
-
-export function componentTotalProblem(
-  components: { maxMarks: number }[],
-  paperMaxMarks: number,
-): string | null {
-  if (components.length === 0) return null;
-  const total = componentTotal(components);
-  if (total === paperMaxMarks) return null;
-  const gap = Math.abs(total - paperMaxMarks);
-  return `The parts add up to ${total} but the paper is out of ${paperMaxMarks}, so they are ${gap} ${
-    total < paperMaxMarks ? "short" : "over"
-  }.`;
-}
 
 /**
  * One student's cell in the marks grid. `marks` is a string because the input
@@ -179,12 +159,14 @@ export const markEntrySchema = z.object({
   isAbsent: z.boolean(),
   remarks: z.string().max(200).optional(),
 });
+
 export type MarkEntryInput = z.infer<typeof markEntrySchema>;
 
 export const markSheetSchema = z.object({
   examSubjectId: z.string().uuid(),
   entries: z.array(markEntrySchema),
 });
+
 export type MarkSheetInput = z.infer<typeof markSheetSchema>;
 
 // ---------------------------------------------------------------------------
@@ -201,6 +183,7 @@ export const gradeBandSchema = z.object({
   description: z.string().max(60).optional(),
   is_fail: z.boolean().optional(),
 });
+
 export type GradeBand = z.infer<typeof gradeBandSchema>;
 
 export const gradingRulesSchema = z.object({
@@ -256,6 +239,7 @@ export const gradingRulesSchema = z.object({
     })
     .optional(),
 });
+
 export type GradingRules = z.infer<typeof gradingRulesSchema>;
 
 export const gradingSchemeSchema = z.object({
@@ -265,6 +249,7 @@ export const gradingSchemeSchema = z.object({
   /** The rules arrive as JSON text from a code editor, so parsing is the gate. */
   rules: z.string().min(2, "The rules cannot be empty"),
 });
+
 export type GradingSchemeInput = z.infer<typeof gradingSchemeSchema>;
 
 /**
@@ -316,52 +301,8 @@ export function formatMark(
   return String(Number(value));
 }
 
-/**
- * One typed cell on a mark sheet, understood.
- *
- * A mark register filled in by hand has three states in one column — a number,
- * a blank, and "AB" — and so does this. Making absence a *token* rather than a
- * second control is what lets a split paper have one narrow input per part
- * instead of an input and a checkbox per part, and it keeps the grid what the
- * design rules ask it to be: a column you can type down without reaching for
- * the mouse. `formatMark` already renders an absence as "AB", so what a teacher
- * types is what they see afterwards.
- */
-export type MarkCell =
-  | { kind: "empty" }
-  | { kind: "absent" }
-  | { kind: "value"; value: number }
-  | { kind: "problem"; message: string };
-
-const ABSENT_TOKENS = new Set(["a", "ab", "abs", "absent"]);
-
-export function parseMarkCell(raw: string, maxMarks: number): MarkCell {
-  const text = raw.trim();
-  if (text === "") return { kind: "empty" };
-  if (ABSENT_TOKENS.has(text.toLowerCase())) return { kind: "absent" };
-
-  const value = Number(text);
-  if (!Number.isFinite(value))
-    return { kind: "problem", message: "A mark, or AB for absent" };
-  if (value < 0) return { kind: "problem", message: "Cannot be negative" };
-  if (value > maxMarks)
-    return { kind: "problem", message: `Above the maximum of ${maxMarks}` };
-  return { kind: "value", value };
-}
-
 /** The message for a cell that cannot be saved, or null when it can. */
 export function markProblem(raw: string, maxMarks: number): string | null {
   const cell = parseMarkCell(raw, maxMarks);
   return cell.kind === "problem" ? cell.message : null;
-}
-
-/** How full a mark sheet is, for the "12 of 40 entered" line. A row counts once
- *  every one of its cells has been resolved — which for a split paper means
- *  every part, because a paper with the practical still to mark is not marked. */
-export function enteredCount(rows: { cells: string[] }[], maxima: number[]) {
-  return rows.filter((row) =>
-    row.cells.every(
-      (cell, i) => parseMarkCell(cell, maxima[i] ?? 0).kind !== "empty",
-    ),
-  ).length;
 }

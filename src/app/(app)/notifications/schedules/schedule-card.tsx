@@ -16,17 +16,8 @@ import {
   type ScheduleRow,
 } from "./actions";
 import { useI18n } from "@/components/providers/i18n-provider";
-import {
-  graceSentence,
-  kindLabel,
-  runSentence,
-  runStatusTone,
-  RUN_STATUS_LABEL,
-  reportKeyOf,
-  scheduleSentence,
-  type RunStatus,
-  kindDescription,
-} from "@/lib/validations/schedules";
+import { graceSentence, kindLabel, runSentence, runStatusTone, RUN_STATUS_LABEL, reportKeyOf, scheduleSentence, kindDescription } from "@/lib/validations/schedules-display";
+import { type RunStatus } from "@/lib/validations/schedules";
 
 export function ScheduleCard({
   schedule,

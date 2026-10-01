@@ -1,4 +1,5 @@
 import { z } from "zod";
+export { STUDENT_STATUSES, GENDERS } from "./students-display";
 
 /**
  * Shared by the student form and the server action, so the two cannot drift.
@@ -37,18 +38,3 @@ export const studentSchema = z.object({
 });
 
 export type StudentInput = z.infer<typeof studentSchema>;
-
-export const STUDENT_STATUSES = [
-  { value: "active", label: "Active" },
-  { value: "inactive", label: "Inactive" },
-  { value: "alumni", label: "Alumni" },
-  { value: "transferred", label: "Transferred" },
-  { value: "expelled", label: "Expelled" },
-] as const;
-
-export const GENDERS = [
-  { value: "male", label: "Male" },
-  { value: "female", label: "Female" },
-  { value: "other", label: "Other" },
-  { value: "undisclosed", label: "Undisclosed" },
-] as const;

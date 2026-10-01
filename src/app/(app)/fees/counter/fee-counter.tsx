@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
+import { lazyZodResolver } from "@/lib/forms/lazy-resolver";
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import {
   AlertCircle,
@@ -33,7 +33,8 @@ import { Form } from "@/components/ui/form";
 import { SelectField, TextField, TextareaField } from "@/components/forms/form-fields";
 import { ErrorSummary } from "@/components/forms/error-summary";
 import { useI18n } from "@/components/providers/i18n-provider";
-import { ADJUSTMENT_TYPES, adjustmentSchema, chargeSchema, paymentSchema, refundSchema, type AdjustmentInput, type ChargeInput, type PaymentInput, type RefundInput } from "@/lib/validations/fees";
+import { ADJUSTMENT_TYPES } from "@/lib/validations/fees-display";
+import type { AdjustmentInput, ChargeInput, PaymentInput, RefundInput } from "@/lib/validations/fees";
 import { paymentMethodOptions, adjustmentTypeOptions } from "@/lib/validations/fees-display";
 import {
   getStudentAccount,
@@ -586,6 +587,9 @@ function ReceiveForm({
 
   async function onSubmit(values: PaymentInput) {
     setServerError(null);
+    // Loaded here rather than with the page: the counter is the screen a
+    // bursar opens first thing, and zod is not needed until money is taken.
+    const { paymentSchema } = await import("@/lib/validations/fees");
     const parsed = paymentSchema.safeParse(values);
     if (!parsed.success) {
       for (const [field, messages] of Object.entries(parsed.error.flatten().fieldErrors)) {
@@ -676,7 +680,7 @@ function ChargeForm({
   const [serverError, setServerError] = useState<string | null>(null);
 
   const form = useForm<ChargeInput>({
-    resolver: zodResolver(chargeSchema),
+    resolver: lazyZodResolver<ChargeInput>(() => import("@/lib/validations/fees").then((m) => m.chargeSchema)),
     values: {
       studentId: student.studentId,
       amount: undefined as unknown as number,
@@ -760,7 +764,7 @@ function AdjustForm({
   const [serverError, setServerError] = useState<string | null>(null);
 
   const form = useForm<AdjustmentInput>({
-    resolver: zodResolver(adjustmentSchema),
+    resolver: lazyZodResolver<AdjustmentInput>(() => import("@/lib/validations/fees").then((m) => m.adjustmentSchema)),
     values: {
       studentId: student.studentId,
       entryType: "discount",
@@ -849,7 +853,7 @@ function RefundForm({
   const [serverError, setServerError] = useState<string | null>(null);
 
   const form = useForm<RefundInput>({
-    resolver: zodResolver(refundSchema),
+    resolver: lazyZodResolver<RefundInput>(() => import("@/lib/validations/fees").then((m) => m.refundSchema)),
     values: {
       studentId: student.studentId,
       amount: balance < 0 ? -balance : (undefined as unknown as number),

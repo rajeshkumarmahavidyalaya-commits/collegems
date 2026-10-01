@@ -5,7 +5,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { getCertificate } from "../actions";
-import { kindLabel } from "@/lib/validations/certificates";
+import { kindLabel } from "@/lib/validations/certificates-display";
 import { hasPermission } from "@/lib/auth/permissions";
 import { CancelCertificate } from "./cancel-certificate";
 import { PrintButton } from "./print-button";

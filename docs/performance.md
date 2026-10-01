@@ -595,3 +595,53 @@ Zod is needed on arrival and there is nothing to defer. The next ones —
 `/accounts` (217), `/students` and `/transport/[routeId]` (214), `/hr/salary`
 and `/timetable` (213) — each need measuring before anybody assumes they are
 this shape. A route whose weight is its own form is already correct.
+
+## Zod on 45 screens that validated nothing (1 Oct 2026)
+
+Measured with `npm run build` before and after, every route, same commit base.
+
+**What it was.** Zod (two chunks, 126 kB of JavaScript, about 35 kB
+compressed) was on every route with a form *and* on most list screens. A list
+screen reached it by importing a label -- `/students` took `STUDENT_STATUSES`
+from `students.ts`, whose first line is `import { z } from "zod"`. That is the
+mistake this file already recorded for `fees.ts` (*"a barrel that mixes a Zod
+schema with a label helper charges every importer for Zod"*), fixed there once
+and nowhere else.
+
+**Two changes, measured separately:**
+
+| step | routes lighter | per route | heaviest route | total over 131 routes |
+|---|---|---|---|---|
+| before | | | 225 kB (`/fees/counter`) | 20,652 kB |
+| 1. labels split from schemas (25 `-display` modules) | 45 | −26 to −27 kB | 224 kB | 19,929 kB |
+| 2. forms load zod on first validation (`lazyZodResolver`) | 45 more | −27 to −28 kB | 204 kB | 19,534 kB |
+
+The average route went **157.6 → 149.1 kB**. About 40 routes report +1 kB,
+the webpack runtime's map of the new async chunks; a route that never had zod
+cannot lose it.
+
+- **Step 1** was done by a script and checked by the compiler, not by hand: a
+  declaration moves to `<module>-display.ts` only if nothing it uses at runtime
+  reaches zod (a type reference is erased, so `import type` from the schema
+  module is allowed), and the schema module re-exports it, so no server caller
+  changed. `tests/performance/display-modules-stay-light.test.ts` fails if a
+  `-display` module reaches zod at runtime, directly or through another
+  module, and if a client component takes anything but a schema from a module
+  that does.
+- **Step 2.** `src/lib/forms/lazy-resolver.ts`. A form validates on submit, so
+  the schema is not needed to draw it. The resolver package is prefetched when
+  the browser is idle, so the first submit almost never waits; the server
+  action still validates with the same schema, so nothing about correctness
+  moved. The fee counter's payment form and the compose screen's audience
+  preview validated by hand with `safeParse`, so each loads the schema inside
+  the handler instead.
+- **The one reader that ran a schema**, `parseTemplateFields` on
+  `/certificates/issue`, is hand-written now: the same all-or-nothing answers,
+  pinned by the existing certificate tests, without 85 kB.
+- **Fonts.** Fira Sans was preloaded in five weights; the interface uses three
+  (`font-normal`, `font-medium`, `font-semibold`; `font-light` and `font-bold`
+  occur nowhere). Two font files fewer on every first page load.
+
+**What is left, deliberately.** The heaviest routes now are list screens
+carrying TanStack Table (about 61 kB), which they use for sorting, paging and
+column visibility. That is the feature, not an accident of an import.

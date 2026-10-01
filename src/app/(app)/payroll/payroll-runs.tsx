@@ -33,7 +33,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { monthValue, runStatusLabel } from "@/lib/validations/hr";
+import { monthValue, runStatusLabel } from "@/lib/validations/hr-display";
 import { discardPayroll, previewPayroll, type RunRow } from "./actions";
 import { useI18n } from "@/components/providers/i18n-provider";
 

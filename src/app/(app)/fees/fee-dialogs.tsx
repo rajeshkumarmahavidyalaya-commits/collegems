@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
+import { lazyZodResolver } from "@/lib/forms/lazy-resolver";
 import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -18,7 +18,8 @@ import { Form } from "@/components/ui/form";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { SelectField, TextField, TextareaField } from "@/components/forms/form-fields";
 import { ErrorSummary } from "@/components/forms/error-summary";
-import { ADJUSTMENT_TYPES, adjustmentSchema, paymentSchema, refundSchema, reversalSchema, type AdjustmentInput, type PaymentInput, type RefundInput } from "@/lib/validations/fees";
+import { ADJUSTMENT_TYPES } from "@/lib/validations/fees-display";
+import type { AdjustmentInput, PaymentInput, RefundInput } from "@/lib/validations/fees";
 import { recordAdjustment, recordPayment, recordRefund, reverseEntry } from "./actions";
 import { useI18n } from "@/components/providers/i18n-provider";
 import { paymentMethodOptions, adjustmentTypeOptions } from "@/lib/validations/fees-display";
@@ -64,7 +65,7 @@ export function RecordPaymentDialog({
   const [serverError, setServerError] = useState<string | null>(null);
 
   const form = useForm<PaymentInput>({
-    resolver: zodResolver(paymentSchema),
+    resolver: lazyZodResolver<PaymentInput>(() => import("@/lib/validations/fees").then((m) => m.paymentSchema)),
     defaultValues: {
       studentId: student.id,
       amount: student.balance > 0 ? student.balance : undefined,
@@ -188,7 +189,7 @@ export function RecordAdjustmentDialog({
   const [serverError, setServerError] = useState<string | null>(null);
 
   const form = useForm<AdjustmentInput>({
-    resolver: zodResolver(adjustmentSchema),
+    resolver: lazyZodResolver<AdjustmentInput>(() => import("@/lib/validations/fees").then((m) => m.adjustmentSchema)),
     defaultValues: {
       studentId: student.id,
       entryType: "discount",
@@ -298,7 +299,7 @@ export function RecordRefundDialog({
   const [serverError, setServerError] = useState<string | null>(null);
 
   const form = useForm<RefundInput>({
-    resolver: zodResolver(refundSchema),
+    resolver: lazyZodResolver<RefundInput>(() => import("@/lib/validations/fees").then((m) => m.refundSchema)),
     defaultValues: {
       studentId: student.id,
       amount: student.balance < 0 ? -student.balance : undefined,
@@ -401,7 +402,7 @@ export function ReverseEntryDialog({
   const [serverError, setServerError] = useState<string | null>(null);
 
   const form = useForm<{ entryId: string; reason: string }>({
-    resolver: zodResolver(reversalSchema),
+    resolver: lazyZodResolver(() => import("@/lib/validations/fees").then((m) => m.reversalSchema)),
     values: { entryId: entry?.id ?? "", reason: "" },
   });
 

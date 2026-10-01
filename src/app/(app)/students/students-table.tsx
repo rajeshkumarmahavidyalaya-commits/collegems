@@ -18,7 +18,7 @@ import {
 import { DataTable, exportRowsToCsv } from "@/components/data-table/data-table";
 import { DataTableColumnHeader } from "@/components/data-table/data-table-column-header";
 import { DataTableToolbar } from "@/components/data-table/data-table-toolbar";
-import { STUDENT_STATUSES } from "@/lib/validations/students";
+import { STUDENT_STATUSES } from "@/lib/validations/students-display";
 import { listStudents, type StudentRow } from "./actions";
 
 /** Status is never colour-only -- the badge always carries its label. */

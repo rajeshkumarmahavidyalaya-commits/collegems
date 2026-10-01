@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState, useTransition } from "react";
 import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
+import { lazyZodResolver } from "@/lib/forms/lazy-resolver";
 import {
   AlertTriangle,
   CalendarDays,
@@ -41,17 +41,9 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { ErrorSummary } from "@/components/forms/error-summary";
 import { SelectField, TextField } from "@/components/forms/form-fields";
-import {
-  GRID_WEEKDAYS,
-  cellKey,
-  fillRate,
-  periodLabel,
-  timetableEntrySchema,
-  toClockTime,
-  weekdayName,
-  weekdayShort,
-  type TimetableEntryInput,
-} from "@/lib/validations/timetable";
+import { GRID_WEEKDAYS, cellKey, fillRate, periodLabel, weekdayName, weekdayShort } from "@/lib/validations/timetable-display";
+import type { TimetableEntryInput } from "@/lib/validations/timetable";
+import { toClockTime } from "@/lib/validations/academics-display";
 import { useI18n } from "@/components/providers/i18n-provider";
 import {
   clearEntry,
@@ -620,7 +612,7 @@ function CellDialog({
   const firstFree = curriculum.find((c) => !taken.has(c.subjectId)) ?? curriculum[0];
 
   const form = useForm<TimetableEntryInput>({
-    resolver: zodResolver(timetableEntrySchema),
+    resolver: lazyZodResolver<TimetableEntryInput>(() => import("@/lib/validations/timetable").then((m) => m.timetableEntrySchema)),
     values: {
       sectionId,
       weekday,

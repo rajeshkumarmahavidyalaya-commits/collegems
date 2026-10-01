@@ -3,7 +3,7 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
+import { lazyZodResolver } from "@/lib/forms/lazy-resolver";
 import { toast } from "sonner";
 import { CalendarRange, CheckCircle2, Loader2, Pencil, Plus } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -24,10 +24,7 @@ import { TextField } from "@/components/forms/form-fields";
 import { ErrorSummary } from "@/components/forms/error-summary";
 import { useI18n } from "@/components/providers/i18n-provider";
 import { formatDate } from "@/lib/i18n/format";
-import {
-  academicSessionSchema,
-  type AcademicSessionInput,
-} from "@/lib/validations/academics";
+import type { AcademicSessionInput } from "@/lib/validations/academics";
 import {
   activateAcademicYear,
   createAcademicYear,
@@ -52,7 +49,7 @@ function YearDialog({
   const [makeCurrent, setMakeCurrent] = useState(false);
 
   const form = useForm<AcademicSessionInput>({
-    resolver: zodResolver(academicSessionSchema),
+    resolver: lazyZodResolver<AcademicSessionInput>(() => import("@/lib/validations/academics").then((m) => m.academicSessionSchema)),
     values: year
       ? { name: year.name, startDate: year.startDate, endDate: year.endDate }
       : { name: "", startDate: "", endDate: "" },

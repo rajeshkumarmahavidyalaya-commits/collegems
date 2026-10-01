@@ -19,17 +19,8 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
-import {
-  candidateReason,
-  coverSummary,
-  periodLabel,
-  reasonLabel,
-  reasonTone,
-  severityLabel,
-  severityRank,
-  severityTone,
-  todayIso,
-} from "@/lib/validations/substitutions";
+import { candidateReason, coverSummary, periodLabel, reasonLabel, reasonTone, severityRank, todayIso } from "@/lib/validations/substitutions-display";
+import { severityLabel, severityTone } from "@/lib/validations/severity";
 import { useT } from "@/components/providers/i18n-provider";
 import {
   arrangeCover,

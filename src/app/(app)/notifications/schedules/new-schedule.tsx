@@ -27,14 +27,8 @@ import {
 } from "@/components/ui/select";
 import { saveSchedule, type SchedulableReport } from "./actions";
 import { useI18n } from "@/components/providers/i18n-provider";
-import {
-  SCHEDULE_KINDS,
-  graceSentence,
-  scheduleSentence,
-  kindDescription,
-  kindLabel,
-  type ScheduleKind,
-} from "@/lib/validations/schedules";
+import { SCHEDULE_KINDS, graceSentence, scheduleSentence, kindDescription, kindLabel } from "@/lib/validations/schedules-display";
+import { type ScheduleKind } from "@/lib/validations/schedules";
 
 const DAYS = [
   { value: 1, label: "Mon" },

@@ -36,14 +36,7 @@ import {
   type LeaveRow,
 } from "./actions";
 import { StudentPicker, type PickedStudent } from "@/components/people/student-picker";
-import {
-  blocksTheDates,
-  kindLabel,
-  LEAVE_KINDS,
-  leaveSentence,
-  statusLabel,
-  statusTone,
-} from "@/lib/validations/student-leave";
+import { blocksTheDates, kindLabel, LEAVE_KINDS, leaveSentence, statusLabel, statusTone } from "@/lib/validations/student-leave-display";
 
 export function LeaveList({
   leave,

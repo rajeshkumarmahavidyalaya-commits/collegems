@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 
 import { useForm } from "react-hook-form";
 
-import { zodResolver } from "@hookform/resolvers/zod";
+import { lazyZodResolver } from "@/lib/forms/lazy-resolver";
 
 import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
@@ -35,13 +35,8 @@ import {
   TextareaField,
 } from "@/components/forms/form-fields";
 
-import {
-  HOSTEL_KINDS,
-  hostelSchema,
-  roomSchema,
-  type HostelInput,
-  type RoomInput,
-} from "@/lib/validations/hostel";
+import { HOSTEL_KINDS } from "@/lib/validations/hostel-display";
+import type { HostelInput, RoomInput } from "@/lib/validations/hostel";
 import { saveHostel, saveRoom, type HostelRow, type RoomRow } from "./actions";
 
 /*
@@ -67,7 +62,7 @@ export function HostelDialog({
   const [pending, startTransition] = useTransition();
 
   const form = useForm<HostelInput>({
-    resolver: zodResolver(hostelSchema),
+    resolver: lazyZodResolver<HostelInput>(() => import("@/lib/validations/hostel").then((m) => m.hostelSchema)),
     values: {
       name: hostel?.name ?? "",
       kind: (hostel?.kind ?? "mixed") as HostelInput["kind"],
@@ -217,7 +212,7 @@ export function RoomDialog({
   const [pending, startTransition] = useTransition();
 
   const form = useForm<RoomInput>({
-    resolver: zodResolver(roomSchema),
+    resolver: lazyZodResolver<RoomInput>(() => import("@/lib/validations/hostel").then((m) => m.roomSchema)),
     values: {
       roomNumber: room?.roomNumber ?? "",
       floor: room?.floor ?? "",

@@ -9,7 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { relativeTime } from "@/lib/validations/notifications";
+import { relativeTime } from "@/lib/validations/notifications-display";
 import { markAllRead, markRead, type InboxRow } from "./actions";
 import { useI18n } from "@/components/providers/i18n-provider";
 

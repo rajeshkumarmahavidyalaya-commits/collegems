@@ -26,13 +26,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import {
-  applySentence,
-  IMPORT_COLUMNS,
-  MAX_IMPORT_ROWS,
-  parseCsv,
-  rowStatus,
-} from "@/lib/validations/import";
+import { applySentence, IMPORT_COLUMNS, MAX_IMPORT_ROWS, parseCsv, rowStatus } from "@/lib/validations/import-display";
 import {
   applyImport,
   discardImport,

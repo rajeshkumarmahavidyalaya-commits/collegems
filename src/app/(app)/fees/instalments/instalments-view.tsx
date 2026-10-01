@@ -3,7 +3,7 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
+import { lazyZodResolver } from "@/lib/forms/lazy-resolver";
 import { AlertTriangle, CalendarRange, Loader2, Pencil, Play, Plus } from "lucide-react";
 import { toast } from "sonner";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -40,7 +40,8 @@ import {
 import { ErrorSummary } from "@/components/forms/error-summary";
 import { TextField } from "@/components/forms/form-fields";
 import { useI18n } from "@/components/providers/i18n-provider";
-import { collectsSentence, frequencyLabel, frequencyOptions, instalmentSchema, uncollectedFrequencies, type InstalmentInput } from "@/lib/validations/fees";
+import { collectsSentence, frequencyLabel, frequencyOptions, uncollectedFrequencies } from "@/lib/validations/fees-display";
+import type { InstalmentInput } from "@/lib/validations/fees";
 import {
   previewInstalment,
   runInstalment,
@@ -439,7 +440,7 @@ function InstalmentDialog({
   const [pending, startTransition] = useTransition();
 
   const form = useForm<InstalmentInput>({
-    resolver: zodResolver(instalmentSchema),
+    resolver: lazyZodResolver<InstalmentInput>(() => import("@/lib/validations/fees").then((m) => m.instalmentSchema)),
     values: {
       name: instalment?.name ?? "",
       sequence: instalment?.sequence ?? nextSequence,

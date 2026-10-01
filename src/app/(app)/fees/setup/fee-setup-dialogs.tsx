@@ -4,7 +4,7 @@ import { useState } from "react";
 
 import { useForm } from "react-hook-form";
 
-import { zodResolver } from "@hookform/resolvers/zod";
+import { lazyZodResolver } from "@/lib/forms/lazy-resolver";
 
 import { CalendarDays, Loader2 } from "lucide-react";
 import { toast } from "sonner";
@@ -36,15 +36,8 @@ import { ErrorSummary } from "@/components/forms/error-summary";
 
 import { useI18n } from "@/components/providers/i18n-provider";
 
-import {
-  FEE_CATEGORIES,
-  feeHeadSchema,
-  frequencyOptions,
-  feeStructureSchema,
-  generateSectionInvoicesSchema,
-  type FeeHeadInput,
-  type FeeStructureInput,
-} from "@/lib/validations/fees";
+import { FEE_CATEGORIES, frequencyOptions } from "@/lib/validations/fees-display";
+import type { FeeHeadInput, FeeStructureInput } from "@/lib/validations/fees";
 
 import {
   generateSectionInvoices,
@@ -93,7 +86,7 @@ export function FeeHeadDialog({
 }) {
   const [serverError, setServerError] = useState<string | null>(null);
   const form = useForm<FeeHeadInput>({
-    resolver: zodResolver(feeHeadSchema),
+    resolver: lazyZodResolver<FeeHeadInput>(() => import("@/lib/validations/fees").then((m) => m.feeHeadSchema)),
     defaultValues: {
       code: head?.code ?? "",
       name: head?.name ?? "",
@@ -296,7 +289,7 @@ export function FeeStructureDialog({
   const [serverError, setServerError] = useState<string | null>(null);
   const editing = Boolean(initial);
   const form = useForm<FeeStructureInput>({
-    resolver: zodResolver(feeStructureSchema),
+    resolver: lazyZodResolver<FeeStructureInput>(() => import("@/lib/validations/fees").then((m) => m.feeStructureSchema)),
     defaultValues: {
       classLevelId: initial?.classLevelId ?? "",
       feeHeadId: initial?.feeHeadId ?? "",
@@ -485,7 +478,7 @@ export function BillSectionDialog({
 }) {
   const [serverError, setServerError] = useState<string | null>(null);
   const form = useForm<{ sectionId: string; dueDate: string }>({
-    resolver: zodResolver(generateSectionInvoicesSchema),
+    resolver: lazyZodResolver(() => import("@/lib/validations/fees").then((m) => m.generateSectionInvoicesSchema)),
     defaultValues: { sectionId: "", dueDate: todayPlus(30) },
   });
 

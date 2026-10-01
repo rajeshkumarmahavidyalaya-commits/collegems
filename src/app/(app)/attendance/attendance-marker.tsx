@@ -29,11 +29,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  ATTENDANCE_STATUSES,
-  STATUS_KEYS,
-  statusLabel,
-  type AttendanceStatus, attendanceStatusOptions } from "@/lib/validations/attendance";
+import { ATTENDANCE_STATUSES, STATUS_KEYS, statusLabel, attendanceStatusOptions } from "@/lib/validations/attendance-display";
+import { type AttendanceStatus } from "@/lib/validations/attendance";
 import { useUnsavedChangesGuard } from "@/components/forms/use-unsaved-changes-guard";
 import { useI18n } from "@/components/providers/i18n-provider";
 import {

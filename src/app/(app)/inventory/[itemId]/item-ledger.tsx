@@ -25,7 +25,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { formatQuantity, movementLabel, quantityWithUnit } from "@/lib/validations/inventory";
+import { formatQuantity, movementLabel, quantityWithUnit } from "@/lib/validations/inventory-display";
 import { reverseMovement, reverseSale, type LedgerRow } from "../actions";
 import { useI18n } from "@/components/providers/i18n-provider";
 

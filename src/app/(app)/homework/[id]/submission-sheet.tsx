@@ -18,12 +18,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import {
-  formatMark,
-  markProblem,
-  markingProgress,
-  submissionStatusLabel,
-} from "@/lib/validations/homework";
+import { formatMark, markProblem, markingProgress, submissionStatusLabel } from "@/lib/validations/homework-display";
 import { AttachmentPanel } from "../attachments";
 import { gradeSubmission, type FileRow, type HomeworkRow, type SubmissionRow } from "../actions";
 import { useI18n } from "@/components/providers/i18n-provider";

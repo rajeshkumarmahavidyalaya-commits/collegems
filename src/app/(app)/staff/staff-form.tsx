@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useRef } from "react";
 import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
+import { lazyZodResolver } from "@/lib/forms/lazy-resolver";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -12,8 +12,8 @@ import { Form } from "@/components/ui/form";
 import { SelectField, TextField } from "@/components/forms/form-fields";
 import { ErrorSummary } from "@/components/forms/error-summary";
 import { useUnsavedChangesGuard } from "@/components/forms/use-unsaved-changes-guard";
-import { GENDERS } from "@/lib/validations/students";
-import { staffSchema, type StaffInput } from "@/lib/validations/staff";
+import { GENDERS } from "@/lib/validations/students-display";
+import type { StaffInput } from "@/lib/validations/staff";
 import { admitStaff, updateStaff } from "./actions";
 
 /**
@@ -52,7 +52,7 @@ export function StaffForm({ staff }: { staff?: StaffInput & { id: string } }) {
   };
 
   const form = useForm<StaffInput>({
-    resolver: zodResolver(staffSchema),
+    resolver: lazyZodResolver<StaffInput>(() => import("@/lib/validations/staff").then((m) => m.staffSchema)),
     defaultValues: staff ?? blank,
   });
 

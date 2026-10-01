@@ -1,7 +1,8 @@
 import { CalendarX, DoorOpen } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
-import { GRID_WEEKDAYS, periodLabel, toClockTime } from "@/lib/validations/timetable";
+import { GRID_WEEKDAYS, periodLabel } from "@/lib/validations/timetable-display";
+import { toClockTime } from "@/lib/validations/academics-display";
 import type { TeacherRoutineEntry } from "./actions";
 import { getLocale, getT } from "@/lib/i18n/server";
 import { formatWeekday } from "@/lib/i18n/format";

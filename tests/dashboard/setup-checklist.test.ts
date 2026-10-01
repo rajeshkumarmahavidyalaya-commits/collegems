@@ -1,7 +1,7 @@
 import { readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { SETUP_STEPS, parseSetupProgress, setupSentence } from "@/lib/validations/setup";
+import { SETUP_STEPS, parseSetupProgress, setupSentence, stepCount } from "@/lib/validations/setup";
 
 /**
  * `setup_progress()` (0284) is a definer, so it is rule 4's other shape and
@@ -29,16 +29,22 @@ describe("setup_progress keeps to the definer's terms", () => {
     const reads = [...body.matchAll(/from public\.(\w+) (\w+)\s+where ((?:[^();]|\([^()]*\))*)/g)];
     expect(reads.length).toBeGreaterThanOrEqual(8);
     for (const [, table, alias, where] of reads) {
+      // `tenants` is the tenant (rule 1): its key is `id`, not `tenant_id`.
+      if (table === "tenants") {
+        expect(where, table).toContain(`${alias}.id = v_tenant`);
+        continue;
+      }
       expect(where, table).toContain(`${alias}.tenant_id = v_tenant`);
     }
   });
 
   it("gates each step on a permission and returns only booleans", () => {
-    const steps = [...body.matchAll(/'key', '(\w+)', 'done',/g)].map((m) => m[1]);
+    const steps = [...body.matchAll(/'key', '(\w+)',\s*'done',/g)].map((m) => m[1]);
     expect(steps.sort()).toEqual(Object.keys(SETUP_STEPS).sort());
-    // One gate per group of steps: settings, academics (classes and
-    // subjects), fees, staff, students, academics again (timetable), users.
-    expect(body.match(/role_has_permission\('/g)?.length).toBe(7);
+    // One gate per group of steps: settings (profile), academics (year,
+    // classes, subjects), fees, staff, students, academics again (timetable),
+    // settings again (messages), users.
+    expect(body.match(/role_has_permission\('/g)?.length).toBe(8);
     expect(body).not.toMatch(/jsonb_agg|array_agg|'id'/);
   });
 
@@ -58,5 +64,9 @@ describe("the checklist's words", () => {
     expect(parseSetupProgress(null)).toEqual([]);
     expect(setupSentence([{ key: "fees", done: true }, { key: "classes", done: false }])).toBe("1 of 2 done · 1 step left");
     expect(setupSentence([{ key: "fees", done: false }, { key: "classes", done: false }])).toBe("0 of 2 done · 2 steps left");
+    // 0310: a step measured over people carries its counts, and only that one.
+    const [families] = parseSetupProgress({ steps: [{ key: "family_logins", done: false, have: 1, of: 302 }] });
+    expect(stepCount(families)).toBe("1 of 302 reached");
+    expect(stepCount({ key: "fees", done: true })).toBeNull();
   });
 });

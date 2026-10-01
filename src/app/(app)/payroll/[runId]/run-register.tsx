@@ -38,7 +38,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { formatDays, paymentMethodLabel } from "@/lib/validations/hr";
+import { formatDays, paymentMethodLabel } from "@/lib/validations/hr-display";
 import {
   editPayslip,
   finalisePayroll,

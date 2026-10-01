@@ -4,23 +4,17 @@ import { useTransition } from "react";
 
 import { useRouter } from "next/navigation";
 
-
 import { useForm } from "react-hook-form";
 
-
-import { zodResolver } from "@hookform/resolvers/zod";
-
+import { lazyZodResolver } from "@/lib/forms/lazy-resolver";
 
 import { Loader2, Plus, Trash2 } from "lucide-react";
 
 import { toast } from "sonner";
 
-
 import { Button } from "@/components/ui/button";
 
-
 import { Input } from "@/components/ui/input";
-
 
 import {
   Dialog,
@@ -31,18 +25,13 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 
-
 import { Form } from "@/components/ui/form";
-
 
 import { Label } from "@/components/ui/label";
 
-
 import { Switch } from "@/components/ui/switch";
 
-
 import { ErrorSummary } from "@/components/forms/error-summary";
-
 
 import {
   SelectField,
@@ -50,16 +39,10 @@ import {
   TextareaField,
 } from "@/components/forms/form-fields";
 
-
-import {
-  CHANNELS,
-  templateSchema,
-  templateVariables,
-  type TemplateInput,
-} from "@/lib/validations/notifications";
+import { CHANNELS, templateVariables } from "@/lib/validations/notifications-display";
+import type { TemplateInput } from "@/lib/validations/notifications";
 
 import { saveTemplate, type EventType, type TemplateRow } from "../actions";
-
 
 /*
  * Dialogs split out of the page so they load on the click that opens them:
@@ -82,7 +65,7 @@ export function TemplateDialog({
   const [pending, startTransition] = useTransition();
 
   const form = useForm<TemplateInput>({
-    resolver: zodResolver(templateSchema),
+    resolver: lazyZodResolver<TemplateInput>(() => import("@/lib/validations/notifications").then((m) => m.templateSchema)),
     values: {
       eventKey: template?.eventKey ?? eventTypes[0]?.key ?? "",
       channel: (template?.channel ?? "in_app") as TemplateInput["channel"],

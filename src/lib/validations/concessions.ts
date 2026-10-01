@@ -1,7 +1,4 @@
 import { z } from "zod";
-import { labelFor } from "./labels";
-import type { Translator } from "@/lib/i18n/translate";
-
 /**
  * Fee concessions — the client half.
  *
@@ -11,56 +8,14 @@ import type { Translator } from "@/lib/i18n/translate";
  * thing a form has to get right: a percentage and a fixed amount are different
  * quantities wearing the same input.
  */
-
-export const CONCESSION_KINDS = ["percentage", "amount"] as const;
-export type ConcessionKind = (typeof CONCESSION_KINDS)[number];
-
-export const KIND_LABEL: Record<ConcessionKind, string> = {
-  percentage: "Percentage",
-  amount: "Fixed amount",
-};
-
-export function kindLabel(kind: string, t: Translator): string {
-  const fallback = KIND_LABEL[kind as ConcessionKind];
-  return fallback ? labelFor(`concession.kind.${kind}`, fallback, t) : kind;
-}
+export { severityTone } from "./severity";
+import { CONCESSION_KINDS } from "./concessions-display";
+export { CONCESSION_KINDS, KIND_LABEL, kindLabel, statusLabel, statusTone, concessionSentence } from "./concessions-display";
+export type { ConcessionKind } from "./concessions-display";
 
 export const AWARD_STATUSES = ["active", "revoked"] as const;
+
 export type AwardStatus = (typeof AWARD_STATUSES)[number];
-
-export function statusLabel(status: string, t: Translator): string {
-  // A revoked award keeps its credits -- rule 12's "end, do not cancel" -- so
-  // the word is "withdrawn", not "deleted", in every language.
-  return status === "revoked" ? t("concession.status.revoked") : t("concession.status.active");
-}
-
-/** Never colour alone — the label is always beside it. */
-export function statusTone(status: string): "success" | "secondary" {
-  return status === "revoked" ? "secondary" : "success";
-}
-
-export { severityTone } from "./severity";
-
-/**
- * How a concession reads on a screen. A percentage with a ceiling is the shape
- * schools actually use — *"20%, up to 2,000"* — and showing only the 20% is how
- * a bursar comes to expect a number the system will never credit.
- */
-export function concessionSentence(c: {
-  kind: string;
-  value: number;
-  maxAmount?: number | null;
-}): string {
-  if (c.kind === "percentage") {
-    const base = `${trimZeros(c.value)}%`;
-    return c.maxAmount ? `${base}, up to ${trimZeros(c.maxAmount)}` : base;
-  }
-  return trimZeros(c.value);
-}
-
-function trimZeros(value: number): string {
-  return Number.isInteger(value) ? String(value) : String(value).replace(/0+$/, "");
-}
 
 /**
  * Whether an award is still doing anything on the date given.

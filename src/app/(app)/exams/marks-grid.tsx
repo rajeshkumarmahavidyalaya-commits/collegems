@@ -12,7 +12,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { useUnsavedChangesGuard } from "@/components/forms/use-unsaved-changes-guard";
-import { enteredCount, parseMarkCell } from "@/lib/validations/exams";
+import { enteredCount, parseMarkCell } from "@/lib/validations/exams-display";
 import { saveMarks, type MarkSheetRow, type PaperComponent } from "./actions";
 import { useI18n } from "@/components/providers/i18n-provider";
 

@@ -33,12 +33,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  dueLabel,
-  formatMark,
-  submissionStatusLabel,
-  type SubmissionStatusTone,
-} from "@/lib/validations/homework";
+import { dueLabel, formatMark, submissionStatusLabel } from "@/lib/validations/homework-display";
+import { type SubmissionStatusTone } from "@/lib/validations/homework";
 import { AttachmentPanel } from "./attachments";
 import type { FamilyChild } from "@/lib/auth/family";
 import {

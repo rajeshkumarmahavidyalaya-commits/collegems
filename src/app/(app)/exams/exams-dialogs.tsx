@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 
 import { useForm } from "react-hook-form";
 
-import { zodResolver } from "@hookform/resolvers/zod";
+import { lazyZodResolver } from "@/lib/forms/lazy-resolver";
 
 import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
@@ -39,15 +39,8 @@ import {
 
 import { useI18n } from "@/components/providers/i18n-provider";
 
-import {
-  examSchema,
-  gradingSchemeSchema,
-  RANK_METHODS,
-  RANK_SCOPES,
-  type ExamInput,
-  type GradingSchemeInput,
-  examKindOptions,
-} from "@/lib/validations/exams";
+import type { ExamInput, GradingSchemeInput } from "@/lib/validations/exams";
+import { RANK_METHODS, RANK_SCOPES, examKindOptions } from "@/lib/validations/exams-display";
 import { saveExam, saveScheme, type ExamRow, type SchemeRow } from "./actions";
 
 /*
@@ -72,7 +65,7 @@ export function ExamDialog({
   const [pending, startTransition] = useTransition();
 
   const form = useForm<ExamInput>({
-    resolver: zodResolver(examSchema),
+    resolver: lazyZodResolver<ExamInput>(() => import("@/lib/validations/exams").then((m) => m.examSchema)),
     values: {
       name: exam?.name ?? "",
       kind: (exam?.kind ?? "term") as ExamInput["kind"],
@@ -202,7 +195,7 @@ export function SchemeDialog({
   const [pending, startTransition] = useTransition();
 
   const form = useForm<GradingSchemeInput>({
-    resolver: zodResolver(gradingSchemeSchema),
+    resolver: lazyZodResolver<GradingSchemeInput>(() => import("@/lib/validations/exams").then((m) => m.gradingSchemeSchema)),
     values: {
       name: scheme?.name ?? "",
       description: scheme?.description ?? "",

@@ -3,7 +3,7 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
+import { lazyZodResolver } from "@/lib/forms/lazy-resolver";
 import { CalendarPlus, Check, Inbox, Plane, Undo2, X } from "lucide-react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
@@ -30,13 +30,8 @@ import {
 import { ErrorSummary } from "@/components/forms/error-summary";
 import { SelectField, TextField, TextareaField } from "@/components/forms/form-fields";
 import { useI18n } from "@/components/providers/i18n-provider";
-import {
-  formatDays,
-  leaveDays,
-  leaveRequestSchema,
-  leaveStatusLabel,
-  type LeaveRequestInput,
-} from "@/lib/validations/hr";
+import { formatDays, leaveDays, leaveStatusLabel } from "@/lib/validations/hr-display";
+import type { LeaveRequestInput } from "@/lib/validations/hr";
 import {
   cancelLeave,
   decideLeave,
@@ -341,7 +336,7 @@ function ApplyDialog({
   const [pending, startTransition] = useTransition();
 
   const form = useForm<LeaveRequestInput>({
-    resolver: zodResolver(leaveRequestSchema),
+    resolver: lazyZodResolver<LeaveRequestInput>(() => import("@/lib/validations/hr").then((m) => m.leaveRequestSchema)),
     values: {
       staffId: "",
       leaveTypeId: "",
