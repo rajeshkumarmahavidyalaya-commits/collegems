@@ -1,8 +1,9 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
-import { Loader2, Plus, UserPlus, X } from "lucide-react";
+import { Loader2, Plus, UserPlus, Users, X } from "lucide-react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -38,18 +39,25 @@ import {
   type ConcessionRow,
 } from "./actions";
 
+// Fetched on the click that opens it (CLAUDE.md: a conditional render is not
+// a conditional load).
+const BulkAwardDialog = dynamic(() => import("./bulk-award-dialog").then((m) => m.BulkAwardDialog));
+
 export function ConcessionsView({
   concessions,
   awards,
   canManage,
+  sections = [],
 }: {
   concessions: ConcessionRow[];
   awards: AwardRow[];
   canManage: boolean;
+  sections?: { id: string; label: string }[];
 }) {
   const { t } = useI18n();
   const [creating, setCreating] = useState(false);
   const [awarding, setAwarding] = useState(false);
+  const [bulk, setBulk] = useState(false);
 
   return (
     <div className="flex flex-col gap-8">
@@ -110,10 +118,16 @@ export function ConcessionsView({
             Who holds one
           </h2>
           {canManage && concessions.some((c) => c.isActive) && (
-            <Button size="sm" variant="outline" onClick={() => setAwarding(true)}>
-              <UserPlus className="size-3.5" aria-hidden="true" />
-              Award to a student
-            </Button>
+            <div className="flex flex-wrap gap-2">
+              <Button size="sm" variant="outline" onClick={() => setBulk(true)}>
+                <Users className="size-3.5" aria-hidden="true" />
+                Award to several
+              </Button>
+              <Button size="sm" variant="outline" onClick={() => setAwarding(true)}>
+                <UserPlus className="size-3.5" aria-hidden="true" />
+                Award to a student
+              </Button>
+            </div>
           )}
         </div>
 
@@ -138,6 +152,14 @@ export function ConcessionsView({
       </section>
 
       <NewConcessionDialog open={creating} onOpenChange={setCreating} />
+      {bulk && (
+        <BulkAwardDialog
+          open={bulk}
+          onOpenChange={setBulk}
+          concessions={concessions.filter((c) => c.isActive)}
+          sections={sections}
+        />
+      )}
       <AwardDialog
         open={awarding}
         onOpenChange={setAwarding}

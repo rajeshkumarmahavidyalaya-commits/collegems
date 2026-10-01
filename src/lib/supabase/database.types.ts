@@ -8426,6 +8426,7 @@ export type Database = {
           name: string
         }[]
       }
+      accounts_year_start: { Args: { p_on: string }; Returns: string }
       admission_apply: {
         Args: { p_application: Json; p_slug: string }
         Returns: Json
@@ -8722,6 +8723,15 @@ export type Database = {
           isOneToOne: true
           isSetofReturn: false
         }
+      }
+      concession_award_many: {
+        Args: {
+          p_concession_id: string
+          p_ends_on?: string
+          p_reason: string
+          p_student_ids: string[]
+        }
+        Returns: Json
       }
       concession_problems: {
         Args: never
@@ -10999,6 +11009,12 @@ export type Database = {
           row_data: Json
         }[]
       }
+      report_balance_sheet: {
+        Args: { p_params: Json }
+        Returns: {
+          row_data: Json
+        }[]
+      }
       report_certificate_register: {
         Args: { p_params: Json }
         Returns: {
@@ -11061,6 +11077,12 @@ export type Database = {
         }[]
       }
       report_hostel_residents: {
+        Args: { p_params: Json }
+        Returns: {
+          row_data: Json
+        }[]
+      }
+      report_income_expenditure: {
         Args: { p_params: Json }
         Returns: {
           row_data: Json
@@ -11154,6 +11176,12 @@ export type Database = {
         }[]
       }
       report_student_leave: {
+        Args: { p_params: Json }
+        Returns: {
+          row_data: Json
+        }[]
+      }
+      report_student_leavers: {
         Args: { p_params: Json }
         Returns: {
           row_data: Json

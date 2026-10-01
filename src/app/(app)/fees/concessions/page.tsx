@@ -11,6 +11,7 @@ import {
   listConcessions,
 } from "./actions";
 import { ConcessionsView } from "./concessions-view";
+import { listSections } from "../../students/actions";
 
 export const metadata = { title: "Concessions" };
 
@@ -28,10 +29,13 @@ export default async function ConcessionsPage() {
   // No roll is loaded here. It used to be `listStudentsForConcession()` — the
   // whole active roll on every view, into a flat `<Select>` — and the award
   // dialog searches as somebody types instead.
-  const [concessions, awards, problems] = await Promise.all([
+  const [concessions, awards, problems, sections] = await Promise.all([
     listConcessions(),
     listAwards(),
     listConcessionProblems(),
+    // This year's classes, for awarding to several at once (0312). Only for
+    // somebody who may award.
+    canManage ? listSections() : Promise.resolve([]),
   ]);
 
   const live = awards.filter((a) => a.status === "active").length;
@@ -109,6 +113,7 @@ export default async function ConcessionsPage() {
         concessions={concessions}
         awards={awards}
         canManage={canManage}
+        sections={sections.map((s) => ({ id: s.id, label: s.label }))}
       />
     </div>
   );

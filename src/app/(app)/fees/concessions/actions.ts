@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { getUserContext } from "@/lib/auth/context";
 import {
+  awardManySchema,
   awardConcessionSchema,
   createConcessionSchema,
   revokeConcessionSchema,
@@ -297,3 +298,82 @@ export async function revokeConcession(input: unknown): Promise<ActionResult<voi
   revalidatePath("/fees/concessions");
   return { ok: true, data: undefined };
 }
+
+export type RosterStudent = { id: string; name: string; admissionNumber: string; holds: boolean };
+
+/**
+ * A class this year, for ticking: every child actively enrolled in the section
+ * in the current year, and whether each already holds the chosen concession,
+ * so the list says so instead of the award refusing it one child at a time.
+ * Read through RLS like every other list on this page.
+ */
+export async function rosterForConcession(sectionId: string, concessionId: string): Promise<RosterStudent[]> {
+  const ctx = await getUserContext();
+  if (!ctx?.currentSessionId) return [];
+  const supabase = await createClient();
+
+  const [{ data: enrolled, error }, { data: holders }] = await Promise.all([
+    supabase
+      .from("enrolments")
+      .select("student_id, roll_number, students ( admission_number, people ( first_name, last_name ) )")
+      .eq("section_id", sectionId)
+      .eq("session_id", ctx.currentSessionId)
+      .eq("status", "active")
+      .limit(500),
+    supabase
+      .from("student_concessions")
+      .select("student_id")
+      .eq("concession_id", concessionId)
+      .eq("session_id", ctx.currentSessionId)
+      .eq("status", "active"),
+  ]);
+  if (error) throw new Error(error.message);
+
+  const holding = new Set((holders ?? []).map((h) => h.student_id));
+  return (enrolled ?? [])
+    .map((e) => {
+      const st = Array.isArray(e.students) ? e.students[0] : e.students;
+      const p = st ? (Array.isArray(st.people) ? st.people[0] : st.people) : null;
+      return {
+        id: e.student_id,
+        name: p ? `${p.first_name} ${p.last_name}` : "Unnamed",
+        admissionNumber: st?.admission_number ?? "",
+        holds: holding.has(e.student_id),
+      };
+    })
+    .sort((a, b) => a.name.localeCompare(b.name) || a.admissionNumber.localeCompare(b.admissionNumber));
+}
+
+export type AwardManyResult = { awarded: number; refused: { studentId: string; message: string }[] };
+
+/** One concession to the ticked children, each through `concession_award` (0312). */
+export async function awardConcessionToMany(input: unknown): Promise<ActionResult<AwardManyResult>> {
+  const parsed = awardManySchema.safeParse(input);
+  if (!parsed.success) {
+    return {
+      ok: false,
+      error: "Check the highlighted fields.",
+      fieldErrors: parsed.error.flatten().fieldErrors,
+    };
+  }
+
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("concession_award_many", {
+    p_concession_id: parsed.data.concessionId,
+    p_student_ids: parsed.data.studentIds,
+    p_reason: parsed.data.reason,
+    p_ends_on: parsed.data.endsOn ?? undefined,
+  });
+  if (error) return { ok: false, error: error.message };
+
+  const result = (data ?? {}) as { awarded?: number; refused?: { student_id: string; message: string }[] };
+  revalidatePath("/fees/concessions");
+  return {
+    ok: true,
+    data: {
+      awarded: result.awarded ?? 0,
+      refused: (result.refused ?? []).map((r) => ({ studentId: r.student_id, message: r.message })),
+    },
+  };
+}
+

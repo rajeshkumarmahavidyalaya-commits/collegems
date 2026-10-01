@@ -142,11 +142,11 @@ rather than constraints.
 
 ## Not built
 
-**Alumni as a first-class thing.** `alumni` is a status and nothing reads it —
-no alumni register, no way to find a leaver's old report cards from a name.
-Rule 5's identity model already makes it representable (`people` outlives
-`students`), which is the hard part; the module is a screen and a report
-whenever a school asks for one.
+~~**Alumni as a first-class thing.**~~ The register is built (`0311`): the
+**Students who have left** report lists every child no longer on the roll,
+newest first, with when and why they left, their last class, and a link to
+their record, where the report cards and certificates are. What is still not
+built is anything an alumnus does themselves (a login, a reunion list).
 
 
 ---

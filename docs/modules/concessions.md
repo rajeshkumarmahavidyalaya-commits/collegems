@@ -152,9 +152,12 @@ worse than no number.
 
 ## Not built
 
-**Bulk award.** Granting the sibling discount to forty families is currently
-forty clicks. Rule 13 says the shape this should take — a preview that
-materialises as editable rows, because the rules will get three or four named
-children wrong and the person who knows is standing at the screen — and that is
-a bigger build than the award itself. Doing it badly (a "select all siblings"
-button that applies silently) would be worse than the forty clicks.
+~~**Bulk award.**~~ Built in `0312`: *Award to several* on `/fees/concessions`.
+Choose the concession and a class; every child in it is listed, the ones who
+already hold it are greyed out, and the person at the screen ticks the rest --
+the editable preview rule 13 asks for, because the rules get named children
+wrong. `concession_award_many` awards each child through `concession_award` in
+its own sub-transaction, so every check a single award makes still holds, and a
+refusal comes back beside the child's name in the single award's own words
+rather than failing the batch. At most 500 at a time. Probed: four ticked,
+three awarded, one refused (not enrolled this year); a repeat refused by name.

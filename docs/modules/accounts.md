@@ -206,9 +206,12 @@ two doors had disagreed, and the ledger's reports are date-ranged anyway.
 
 - **Accrual accounting.** As above: invoices are not posted as receivables. The
   account exists; the posting rule and the sync branch do not.
-- **No profit-and-loss or balance-sheet statement.** The trial balance is the
-  raw material for both; grouping it into a P&L needs a little more chart
-  metadata (which headings are "above the line").
+- ~~**No profit-and-loss or balance-sheet statement.**~~ Built (`0311`) as
+  two reports under *Accounts*: **Income and expenditure** between two dates,
+  and the **Balance sheet** on a day. Until a year-end close exists the balance
+  sheet shows income less expenditure to date as its own line, *"Surplus not
+  yet closed into reserves"*, which is what makes the two sides agree. Probed
+  live: assets 38,14,000 = liabilities 0 + reserves 38,14,000.
 - **No financial-year close.** Nothing rolls income and expense into retained
   surplus at year end, so a multi-year trial balance accumulates. `3200 Retained
   Surplus` is seeded for when it does.

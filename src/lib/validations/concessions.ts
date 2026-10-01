@@ -77,6 +77,21 @@ export const awardConcessionSchema = z.object({
     .default(null),
 });
 
+/** One concession to many children (0312). The bound is the function's too. */
+export const awardManySchema = z.object({
+  concessionId: z.string().uuid("Choose a concession"),
+  studentIds: z.array(z.string().uuid()).min(1, "Tick at least one child").max(500),
+  reason: z
+    .string()
+    .trim()
+    .min(3, "Say why — a discount with no reason is the one an auditor asks about"),
+  endsOn: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/)
+    .nullable()
+    .default(null),
+});
+
 export const revokeConcessionSchema = z.object({
   awardId: z.string().uuid(),
   reason: z.string().trim().min(3, "Say why this is being withdrawn"),
