@@ -10901,6 +10901,7 @@ export type Database = {
           table_name: string
         }[]
       }
+      promotion_announce: { Args: { p_run_id: string }; Returns: Json }
       promotion_apply: {
         Args: { p_run_id: string }
         Returns: {

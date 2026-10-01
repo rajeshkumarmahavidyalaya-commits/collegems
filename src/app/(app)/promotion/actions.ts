@@ -437,12 +437,18 @@ export async function applyRun(runId: string): Promise<
     endedHostel: number;
     endedConcessions: number;
     leftBehind: LeftBehindNote[];
+    familiesTold: boolean;
   }>
 > {
   const supabase = await createClient();
   const { data, error } = await supabase.rpc("promotion_apply", { p_run_id: runId });
 
   if (error) return fail(error.message);
+
+  // Tell the families (0316). A failed announcement is not a failed apply.
+  const { data: note, error: noteError } = await supabase.rpc("promotion_announce", { p_run_id: runId });
+  const familiesTold =
+    !noteError && Boolean((note as unknown as { notification_id?: string | null } | null)?.notification_id);
 
   const result = data?.[0];
   revalidatePath("/promotion");
@@ -459,6 +465,7 @@ export async function applyRun(runId: string): Promise<
       endedHostel: result?.ended_hostel ?? 0,
       endedConcessions: result?.ended_concessions ?? 0,
       leftBehind: toLeftBehind(result?.left_behind),
+      familiesTold,
     },
   };
 }

@@ -286,8 +286,7 @@ admissions desk.
 - **Shift-aware capacity.** A route is a trip, so seats are counted per route.
   A vehicle physically double-booked across two overlapping trips is not
   detected.
-- **Nothing notifies anybody.** A route change or a bus running late is exactly
-  what `notify_send` exists for, and no code calls it yet.
+- ~~**Nothing notifies anybody.**~~ Built (`0316`): a new seat raises `transport.assigned` to the child and their family -- route, stop and time -- from an AFTER INSERT trigger, so every way a seat is made (the transport screen, the student's record, the admission form, renewals) announces it. A failed announcement never undoes the seat. In-app by default.
 
 ## Staff ride the same buses (0293)
 

@@ -362,8 +362,7 @@ a real use this does not serve. It is a deliberate trade, not an oversight.
 - **Undo stops at the first thing written against the new year.** See *Undoing
   an applied run*: after a register, a mark, an invoice or a renewed seat, the
   run is corrected child by child, on purpose.
-- **Nothing notifies anybody.** No parent is told their child was promoted;
-  `notify_send` is not called.
+- ~~**Nothing notifies anybody.**~~ Built (`0316`): applying a run raises `promotion.decided` to every family in it (`promotion_announce`, gated on `promotion.manage`), in deliberately general words, because one body goes to every family and a kept-back child's family must not read "promoted". The apply toast says whether the families were told.
 - **The new session is not made current.** Flipping `is_current` is how a school
   says "the new year has started" and stays a separate, deliberate act — every
   other module reads whichever session is current.

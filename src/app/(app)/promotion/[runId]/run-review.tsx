@@ -158,7 +158,8 @@ export function RunReview({ run, decisions, sections, leftBehind }: Props) {
           (carriedCount > 0
             ? ` ${carriedCount} ${carriedCount === 1 ? "child moves" : "children move"} up owing fees from ${run.fromSessionName}, shown as arrears.`
             : "") +
-          (closed.length > 0 ? ` Leaving closed ${closed.join(", ")}.` : ""),
+          (closed.length > 0 ? ` Leaving closed ${closed.join(", ")}.` : "") +
+          (result.data.familiesTold ? " The families have been told." : " No family was notified."),
       );
       // The sentences themselves are on the page, not in this toast: a
       // message that scrolls away is one nobody acted on. `router.refresh()` re-reads the run's frozen `left_behind`.

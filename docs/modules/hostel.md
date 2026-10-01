@@ -166,8 +166,7 @@ child in a bed.**
   stay, start another — correct, audited, and two clicks instead of one.
 - **No mess or laundry charges**, no visitor log, no leave/out-pass register.
   All real; all separate tables rather than columns here.
-- **Nothing notifies anybody** — a placement, a room change or a child signed
-  out is exactly what `notify_send` is for, and no code calls it yet.
+- ~~**Nothing notifies anybody.**~~ Built (`0316`): a new bed raises `hostel.allocated` to the child and their family, from an AFTER INSERT trigger so every path that allocates announces. In-app by default.
 
 ## A report (0297)
 

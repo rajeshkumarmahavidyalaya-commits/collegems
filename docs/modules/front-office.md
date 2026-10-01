@@ -186,8 +186,7 @@ admitting a child.**
 
 ## Not built
 
-- **Nothing notifies anybody.** An overdue follow-up is exactly what
-  `notify_send` is for, and no code calls it.
+- ~~**Nothing notifies anybody.**~~ Built (`0316`): an online application raises `admissions.application_received` to the college's administrators, in the app, from a trigger on `enquiries` for rows the online form wrote (source `website`, nobody signed in).
 - **No documents against an enquiry** — a birth certificate, a previous report
   card. Storage supports it; the module does not use it yet.
 - **No admission test or interview scheduling**, which is a real stage between
