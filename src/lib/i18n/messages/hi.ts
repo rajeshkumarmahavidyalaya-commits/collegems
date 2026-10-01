@@ -441,6 +441,7 @@ export const hi: Messages = {
   "accounts.source.fee_ledger": "शुल्क रसीद",
   "accounts.source.payroll_payment": "वेतन भुगतान",
   "accounts.source.reversal": "प्रतिवर्तन",
+  "accounts.source.year_close": "वर्षांत समापन",
   "fees.frequency.one_time": "एक बार",
   "fees.frequency.monthly": "मासिक",
   "fees.frequency.quarterly": "त्रैमासिक",

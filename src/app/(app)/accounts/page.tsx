@@ -5,7 +5,9 @@ import {
   getChart,
   getTrialBalance,
   listPostingRules,
+  listYearCloses,
 } from "./actions";
+import { YearEndCard } from "./year-end";
 import { ChartView } from "./chart-view";
 import { ModuleCards } from "@/components/module-cards";
 import { CashEntryButton } from "./cash-entry-dialog";
@@ -37,12 +39,19 @@ export default async function AccountsPage() {
     );
   }
 
-  const [chart, trialBalance, rules, unposted] = await Promise.all([
+  const [chart, trialBalance, rules, unposted, closes] = await Promise.all([
     getChart(),
     getTrialBalance(),
     listPostingRules(),
     countUnposted(),
+    listYearCloses(),
   ]);
+
+  // The last 31 March on or before today: an Indian financial year's end,
+  // and only a suggestion -- the date is the person's to change.
+  const today = new Date();
+  const fyEndYear = today.getMonth() >= 3 ? today.getFullYear() : today.getFullYear() - 1;
+  const suggestedClose = `${fyEndYear}-03-31`;
 
   // The expense and income forms' pick lists, from the chart already read:
   // postable, open accounts of the right type, and the cash and bank accounts
@@ -83,6 +92,8 @@ export default async function AccountsPage() {
         canManage={canManage}
         canPost={canPost}
       />
+
+      <YearEndCard closes={closes} canManage={canManage} suggestedDate={suggestedClose} />
     </div>
   );
 }

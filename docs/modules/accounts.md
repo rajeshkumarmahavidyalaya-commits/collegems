@@ -212,9 +212,15 @@ two doors had disagreed, and the ledger's reports are date-ranged anyway.
   sheet shows income less expenditure to date as its own line, *"Surplus not
   yet closed into reserves"*, which is what makes the two sides agree. Probed
   live: assets 38,14,000 = liabilities 0 + reserves 38,14,000.
-- **No financial-year close.** Nothing rolls income and expense into retained
-  surplus at year end, so a multi-year trial balance accumulates. `3200 Retained
-  Surplus` is seeded for when it does.
+- ~~**No financial-year close.**~~ Built (`0313`): *Year-end close* on
+  `/accounts`. `accounts_close_year(day)` posts one voucher that brings every
+  income and expense balance to that day back to zero and puts the surplus or
+  deficit into `3200 Retained Surplus`; years close in order, a second close is
+  refused in a sentence, and `accounts_reopen_year` reverses it **on the same
+  date** so the year reads exactly as before. The income statement leaves a
+  close and its reversal out. Probed in a rolled-back transaction: surplus
+  38,14,000 closed, the year's statement unchanged, the balance sheet's unclosed
+  line replaced by Retained Surplus, a repeat refused, reopening restored it.
 - **No cost centres or funds.** A school running a hostel and a bus service
   separately would want a second dimension on each line.
 - **No bank reconciliation.** `payroll_payments` carries a reference and the

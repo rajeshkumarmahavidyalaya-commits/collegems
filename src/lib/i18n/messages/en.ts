@@ -437,6 +437,7 @@ export const en = {
   "accounts.source.fee_ledger": "Fee receipt",
   "accounts.source.payroll_payment": "Salary payment",
   "accounts.source.reversal": "Reversal",
+  "accounts.source.year_close": "Year-end close",
   "fees.frequency.one_time": "One time",
   "fees.frequency.monthly": "Monthly",
   "fees.frequency.quarterly": "Quarterly",

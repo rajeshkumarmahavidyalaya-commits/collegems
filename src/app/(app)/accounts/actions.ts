@@ -545,3 +545,55 @@ export async function recordCash(input: {
   revalidatePath("/accounts/vouchers");
   return { ok: true, data: { number: data as string } };
 }
+
+// ---------------------------------------------------------------------------
+// Year-end close (0313)
+// ---------------------------------------------------------------------------
+
+export type YearClose = {
+  voucherId: string;
+  voucherNumber: string | null;
+  closedTo: string;
+  surplus: number;
+  reopened: boolean;
+};
+
+export async function listYearCloses(): Promise<YearClose[]> {
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("accounts_year_closes");
+  if (error) return [];
+  return (data ?? []).map((r) => ({
+    voucherId: r.voucher_id,
+    voucherNumber: r.voucher_number,
+    closedTo: r.closed_to,
+    surplus: Number(r.surplus),
+    reopened: r.reopened,
+  }));
+}
+
+/**
+ * Close the books to a day: one posted voucher moving every income and
+ * expense balance into Retained Surplus. Every refusal is the function's own
+ * sentence (already closed, nothing to close, no 3200 account).
+ */
+export async function closeYear(closedTo: string): Promise<ActionResult<{ number: string; surplus: number }>> {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(closedTo)) return fail("Choose the day the year ends on.");
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("accounts_close_year", { p_to: closedTo });
+  if (error) return fail(error.message);
+  const result = data as { voucher_number: string; surplus: number };
+  revalidatePath("/accounts");
+  revalidatePath("/accounts/vouchers");
+  return { ok: true, data: { number: result.voucher_number, surplus: Number(result.surplus) } };
+}
+
+export async function reopenYear(voucherId: string, reason: string): Promise<ActionResult> {
+  if (reason.trim().length < 3) return fail("Say why the year is being reopened.");
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("accounts_reopen_year", { p_voucher_id: voucherId, p_reason: reason });
+  if (error) return fail(error.message);
+  revalidatePath("/accounts");
+  revalidatePath("/accounts/vouchers");
+  return { ok: true, data: undefined };
+}
+

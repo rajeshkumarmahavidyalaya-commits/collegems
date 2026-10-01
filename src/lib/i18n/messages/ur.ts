@@ -441,6 +441,7 @@ export const ur: Messages = {
   "accounts.source.fee_ledger": "فیس رسید",
   "accounts.source.payroll_payment": "تنخواہ کی ادائیگی",
   "accounts.source.reversal": "منسوخی اندراج",
+  "accounts.source.year_close": "سال کے آخر کی بندش",
   "fees.frequency.one_time": "ایک بار",
   "fees.frequency.monthly": "ماہانہ",
   "fees.frequency.quarterly": "سہ ماہی",

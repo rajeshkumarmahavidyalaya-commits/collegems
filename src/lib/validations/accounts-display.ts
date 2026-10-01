@@ -30,6 +30,7 @@ export const SOURCE_KINDS = [
   { value: "fee_ledger", label: "Fee receipt" },
   { value: "payroll_payment", label: "Salary payment" },
   { value: "reversal", label: "Reversal" },
+  { value: "year_close", label: "Year-end close" },
 ] as const;
 
 /** An empty or unparseable box is zero for totalling, never NaN. */

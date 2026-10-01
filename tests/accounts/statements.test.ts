@@ -48,3 +48,23 @@ describe("a concession for a whole list", () => {
     expect(M312).toMatch(/revoke all on function public\.concession_award_many\(uuid, uuid\[\], text, date\) from public, anon;/);
   });
 });
+
+describe("a year closes into reserves (0313)", () => {
+  const M313 = sql("0313_a_year_closes_into_reserves.sql");
+
+  it("is one posted voucher, through the ordinary post, and refuses a second close", () => {
+    expect(M313).toMatch(/'draft', 'year_close', auth\.uid\(\)\)/);
+    expect(M313).toMatch(/v_number := public\.accounts_post_voucher\(v_id\);/);
+    expect(M313).toMatch(/if v_later is not null and v_later >= p_to then/);
+    expect(M313).toMatch(/pg_advisory_xact_lock/);
+  });
+
+  it("reopens by reversing on the close's own date", () => {
+    expect(M313).toMatch(/accounts_reverse_voucher\(\s*p_voucher_id, v_close\.voucher_date,/);
+  });
+
+  it("is gated on accounts.manage, and the income statement leaves closes out", () => {
+    expect(M313.match(/current_role_allows\('accounts\.manage'\)/g)?.length).toBe(2);
+    expect(M313).toMatch(/and v\.source_kind <> 'year_close'\s+and coalesce\(o\.source_kind, ''\) <> 'year_close'/);
+  });
+});

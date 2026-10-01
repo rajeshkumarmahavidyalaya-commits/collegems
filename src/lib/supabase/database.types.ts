@@ -8369,9 +8369,14 @@ export type Database = {
           parent_id: string
         }[]
       }
+      accounts_close_year: { Args: { p_to: string }; Returns: Json }
       accounts_delete_draft: {
         Args: { p_voucher_id: string }
         Returns: undefined
+      }
+      accounts_is_year_close: {
+        Args: { p_voucher_id: string }
+        Returns: boolean
       }
       accounts_ledger: {
         Args: { p_account_id: string; p_from?: string; p_to?: string }
@@ -8400,6 +8405,10 @@ export type Database = {
         }
         Returns: string
       }
+      accounts_reopen_year: {
+        Args: { p_reason: string; p_voucher_id: string }
+        Returns: string
+      }
       accounts_reverse_voucher: {
         Args: { p_date?: string; p_narration?: string; p_voucher_id: string }
         Returns: string
@@ -8424,6 +8433,17 @@ export type Database = {
           credit: number
           debit: number
           name: string
+        }[]
+      }
+      accounts_year_closes: {
+        Args: never
+        Returns: {
+          closed_to: string
+          posted_at: string
+          reopened: boolean
+          surplus: number
+          voucher_id: string
+          voucher_number: string
         }[]
       }
       accounts_year_start: { Args: { p_on: string }; Returns: string }
