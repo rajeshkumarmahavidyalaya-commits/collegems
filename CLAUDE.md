@@ -4294,6 +4294,14 @@ Forms load zod on first validation through `lazyZodResolver`; the server
 action is still the gate. Heaviest route 225 → 204 kB, and about 1.1 MB less
 across all routes. See `docs/performance.md`.
 
+**And the checklist that ticked itself (`0310`).** `setup_progress()` said
+*everything is set up* to a college filing into a year that ended in March,
+with one family in 302 able to sign in and no email ever sent. It now asks
+whether the current year covers today, whether a provider answered, and how
+many families are reached, with the count on the card. A checklist that is
+always complete is the critic that fires on nothing. The steps no code can
+take are in `docs/getting-live.md`.
+
 **Measure before and after, and say the number.** `npm run build` prints First
 Load JS per route, `ls -S .next/static/chunks` says what is actually big, and
 `.next/app-build-manifest.json` says which routes carry it — which is the
