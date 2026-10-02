@@ -27,8 +27,9 @@ import {
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { DataTable, exportRowsToCsv } from "@/components/data-table/data-table";
+import { DataTable } from "@/components/data-table/data-table";
 import { DataTableToolbar } from "@/components/data-table/data-table-toolbar";
+import { loadAllPages } from "@/components/data-table/table-exports";
 
 import { formatDate } from "@/lib/i18n/format";
 import { useI18n } from "@/components/providers/i18n-provider";
@@ -59,15 +60,17 @@ export function IssuesTable({ canManage }: { canManage: boolean }) {
   const [returningId, setReturningId] = useState<string | null>(null);
   const [waivingId, setWaivingId] = useState<string | null>(null);
 
+  const readPage = (page: number, size: number) =>
+    listIssues({
+      pageIndex: page,
+      pageSize: size,
+      search,
+      status: status === "all" ? undefined : status,
+    });
+
   const query = useQuery({
     queryKey: ["library-issues", pageIndex, pageSize, search, status],
-    queryFn: () =>
-      listIssues({
-        pageIndex,
-        pageSize,
-        search,
-        status: status === "all" ? undefined : status,
-      }),
+    queryFn: () => readPage(pageIndex, pageSize),
     placeholderData: keepPreviousData,
   });
 
@@ -335,22 +338,8 @@ export function IssuesTable({ canManage }: { canManage: boolean }) {
             setPageIndex(0);
           }}
           searchPlaceholder="Search book or member…"
-          onExport={() =>
-            exportRowsToCsv(
-              (query.data?.rows ?? []) as unknown as Record<string, unknown>[],
-              [
-                { key: "bookTitle", label: "Book" },
-                { key: "memberName", label: "Member" },
-                { key: "membershipNumber", label: "Membership no." },
-                { key: "issuedAt", label: "Issued" },
-                { key: "dueAt", label: "Due" },
-                { key: "status", label: "Status" },
-                { key: "fineAmount", label: "Fine" },
-                { key: "accruedFine", label: "Accruing fine" },
-              ],
-              "schoolos-library-issues.csv",
-            )
-          }
+          loadAll={() => loadAllPages(readPage)}
+          exportName="library-issues"
         >
           <Select
             value={status}

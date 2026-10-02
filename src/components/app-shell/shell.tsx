@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { Menu, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
@@ -12,6 +13,7 @@ import { ThemeToggle } from "./theme-toggle";
 import { UserMenu } from "./user-menu";
 import { LanguageSwitcher } from "./language-switcher";
 import { navForRole } from "./nav-config";
+import { SchoolContext } from "./school-context";
 import { useI18n, useT } from "@/components/providers/i18n-provider";
 
 export function AppShell({
@@ -41,6 +43,9 @@ export function AppShell({
 }) {
   const { t, direction } = useI18n();
   const navGroups = navForRole(roleCode);
+  // The session link is offered where the sessions screen is already in this
+  // person's menu; the screen checks academics.manage itself.
+  const canManageSessions = navGroups.some((g) => g.items.some((i) => i.href === "/academics/sessions"));
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
 
@@ -58,7 +63,7 @@ export function AppShell({
   }
 
   return (
-    <div className="flex min-h-svh w-full">
+    <div className="reference-app flex min-h-svh w-full flex-col">
       {/*
         The first focusable thing on every page.
         `main#main-content` has been the target of this link since the shell was
@@ -76,59 +81,66 @@ export function AppShell({
         {t("app.skipToContent")}
       </a>
 
-      <DesktopSidebar
-        navGroups={navGroups}
-        tenantName={tenantName}
-        collapsed={collapsed}
-        onToggleCollapsed={toggleCollapsed}
-      />
-
-      <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
-        {/* The drawer comes in from the side the reader starts on. Left in
-            Urdu would slide in from where the page ends. */}
-        <SheetContent side={direction === "rtl" ? "right" : "left"} className="w-72 p-0">
-          <SheetHeader className="sr-only">
-            <SheetTitle>{t("app.navigation")}</SheetTitle>
-          </SheetHeader>
-          <SidebarContent navGroups={navGroups} tenantName={tenantName} onNavigate={() => setMobileOpen(false)} />
-        </SheetContent>
-      </Sheet>
-
-      <div className="flex min-h-svh flex-1 flex-col">
-        <header
-          data-print="hide"
-          className="sticky top-0 z-20 flex h-14 items-center gap-2 border-b bg-background/95 px-3 backdrop-blur supports-[backdrop-filter]:bg-background/80 sm:px-4"
+      {/* The reference's green administration toolbar: the product, search,
+          and the person's own controls, on every page. */}
+      <header data-print="hide" className="reference-toolbar sticky top-0 z-30 flex h-9 items-center gap-1 px-2">
+        <Button
+          variant="ghost"
+          size="icon"
+          className="size-8 lg:hidden"
+          onClick={() => setMobileOpen(true)}
+          aria-label={t("app.openNav")}
         >
-          <Button
-            variant="ghost"
-            size="icon"
-            className="lg:hidden"
-            onClick={() => setMobileOpen(true)}
-            aria-label={t("app.openNav")}
-          >
-            <Menu className="size-5" />
-          </Button>
+          <Menu className="size-4" />
+        </Button>
+        <Link href="/" className="reference-toolbar-brand">
+          {t("app.toolbarBrand")}
+        </Link>
+        <CommandPaletteTrigger />
+        <div className="ms-auto flex items-center gap-1">
+          <NotificationBell unreadCount={unreadCount} />
+          <LanguageSwitcher />
+          <ThemeToggle />
+          <UserMenu displayName={displayName} roleName={roleName} />
+        </div>
+      </header>
 
-          <AppBreadcrumbs />
+      <div className="flex min-h-0 flex-1">
+        <DesktopSidebar
+          navGroups={navGroups}
+          tenantName={tenantName}
+          collapsed={collapsed}
+          onToggleCollapsed={toggleCollapsed}
+        />
 
-          {currentSessionName && (
-            <span className="hidden rounded-full border bg-muted px-2.5 py-0.5 text-xs font-medium text-muted-foreground md:inline">
-              {currentSessionName}
-            </span>
-          )}
+        <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
+          {/* The drawer comes in from the side the reader starts on. Left in
+              Urdu would slide in from where the page ends. */}
+          <SheetContent side={direction === "rtl" ? "right" : "left"} className="w-72 p-0">
+            <SheetHeader className="sr-only">
+              <SheetTitle>{t("app.navigation")}</SheetTitle>
+            </SheetHeader>
+            <SidebarContent navGroups={navGroups} tenantName={tenantName} onNavigate={() => setMobileOpen(false)} />
+          </SheetContent>
+        </Sheet>
 
-          <div className="ms-auto flex items-center gap-1">
-            <CommandPaletteTrigger />
-            <NotificationBell unreadCount={unreadCount} />
-            <LanguageSwitcher />
-            <ThemeToggle />
-            <UserMenu displayName={displayName} roleName={roleName} />
+        <div className="flex min-w-0 flex-1 flex-col">
+          <div data-print="hide" className="reference-breadcrumbs flex min-h-9 items-center px-4 text-xs sm:px-8">
+            <AppBreadcrumbs />
           </div>
-        </header>
 
-        <main id="main-content" tabIndex={-1} className="flex-1 p-4 sm:p-6 focus:outline-none">
-          {children}
-        </main>
+          <main id="main-content" tabIndex={-1} className="reference-content flex-1 px-4 pb-8 focus:outline-none sm:px-8">
+            <SchoolContext
+              tenantName={tenantName}
+              currentSessionName={currentSessionName}
+              canManageSessions={canManageSessions}
+            />
+            <div className="reference-page">{children}</div>
+          </main>
+          <footer data-print="hide" className="reference-footer px-4 py-4 text-xs text-muted-foreground sm:px-8">
+            {t("app.footer")}
+          </footer>
+        </div>
       </div>
 
       <CommandPalette navGroups={navGroups} />
@@ -142,14 +154,14 @@ function CommandPaletteTrigger() {
 
   return (
     <Button
-      variant="outline"
+      variant="ghost"
       size="sm"
-      className="hidden text-muted-foreground sm:inline-flex"
+      className="hidden h-7 text-xs sm:inline-flex"
       onClick={() => document.dispatchEvent(new KeyboardEvent("keydown", { key: "k", metaKey: true }))}
     >
       <Search className="size-3.5" aria-hidden="true" />
       {t("app.search")}
-      <kbd className="ms-2 rounded border bg-muted px-1.5 font-mono text-[10px]">
+      <kbd className="ms-1 rounded border border-current/30 px-1 font-mono text-[10px]">
         {isMac ? "⌘K" : "Ctrl K"}
       </kbd>
     </Button>

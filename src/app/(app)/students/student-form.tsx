@@ -140,8 +140,8 @@ export function StudentForm({
           </CardHeader>
           <CardContent className="grid gap-5 sm:grid-cols-2">
             <TextField control={form.control} name="firstName" label="First name" required />
-            <TextField control={form.control} name="lastName" label="Last name" required />
             <TextField control={form.control} name="middleName" label="Middle name" />
+            <TextField control={form.control} name="lastName" label="Last name" required />
             <TextField control={form.control} name="dateOfBirth" label="Date of birth" type="date" />
             <SelectField
               control={form.control}
@@ -181,7 +181,7 @@ export function StudentForm({
 
         <Card>
           <CardHeader>
-            <CardTitle>Admission &amp; enrolment</CardTitle>
+            <CardTitle>Admission details</CardTitle>
             <CardDescription>
               Enrolment places the student in a section for the current session. It can be left
               blank now and set later.

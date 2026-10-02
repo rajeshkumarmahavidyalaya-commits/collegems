@@ -15,8 +15,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { DataTable, exportRowsToCsv } from "@/components/data-table/data-table";
+import { DataTable } from "@/components/data-table/data-table";
 import { DataTableToolbar } from "@/components/data-table/data-table-toolbar";
+import { loadAllPages } from "@/components/data-table/table-exports";
 
 import { listInvoices, type InvoiceListRow } from "../actions";
 import { useI18n } from "@/components/providers/i18n-provider";
@@ -121,9 +122,17 @@ export function InvoicesTable() {
   const [sorting, setSorting] = useState<SortingState>([]);
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
 
+  const readPage = (page: number, size: number) =>
+    listInvoices({
+      pageIndex: page,
+      pageSize: size,
+      status,
+      search,
+    });
+
   const query = useQuery({
     queryKey: ["invoices", pageIndex, pageSize, status, search],
-    queryFn: () => listInvoices({ pageIndex, pageSize, status, search }),
+    queryFn: () => readPage(pageIndex, pageSize),
     placeholderData: keepPreviousData,
   });
 
@@ -176,21 +185,8 @@ export function InvoicesTable() {
             setPageIndex(0);
           }}
           searchPlaceholder="Search invoice number…"
-          onExport={() =>
-            exportRowsToCsv(
-              (query.data?.rows ?? []) as unknown as Record<string, unknown>[],
-              [
-                { key: "number", label: "Invoice" },
-                { key: "admissionNumber", label: "Admission no." },
-                { key: "studentName", label: "Student" },
-                { key: "issueDate", label: "Issued" },
-                { key: "dueDate", label: "Due" },
-                { key: "total", label: "Amount" },
-                { key: "status", label: "Status" },
-              ],
-              "schoolos-invoices.csv",
-            )
-          }
+          loadAll={() => loadAllPages(readPage)}
+          exportName="invoices"
         >
           <Select
             value={status}

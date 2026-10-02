@@ -13,6 +13,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { logout } from "@/app/login/actions";
+import { useT } from "@/components/providers/i18n-provider";
 
 function initials(name: string) {
   return name
@@ -24,16 +25,17 @@ function initials(name: string) {
 }
 
 export function UserMenu({ displayName, roleName }: { displayName: string; roleName: string }) {
+  const t = useT();
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost" className="h-9 gap-2 px-2">
+        <Button variant="ghost" className="h-8 gap-2 px-2">
           <Avatar className="size-7">
             <AvatarFallback className="bg-primary text-primary-foreground text-xs">
               {initials(displayName)}
             </AvatarFallback>
           </Avatar>
-          <span className="hidden text-sm font-medium sm:inline">{displayName}</span>
+          <span className="hidden text-xs sm:inline">{t("app.greeting", { name: displayName })}</span>
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-56">

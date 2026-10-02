@@ -16,9 +16,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { DataTable, exportRowsToCsv } from "@/components/data-table/data-table";
+import { DataTable } from "@/components/data-table/data-table";
 import { DataTableColumnHeader } from "@/components/data-table/data-table-column-header";
 import { DataTableToolbar } from "@/components/data-table/data-table-toolbar";
+import { loadAllPages } from "@/components/data-table/table-exports";
 
 import { listBalances, type BalanceRow } from "./actions";
 import dynamic from "next/dynamic";
@@ -88,17 +89,19 @@ export function FeesTable({
     lastPaymentAt: "last_payment_at",
   };
 
+  const readPage = (page: number, size: number) =>
+    listBalances({
+      pageIndex: page,
+      pageSize: size,
+      sortBy: sorting[0] ? sortColumnMap[sorting[0].id] : undefined,
+      sortDesc: sorting[0]?.desc,
+      sectionId: sectionId === "all" ? undefined : sectionId,
+      onlyOutstanding,
+    });
+
   const query = useQuery({
     queryKey: ["fee-balances", pageIndex, pageSize, sorting, sectionId, onlyOutstanding],
-    queryFn: () =>
-      listBalances({
-        pageIndex,
-        pageSize,
-        sortBy: sorting[0] ? sortColumnMap[sorting[0].id] : undefined,
-        sortDesc: sorting[0]?.desc,
-        sectionId: sectionId === "all" ? undefined : sectionId,
-        onlyOutstanding,
-      }),
+    queryFn: () => readPage(pageIndex, pageSize),
     placeholderData: keepPreviousData,
   });
 
@@ -106,14 +109,15 @@ export function FeesTable({
   // function has no text predicate, and adding one would mean sorting and
   // paging in two places. Class + outstanding are the filters that matter here;
   // finding one child by name is what the ⌘K palette is for.
+  // The same predicate is applied to an export of every page, so a file and
+  // the screen agree about which children "match".
   const needle = search.trim().toLowerCase();
-  const rows = (query.data?.rows ?? []).filter(
-    (r) =>
-      !needle ||
-      r.fullName.toLowerCase().includes(needle) ||
-      r.admissionNumber.toLowerCase().includes(needle) ||
-      (r.rollNumber ?? "").toLowerCase().includes(needle),
-  );
+  const matchesSearch = (r: BalanceRow) =>
+    !needle ||
+    r.fullName.toLowerCase().includes(needle) ||
+    r.admissionNumber.toLowerCase().includes(needle) ||
+    (r.rollNumber ?? "").toLowerCase().includes(needle);
+  const rows = (query.data?.rows ?? []).filter(matchesSearch);
 
   const columns: ColumnDef<BalanceRow>[] = [
     {
@@ -269,24 +273,8 @@ export function FeesTable({
             searchValue={search}
             onSearchChange={setSearch}
             searchPlaceholder="Search this page…"
-            onExport={() =>
-              exportRowsToCsv(
-                rows as unknown as Record<string, unknown>[],
-                [
-                  { key: "admissionNumber", label: "Admission no." },
-                  { key: "fullName", label: "Student" },
-                  { key: "sectionLabel", label: "Class" },
-                  { key: "charged", label: "Charged" },
-                  { key: "fines", label: "Fines" },
-                  { key: "discounts", label: "Discounts" },
-                  { key: "writeOffs", label: "Written off" },
-                  { key: "paid", label: "Paid" },
-                  { key: "refunds", label: "Refunded" },
-                  { key: "balance", label: "Balance" },
-                ],
-                "schoolos-fee-balances.csv",
-              )
-            }
+            loadAll={() => loadAllPages(readPage).then((r) => ({ ...r, rows: r.rows.filter(matchesSearch) }))}
+            exportName="fee-balances"
           >
             <Select
               value={sectionId}

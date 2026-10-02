@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import { ChevronDown, GraduationCap, PanelLeftClose, PanelLeftOpen } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -11,7 +11,8 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { splitSetup, type NavGroup } from "./nav-config";
+import type { NavGroup } from "./nav-config";
+import { activeDestination } from "./navigation-state";
 import { useI18n, useT } from "@/components/providers/i18n-provider";
 
 function NavLink({
@@ -32,7 +33,7 @@ function NavLink({
     <Link
       href={href}
       className={cn(
-        "flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors",
+        "reference-nav-link flex items-center gap-3 px-3 py-2 text-sm transition-colors",
         active
           ? "bg-sidebar-primary text-sidebar-primary-foreground"
           : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
@@ -40,7 +41,9 @@ function NavLink({
       )}
       aria-current={active ? "page" : undefined}
     >
-      <Icon className="size-4 shrink-0" aria-hidden="true" />
+      {/* The reference lists a module's screens by name; the icon is kept for
+          the collapsed rail, where there is no name. */}
+      <Icon className={cn("size-4 shrink-0", !collapsed && "hidden")} aria-hidden="true" />
       {!collapsed && <span className="truncate">{title}</span>}
     </Link>
   );
@@ -57,22 +60,15 @@ function NavLink({
 
 /** Where the open/closed state of each menu group is remembered. */
 const OPEN_KEY = "schoolos:nav-open";
-const SETUP = "__setup__";
-
 /** A short menu reads fine fully open; a long one opens only where you are. */
 const OPEN_ALL_UP_TO = 20;
 
-function isActive(pathname: string, href: string) {
-  return href === "/" ? pathname === "/" : pathname === href || pathname.startsWith(`${href}/`);
-}
-
-function defaultOpen(daily: NavGroup[], setup: NavGroup["items"], pathname: string): Record<string, boolean> {
-  const total = daily.reduce((n, g) => n + g.items.length, 0);
+function defaultOpen(groups: NavGroup[], selected: string | null): Record<string, boolean> {
+  const total = groups.reduce((n, g) => n + g.items.length, 0);
   const open: Record<string, boolean> = {};
-  daily.forEach((g, i) => {
-    open[g.title] = total <= OPEN_ALL_UP_TO || i === 0 || g.items.some((item) => isActive(pathname, item.href));
+  groups.forEach((g, i) => {
+    open[g.title] = total <= OPEN_ALL_UP_TO || i === 0 || g.items.some((item) => item.href === selected);
   });
-  open[SETUP] = setup.some((item) => isActive(pathname, item.href));
   return open;
 }
 
@@ -88,9 +84,16 @@ export function SidebarContent({
   onNavigate?: () => void;
 }) {
   const pathname = usePathname();
+  const search = useSearchParams().toString();
   const t = useT();
-  const { daily, setup } = splitSetup(navGroups);
-  const [open, setOpen] = useState<Record<string, boolean>>(() => defaultOpen(daily, setup, pathname));
+  // The reference groups every screen under its module, so there is no
+  // separate "Setup" fold here; once-a-year screens sit in their module.
+  const selected = activeDestination(
+    pathname,
+    search,
+    navGroups.flatMap((g) => g.items.map((item) => item.href)),
+  );
+  const [open, setOpen] = useState<Record<string, boolean>>(() => defaultOpen(navGroups, selected));
 
   // What somebody chose last time wins over the default; storage can be
   // missing or blocked, and then the default simply stands.
@@ -107,13 +110,13 @@ export function SidebarContent({
   useEffect(() => {
     setOpen((prev) => {
       const next = { ...prev };
-      for (const g of daily) if (g.items.some((item) => isActive(pathname, item.href))) next[g.title] = true;
-      if (setup.some((item) => isActive(pathname, item.href))) next[SETUP] = true;
+      for (const g of navGroups) if (g.items.some((item) => item.href === selected)) next[g.title] = true;
       return next;
     });
-    // `daily` and `setup` are rebuilt every render from the same props.
+    // `navGroups` is rebuilt every render from the same role; the selection is
+    // what changes.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pathname]);
+  }, [selected]);
 
   function toggle(key: string) {
     setOpen((prev) => {
@@ -134,15 +137,21 @@ export function SidebarContent({
       icon={item.icon}
       title={item.messageKey ? t(item.messageKey) : item.title}
       collapsed={collapsed}
-      active={isActive(pathname, item.href)}
+      active={selected === item.href}
     />
   );
 
-  const section = (key: string, label: string, items: NavGroup["items"], hint?: string) => {
+  const section = (group: NavGroup) => {
+    const key = group.title;
+    // The English title is the fallback, so a nav entry added before its
+    // translation still reads as something.
+    const label = group.messageKey ? t(group.messageKey) : group.title;
     const isOpen = open[key] ?? false;
+    const holdsSelection = group.items.some((item) => item.href === selected);
+    const GroupIcon = group.icon ?? GraduationCap;
     const id = `nav-${key.replace(/\W+/g, "-").toLowerCase()}`;
     return (
-      <div key={key} className="mb-2">
+      <div key={key} className="reference-nav-group">
         <button
           type="button"
           onClick={(e) => {
@@ -153,20 +162,22 @@ export function SidebarContent({
           }}
           aria-expanded={isOpen}
           aria-controls={id}
-          className="flex w-full items-center justify-between rounded-md px-3 py-1.5 text-xs font-medium tracking-wide text-sidebar-foreground/60 uppercase hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring"
+          className={cn(
+            "reference-nav-heading flex w-full items-center justify-between px-3 py-3 text-sm hover:bg-sidebar-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring",
+            holdsSelection && "reference-nav-heading-active",
+          )}
         >
-          <span className="truncate">{label}</span>
-          <span className="flex items-center gap-1.5 normal-case">
-            {!isOpen && <span className="text-[11px] tabular-nums">{items.length}</span>}
-            <ChevronDown
-              className={cn("size-3.5 shrink-0 transition-transform", !isOpen && "-rotate-90 rtl:rotate-90")}
-              aria-hidden="true"
-            />
+          <span className="flex items-center gap-2 truncate">
+            <GroupIcon className="size-4 shrink-0" aria-hidden="true" />
+            {label}
           </span>
+          <ChevronDown
+            className={cn("size-3.5 shrink-0 transition-transform", !isOpen && "-rotate-90 rtl:rotate-90")}
+            aria-hidden="true"
+          />
         </button>
-        <div id={id} hidden={!isOpen} className="mt-0.5 flex flex-col gap-0.5">
-          {hint && <p className="px-3 pb-1 text-[11px] text-sidebar-foreground/50">{hint}</p>}
-          {items.map(link)}
+        <div id={id} hidden={!isOpen} className="reference-nav-children flex flex-col">
+          {group.items.map(link)}
         </div>
       </div>
     );
@@ -174,7 +185,7 @@ export function SidebarContent({
 
   return (
     <div className="flex h-full flex-col gap-1 bg-sidebar text-sidebar-foreground">
-      <div className={cn("flex h-14 items-center gap-2 border-b border-sidebar-border px-4", collapsed && "justify-center px-0")}>
+      <div className={cn("flex min-h-12 items-center gap-2 border-b border-sidebar-border px-3 py-3", collapsed && "justify-center px-0")}>
         <GraduationCap className="size-5 shrink-0 text-sidebar-primary" aria-hidden="true" />
         {!collapsed && <span className="truncate font-semibold">{tenantName || "SchoolOS"}</span>}
       </div>
@@ -184,30 +195,14 @@ export function SidebarContent({
           is no help when there are two of them. */}
       <nav
         aria-label={t("app.navigation")}
-        className="flex-1 overflow-y-auto px-2 py-3"
+        className="flex-1 overflow-y-auto"
         onClick={onNavigate}
       >
         {collapsed ? (
-          // Icons only: no headings to fold, so everything is listed, with the
-          // setup screens after a rule.
-          <div className="flex flex-col gap-0.5">
-            {daily.flatMap((g) => g.items).map(link)}
-            {setup.length > 0 && <hr className="my-2 border-sidebar-border" />}
-            {setup.map(link)}
-          </div>
+          // Icons only: no headings to fold, so everything is listed.
+          <div className="flex flex-col gap-0.5 py-2">{navGroups.flatMap((g) => g.items).map(link)}</div>
         ) : (
-          <>
-            {daily.map((group) =>
-              // The English title is the fallback, so a nav entry added
-              // before its translation still reads as something.
-              section(group.title, group.messageKey ? t(group.messageKey) : group.title, group.items),
-            )}
-            {setup.length > 0 && (
-              <div className="mt-2 border-t border-sidebar-border pt-2">
-                {section(SETUP, t("nav.setup"), setup, t("nav.setupHint"))}
-              </div>
-            )}
-          </>
+          navGroups.map(section)
         )}
       </nav>
     </div>
@@ -231,22 +226,23 @@ export function DesktopSidebar({
     <aside
       data-print="hide"
       className={cn(
-        "hidden shrink-0 border-e border-sidebar-border transition-[width] duration-200 lg:flex lg:flex-col",
-        collapsed ? "w-16" : "w-64",
+        "reference-sidebar sticky top-9 hidden h-[calc(100svh-2.25rem)] shrink-0 border-e border-sidebar-border transition-[width] duration-200 lg:flex lg:flex-col",
+        collapsed ? "w-14" : "w-[220px]",
       )}
     >
-      <div className="relative flex-1">
+      <div className="relative min-h-0 flex-1">
         <SidebarContent navGroups={navGroups} collapsed={collapsed} tenantName={tenantName} />
       </div>
       <div className="border-t border-sidebar-border p-2">
         <Button
           variant="ghost"
-          size="icon"
-          className="w-full text-sidebar-foreground hover:bg-sidebar-accent"
+          size={collapsed ? "icon" : "sm"}
+          className="w-full justify-start text-sidebar-foreground hover:bg-sidebar-accent"
           onClick={onToggleCollapsed}
           aria-label={collapsed ? t("app.sidebar.expand") : t("app.sidebar.collapse")}
         >
           {collapsed ? <PanelLeftOpen className="size-4" /> : <PanelLeftClose className="size-4" />}
+          {!collapsed && <span className="text-xs">{t("app.sidebar.collapseLabel")}</span>}
         </Button>
       </div>
     </aside>

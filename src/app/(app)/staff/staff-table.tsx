@@ -15,8 +15,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { DataTable, exportRowsToCsv } from "@/components/data-table/data-table";
+import { DataTable } from "@/components/data-table/data-table";
 import { DataTableToolbar } from "@/components/data-table/data-table-toolbar";
+import { loadAllPages } from "@/components/data-table/table-exports";
 import { STAFF_STATUSES, staffStatusLabel, staffStatusTone } from "@/lib/validations/staff-display";
 import { listStaff, type StaffRow } from "./actions";
 import { useT } from "@/components/providers/i18n-provider";
@@ -122,15 +123,17 @@ export function StaffTable({ canManage }: { canManage: boolean }) {
 
   const filtered = search !== "" || status !== "all";
 
+  const readPage = (page: number, size: number) =>
+    listStaff({
+      pageIndex: page,
+      pageSize: size,
+      search,
+      status: status === "all" ? undefined : status,
+    });
+
   const query = useQuery({
     queryKey: ["staff", pageIndex, pageSize, search, status],
-    queryFn: () =>
-      listStaff({
-        pageIndex,
-        pageSize,
-        search,
-        status: status === "all" ? undefined : status,
-      }),
+    queryFn: () => readPage(pageIndex, pageSize),
     placeholderData: keepPreviousData,
   });
 
@@ -181,23 +184,8 @@ export function StaffTable({ canManage }: { canManage: boolean }) {
             setPageIndex(0);
           }}
           searchPlaceholder="Search name, code or designation…"
-          onExport={() =>
-            exportRowsToCsv(
-              (query.data?.rows ?? []) as unknown as Record<string, unknown>[],
-              [
-                { key: "employeeCode", label: "Code" },
-                { key: "fullName", label: "Name" },
-                { key: "designation", label: "Designation" },
-                { key: "department", label: "Department" },
-                { key: "dateOfJoining", label: "Joined" },
-                { key: "dateOfLeaving", label: "Left" },
-                { key: "phone", label: "Phone" },
-                { key: "email", label: "Email" },
-                { key: "status", label: "Status" },
-              ],
-              "schoolos-staff.csv",
-            )
-          }
+          loadAll={() => loadAllPages(readPage)}
+          exportName="staff"
         >
           {/*
             Defaulting to Active rather than All, because a roster is a list of

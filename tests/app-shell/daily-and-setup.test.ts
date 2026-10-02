@@ -41,9 +41,13 @@ describe("the daily menu and the setup menu", () => {
     }
   });
 
-  it("draws the sidebar from the split, and the palette from the whole tree", () => {
+  // The reference layout replaced the fold: every screen sits in its module
+  // (School Management, SM School, ...), so the sidebar draws the module tree
+  // and no longer splits it. The split stays the definition of set-up order.
+  it("draws the sidebar from the module tree, and the palette from the whole tree", () => {
     const sidebar = readFileSync(join(process.cwd(), "src/components/app-shell/app-sidebar.tsx"), "utf8");
-    expect(sidebar).toMatch(/splitSetup\(navGroups\)/);
+    expect(sidebar).not.toMatch(/splitSetup/);
+    expect(sidebar).toMatch(/navGroups\.map\(section\)/);
     const palette = readFileSync(join(process.cwd(), "src/components/app-shell/command-palette.tsx"), "utf8");
     expect(palette).not.toMatch(/splitSetup/);
     expect(NAV_GROUPS.flatMap((g) => g.items).filter((i) => i.setup).length).toBeGreaterThan(0);

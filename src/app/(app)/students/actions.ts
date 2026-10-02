@@ -35,12 +35,20 @@ export async function listStudents(
   const supabase = await createClient();
   const { pageIndex, pageSize, sortBy, sortDesc, search, status, sectionId } = params;
 
+  // Filtering by class must filter the *students*. A filter on a plain
+  // embedded resource only trims the embedded rows, so every student came back
+  // and those in other classes simply showed no class; `!inner` makes the
+  // enrolment a condition of the row (found by the reference's "Search By
+  // Class", which is nothing else).
+  const enrolments = sectionId
+    ? "enrolments!inner ( roll_number, section_id, sections ( name, class_levels ( name, sequence ) ) )"
+    : "enrolments ( roll_number, section_id, sections ( name, class_levels ( name, sequence ) ) )";
   let query = supabase
     .from("students")
     .select(
       `id, admission_number, status,
        people:person_id ( first_name, last_name, gender, date_of_birth, phone ),
-       enrolments ( roll_number, sections ( name, class_levels ( name, sequence ) ) ),
+       ${enrolments},
        guardian_student ( is_primary, guardians ( people:person_id ( first_name, last_name ) ) )`,
       { count: "exact" },
     );

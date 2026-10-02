@@ -4375,6 +4375,28 @@ The same pass found two quiet defects: editing a route sent an empty fee head,
 so renaming it stopped its fares billing; and the bus list dropped the staff
 riders `0293` had added. See `docs/ui-review.md` and `docs/modules/transport.md`.
 
+### The reference layout is a face, not a second set of rules
+
+The interface follows the Weblizar School Management plugin: a green toolbar,
+a sidebar of modules, a lavender school and session band, green title bars.
+`docs/reference-ui.md` has the mapping from each reference screen to its
+route, components, RPCs and gate. It also lists what is unverified: no screen
+has been compared with the reference, and no signed-in page has been walked
+through, because this environment can reach neither host. Three things about
+it are load-bearing:
+
+- **The module menu is presentation only.** `referenceNavigation()` regroups
+  and renames what `navForRole` already allowed. It adds exactly two entries,
+  the setup wizard and the subjects tab, each beside a screen already in that
+  person's menu. `tests/app-shell/reference-navigation.test.ts` checks that
+  for all six seats.
+- **An export is the filtered set, not the page.** Every server-paged list
+  passes `loadAll`, which reads every page as the signed-in person, so RLS is
+  still the gate. Past 10,000 rows it refuses and gives the number.
+- **The session in the band is a link, not a filter.** The current year is
+  school-wide (rule 2). A browser-side session picker would show one year
+  while every write filed into another.
+
 ### Amber is not a hover colour
 
 The generated palette's amber (`--brand-accent`) is for **sparing emphasis** —

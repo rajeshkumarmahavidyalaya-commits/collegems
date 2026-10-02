@@ -15,8 +15,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { DataTable, exportRowsToCsv } from "@/components/data-table/data-table";
+import { DataTable } from "@/components/data-table/data-table";
 import { DataTableToolbar } from "@/components/data-table/data-table-toolbar";
+import { loadAllPages } from "@/components/data-table/table-exports";
 import { listMembers, setMemberStatus, type MemberRow } from "../actions";
 
 const AddMemberDialog = dynamic(() => import("./add-member-dialog"));
@@ -129,15 +130,17 @@ export function MembersTable({ canManage }: { canManage: boolean }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [canManage, busy]);
 
+  const readPage = (page: number, size: number) =>
+    listMembers({
+      pageIndex: page,
+      pageSize: size,
+      search,
+      status: status === "all" ? undefined : status,
+    });
+
   const query = useQuery({
     queryKey: ["library-members", pageIndex, pageSize, search, status],
-    queryFn: () =>
-      listMembers({
-        pageIndex,
-        pageSize,
-        search,
-        status: status === "all" ? undefined : status,
-      }),
+    queryFn: () => readPage(pageIndex, pageSize),
     placeholderData: keepPreviousData,
   });
 
@@ -179,21 +182,8 @@ export function MembersTable({ canManage }: { canManage: boolean }) {
             setPageIndex(0);
           }}
           searchPlaceholder="Search membership number…"
-          onExport={() =>
-            exportRowsToCsv(
-              (query.data?.rows ?? []) as unknown as Record<string, unknown>[],
-              [
-                { key: "membershipNumber", label: "Membership no." },
-                { key: "holderName", label: "Name" },
-                { key: "holderType", label: "Type" },
-                { key: "holderRef", label: "Reference" },
-                { key: "status", label: "Status" },
-                { key: "booksOut", label: "Books out" },
-                { key: "maxBooks", label: "Limit" },
-              ],
-              "schoolos-library-members.csv",
-            )
-          }
+          loadAll={() => loadAllPages(readPage)}
+          exportName="library-cards"
         >
           <Select
             value={status}

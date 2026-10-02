@@ -8,6 +8,8 @@ import type { ColumnDef, SortingState, VisibilityState } from "@tanstack/react-t
 import { UserPlus } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
@@ -15,7 +17,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { DataTable, exportRowsToCsv } from "@/components/data-table/data-table";
+import { DataTable } from "@/components/data-table/data-table";
+import { loadAllPages } from "@/components/data-table/table-exports";
+import { useT } from "@/components/providers/i18n-provider";
 import { DataTableColumnHeader } from "@/components/data-table/data-table-column-header";
 import { DataTableToolbar } from "@/components/data-table/data-table-toolbar";
 import { STUDENT_STATUSES } from "@/lib/validations/students-display";
@@ -115,6 +119,12 @@ export function StudentsTable({
   const [status, setStatus] = useState("all");
   const [sectionId, setSectionId] = useState("all");
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
+  // The reference's "Search Students" panel: a method, its field, and a button
+  // that applies it to the same query the table below reads.
+  const t = useT();
+  const [searchMode, setSearchMode] = useState<"keyword" | "class">("keyword");
+  const [keyword, setKeyword] = useState("");
+  const [classChoice, setClassChoice] = useState("all");
 
   const sortColumnMap: Record<string, string> = {
     admissionNumber: "admission_number",
@@ -123,22 +133,96 @@ export function StudentsTable({
 
   const filtered = search !== "" || status !== "all" || sectionId !== "all";
 
+  const readPage = (page: number, size: number) =>
+    listStudents({
+      pageIndex: page,
+      pageSize: size,
+      sortBy: sorting[0] ? sortColumnMap[sorting[0].id] : undefined,
+      sortDesc: sorting[0]?.desc,
+      search,
+      status: status === "all" ? undefined : status,
+      sectionId: sectionId === "all" ? undefined : sectionId,
+    });
+
   const query = useQuery({
     queryKey: ["students", pageIndex, pageSize, sorting, search, status, sectionId],
-    queryFn: () =>
-      listStudents({
-        pageIndex,
-        pageSize,
-        sortBy: sorting[0] ? sortColumnMap[sorting[0].id] : undefined,
-        sortDesc: sorting[0]?.desc,
-        search,
-        status: status === "all" ? undefined : status,
-        sectionId: sectionId === "all" ? undefined : sectionId,
-      }),
+    queryFn: () => readPage(pageIndex, pageSize),
     placeholderData: keepPreviousData,
   });
 
   return (
+    <div className="flex flex-col gap-5">
+      <form
+        className="rounded-md border bg-card p-4"
+        onSubmit={(event) => {
+          event.preventDefault();
+          if (searchMode === "keyword") {
+            setSearch(keyword.trim());
+            setSectionId("all");
+          } else {
+            setSearch("");
+            setSectionId(classChoice);
+          }
+          setPageIndex(0);
+        }}
+      >
+        <h2 className="mb-3 font-semibold">{t("students.searchTitle")}</h2>
+        <fieldset className="mb-4 flex flex-wrap gap-5 text-sm">
+          <legend className="sr-only">{t("students.searchMethod")}</legend>
+          <label className="flex items-center gap-2">
+            <input
+              type="radio"
+              name="student-search-mode"
+              value="keyword"
+              checked={searchMode === "keyword"}
+              onChange={() => setSearchMode("keyword")}
+            />
+            {t("students.byKeyword")}
+          </label>
+          <label className="flex items-center gap-2">
+            <input
+              type="radio"
+              name="student-search-mode"
+              value="class"
+              checked={searchMode === "class"}
+              onChange={() => setSearchMode("class")}
+            />
+            {t("students.byClass")}
+          </label>
+        </fieldset>
+        <div className="flex flex-wrap items-end gap-4">
+          {searchMode === "keyword" ? (
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="student-keyword">{t("students.keyword")}</Label>
+              <Input
+                id="student-keyword"
+                value={keyword}
+                onChange={(event) => setKeyword(event.target.value)}
+                placeholder={t("students.keywordHint")}
+                className="w-64"
+              />
+            </div>
+          ) : (
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="student-class">{t("students.classSection")}</Label>
+              <select
+                id="student-class"
+                className="h-9 min-w-56 rounded-md border border-input bg-card px-3 text-sm"
+                value={classChoice}
+                onChange={(event) => setClassChoice(event.target.value)}
+              >
+                <option value="all">{t("students.allClasses")}</option>
+                {sections.map((section) => (
+                  <option key={section.id} value={section.id}>
+                    {section.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+          <Button type="submit">{t("students.getStudents")}</Button>
+        </div>
+      </form>
     <DataTable
       columns={columns}
       data={query.data?.rows ?? []}
@@ -188,21 +272,8 @@ export function StudentsTable({
             setPageIndex(0);
           }}
           searchPlaceholder="Search admission number…"
-          onExport={() =>
-            exportRowsToCsv(
-              (query.data?.rows ?? []) as unknown as Record<string, unknown>[],
-              [
-                { key: "admissionNumber", label: "Admission no." },
-                { key: "fullName", label: "Name" },
-                { key: "sectionLabel", label: "Class · section" },
-                { key: "rollNumber", label: "Roll" },
-                { key: "guardianName", label: "Primary guardian" },
-                { key: "phone", label: "Phone" },
-                { key: "status", label: "Status" },
-              ],
-              "schoolos-students.csv",
-            )
-          }
+          loadAll={() => loadAllPages(readPage)}
+          exportName="students"
         >
           <Select
             value={sectionId}
@@ -246,5 +317,6 @@ export function StudentsTable({
         </DataTableToolbar>
       )}
     />
+    </div>
   );
 }

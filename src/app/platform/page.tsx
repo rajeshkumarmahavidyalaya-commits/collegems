@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Building2, ShieldAlert, TriangleAlert } from "lucide-react";
+import { PageToolbar } from "@/components/page-toolbar";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { getLocale } from "@/lib/i18n/server";
@@ -39,8 +40,7 @@ export default async function PlatformPage() {
             </span>
             <p className="text-sm font-medium">This is not available</p>
             <p className="text-sm text-muted-foreground">
-              This area is for platform staff. If you are looking for your college, it is on the
-              home page.
+              This area is for platform staff. If you are looking for your college, it is on the home page.
             </p>
           </CardContent>
         </Card>
@@ -59,87 +59,109 @@ export default async function PlatformPage() {
   );
 
   return (
-    <main className="mx-auto flex max-w-6xl flex-col gap-6 p-6 sm:p-10">
-      <div>
-        <h1 className="text-2xl font-semibold">Platform</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Every college on this deployment. Counts and plans only — no college&apos;s records are
-          readable from here.
-        </p>
-      </div>
-
-      <div className="grid gap-3 sm:grid-cols-4">
-        <Stat label="Colleges" value={colleges.length} />
-        <Stat label="Paying" value={totals.paying} />
-        <Stat label="On trial" value={totals.trialing} />
-        <Stat label="Children enrolled" value={totals.students} />
-      </div>
-
-      {colleges.length === 0 ? (
-        <Card>
-          <CardContent className="flex flex-col items-center gap-3 py-14 text-center">
-            <span className="rounded-full bg-muted p-3">
-              <Building2 className="size-6 text-muted-foreground" aria-hidden="true" />
-            </span>
-            <p className="text-sm font-medium">No colleges yet</p>
-            <p className="max-w-sm text-sm text-muted-foreground">
-              The first one appears here as soon as somebody signs up and starts a school.
+    // The reference's global "School Management" screens: the green toolbar,
+    // a short platform menu and the dashboard of schools. Metadata only, as
+    // before -- no link here enters a college (0209).
+    <div className="reference-app min-h-svh">
+      <header className="reference-toolbar flex h-9 items-center justify-between px-4 text-sm">
+        <span>School Management</span>
+        <span>Platform administrator</span>
+      </header>
+      <div className="flex">
+        <aside className="reference-sidebar hidden w-[220px] shrink-0 border-e border-sidebar-border lg:block">
+          <nav className="sticky top-0 flex flex-col text-sm" aria-label="Platform navigation">
+            <p className="reference-nav-heading reference-nav-heading-active flex items-center gap-2 px-3 py-3">
+              <Building2 className="size-4" aria-hidden="true" />
+              School Management
             </p>
-          </CardContent>
-        </Card>
-      ) : (
-        colleges.map((c) => (
-          <Card key={c.tenantId}>
-            <CardHeader>
-              <CardTitle className="flex flex-wrap items-center gap-2 text-base">
-                {c.name}
-                <Badge variant={c.planStatus === "active" ? "default" : "outline"}>
-                  {c.planCode ?? "no plan"} · {c.planStatus ?? "—"}
-                </Badge>
-                {c.overLimit && (
-                  <Badge variant="destructive" className="gap-1">
-                    <TriangleAlert className="size-3" aria-hidden="true" />
-                    over limit
-                  </Badge>
-                )}
-              </CardTitle>
-              <CardDescription className="font-mono text-xs">
-                {c.slug}.schoolos.app · {c.timezone} · since{" "}
-                {formatDate(c.createdAt, locale)}
-              </CardDescription>
-            </CardHeader>
+            <a href="#dashboard" className="reference-nav-link hover:bg-sidebar-accent">
+              Dashboard
+            </a>
+            <a href="#schools" className="reference-nav-link hover:bg-sidebar-accent">
+              Schools &amp; plans
+            </a>
+          </nav>
+        </aside>
+        <main id="dashboard" className="mx-auto flex min-w-0 max-w-6xl flex-1 flex-col gap-6 p-4 sm:p-8">
+          <PageToolbar title="School Management Dashboard" icon={Building2} />
+          <div>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Every college on this deployment. Counts and plans only — no college&apos;s records are readable
+              from here.
+            </p>
+          </div>
 
-            <CardContent className="flex flex-col gap-4">
-              <dl className="grid grid-cols-2 gap-3 text-sm sm:grid-cols-4">
-                <Figure
-                  label="Children"
-                  value={c.students}
-                  limit={c.studentLimit}
-                  over={c.overLimit}
-                />
-                <Figure label="Staff" value={c.staff} limit={c.staffLimit} over={false} />
-                <Figure label="Logins" value={c.logins} limit={null} over={false} />
-                <div>
-                  <dt className="text-xs text-muted-foreground">Last activity</dt>
-                  <dd className="mt-0.5 text-sm">
-                    {/* A timestamp, never the change itself: "is this college
+          <div className="grid gap-3 sm:grid-cols-4">
+            <Stat label="Colleges" value={colleges.length} />
+            <Stat label="Paying" value={totals.paying} />
+            <Stat label="On trial" value={totals.trialing} />
+            <Stat label="Children enrolled" value={totals.students} />
+          </div>
+
+          <h2 id="schools" className="scroll-mt-4 text-lg font-semibold">
+            Schools &amp; plans
+          </h2>
+          {colleges.length === 0 ? (
+            <Card>
+              <CardContent className="flex flex-col items-center gap-3 py-14 text-center">
+                <span className="rounded-full bg-muted p-3">
+                  <Building2 className="size-6 text-muted-foreground" aria-hidden="true" />
+                </span>
+                <p className="text-sm font-medium">No colleges yet</p>
+                <p className="max-w-sm text-sm text-muted-foreground">
+                  The first one appears here as soon as somebody signs up and starts a school.
+                </p>
+              </CardContent>
+            </Card>
+          ) : (
+            colleges.map((c) => (
+              <Card key={c.tenantId}>
+                <CardHeader>
+                  <CardTitle className="flex flex-wrap items-center gap-2 text-base">
+                    {c.name}
+                    <Badge variant={c.planStatus === "active" ? "default" : "outline"}>
+                      {c.planCode ?? "no plan"} · {c.planStatus ?? "—"}
+                    </Badge>
+                    {c.overLimit && (
+                      <Badge variant="destructive" className="gap-1">
+                        <TriangleAlert className="size-3" aria-hidden="true" />
+                        over limit
+                      </Badge>
+                    )}
+                  </CardTitle>
+                  <CardDescription className="font-mono text-xs">
+                    {c.slug}.schoolos.app · {c.timezone} · since {formatDate(c.createdAt, locale)}
+                  </CardDescription>
+                </CardHeader>
+
+                <CardContent className="flex flex-col gap-4">
+                  <dl className="grid grid-cols-2 gap-3 text-sm sm:grid-cols-4">
+                    <Figure label="Children" value={c.students} limit={c.studentLimit} over={c.overLimit} />
+                    <Figure label="Staff" value={c.staff} limit={c.staffLimit} over={false} />
+                    <Figure label="Logins" value={c.logins} limit={null} over={false} />
+                    <div>
+                      <dt className="text-xs text-muted-foreground">Last activity</dt>
+                      <dd className="mt-0.5 text-sm">
+                        {/* A timestamp, never the change itself: "is this college
                         alive" answered without reading anything it wrote. */}
-                    {c.lastActivity ? formatDate(c.lastActivity, locale) : "—"}
-                  </dd>
-                </div>
-              </dl>
+                        {c.lastActivity ? formatDate(c.lastActivity, locale) : "—"}
+                      </dd>
+                    </div>
+                  </dl>
 
-              <PlanControl
-                tenantId={c.tenantId}
-                name={c.name}
-                planCode={c.planCode}
-                planStatus={c.planStatus}
-              />
-            </CardContent>
-          </Card>
-        ))
-      )}
-    </main>
+                  <PlanControl
+                    tenantId={c.tenantId}
+                    name={c.name}
+                    planCode={c.planCode}
+                    planStatus={c.planStatus}
+                  />
+                </CardContent>
+              </Card>
+            ))
+          )}
+        </main>
+      </div>
+    </div>
   );
 }
 

@@ -1,5 +1,5 @@
 import type { LucideIcon } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 
 /**
@@ -22,24 +22,19 @@ export function StatCard({
   hint?: string;
   tone?: StatTone;
 }) {
+  // The reference's horizontal card: a tinted icon tile, the label and hint,
+  // and the figure at the end of the row.
   return (
-    <Card>
-      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-        <CardTitle className="text-sm font-medium text-muted-foreground">{label}</CardTitle>
-        <Icon
-          className={cn(
-            "size-4",
-            tone === "warning" && "text-warning",
-            tone === "success" && "text-success",
-            tone === "danger" && "text-destructive",
-            tone === "default" && "text-muted-foreground",
-          )}
-          aria-hidden="true"
-        />
-      </CardHeader>
-      <CardContent>
-        <div className="font-mono text-2xl font-semibold tabular-nums">{value}</div>
-        {hint && <p className="mt-1 text-xs text-muted-foreground">{hint}</p>}
+    <Card className="reference-stat">
+      <CardContent className="reference-stat-body">
+        <span className={cn("reference-stat-icon", `reference-stat-${tone}`)}>
+          <Icon aria-hidden="true" />
+        </span>
+        <div className="reference-stat-label">
+          <p className="text-sm font-medium">{label}</p>
+          {hint && <p className="mt-1 text-xs text-muted-foreground">{hint}</p>}
+        </div>
+        <div className="reference-stat-value tabular-nums">{value}</div>
       </CardContent>
     </Card>
   );

@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import { Fira_Sans, Fira_Code } from "next/font/google";
 import { ThemeProvider } from "@/components/providers/theme-provider";
 import { I18nProvider } from "@/components/providers/i18n-provider";
 import { getLocale } from "@/lib/i18n/server";
@@ -9,22 +8,8 @@ import { QueryProvider } from "@/components/providers/query-provider";
 import { Toaster } from "@/components/ui/sonner";
 import "./globals.css";
 
-const firaSans = Fira_Sans({
-  variable: "--font-fira-sans",
-  subsets: ["latin"],
-  // Only the weights the interface uses: `font-normal`, `font-medium` and
-  // `font-semibold`. Counted on 1 Oct 2026, `font-light` and `font-bold`
-  // appear nowhere, and each weight is another font file preloaded on every
-  // page. A `<strong>` falls to 600, the nearest weight present.
-  weight: ["400", "500", "600"],
-  display: "swap",
-});
-
-const firaCode = Fira_Code({
-  variable: "--font-fira-code",
-  subsets: ["latin"],
-  display: "swap",
-});
+// The reference uses the system font stack (globals.css --font-sans), so no
+// web font is downloaded or preloaded on any page.
 
 export const metadata: Metadata = {
   title: {
@@ -54,10 +39,10 @@ export default async function RootLayout({ children }: { children: React.ReactNo
       lang={locale}
       dir={directionOf(locale)}
       suppressHydrationWarning
-      className={`${firaSans.variable} ${firaCode.variable} h-full antialiased`}
+      className="h-full antialiased"
     >
       <body className="min-h-full flex flex-col font-sans">
-        <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
+        <ThemeProvider attribute="class" defaultTheme="light" enableSystem disableTransitionOnChange>
           <QueryProvider>
             <I18nProvider locale={locale} messages={clientMessagesFor(locale)}>
               {children}

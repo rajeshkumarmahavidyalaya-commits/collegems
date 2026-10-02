@@ -15,9 +15,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { DataTable, exportRowsToCsv } from "@/components/data-table/data-table";
+import { DataTable } from "@/components/data-table/data-table";
 import { DataTableColumnHeader } from "@/components/data-table/data-table-column-header";
 import { DataTableToolbar } from "@/components/data-table/data-table-toolbar";
+import { loadAllPages } from "@/components/data-table/table-exports";
 import { listBooks, type BookRow } from "../actions";
 
 const columns: ColumnDef<BookRow>[] = [
@@ -111,17 +112,19 @@ export function BooksTable({
     availability: "available_copies",
   };
 
+  const readPage = (page: number, size: number) =>
+    listBooks({
+      pageIndex: page,
+      pageSize: size,
+      sortBy: sorting[0] ? sortColumnMap[sorting[0].id] : undefined,
+      sortDesc: sorting[0]?.desc,
+      search,
+      categoryId: categoryId === "all" ? undefined : categoryId,
+    });
+
   const query = useQuery({
     queryKey: ["books", pageIndex, pageSize, sorting, search, categoryId],
-    queryFn: () =>
-      listBooks({
-        pageIndex,
-        pageSize,
-        sortBy: sorting[0] ? sortColumnMap[sorting[0].id] : undefined,
-        sortDesc: sorting[0]?.desc,
-        search,
-        categoryId: categoryId === "all" ? undefined : categoryId,
-      }),
+    queryFn: () => readPage(pageIndex, pageSize),
     placeholderData: keepPreviousData,
   });
 
@@ -175,21 +178,8 @@ export function BooksTable({
             setPageIndex(0);
           }}
           searchPlaceholder="Search title, author, ISBN…"
-          onExport={() =>
-            exportRowsToCsv(
-              (query.data?.rows ?? []) as unknown as Record<string, unknown>[],
-              [
-                { key: "title", label: "Title" },
-                { key: "author", label: "Author" },
-                { key: "categoryName", label: "Category" },
-                { key: "isbn", label: "ISBN" },
-                { key: "shelfLocation", label: "Shelf" },
-                { key: "availableCopies", label: "Available" },
-                { key: "totalCopies", label: "Total" },
-              ],
-              "schoolos-books.csv",
-            )
-          }
+          loadAll={() => loadAllPages(readPage)}
+          exportName="books"
         >
           <Select
             value={categoryId}

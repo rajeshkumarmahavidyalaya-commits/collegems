@@ -1,8 +1,8 @@
 import Link from "next/link";
-import { CalendarDays, ChevronLeft, ChevronRight, GraduationCap, IndianRupee, Megaphone, Palmtree } from "lucide-react";
+import { CalendarDays, GraduationCap, IndianRupee, Megaphone, Palmtree } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { MonthCalendar } from "@/components/calendar/month-calendar";
 import { createClient } from "@/lib/supabase/server";
 import { getLocale, getT } from "@/lib/i18n/server";
 import { formatDate } from "@/lib/i18n/format";
@@ -41,20 +41,13 @@ export default async function CalendarPage({
           <h1 className="text-2xl font-semibold">{t("calendar.title")}</h1>
           <p className="max-w-2xl text-sm text-muted-foreground">{t("calendar.intro")}</p>
         </div>
-        <nav aria-label={t("calendar.month")} className="flex items-center gap-2">
-          <Button asChild variant="outline" size="icon">
-            <Link href={`/calendar?month=${win.prev}`} aria-label={t("calendar.previous")}>
-              <ChevronLeft className="size-4" aria-hidden="true" />
-            </Link>
-          </Button>
-          <span className="min-w-36 text-center font-medium">{title}</span>
-          <Button asChild variant="outline" size="icon">
-            <Link href={`/calendar?month=${win.next}`} aria-label={t("calendar.next")}>
-              <ChevronRight className="size-4" aria-hidden="true" />
-            </Link>
-          </Button>
-        </nav>
       </div>
+
+      {/* The reference's month grid; the agenda below lists the same entries
+          with their detail. Both come from the one read above. */}
+      {!error && (
+        <MonthCalendar today={schoolDay} month={month} entries={(data ?? []) as CalendarEntry[]} locale={locale} />
+      )}
 
       {error ? (
         <p role="alert" className="text-sm text-destructive">

@@ -15,7 +15,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { DataTable, exportRowsToCsv } from "@/components/data-table/data-table";
+import { DataTable } from "@/components/data-table/data-table";
 import { DataTableToolbar } from "@/components/data-table/data-table-toolbar";
 import {
   getAttendanceSummary,
@@ -273,22 +273,10 @@ export function AttendanceReport({ sections }: { sections: SectionOption[] }) {
               setPageIndex(0);
             }}
             searchPlaceholder="Search name or roll…"
-            onExport={() =>
-              exportRowsToCsv(
-                filtered as unknown as Record<string, unknown>[],
-                [
-                  { key: "rollNumber", label: "Roll" },
-                  { key: "admissionNumber", label: "Admission no." },
-                  { key: "fullName", label: "Student" },
-                  { key: "present", label: "Present" },
-                  { key: "absent", label: "Absent" },
-                  { key: "late", label: "Late" },
-                  { key: "excused", label: "Excused" },
-                  { key: "percentage", label: "Attendance %" },
-                ],
-                `schoolos-attendance-${from}-to-${to}.csv`,
-              )
-            }
+            // The whole filtered roster is already in hand (one class), so
+            // "every row" is that list, not the page on screen.
+            loadAll={async () => ({ rows: filtered, total: filtered.length, refused: false })}
+            exportName={`attendance-${from}-to-${to}`}
           />
         )}
       />

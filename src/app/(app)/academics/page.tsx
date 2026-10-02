@@ -78,7 +78,10 @@ export default async function AcademicsPage({
       </div>
       <ModuleCards module="classes" />
 
+      {/* Keyed on the tab so the menu's "Subjects" link, which only changes the
+          query string, opens that tab rather than leaving the last one up. */}
       <AcademicsSettings
+        key={tab ?? "default"}
         subjects={subjects}
         rooms={rooms}
         slots={slots}

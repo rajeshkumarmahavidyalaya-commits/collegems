@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import {
   flexRender,
   getCoreRowModel,
@@ -88,6 +89,10 @@ export function DataTable<TData, TValue>({
   bulkActions,
 }: DataTableProps<TData, TValue>) {
   const t = useT();
+  // A table whose page does not manage column visibility still lets the
+  // toolbar's "Column visibility" menu work.
+  const [localVisibility, setLocalVisibility] = useState<VisibilityState>({});
+  const visibility = columnVisibility ?? localVisibility;
   const table = useReactTable({
     data,
     columns,
@@ -99,7 +104,7 @@ export function DataTable<TData, TValue>({
     state: {
       pagination: { pageIndex, pageSize },
       sorting,
-      columnVisibility: columnVisibility ?? {},
+      columnVisibility: visibility,
       columnFilters: columnFilters ?? [],
       rowSelection: rowSelection ?? {},
     },
@@ -107,9 +112,15 @@ export function DataTable<TData, TValue>({
       onSortingChange(typeof updater === "function" ? updater(sorting) : updater);
     },
     onColumnVisibilityChange: (updater) => {
-      onColumnVisibilityChange?.(
-        typeof updater === "function" ? updater(columnVisibility ?? {}) : updater,
-      );
+      const next = typeof updater === "function" ? updater(visibility) : updater;
+      if (onColumnVisibilityChange) onColumnVisibilityChange(next);
+      else setLocalVisibility(next);
+    },
+    // The toolbar's "Show N rows" goes through the table, so it lands here.
+    onPaginationChange: (updater) => {
+      const next = typeof updater === "function" ? updater({ pageIndex, pageSize }) : updater;
+      if (next.pageSize !== pageSize) onPageSizeChange(next.pageSize);
+      else if (next.pageIndex !== pageIndex) onPageChange(next.pageIndex);
     },
     onColumnFiltersChange: (updater) => {
       onColumnFiltersChange?.(
@@ -242,7 +253,9 @@ export function exportRowsToCsv<TData extends Record<string, unknown>>(
     columns
       .map((c) => {
         const value = row[c.key];
-        const str = value === null || value === undefined ? "" : String(value);
+        const raw = value === null || value === undefined ? "" : String(value);
+        // A spreadsheet runs a cell beginning = + - @ as a formula.
+        const str = /^[=+\-@\t\r]/.test(raw) ? `'${raw}` : raw;
         return `"${str.replace(/"/g, '""')}"`;
       })
       .join(","),

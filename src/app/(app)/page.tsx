@@ -11,7 +11,12 @@ import {
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { getUserContext } from "@/lib/auth/context";
-import { getLocale } from "@/lib/i18n/server";
+import Link from "next/link";
+import { getLocale, getT } from "@/lib/i18n/server";
+import { hasPermission } from "@/lib/auth/permissions";
+import { Button } from "@/components/ui/button";
+import { PageToolbar } from "@/components/page-toolbar";
+import { SchoolCalendar } from "@/components/dashboard/school-calendar";
 import { formatNumber } from "@/lib/i18n/format";
 import { StatCard } from "@/components/dashboard/stat-card";
 import { QuickActions } from "@/components/dashboard/quick-actions";
@@ -57,21 +62,46 @@ export const metadata = { title: "Dashboard" };
  *     withheld block is explained at the foot of the page; an empty one — no
  *     exam published, no register taken — says so in its own words.
  */
-export default async function DashboardPage() {
-  const ctx = await getUserContext();
-  const locale = await getLocale();
-  const supabase = await createClient();
+export default async function DashboardPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ month?: string }>;
+}) {
+  // The two buttons are drawn on the permissions their screens check; the
+  // screens remain the gate (rule 4).
+  const [{ month }, ctx, locale, t, supabase, canAdmit, canConfigure] = await Promise.all([
+    searchParams,
+    getUserContext(),
+    getLocale(),
+    getT(),
+    createClient(),
+    hasPermission("students.manage"),
+    hasPermission("academics.manage"),
+  ]);
 
   const { data, error } = await supabase.rpc("dashboard_summary");
   const brief = error ? null : parseDashboardSummary(data);
 
+  // The reference's green title bar, with the school's main actions. The
+  // school and the session are in the band above every page (SchoolContext).
   const heading = (
-    <div>
-      <h1 className="text-2xl font-semibold">Welcome back, {ctx?.displayName.split(" ")[0]}</h1>
-      <p className="text-sm text-muted-foreground">
-        {ctx?.tenantName} · {ctx?.currentSessionName ?? "No active session"}
-      </p>
-    </div>
+    <PageToolbar title={t("dashboard.toolbarTitle")}>
+      {canConfigure && (
+        <Button asChild>
+          <Link href="/academics?tab=classes">{t("nav.ref.classes")}</Link>
+        </Button>
+      )}
+      {canAdmit && (
+        <Button asChild>
+          <Link href="/students/new">{t("dashboard.addStudent")}</Link>
+        </Button>
+      )}
+      {canConfigure && (
+        <Button asChild>
+          <Link href="/setup">{t("nav.ref.setupWizard")}</Link>
+        </Button>
+      )}
+    </PageToolbar>
   );
 
   // The designed error state, per the checklist. Never a spinner on a blank
@@ -137,37 +167,6 @@ export default async function DashboardPage() {
     <div className="flex flex-col gap-6">
       {heading}
 
-      {/* Only while something is left to set up, and only the steps this
-          person may act on (0284). */}
-      <SetupChecklist />
-
-      {/* Staff and the principal get every module on one screen (0290); a
-          family keeps the few links that are theirs. Which audience sees which
-          is a tier, and a tier decides only what is shown (0208): the tiles
-          themselves are gated on the matrix inside module_overview(). */}
-      {ctx?.roleTier === "student" ? (
-        /* A student's own subjects is theirs by record, not by permission --
-           `subject_choice_save` takes the student from the login -- so this one
-           link follows what the login stands for (roles.subject), for display. */
-        <QuickActions
-          extra={
-            ctx?.roleSubject === "student"
-              ? [{ href: "/my-subjects", label: "My subjects", hint: "See and choose electives", icon: ListTodo }]
-              : []
-          }
-        />
-      ) : (
-        <ModuleGrid
-          fromBrief={{
-            fees: { count: brief.fees?.receipts_today ?? null },
-            staff_attendance: {
-              count: brief.staff_attendance?.marked ?? null,
-              total: brief.staff_attendance?.roll ?? null,
-            },
-          }}
-        />
-      )}
-
       {/* The headline row: the four numbers somebody wants before they have
           finished sitting down. */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
@@ -228,6 +227,43 @@ export default async function DashboardPage() {
           }
         />
       </div>
+
+      {/* The reference's month, under the figures: holidays, exams, fee due
+          dates and notices from school_calendar(), as each module's policies
+          allow this seat to see them. */}
+      <SchoolCalendar today={brief.today} month={month} locale={locale} />
+
+      {/* Only while something is left to set up, and only the steps this
+          person may act on (0284). */}
+      <SetupChecklist />
+
+      {/* Staff and the principal get every module on one screen (0290); a
+          family keeps the few links that are theirs. Which audience sees which
+          is a tier, and a tier decides only what is shown (0208): the tiles
+          themselves are gated on the matrix inside module_overview(). */}
+      {ctx?.roleTier === "student" ? (
+        /* A student's own subjects is theirs by record, not by permission --
+           `subject_choice_save` takes the student from the login -- so this one
+           link follows what the login stands for (roles.subject), for display. */
+        <QuickActions
+          extra={
+            ctx?.roleSubject === "student"
+              ? [{ href: "/my-subjects", label: "My subjects", hint: "See and choose electives", icon: ListTodo }]
+              : []
+          }
+        />
+      ) : (
+        <ModuleGrid
+          fromBrief={{
+            fees: { count: brief.fees?.receipts_today ?? null },
+            staff_attendance: {
+              count: brief.staff_attendance?.marked ?? null,
+              total: brief.staff_attendance?.roll ?? null,
+            },
+          }}
+        />
+      )}
+
 
       {/* Both registers, side by side. They were never on the same screen
           before, and "who is in today" is one question about a school, not two

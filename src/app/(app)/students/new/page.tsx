@@ -25,7 +25,7 @@ export default async function NewStudentPage() {
   if (!canManage) redirect("/students");
 
   return (
-    <div className="mx-auto flex w-full max-w-3xl flex-col gap-4">
+    <div className="reference-admission flex w-full flex-col gap-4">
       <div>
         <h1 className="text-2xl font-semibold">Admit student</h1>
         <p className="text-sm text-muted-foreground">

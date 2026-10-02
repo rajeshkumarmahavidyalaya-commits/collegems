@@ -3,7 +3,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { severityTone } from "@/lib/validations/settings";
 import { canChangeSettings, listSettingProblems, listSettings } from "./actions";
-import { SettingsList } from "./settings-list";
+import { SettingsTabs } from "./settings-tabs";
 
 export const metadata = { title: "School settings" };
 
@@ -21,8 +21,6 @@ export default async function SchoolSettingsPage() {
     listSettingProblems(),
     canChangeSettings(),
   ]);
-
-  const modules = [...new Set(settings.map((s) => s.module))];
 
   return (
     <div className="flex flex-col gap-6">
@@ -68,17 +66,7 @@ export default async function SchoolSettingsPage() {
         </section>
       )}
 
-      {modules.map((module) => (
-        <section key={module} aria-labelledby={`module-${module}`} className="flex flex-col gap-3">
-          <h2 id={`module-${module}`} className="text-lg font-semibold">
-            {module}
-          </h2>
-          <SettingsList
-            settings={settings.filter((s) => s.module === module)}
-            canManage={canManage}
-          />
-        </section>
-      ))}
+      <SettingsTabs settings={settings} canManage={canManage} />
     </div>
   );
 }

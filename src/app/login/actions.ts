@@ -30,7 +30,12 @@ export async function login(
     const t = await getT();
     // A login the college switched off (0289) is told so, rather than being
     // sent round the password-reset loop for a password that is correct.
-    return { error: error.code === "user_banned" ? t("login.switchedOff") : t("login.failed") };
+    if (error.code === "user_banned") return { error: t("login.switchedOff") };
+    // Only a refusal of the credentials is "they do not match". A network
+    // failure or a server error read as a wrong password sends somebody round
+    // the reset loop for a password that is correct.
+    if (error.code === "invalid_credentials" || error.status === 400) return { error: t("login.failed") };
+    return { error: t("login.unavailable") };
   }
 
   const next = formData.get("next");

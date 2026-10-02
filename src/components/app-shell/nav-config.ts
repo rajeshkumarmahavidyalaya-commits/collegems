@@ -1,5 +1,6 @@
 import type { LucideIcon } from "lucide-react";
 import type { MessageKey } from "@/lib/i18n/messages/en";
+import { referenceNavigation } from "./reference-navigation";
 import {
   CalendarDays,
   AlarmClock,
@@ -82,6 +83,8 @@ export type NavItem = {
 
 export type NavGroup = {
   title: string;
+  /** Drawn beside the module heading in the reference sidebar. */
+  icon?: LucideIcon;
   messageKey?: MessageKey;
   items: NavItem[];
 };
@@ -798,10 +801,14 @@ export const NAV_GROUPS: NavGroup[] = [
 ];
 
 export function navForRole(roleCode: string): NavGroup[] {
-  return NAV_GROUPS.map((group) => ({
-    ...group,
-    items: group.items.filter((item) => !item.roles || item.roles.includes(roleCode)),
-  })).filter((group) => group.items.length > 0);
+  // The filter decides what a role may be offered; the reference grouping only
+  // rearranges what survived it (see reference-navigation.ts).
+  return referenceNavigation(
+    NAV_GROUPS.map((group) => ({
+      ...group,
+      items: group.items.filter((item) => !item.roles || item.roles.includes(roleCode)),
+    })).filter((group) => group.items.length > 0),
+  );
 }
 
 /**
