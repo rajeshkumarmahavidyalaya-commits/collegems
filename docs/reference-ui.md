@@ -122,6 +122,15 @@ toolbar (Show N rows, Copy, CSV, Excel, PDF, Print, Column visibility).
 
 ### Measured, not fixed
 
+- **`/online-tests` times out for an administrator under load.**
+  `online_tests_list()` takes 193-486 ms on a quiet database, for a college
+  with no tests. The same join run directly takes 1-12 ms. The difference is
+  its four correlated subqueries on `online_test_questions` and
+  `online_test_attempts`: each one brings in that table's row-level security
+  policies (the plan carries 137 init plans). Under the sweep's load the
+  function took 3-34 s against the 8 s timeout. The fix is a migration that
+  reads each of the two tables once, grouped by test; it is not written yet.
+
 - **Statement timeouts recur under load.** `/library/issues` and `/students`
   each timed out once during the sweeps. The cause is not the cron jobs:
   `jobs_tick` and both schedule ticks stayed under 2.7 s over two hours. The
