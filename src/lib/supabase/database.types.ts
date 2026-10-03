@@ -670,6 +670,63 @@ export type Database = {
           },
         ]
       }
+      cash_entry_details: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          invoice_number: string | null
+          kind: string
+          note: string | null
+          party_name: string | null
+          tenant_id: string
+          title: string
+          updated_at: string
+          voucher_id: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          invoice_number?: string | null
+          kind: string
+          note?: string | null
+          party_name?: string | null
+          tenant_id: string
+          title: string
+          updated_at?: string
+          voucher_id: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          invoice_number?: string | null
+          kind?: string
+          note?: string | null
+          party_name?: string | null
+          tenant_id?: string
+          title?: string
+          updated_at?: string
+          voucher_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cash_entry_details_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cash_entry_details_voucher_fkey"
+            columns: ["tenant_id", "voucher_id"]
+            isOneToOne: true
+            referencedRelation: "journal_vouchers"
+            referencedColumns: ["tenant_id", "id"]
+          },
+        ]
+      }
       certificate_templates: {
         Row: {
           body: string
@@ -8355,6 +8412,21 @@ export type Database = {
         }[]
       }
       academics_year_end: { Args: { p_to_session_id: string }; Returns: Json }
+      accounts_cash_entries: {
+        Args: { p_from: string; p_kind: string; p_to: string }
+        Returns: {
+          amount: number
+          category: string
+          entry_date: string
+          invoice_number: string
+          note: string
+          party_name: string
+          status: string
+          title: string
+          voucher_id: string
+          voucher_number: string
+        }[]
+      }
       accounts_chart_balances: {
         Args: { p_as_of?: string }
         Returns: {
@@ -8402,6 +8474,20 @@ export type Database = {
           p_narration: string
           p_on: string
           p_paid_via_id: string
+        }
+        Returns: string
+      }
+      accounts_record_cash_entry: {
+        Args: {
+          p_account_id: string
+          p_amount: number
+          p_invoice_number?: string
+          p_kind: string
+          p_note?: string
+          p_on: string
+          p_paid_via_id: string
+          p_party_name?: string
+          p_title: string
         }
         Returns: string
       }
@@ -11629,6 +11715,21 @@ export type Database = {
         Returns: boolean
       }
       student_delete: { Args: { p_student_id: string }; Returns: Json }
+      student_birthdays: {
+        Args: { p_from: string; p_to: string }
+        Returns: {
+          admission_number: string
+          class_name: string
+          date_of_birth: string
+          email: string
+          full_name: string
+          next_birthday: string
+          phone: string
+          section_name: string
+          student_id: string
+          turns: number
+        }[]
+      }
       student_end_relationships: {
         Args: {
           p_on: string

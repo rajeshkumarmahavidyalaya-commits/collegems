@@ -11,6 +11,7 @@ import {
   BookOpen,
   BookOpenCheck,
   BookText,
+  Cake,
   Boxes,
   Bus,
   CalendarCheck,
@@ -30,6 +31,7 @@ import {
   Fingerprint,
   FolderOpen,
   GraduationCap,
+  HandCoins,
   Hourglass,
   IdCard,
   IndianRupee,
@@ -45,6 +47,7 @@ import {
   Palette,
   PenLine,
   PenSquare,
+  Receipt,
   Plane,
   Radio,
   ScanLine,
@@ -111,6 +114,15 @@ export const NAV_GROUPS: NavGroup[] = [
         messageKey: "nav.students",
         href: "/students",
         icon: GraduationCap,
+        roles: ["admin", "teacher", "accountant", "librarian"],
+      },
+      // The reference's birthday list. Read from the roll through the same
+      // policies, so it is offered to the same four roles as the roll.
+      {
+        title: "Student Birthdays",
+        messageKey: "nav.studentBirthdays",
+        href: "/students/birthdays",
+        icon: Cake,
         roles: ["admin", "teacher", "accountant", "librarian"],
       },
       // Before a student exists. An enquiry holds a child's date of birth and a
@@ -588,6 +600,23 @@ export const NAV_GROUPS: NavGroup[] = [
         messageKey: "nav.voucherBook",
         href: "/accounts/vouchers",
         icon: BookText,
+        roles: ["admin", "accountant"],
+      },
+      // The reference's Expenses and Donation: vouchers on an expense or an
+      // income account, read and written through the books (0321), so the
+      // same two roles as the ledger.
+      {
+        title: "Expenses",
+        messageKey: "nav.expenses",
+        href: "/accounts/expenses",
+        icon: Receipt,
+        roles: ["admin", "accountant"],
+      },
+      {
+        title: "Donation",
+        messageKey: "nav.donations",
+        href: "/accounts/donations",
+        icon: HandCoins,
         roles: ["admin", "accountant"],
       },
       // The store sits in Finance rather than with the academic modules: what

@@ -74,6 +74,38 @@ toolbar (Show N rows, Copy, CSV, Excel, PDF, Print, Column visibility).
 - **Admission** is titled "New Admission For Session: ...", with sections
   named Personal Detail and Admission Detail.
 
+**Built on 3 Oct 2026 (migration `0321`):**
+
+- **Expenses and Donation**, with their category pages and add forms, in the
+  reference's columns and fields: Title, Category, Supplier or Doner Name,
+  Amount, Invoice Number, Date, Note, Action; a Start/End Date filter, a
+  total and Export. An expense is a posted voucher on an expense account, a
+  donation one on an income account, and a category *is* that account, so
+  the books, the trial balance and these screens cannot disagree.
+  `accounts_record_cash_entry` posts through `accounts_record_cash` (one way
+  money reaches the books) and keeps the title, party, invoice number and
+  note in `cash_entry_details`. The Action column is **Reverse**, never Edit
+  or Delete: a posted voucher is corrected by an opposite one (rule 6), and a
+  reversed entry stays listed, struck through, and out of the total. Gated
+  on `accounts.view` / `accounts.post` / `accounts.manage`, held by
+  accountants and administrators. **Attachment is not offered**: nothing
+  stores a file against a voucher yet, and a file field that keeps nothing
+  would be a control that lies.
+- **Student Birthdays**: `student_birthdays(from, to)`, INVOKER over the
+  roll, soonest first, with the age each child turns. A range crossing the
+  new year works, 29 February falls on 28 February in a common year, and a
+  range of a year or more is refused because a birthday would then appear
+  twice. Opens on the next thirty days.
+
+Verified in the browser on Northgate as the administrator (an expense and a
+donation recorded, listed, totalled and reversed; a duplicate category
+refused; no horizontal scroll at 375 px) and as a teacher (refused in a
+sentence; no Expenses or Donation in the menu; Birthdays reachable). The
+walkthrough's vouchers JV-2025-00001 to -00005 in Northgate are those tests,
+each reversed. Northgate's two students have no date of birth, so the
+birthday list was checked with dates set inside a rolled-back transaction
+(29 February, a new-year range, a leap year).
+
 **Still differs:**
 
 - **"Unpaid Invoices"** on the dashboard is shown as students with dues.
@@ -93,9 +125,8 @@ toolbar (Show N rows, Copy, CSV, Excel, PDF, Print, Column visibility).
 - **Our extras stay** under the reference dashboard: the setup checklist,
   the module grid, the two registers and the charts.
 - **Modules this backend does not have**: Medium, House, Activities, Lessons
-  and Chapters, Tickets, Gate Pass, Chat, Staff Rating, Donation, Expenses as
-  their own screen, ID card layouts, transfer between schools, webcam and QR
-  attendance, Student Birthdays.
+  and Chapters, Tickets, Gate Pass, Chat, Staff Rating, ID card layouts,
+  transfer between schools, webcam and QR attendance.
 - **No pixel comparison.** Layout and structure were matched against
   screenshots side by side. The reference's own CSS and images were not
   copied.
@@ -162,10 +193,12 @@ toolbar (Show N rows, Copy, CSV, Excel, PDF, Print, Column visibility).
 | Calendar | `/calendar` | `MonthCalendar` + agenda | `school_calendar()` | holidays, exams, instalments, notices | invoker, each source's policies |
 | Fee invoices, balances, collect, history | `/fees/*` | existing, new toolbar | existing | `invoices`, `ledger_entries` | existing |
 | Library, staff | `/library/*`, `/staff` | existing, new toolbar | existing | as before | existing |
+| Expenses, Donation (+ categories, add) | `/accounts/expenses`, `/accounts/donations` (new) | `cash-book-pages.tsx`, `cash-book.tsx` | `accounts_record_cash_entry`, `accounts_cash_entries` (0321), `accounts_reverse_voucher` | `journal_vouchers`, `voucher_lines`, `cash_entry_details`, `accounts` | `accounts.view` / `.post` / `.manage` |
+| Students Birthdays | `/students/birthdays` (new) | page | `student_birthdays` (0321) | `students`, `people`, `enrolments` | `students.view`; RLS decides rows |
 | Platform "School Management" | `/platform` | toolbar, platform menu, `PageToolbar` | `platform_colleges()` | metadata only (0209) | operator only |
 
 Not reproduced, because this backend has no such capability: Medium, House,
-ticketing, chat, staff ratings, donation-specific screens, gate pass, and the
+ticketing, chat, staff ratings, gate pass, and the
 plugin's own license, reset and uninstall screens. Nothing in the menu
 pretends otherwise.
 

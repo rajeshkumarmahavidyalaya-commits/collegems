@@ -262,3 +262,19 @@ written:
 **The usual caveat:** the demo database has only the two admin logins, so the
 accountant-versus-admin distinction is asserted structurally rather than
 exercised by a real second account.
+
+## Expenses and Donation (0321)
+
+The reference's two office screens over these books. An expense is a posted
+voucher on an expense account and a donation one on an income account; the
+reference's "category" is that account, added under the chart's root of the
+type by `addCashCategory` (`accounts.manage`, the same write the chart makes).
+`accounts_record_cash_entry` calls `accounts_record_cash` and then writes
+`cash_entry_details` (title, supplier or donor, invoice number, note) in the
+same transaction, so there is still one function that builds and posts a cash
+voucher. The details table has SELECT on `accounts.view` and INSERT on
+`accounts.post`, and **no UPDATE or DELETE policy**: like the voucher it
+describes, it is corrected by a reversing voucher, never edited.
+`accounts_cash_entries(kind, from, to)` lists them, newest first; the screen
+reads at most 2,000 and says so when there are more. The function's INSERT has
+no row-count branch, deliberately: a failed `WITH CHECK` raises (0257).

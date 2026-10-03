@@ -597,3 +597,204 @@ export async function reopenYear(voucherId: string, reason: string): Promise<Act
   return { ok: true, data: undefined };
 }
 
+
+// ---------------------------------------------------------------------------
+// Expenses and donations, as the reference keeps them (0321)
+// ---------------------------------------------------------------------------
+
+export type CashEntry = {
+  voucherId: string;
+  voucherNumber: string;
+  date: string;
+  title: string;
+  category: string;
+  partyName: string | null;
+  amount: number;
+  invoiceNumber: string | null;
+  note: string | null;
+  /** A reversing voucher points at this one: the entry was taken back. */
+  reversed: boolean;
+};
+
+/** A list a person reads, not an export: past this it says it is capped. */
+const CASH_ENTRY_LIMIT = 2000;
+
+/**
+ * The reference's Expenses and Donation lists: `accounts_cash_entries` over a
+ * date range, newest first. INVOKER, so RLS on the vouchers and their details
+ * decides -- an accountant and an administrator see them, nobody else.
+ */
+export async function listCashEntries(
+  kind: "expense" | "income",
+  from: string | null,
+  to: string | null,
+): Promise<{ rows: CashEntry[]; capped: boolean; limit: number }> {
+  const date = /^\d{4}-\d{2}-\d{2}$/;
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .rpc("accounts_cash_entries", {
+      p_kind: kind,
+      // Null means open-ended; the generated types cannot say so.
+      p_from: (from && date.test(from) ? from : null) as string,
+      p_to: (to && date.test(to) ? to : null) as string,
+    })
+    .limit(CASH_ENTRY_LIMIT + 1);
+  if (error) throw new Error(error.message);
+  const rows = (data ?? []).slice(0, CASH_ENTRY_LIMIT);
+
+  // Which of them a later voucher reversed. Read through the same policies.
+  const ids = rows.map((r) => r.voucher_id);
+  const reversed = new Set<string>();
+  if (ids.length > 0) {
+    const { data: rev, error: revError } = await supabase
+      .from("journal_vouchers")
+      .select("reverses_voucher_id")
+      .in("reverses_voucher_id", ids)
+      .eq("status", "posted");
+    if (revError) throw new Error(revError.message);
+    for (const r of rev ?? []) if (r.reverses_voucher_id) reversed.add(r.reverses_voucher_id);
+  }
+
+  return {
+    capped: (data ?? []).length > CASH_ENTRY_LIMIT,
+    limit: CASH_ENTRY_LIMIT,
+    rows: rows.map((r) => ({
+      voucherId: r.voucher_id,
+      voucherNumber: r.voucher_number,
+      date: r.entry_date,
+      title: r.title,
+      category: r.category,
+      partyName: r.party_name,
+      amount: Number(r.amount),
+      invoiceNumber: r.invoice_number,
+      note: r.note,
+      reversed: reversed.has(r.voucher_id),
+    })),
+  };
+}
+
+/**
+ * Add New Expense / Add New Donation. `accounts_record_cash_entry` posts the
+ * voucher through `accounts_record_cash` -- one way money reaches the books --
+ * and keeps the title, the supplier or donor, the invoice number and the note
+ * beside it. Checked here as well as in Postgres; the function is the gate.
+ */
+export async function recordCashEntry(input: {
+  kind: "expense" | "income";
+  title: string;
+  accountId: string;
+  paidViaId: string;
+  partyName: string;
+  amount: string;
+  invoiceNumber: string;
+  on: string;
+  note: string;
+}): Promise<ActionResult<{ number: string }>> {
+  const uuid = /^[0-9a-f-]{36}$/i;
+  if (input.kind !== "expense" && input.kind !== "income") return fail("Record an expense or a donation.");
+  const fieldErrors: Record<string, string[]> = {};
+  if (input.title.trim().length < 2) fieldErrors.title = ["Give it a title."];
+  if (input.title.trim().length > 160) fieldErrors.title = ["Keep the title under 160 characters."];
+  if (!uuid.test(input.accountId)) fieldErrors.accountId = ["Choose a category."];
+  if (!uuid.test(input.paidViaId)) fieldErrors.paidViaId = ["Choose the cash or bank account."];
+  const amount = Number(input.amount);
+  if (input.amount.trim() === "" || !Number.isFinite(amount) || amount <= 0) {
+    fieldErrors.amount = ["Enter an amount greater than zero."];
+  } else if (Math.round(amount * 100) !== amount * 100) {
+    fieldErrors.amount = ["An amount has at most two decimal places."];
+  }
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(input.on)) fieldErrors.on = ["Pick a date."];
+  if (input.partyName.length > 160) fieldErrors.partyName = ["Keep the name under 160 characters."];
+  if (input.invoiceNumber.length > 60) fieldErrors.invoiceNumber = ["Keep the invoice number under 60 characters."];
+  if (input.note.length > 2000) fieldErrors.note = ["Keep the note under 2,000 characters."];
+  if (Object.keys(fieldErrors).length > 0) {
+    return { ok: false, error: "Check the highlighted fields.", fieldErrors };
+  }
+
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("accounts_record_cash_entry", {
+    p_kind: input.kind,
+    p_account_id: input.accountId,
+    p_paid_via_id: input.paidViaId,
+    p_amount: amount,
+    p_on: input.on,
+    p_title: input.title,
+    p_party_name: input.partyName || undefined,
+    p_invoice_number: input.invoiceNumber || undefined,
+    p_note: input.note || undefined,
+  });
+  if (error) return fail(error.message);
+
+  const path = input.kind === "expense" ? "/accounts/expenses" : "/accounts/donations";
+  revalidatePath(path);
+  revalidatePath("/accounts");
+  revalidatePath("/accounts/vouchers");
+  return { ok: true, data: { number: data as string } };
+}
+
+/**
+ * Add Expense Category / Add Donation Category. A category is a postable
+ * account under the chart's root of that type, so it is the same thing the
+ * chart of accounts edits and needs the same permission (`accounts.manage`,
+ * which the `accounts` write policy checks). The reference asks only for a
+ * name, so the code is the next free hundred under the root.
+ */
+export async function addCashCategory(
+  kind: "expense" | "income",
+  name: string,
+): Promise<ActionResult<{ code: string }>> {
+  const trimmed = name.trim();
+  if (kind !== "expense" && kind !== "income") return fail("Choose expense or donation.");
+  if (trimmed.length < 2 || trimmed.length > 120) {
+    return { ok: false, error: "Check the highlighted fields.", fieldErrors: { name: ["Name the category (2-120 characters)."] } };
+  }
+  const ctx = await getUserContext();
+  if (!ctx) return fail("Not signed in.");
+
+  const supabase = await createClient();
+  const { data: accounts, error } = await supabase
+    .from("accounts")
+    .select("id, code, name, parent_id, is_postable")
+    .eq("account_type", kind);
+  if (error) return fail(error.message);
+  if (accounts.some((a) => a.name.toLowerCase() === trimmed.toLowerCase())) {
+    return { ok: false, error: "There is already a category with that name.", fieldErrors: { name: ["There is already a category with that name."] } };
+  }
+  const root = accounts.find((a) => a.parent_id === null && !a.is_postable);
+  if (!root) return fail(`The chart has no ${kind} heading to put a category under. Add one under Accounts first.`);
+
+  // The next hundred under the root (5400 -> 5500), else the next number.
+  const base = Number(root.code);
+  const used = new Set(accounts.map((a) => a.code));
+  const numeric = accounts.map((a) => Number(a.code)).filter((n) => Number.isInteger(n) && n > base && n < base + 1000);
+  const top = numeric.length ? Math.max(...numeric) : base;
+  let code: string | null = null;
+  if (Number.isInteger(base)) {
+    for (const candidate of [Math.floor(top / 100) * 100 + 100, top + 10, top + 1]) {
+      if (candidate < base + 1000 && !used.has(String(candidate))) {
+        code = String(candidate);
+        break;
+      }
+    }
+  }
+  if (!code) code = `${kind === "expense" ? "EXP" : "INC"}-${accounts.length + 1}`;
+
+  const { error: insertError } = await supabase.from("accounts").insert({
+    tenant_id: ctx.tenantId,
+    code,
+    name: trimmed,
+    account_type: kind,
+    parent_id: root.id,
+    is_postable: true,
+    is_active: true,
+  });
+  if (insertError) {
+    if (insertError.code === "23505") return fail("That code was taken a moment ago. Try again.");
+    if (insertError.code === "42501") return fail("Adding a category changes the chart of accounts, which needs accounts.manage.");
+    return fail(insertError.message);
+  }
+
+  revalidatePath(kind === "expense" ? "/accounts/expenses/categories" : "/accounts/donations/categories");
+  revalidatePath("/accounts");
+  return { ok: true, data: { code } };
+}

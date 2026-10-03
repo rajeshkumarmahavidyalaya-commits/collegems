@@ -46,7 +46,7 @@ const MODULES: { title: string; messageKey: MessageKey; icon: NavGroup["icon"]; 
     title: "SM Student",
     messageKey: "nav.module.student",
     icon: GraduationCap,
-    paths: ["/front-office", "/students", "/students/import", "/students/id-cards", "/promotion", "/certificates"],
+    paths: ["/front-office", "/students", "/students/birthdays", "/students/import", "/students/id-cards", "/promotion", "/certificates"],
   },
   {
     title: "SM Administrator",
@@ -60,7 +60,7 @@ const MODULES: { title: string; messageKey: MessageKey; icon: NavGroup["icon"]; 
     icon: Wallet,
     paths: [
       "/fees/setup", "/fees/instalments", "/fees/concessions", "/fees/invoices", "/fees/counter", "/fees",
-      "/fees/daybook", "/fees/family", "/accounts", "/accounts/vouchers",
+      "/fees/daybook", "/fees/family", "/accounts", "/accounts/vouchers", "/accounts/expenses", "/accounts/donations",
     ],
   },
   { title: "SM Examination", messageKey: "nav.module.examination", icon: FileSpreadsheet, paths: ["/exams", "/class-tests", "/online-tests", "/report-card"] },
