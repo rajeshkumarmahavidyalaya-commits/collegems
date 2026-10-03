@@ -20,10 +20,13 @@ export function SectionPicker({
   examId,
   sections,
   value,
+  page = "report-cards",
 }: {
   examId: string;
   sections: { id: string; label: string }[];
   value: string | null;
+  /** Which of the exam's per-class screens the picker navigates within. */
+  page?: "report-cards" | "admit-cards";
 }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
@@ -35,7 +38,7 @@ export function SectionPicker({
         value={value ?? undefined}
         onValueChange={(next) => {
           startTransition(() => {
-            router.push(`/exams/${examId}/report-cards?section=${next}`);
+            router.push(`/exams/${examId}/${page}?section=${next}`);
           });
         }}
       >

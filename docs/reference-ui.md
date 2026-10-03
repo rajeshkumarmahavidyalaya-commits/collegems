@@ -97,12 +97,28 @@ toolbar (Show N rows, Copy, CSV, Excel, PDF, Print, Column visibility).
   range of a year or more is refused because a birthday would then appear
   twice. Opens on the next thirty days.
 
+- **Admit Cards** (migration `0322`): `/exams/admit-cards` lists this
+  year's exams; each opens its cards a class at a time, printed by the
+  browser. `exams_admit_cards(exam, class)` reads every line from a row: the
+  class's active children, the papers each sits (through
+  `student_takes_subject`, so an elective nobody chose is not on their card),
+  each paper's date and exam period, and the room and seat from a
+  **published** seat plan only. A paper with no published seat prints a dash,
+  and the screen says how many and where to publish. There is no Generate
+  step to copy: the reference's Generate is the moment a seat plan is
+  published. Gated on `exams.manage` inside the function (a teacher is
+  refused in a sentence, never shown an empty class). Not printed: the
+  photograph and the exam centre, which this backend does not store per exam.
+
 Verified in the browser on Northgate as the administrator (an expense and a
 donation recorded, listed, totalled and reversed; a duplicate category
 refused; no horizontal scroll at 375 px) and as a teacher (refused in a
 sentence; no Expenses or Donation in the menu; Birthdays reachable). The
 walkthrough's vouchers JV-2025-00001 to -00005 in Northgate are those tests,
-each reversed. Northgate's two students have no date of birth, so the
+each reversed. Admit cards were checked on a "Walkthrough Term Exam" kept in
+Northgate (two papers, one published seat plan): the seated paper shows Walkthrough
+Hall, seat 1; the other a dash and the note; the print view is one clean card;
+a teacher is refused; no horizontal scroll at 375 px. Northgate's two students have no date of birth, so the
 birthday list was checked with dates set inside a rolled-back transaction
 (29 February, a new-year range, a leap year).
 
@@ -194,6 +210,7 @@ birthday list was checked with dates set inside a rolled-back transaction
 | Fee invoices, balances, collect, history | `/fees/*` | existing, new toolbar | existing | `invoices`, `ledger_entries` | existing |
 | Library, staff | `/library/*`, `/staff` | existing, new toolbar | existing | as before | existing |
 | Expenses, Donation (+ categories, add) | `/accounts/expenses`, `/accounts/donations` (new) | `cash-book-pages.tsx`, `cash-book.tsx` | `accounts_record_cash_entry`, `accounts_cash_entries` (0321), `accounts_reverse_voucher` | `journal_vouchers`, `voucher_lines`, `cash_entry_details`, `accounts` | `accounts.view` / `.post` / `.manage` |
+| Admit Cards | `/exams/admit-cards`, `/exams/[examId]/admit-cards` (new) | pages, `SectionPicker`, `PrintButton` | `exams_admit_cards` (0322) | `exam_subjects`, `enrolments`, `exam_seat_allocations` | `exams.manage` inside the RPC |
 | Students Birthdays | `/students/birthdays` (new) | page | `student_birthdays` (0321) | `students`, `people`, `enrolments` | `students.view`; RLS decides rows |
 | Platform "School Management" | `/platform` | toolbar, platform menu, `PageToolbar` | `platform_colleges()` | metadata only (0209) | operator only |
 

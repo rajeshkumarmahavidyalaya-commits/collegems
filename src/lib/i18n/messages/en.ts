@@ -114,6 +114,7 @@ export const en = {
   "nav.studentBirthdays": "Student Birthdays",
   "nav.expenses": "Expenses",
   "nav.donations": "Donation",
+  "nav.admitCards": "Admit Cards",
   "nav.insight": "Reports and alerts",
   "nav.communication": "Communication",
   "nav.compose": "Compose",

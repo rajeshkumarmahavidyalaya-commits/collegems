@@ -289,6 +289,18 @@ export const NAV_GROUPS: NavGroup[] = [
         icon: PenSquare,
         roles: ["admin", "teacher"],
       },
+      // Admit cards are printed on exams.manage, which a college gives its
+      // examination officer -- often a teacher -- so a teacher is a candidate
+      // for it; the page refuses in a sentence until the matrix says yes.
+      // Printed a few times a year, in exam season, so it folds into Setup.
+      {
+        title: "Admit Cards",
+        messageKey: "nav.admitCards",
+        href: "/exams/admit-cards",
+        setup: true,
+        icon: IdCard,
+        roles: ["admin", "teacher"],
+      },
       {
         title: "Promotion",
         messageKey: "nav.promotion",

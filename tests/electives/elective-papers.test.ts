@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 
 /**
  * A paper in an elective belongs only to the children who chose it (0285).
- * Three functions decide who sits a paper, and each must ask the one
+ * Four functions decide who sits a paper, and each must ask the one
  * definition, `student_takes_subject`. Read from the *latest* migration that
  * defines each function, because migrations change a function by redefining it
  * and "what does it do now" is a question about the highest-numbered file.
@@ -27,12 +27,21 @@ function latestBody(name: string): { file: string; body: string } {
 }
 
 describe("an elective paper is sat only by those who chose it", () => {
-  for (const name of ["exams_mark_sheet", "exams_subject_breakdown", "exams_enter_marks"]) {
+  for (const name of ["exams_mark_sheet", "exams_subject_breakdown", "exams_enter_marks", "exams_admit_cards"]) {
     it(`${name} asks student_takes_subject`, () => {
       const { file, body } = latestBody(name);
       expect(body, `${name} in ${file}`).toMatch(/public\.student_takes_subject\(/);
     });
   }
+
+  it("prints only a published seat on an admit card, and refuses without exams.manage (0322)", () => {
+    const { body } = latestBody("exams_admit_cards");
+    // A draft plan is the officer's working copy; a card must not promise it.
+    expect(body).toMatch(/a\.run_status = 'published'/);
+    const gate = body.indexOf("role_has_permission('exams.manage')");
+    expect(gate).toBeGreaterThan(0);
+    expect(gate).toBeLessThan(body.indexOf("return query"));
+  });
 
   it("refuses a mark for a child who did not choose the subject, rather than storing it", () => {
     const { body } = latestBody("exams_enter_marks");

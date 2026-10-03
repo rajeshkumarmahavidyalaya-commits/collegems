@@ -97,6 +97,7 @@ export const ur: Messages = {
   "nav.studentBirthdays": "طلبہ کی سالگرہ",
   "nav.expenses": "اخراجات",
   "nav.donations": "عطیات",
+  "nav.admitCards": "داخلہ کارڈ",
   "nav.insight": "بصیرت",
   "nav.communication": "رابطہ",
   "nav.compose": "تحریر کریں",

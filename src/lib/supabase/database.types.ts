@@ -9067,6 +9067,19 @@ export type Database = {
         }[]
       }
       exam_seating_rules: { Args: { p_rules?: Json }; Returns: Json }
+      exams_admit_cards: {
+        Args: { p_exam_id: string; p_section_id: string }
+        Returns: {
+          admission_number: string
+          class_name: string
+          date_of_birth: string
+          full_name: string
+          papers: Json
+          roll_number: string
+          section_name: string
+          student_id: string
+        }[]
+      }
       exams_announce_results: { Args: { p_exam_id: string }; Returns: Json }
       exams_attendance_summary: {
         Args: { p_session_id: string; p_student_id: string; p_upto?: string }

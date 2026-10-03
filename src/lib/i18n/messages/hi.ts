@@ -97,6 +97,7 @@ export const hi: Messages = {
   "nav.studentBirthdays": "विद्यार्थियों के जन्मदिन",
   "nav.expenses": "व्यय",
   "nav.donations": "दान",
+  "nav.admitCards": "प्रवेश पत्र",
   "nav.insight": "विश्लेषण",
   "nav.communication": "संचार",
   "nav.compose": "लिखें",

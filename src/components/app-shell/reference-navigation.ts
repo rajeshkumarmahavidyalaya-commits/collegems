@@ -63,7 +63,7 @@ const MODULES: { title: string; messageKey: MessageKey; icon: NavGroup["icon"]; 
       "/fees/daybook", "/fees/family", "/accounts", "/accounts/vouchers", "/accounts/expenses", "/accounts/donations",
     ],
   },
-  { title: "SM Examination", messageKey: "nav.module.examination", icon: FileSpreadsheet, paths: ["/exams", "/class-tests", "/online-tests", "/report-card"] },
+  { title: "SM Examination", messageKey: "nav.module.examination", icon: FileSpreadsheet, paths: ["/exams", "/exams/admit-cards", "/class-tests", "/online-tests", "/report-card"] },
   { title: "SM Library", messageKey: "nav.module.library", icon: Library, paths: ["/library/books", "/library/issues", "/library/members"] },
   { title: "SM Transport", messageKey: "nav.module.transport", icon: Bus, paths: ["/transport", "/transport/assignments", "/arrangements"] },
   { title: "SM Hostel", messageKey: "nav.module.hostel", icon: BedDouble, paths: ["/hostel"] },
