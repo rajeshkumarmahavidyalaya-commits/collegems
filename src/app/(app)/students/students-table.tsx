@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
@@ -19,10 +19,10 @@ import {
 } from "@/components/ui/select";
 import { DataTable } from "@/components/data-table/data-table";
 import { loadAllPages } from "@/components/data-table/table-exports";
-import { useT } from "@/components/providers/i18n-provider";
+import { useI18n, useT } from "@/components/providers/i18n-provider";
 import { DataTableColumnHeader } from "@/components/data-table/data-table-column-header";
 import { DataTableToolbar } from "@/components/data-table/data-table-toolbar";
-import { STUDENT_STATUSES } from "@/lib/validations/students-display";
+import { STUDENT_SEARCH_FIELDS, STUDENT_STATUSES, type StudentSearchField } from "@/lib/validations/students-display";
 import { listStudents, type StudentRow } from "./actions";
 
 /** Status is never colour-only -- the badge always carries its label. */
@@ -33,76 +33,103 @@ function statusVariant(status: string): "default" | "secondary" | "success" | "w
   return "default";
 }
 
-const columns: ColumnDef<StudentRow>[] = [
-  {
-    accessorKey: "admissionNumber",
-    header: ({ column }) => <DataTableColumnHeader column={column} title="Admission no." />,
-    cell: ({ row }) => (
-      <Link
-        href={`/students/${row.original.id}`}
-        className="font-mono text-xs underline-offset-4 hover:underline"
-        onClick={(e) => e.stopPropagation()}
-      >
-        {row.original.admissionNumber}
-      </Link>
-    ),
-    meta: { label: "Admission no." },
-  },
-  {
-    accessorKey: "fullName",
-    header: "Name",
-    cell: ({ row }) => <span className="font-medium">{row.original.fullName}</span>,
-    enableSorting: false,
-    meta: { label: "Name" },
-  },
-  {
-    accessorKey: "sectionLabel",
-    header: "Class · section",
-    cell: ({ row }) =>
-      row.original.sectionLabel ? (
-        <span>{row.original.sectionLabel}</span>
-      ) : (
-        <span className="text-muted-foreground">Not enrolled</span>
+/**
+ * The reference's columns, in its order. A factory rather than a module-scope
+ * array because the admission date is formatted in the reader's locale, and a
+ * list built before render has no component for a hook to belong to (rule 15).
+ */
+function studentColumns(formatDate: (value: string | null) => string): ColumnDef<StudentRow>[] {
+  const dash = <span className="text-muted-foreground">—</span>;
+  return [
+    {
+      accessorKey: "fullName",
+      header: "Student Name",
+      cell: ({ row }) => (
+        <Link
+          href={`/students/${row.original.id}`}
+          className="font-medium underline-offset-4 hover:underline"
+          onClick={(e) => e.stopPropagation()}
+        >
+          {row.original.fullName}
+        </Link>
       ),
-    enableSorting: false,
-    meta: { label: "Class · section" },
-  },
-  {
-    accessorKey: "rollNumber",
-    header: "Roll",
-    cell: ({ row }) => (
-      <span className="font-mono text-xs tabular-nums">{row.original.rollNumber ?? "—"}</span>
-    ),
-    enableSorting: false,
-    meta: { label: "Roll" },
-  },
-  {
-    accessorKey: "guardianName",
-    header: "Primary guardian",
-    cell: ({ row }) => row.original.guardianName ?? <span className="text-muted-foreground">—</span>,
-    enableSorting: false,
-    meta: { label: "Primary guardian" },
-  },
-  {
-    accessorKey: "phone",
-    header: "Phone",
-    cell: ({ row }) => (
-      <span className="font-mono text-xs">{row.original.phone ?? "—"}</span>
-    ),
-    enableSorting: false,
-    meta: { label: "Phone" },
-  },
-  {
-    accessorKey: "status",
-    header: ({ column }) => <DataTableColumnHeader column={column} title="Status" />,
-    cell: ({ row }) => (
-      <Badge variant={statusVariant(row.original.status)} className="capitalize">
-        {row.original.status}
-      </Badge>
-    ),
-    meta: { label: "Status" },
-  },
-];
+      enableSorting: false,
+      meta: { label: "Student Name" },
+    },
+    {
+      accessorKey: "admissionNumber",
+      header: ({ column }) => <DataTableColumnHeader column={column} title="Admission Number" />,
+      cell: ({ row }) => <span className="font-mono text-xs">{row.original.admissionNumber}</span>,
+      meta: { label: "Admission Number" },
+    },
+    {
+      accessorKey: "phone",
+      header: "Phone",
+      cell: ({ row }) => (row.original.phone ? <span className="font-mono text-xs">{row.original.phone}</span> : dash),
+      enableSorting: false,
+      meta: { label: "Phone" },
+    },
+    {
+      accessorKey: "email",
+      header: "Email",
+      cell: ({ row }) => row.original.email ?? dash,
+      enableSorting: false,
+      meta: { label: "Email" },
+    },
+    {
+      accessorKey: "className",
+      header: "Class",
+      cell: ({ row }) =>
+        row.original.className ?? <span className="text-muted-foreground">Not enrolled</span>,
+      enableSorting: false,
+      meta: { label: "Class" },
+    },
+    {
+      accessorKey: "sectionName",
+      header: "Section",
+      cell: ({ row }) => row.original.sectionName ?? dash,
+      enableSorting: false,
+      meta: { label: "Section" },
+    },
+    {
+      accessorKey: "rollNumber",
+      header: "Roll Number",
+      cell: ({ row }) => (
+        <span className="font-mono text-xs tabular-nums">{row.original.rollNumber ?? "—"}</span>
+      ),
+      enableSorting: false,
+      meta: { label: "Roll Number" },
+    },
+    {
+      accessorKey: "status",
+      header: ({ column }) => <DataTableColumnHeader column={column} title="Status" />,
+      cell: ({ row }) => (
+        <Badge variant={statusVariant(row.original.status)} className="capitalize">
+          {row.original.status}
+        </Badge>
+      ),
+      meta: { label: "Status" },
+    },
+    {
+      accessorKey: "guardianName",
+      header: "Primary guardian",
+      cell: ({ row }) => row.original.guardianName ?? dash,
+      enableSorting: false,
+      meta: { label: "Primary guardian" },
+    },
+    {
+      accessorKey: "admissionDate",
+      header: ({ column }) => <DataTableColumnHeader column={column} title="Admission Date" />,
+      cell: ({ row }) =>
+        row.original.admissionDate ? (
+          <span className="whitespace-nowrap">{formatDate(row.original.admissionDate)}</span>
+        ) : (
+          dash
+        ),
+      meta: { label: "Admission Date" },
+    },
+  ];
+}
 
 export function StudentsTable({
   sections,
@@ -122,12 +149,17 @@ export function StudentsTable({
   // The reference's "Search Students" panel: a method, its field, and a button
   // that applies it to the same query the table below reads.
   const t = useT();
+  const { formatDate } = useI18n();
+  const columns = useMemo(() => studentColumns((v) => formatDate(v)), [formatDate]);
+  const [searchField, setSearchField] = useState<StudentSearchField>("admission_number");
+  const [fieldChoice, setFieldChoice] = useState<StudentSearchField>("admission_number");
   const [searchMode, setSearchMode] = useState<"keyword" | "class">("keyword");
   const [keyword, setKeyword] = useState("");
   const [classChoice, setClassChoice] = useState("all");
 
   const sortColumnMap: Record<string, string> = {
     admissionNumber: "admission_number",
+    admissionDate: "admission_date",
     status: "status",
   };
 
@@ -140,12 +172,13 @@ export function StudentsTable({
       sortBy: sorting[0] ? sortColumnMap[sorting[0].id] : undefined,
       sortDesc: sorting[0]?.desc,
       search,
+      searchField,
       status: status === "all" ? undefined : status,
       sectionId: sectionId === "all" ? undefined : sectionId,
     });
 
   const query = useQuery({
-    queryKey: ["students", pageIndex, pageSize, sorting, search, status, sectionId],
+    queryKey: ["students", pageIndex, pageSize, sorting, search, searchField, status, sectionId],
     queryFn: () => readPage(pageIndex, pageSize),
     placeholderData: keepPreviousData,
   });
@@ -157,6 +190,7 @@ export function StudentsTable({
         onSubmit={(event) => {
           event.preventDefault();
           if (searchMode === "keyword") {
+            setSearchField(fieldChoice);
             setSearch(keyword.trim());
             setSectionId("all");
           } else {
@@ -192,16 +226,33 @@ export function StudentsTable({
         </fieldset>
         <div className="flex flex-wrap items-end gap-4">
           {searchMode === "keyword" ? (
-            <div className="flex flex-col gap-2">
-              <Label htmlFor="student-keyword">{t("students.keyword")}</Label>
-              <Input
-                id="student-keyword"
-                value={keyword}
-                onChange={(event) => setKeyword(event.target.value)}
-                placeholder={t("students.keywordHint")}
-                className="w-64"
-              />
-            </div>
+            <>
+              <div className="flex flex-col gap-2">
+                <Label htmlFor="student-search-field">{t("students.searchField")}</Label>
+                <select
+                  id="student-search-field"
+                  className="h-9 min-w-48 rounded-md border border-input bg-card px-3 text-sm"
+                  value={fieldChoice}
+                  onChange={(event) => setFieldChoice(event.target.value as StudentSearchField)}
+                >
+                  {STUDENT_SEARCH_FIELDS.map((f) => (
+                    <option key={f} value={f}>
+                      {t(`students.field.${f}`)}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="flex flex-col gap-2">
+                <Label htmlFor="student-keyword">{t("students.keyword")}</Label>
+                <Input
+                  id="student-keyword"
+                  value={keyword}
+                  onChange={(event) => setKeyword(event.target.value)}
+                  placeholder={t("students.keywordAny")}
+                  className="w-64"
+                />
+              </div>
+            </>
           ) : (
             <div className="flex flex-col gap-2">
               <Label htmlFor="student-class">{t("students.classSection")}</Label>
@@ -248,7 +299,7 @@ export function StudentsTable({
       emptyTitle={filtered ? "No students match those filters" : "No students admitted yet"}
       emptyDescription={
         filtered
-          ? "Try a different admission number, or clear the class and status filters."
+          ? "Try a different keyword or search field, or clear the class and status filters."
           : "Admit the first student to start building the register."
       }
       emptyAction={
@@ -268,6 +319,7 @@ export function StudentsTable({
           viewsKey="students"
           searchValue={search}
           onSearchChange={(v) => {
+            setSearchField("admission_number");
             setSearch(v);
             setPageIndex(0);
           }}

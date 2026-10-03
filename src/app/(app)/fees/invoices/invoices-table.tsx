@@ -31,80 +31,105 @@ function invoiceColumns(
   formatDate: (value: string | Date | null | undefined) => string,
   formatCurrency: (value: number | string | null | undefined) => string,
 ): ColumnDef<InvoiceListRow>[] {
+  // The reference's columns, in its order. Payable, Paid and Due use the
+  // invoice page's own definitions (getInvoice), so the two cannot disagree.
+  const money = (v: number) => <span className="font-mono tabular-nums">{formatCurrency(v)}</span>;
   return [
-  {
-    accessorKey: "number",
-    header: "Invoice",
-    cell: ({ row }) => (
-      <Link
-        href={`/fees/invoices/${row.original.id}`}
-        className="font-mono text-xs underline-offset-4 hover:underline"
-        onClick={(e) => e.stopPropagation()}
-      >
-        {row.original.number}
-      </Link>
-    ),
-    enableSorting: false,
-    meta: { label: "Invoice" },
-  },
-  {
-    accessorKey: "studentName",
-    header: "Student",
-    cell: ({ row }) => (
-      <div className="flex flex-col">
-        <span className="font-medium">{row.original.studentName}</span>
-        <span className="font-mono text-xs text-muted-foreground">
-          {row.original.admissionNumber}
-        </span>
-      </div>
-    ),
-    enableSorting: false,
-    meta: { label: "Student" },
-  },
-  {
-    accessorKey: "issueDate",
-    header: "Issued",
-    cell: ({ row }) => <span className="tabular-nums">{formatDate(row.original.issueDate)}</span>,
-    enableSorting: false,
-    meta: { label: "Issued" },
-  },
-  {
-    accessorKey: "dueDate",
-    header: "Due",
-    cell: ({ row }) => {
-      const overdue =
-        row.original.status === "issued" &&
-        row.original.dueDate < new Date().toISOString().slice(0, 10);
-      return (
-        <span className={overdue ? "font-medium text-destructive tabular-nums" : "tabular-nums"}>
-          {formatDate(row.original.dueDate)}
-        </span>
-      );
+    {
+      accessorKey: "studentName",
+      header: "Student Name",
+      cell: ({ row }) => <span className="font-medium">{row.original.studentName}</span>,
+      enableSorting: false,
+      meta: { label: "Student Name" },
     },
-    enableSorting: false,
-    meta: { label: "Due" },
-  },
-  {
-    accessorKey: "total",
-    header: "Amount",
-    cell: ({ row }) => (
-      <span className="font-mono tabular-nums">{formatCurrency(row.original.total)}</span>
-    ),
-    enableSorting: false,
-    meta: { label: "Amount" },
-  },
-  {
-    accessorKey: "status",
-    header: "Status",
-    cell: ({ row }) =>
-      row.original.status === "cancelled" ? (
-        <Badge variant="outline">Cancelled</Badge>
-      ) : (
-        <Badge variant="secondary">Issued</Badge>
+    {
+      accessorKey: "admissionNumber",
+      header: "Admission Number",
+      cell: ({ row }) => <span className="font-mono text-xs">{row.original.admissionNumber}</span>,
+      enableSorting: false,
+      meta: { label: "Admission Number" },
+    },
+    {
+      accessorKey: "number",
+      header: "Invoice Number",
+      cell: ({ row }) => (
+        <Link
+          href={`/fees/invoices/${row.original.id}`}
+          className="font-mono text-xs underline-offset-4 hover:underline"
+          onClick={(e) => e.stopPropagation()}
+        >
+          {row.original.number}
+        </Link>
       ),
-    enableSorting: false,
-    meta: { label: "Status" },
-  },
+      enableSorting: false,
+      meta: { label: "Invoice Number" },
+    },
+    {
+      accessorKey: "total",
+      header: "Payable",
+      cell: ({ row }) => money(row.original.total),
+      enableSorting: false,
+      meta: { label: "Payable" },
+    },
+    {
+      accessorKey: "paid",
+      header: "Paid",
+      cell: ({ row }) => money(row.original.paid),
+      enableSorting: false,
+      meta: { label: "Paid" },
+    },
+    {
+      accessorKey: "due",
+      header: "Due",
+      cell: ({ row }) => money(row.original.due),
+      enableSorting: false,
+      meta: { label: "Due" },
+    },
+    {
+      accessorKey: "status",
+      header: "Status",
+      // Text, never colour alone: the word is the meaning, the variant decoration.
+      cell: ({ row }) => {
+        const r = row.original;
+        if (r.status === "cancelled") return <Badge variant="outline">Cancelled</Badge>;
+        if (r.due <= 0) return <Badge variant="success">Paid</Badge>;
+        if (r.paid > 0) return <Badge variant="warning">Partially Paid</Badge>;
+        return <Badge variant="secondary">Unpaid</Badge>;
+      },
+      enableSorting: false,
+      meta: { label: "Status" },
+    },
+    {
+      accessorKey: "issueDate",
+      header: "Date Issued",
+      cell: ({ row }) => <span className="whitespace-nowrap tabular-nums">{formatDate(row.original.issueDate)}</span>,
+      enableSorting: false,
+      meta: { label: "Date Issued" },
+    },
+    {
+      accessorKey: "dueDate",
+      header: "Due Date",
+      cell: ({ row }) => {
+        const overdue =
+          row.original.status === "issued" &&
+          row.original.due > 0 &&
+          row.original.dueDate < new Date().toISOString().slice(0, 10);
+        return (
+          <span className={overdue ? "font-medium whitespace-nowrap text-destructive tabular-nums" : "whitespace-nowrap tabular-nums"}>
+            {formatDate(row.original.dueDate)}
+          </span>
+        );
+      },
+      enableSorting: false,
+      meta: { label: "Due Date" },
+    },
+    {
+      accessorKey: "phone",
+      header: "Phone",
+      cell: ({ row }) => <span className="font-mono text-xs">{row.original.phone ?? "—"}</span>,
+      enableSorting: false,
+      meta: { label: "Phone" },
+    },
   ];
 }
 

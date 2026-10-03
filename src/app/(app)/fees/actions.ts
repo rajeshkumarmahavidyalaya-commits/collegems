@@ -1460,6 +1460,11 @@ export type InvoiceListRow = {
   studentName: string;
   admissionNumber: string;
   total: number;
+  /** Payments recorded against this invoice, as the invoice page counts them. */
+  paid: number;
+  /** total - paid: the invoice page's "Amount due", not the child's balance. */
+  due: number;
+  phone: string | null;
 };
 
 export async function listInvoices(params: {
@@ -1493,17 +1498,33 @@ export async function listInvoices(params: {
   const ids = rows.map((r) => r.id);
   const studentIds = [...new Set(rows.map((r) => r.student_id))];
 
-  const [lineRes, studentRes] = await Promise.all([
+  // Paid is the invoice page's definition (getInvoice): the payment entries
+  // that name the invoice, reversals included so they net out. Read for this
+  // page's invoices only, so the list stays bounded by its page size.
+  const [lineRes, studentRes, paymentRes] = await Promise.all([
     ids.length
       ? supabase.from("invoice_lines").select("invoice_id, amount").in("invoice_id", ids)
       : Promise.resolve({ data: [] as { invoice_id: string; amount: number }[] }),
     studentIds.length
       ? supabase
           .from("students")
-          .select("id, admission_number, people:person_id ( first_name, last_name )")
+          .select("id, admission_number, people:person_id ( first_name, last_name, phone )")
           .in("id", studentIds)
       : Promise.resolve({ data: [] }),
+    ids.length
+      ? supabase
+          .from("ledger_entries")
+          .select("invoice_id, amount")
+          .in("invoice_id", ids)
+          .eq("entry_type", "payment")
+      : Promise.resolve({ data: [] as { invoice_id: string | null; amount: number }[] }),
   ]);
+
+  const paidByInvoice = new Map<string, number>();
+  for (const p of paymentRes.data ?? []) {
+    if (!p.invoice_id) continue;
+    paidByInvoice.set(p.invoice_id, (paidByInvoice.get(p.invoice_id) ?? 0) - Number(p.amount));
+  }
 
   const totalByInvoice = new Map<string, number>();
   for (const l of lineRes.data ?? []) {
@@ -1516,6 +1537,7 @@ export async function listInvoices(params: {
       {
         name: s.people ? `${s.people.first_name} ${s.people.last_name}` : "Unknown",
         admissionNumber: s.admission_number,
+        phone: s.people?.phone ?? null,
       },
     ]),
   );
@@ -1532,6 +1554,9 @@ export async function listInvoices(params: {
         studentName: student?.name ?? "Unknown",
         admissionNumber: student?.admissionNumber ?? "—",
         total: totalByInvoice.get(r.id) ?? 0,
+        paid: paidByInvoice.get(r.id) ?? 0,
+        due: (totalByInvoice.get(r.id) ?? 0) - (paidByInvoice.get(r.id) ?? 0),
+        phone: student?.phone ?? null,
       };
     }),
     total: count ?? 0,

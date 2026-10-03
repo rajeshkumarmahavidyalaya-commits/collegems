@@ -13,6 +13,15 @@ export const STUDENT_STATUSES = [
   { value: "expelled", label: "Expelled" },
 ] as const;
 
+/**
+ * The reference's "Search Field" on Search Students: which column a keyword is
+ * matched against. A whitelist, because the server action turns it into a
+ * column name; the keyword itself is always a bound value, never part of a
+ * filter string (rule 4, 0259).
+ */
+export const STUDENT_SEARCH_FIELDS = ["admission_number", "name", "phone", "email", "address"] as const;
+export type StudentSearchField = (typeof STUDENT_SEARCH_FIELDS)[number];
+
 export const GENDERS = [
   { value: "male", label: "Male" },
   { value: "female", label: "Female" },

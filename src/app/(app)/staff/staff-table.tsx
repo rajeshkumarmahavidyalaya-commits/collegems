@@ -20,7 +20,7 @@ import { DataTableToolbar } from "@/components/data-table/data-table-toolbar";
 import { loadAllPages } from "@/components/data-table/table-exports";
 import { STAFF_STATUSES, staffStatusLabel, staffStatusTone } from "@/lib/validations/staff-display";
 import { listStaff, type StaffRow } from "./actions";
-import { useT } from "@/components/providers/i18n-provider";
+import { useI18n, useT } from "@/components/providers/i18n-provider";
 import type { Translator } from "@/lib/i18n/translate";
 
 /**
@@ -29,7 +29,10 @@ import type { Translator } from "@/lib/i18n/translate";
  * `invoiceColumns(formatDate)` exists — so the translator arrives as an
  * argument and the call sits inside `useMemo`.
  */
-function staffColumns(t: Translator): ColumnDef<StaffRow>[] {
+function staffColumns(
+  t: Translator,
+  formatDate: (value: string | null) => string,
+): ColumnDef<StaffRow>[] {
   return [
     {
       accessorKey: "employeeCode",
@@ -90,6 +93,20 @@ function staffColumns(t: Translator): ColumnDef<StaffRow>[] {
       meta: { label: "Phone" },
     },
     {
+      accessorKey: "email",
+      header: "Email",
+      cell: ({ row }) => row.original.email ?? <span className="text-muted-foreground">—</span>,
+      enableSorting: false,
+      meta: { label: "Email" },
+    },
+    {
+      accessorKey: "dateOfJoining",
+      header: "Joining Date",
+      cell: ({ row }) => <span className="whitespace-nowrap">{formatDate(row.original.dateOfJoining)}</span>,
+      enableSorting: false,
+      meta: { label: "Joining Date" },
+    },
+    {
       accessorKey: "status",
       header: "Status",
       cell: ({ row }) => (
@@ -99,7 +116,7 @@ function staffColumns(t: Translator): ColumnDef<StaffRow>[] {
           </Badge>
           {row.original.dateOfLeaving && (
             <span className="text-xs text-muted-foreground">
-              left {row.original.dateOfLeaving}
+              left {formatDate(row.original.dateOfLeaving)}
             </span>
           )}
         </div>
@@ -112,7 +129,8 @@ function staffColumns(t: Translator): ColumnDef<StaffRow>[] {
 
 export function StaffTable({ canManage }: { canManage: boolean }) {
   const t = useT();
-  const columns = useMemo(() => staffColumns(t), [t]);
+  const { formatDate } = useI18n();
+  const columns = useMemo(() => staffColumns(t, (v) => formatDate(v)), [t, formatDate]);
   const router = useRouter();
   const [pageIndex, setPageIndex] = useState(0);
   const [pageSize, setPageSize] = useState(25);

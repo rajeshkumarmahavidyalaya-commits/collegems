@@ -437,9 +437,9 @@
 .reference-page [data-slot="input"], .reference-page [data-slot="select-trigger"], .reference-page [data-slot="textarea"] { border-radius: 4px; box-shadow: none; background: var(--card); }
 /* The reference's table header: green, white and bold, on every list. */
 .reference-page [data-slot="table-head"] { color: var(--toolbar-foreground); font-weight: 600; background: var(--toolbar); height: 46px; border-bottom: 2px solid color-mix(in srgb, var(--toolbar) 70%, black); }
-.reference-page [data-slot="table-head"] [data-slot="button"] { color: inherit; font-weight: inherit; }
-.reference-page [data-slot="table-head"] [data-slot="button"]:hover { background: color-mix(in srgb, var(--toolbar-foreground) 15%, transparent); color: inherit; }
-.reference-page [data-slot="table-head"] [data-slot="button"]:focus-visible { outline: 2px solid var(--toolbar-foreground); outline-offset: 1px; }
+.reference-page [data-slot="table-head"] :is([data-slot="button"], [data-slot="dropdown-menu-trigger"]) { color: inherit; font-weight: inherit; }
+.reference-page [data-slot="table-head"] :is([data-slot="button"], [data-slot="dropdown-menu-trigger"]):hover { background: color-mix(in srgb, var(--toolbar-foreground) 15%, transparent); color: inherit; }
+.reference-page [data-slot="table-head"] :is([data-slot="button"], [data-slot="dropdown-menu-trigger"]):focus-visible { outline: 2px solid var(--toolbar-foreground); outline-offset: 1px; }
 .reference-page [data-slot="table-head"] [data-slot="checkbox"] { border-color: var(--toolbar-foreground); }
 .reference-page [data-slot="table-cell"] { padding: 10px 12px; }
 .reference-page [data-slot="table-row"]:nth-child(even) { background: color-mix(in srgb, var(--muted) 35%, transparent); }

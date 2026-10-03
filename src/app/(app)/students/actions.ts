@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 import { deletePhotoObject } from "@/lib/storage/photos";
 import { getUserContext } from "@/lib/auth/context";
 import { studentSchema, type StudentInput } from "@/lib/validations/students";
+import { STUDENT_SEARCH_FIELDS, type StudentSearchField } from "@/lib/validations/students-display";
 import { admissionBillSentence, parseAdmissionBill } from "@/lib/validations/admission-bill";
 import { formatCurrency } from "@/lib/i18n/format";
 import { getLocale } from "@/lib/i18n/server";
@@ -18,9 +19,13 @@ export type StudentRow = {
   dateOfBirth: string | null;
   status: string;
   sectionLabel: string | null;
+  className: string | null;
+  sectionName: string | null;
   rollNumber: string | null;
   guardianName: string | null;
   phone: string | null;
+  email: string | null;
+  admissionDate: string | null;
 };
 
 /**
@@ -30,10 +35,14 @@ export type StudentRow = {
 const STUDENT_SORT_COLUMNS = new Set(["admission_number", "admission_date", "status", "created_at"]);
 
 export async function listStudents(
-  params: ListParams & { sectionId?: string },
+  params: ListParams & { sectionId?: string; searchField?: string },
 ): Promise<{ rows: StudentRow[]; total: number }> {
-  const supabase = await createClient();
+  const [supabase, ctx] = await Promise.all([createClient(), getUserContext()]);
   const { pageIndex, pageSize, sortBy, sortDesc, search, status, sectionId } = params;
+  const field: StudentSearchField = STUDENT_SEARCH_FIELDS.includes(params.searchField as StudentSearchField)
+    ? (params.searchField as StudentSearchField)
+    : "admission_number";
+  const term = search?.trim() ?? "";
 
   // Filtering by class must filter the *students*. A filter on a plain
   // embedded resource only trims the embedded rows, so every student came back
@@ -41,26 +50,50 @@ export async function listStudents(
   // enrolment a condition of the row (found by the reference's "Search By
   // Class", which is nothing else).
   const enrolments = sectionId
-    ? "enrolments!inner ( roll_number, section_id, sections ( name, class_levels ( name, sequence ) ) )"
-    : "enrolments ( roll_number, section_id, sections ( name, class_levels ( name, sequence ) ) )";
+    ? "enrolments!inner ( roll_number, section_id, session_id, sections ( name, class_levels ( name, sequence ) ) )"
+    : "enrolments ( roll_number, section_id, session_id, sections ( name, class_levels ( name, sequence ) ) )";
+  // A person-column search makes the person a condition of the row, for the
+  // same reason; every student has one, so `!inner` drops nobody otherwise.
+  const people = term && ["phone", "email", "address"].includes(field) ? "people:person_id!inner" : "people:person_id";
   let query = supabase
     .from("students")
     .select(
-      `id, admission_number, status,
-       people:person_id ( first_name, last_name, gender, date_of_birth, phone ),
+      `id, admission_number, admission_date, status,
+       ${people} ( first_name, last_name, gender, date_of_birth, phone, email ),
        ${enrolments},
        guardian_student ( is_primary, guardians ( people:person_id ( first_name, last_name ) ) )`,
       { count: "exact" },
     );
 
-  if (search && search.trim()) {
-    query = query.ilike("admission_number", `%${search.trim()}%`);
+  if (term) {
+    const pattern = `%${term}%`;
+    if (field === "admission_number") query = query.ilike("admission_number", pattern);
+    else if (field === "phone") query = query.ilike("people.phone", pattern);
+    else if (field === "email") query = query.ilike("people.email", pattern);
+    else if (field === "address") query = query.ilike("people.address_line1", pattern);
+    else {
+      // A name is two columns, and joining them into an `.or()` filter string
+      // is building a query out of somebody's typing (rule 4, 0259); the
+      // bound-parameter search the pickers use answers it instead.
+      const { data: hits, error: searchError } = await supabase.rpc("student_search", {
+        p_query: term,
+        p_limit: 1000,
+      });
+      if (searchError) throw new Error(searchError.message);
+      const ids = (hits ?? []).map((h) => h.id);
+      if (ids.length === 0) return { rows: [], total: 0 };
+      query = query.in("id", ids);
+    }
   }
   if (status) {
     query = query.eq("status", status);
   }
   if (sectionId) {
     query = query.eq("enrolments.section_id", sectionId);
+  } else if (ctx?.currentSessionId) {
+    // The class shown is this year's: a student's enrolments span years, and
+    // the first one the join returned was whichever came first (rule 2).
+    query = query.eq("enrolments.session_id", ctx.currentSessionId);
   }
 
   const orderColumn = sortBy && STUDENT_SORT_COLUMNS.has(sortBy) ? sortBy : "admission_number";
@@ -93,11 +126,15 @@ export async function listStudents(
         status: s.status,
         sectionLabel:
           level && enrolment?.sections ? `${level.name} · ${enrolment.sections.name}` : null,
+        className: level?.name ?? null,
+        sectionName: enrolment?.sections?.name ?? null,
         rollNumber: enrolment?.roll_number ?? null,
         guardianName: guardianPerson
           ? `${guardianPerson.first_name} ${guardianPerson.last_name}`
           : null,
         phone: person?.phone ?? null,
+        email: person?.email ?? null,
+        admissionDate: s.admission_date ?? null,
       };
     }),
     total: count ?? 0,
