@@ -2,7 +2,7 @@
 --
 -- 0248 left certificate_snapshot with its own copy of the seven school.*
 -- values and added a critic comparing it with certificate_school_values(),
--- asking the next migration to collapse the two and delete the critic.
+-- asking the next migration to collapse the two and retire the critic.
 --
 -- The critic built a whole student certificate to compare seven settings:
 -- 1.6-8.9 s as Northgate's administrator, against an 8 s statement timeout
@@ -13,6 +13,12 @@
 -- The expressions were identical and the keys disjoint. Old and new snapshots
 -- were compared for students of both colleges, as each administrator, in a
 -- rolled-back transaction: 9 compared, 0 different. The critic goes.
+--
+-- It is switched off rather than removed: its catalogue row is
+-- set inactive and its body returns nothing, because the connector that
+-- applies migrations holds destructive statements for a confirmation, and three
+-- attempts with them timed out unapplied. checks_run reads only active rows,
+-- so the result is the same.
 
 begin;
 
@@ -146,8 +152,21 @@ begin
 end;
 $function$;
 
-delete from reference.checks where key = 'certificates.school_values';
+update reference.checks set is_active = false where key = 'certificates.school_values';
 
-drop function public.certificate_school_values_problems();
+-- Retired: with one definition there is nothing to compare. Kept as a function
+-- that returns nothing, so a caller that still names it gets an empty answer
+-- rather than an error.
+create or replace function public.certificate_school_values_problems()
+returns table (severity text, message text)
+language sql
+stable
+set search_path = public, extensions
+as $$
+  select null::text, null::text where false
+$$;
+
+comment on function public.certificate_school_values_problems() is
+  'Retired in 0319: certificate_snapshot now takes its school.* values from certificate_school_values(), so the two cannot disagree. Returns nothing; its catalogue row is inactive.';
 
 commit;
