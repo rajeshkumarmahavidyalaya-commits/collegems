@@ -428,8 +428,11 @@
 .reference-page h2 { font-size: 18px; }
 .reference-page [data-slot="card"] { border-radius: 6px; gap: 16px; padding-block: 16px; box-shadow: 0 1px 3px rgb(0 0 0 / 0.06); }
 .reference-page [data-slot="card-header"], .reference-page [data-slot="card-content"], .reference-page [data-slot="card-footer"] { padding-inline: 16px; }
-.reference-page form [data-slot="card"] { overflow: hidden; padding-top: 0; }
-.reference-page form [data-slot="card-header"] { padding: 10px 16px; background: var(--primary); color: var(--primary-foreground); }
+/* A form section is the reference's white card with an inset green bar
+   carrying the section's name, centred. */
+.reference-page form [data-slot="card"] { overflow: hidden; padding-top: 16px; }
+.reference-page form [data-slot="card-header"] { margin-inline: 16px; padding: 9px 16px; border-radius: 4px; background: var(--primary); color: var(--primary-foreground); text-align: center; box-shadow: 0 2px 5px color-mix(in srgb, var(--primary) 22%, transparent); }
+.reference-page form [data-slot="card-header"] [data-slot="card-title"] { font-weight: 600; }
 .reference-page form [data-slot="card-header"] [data-slot="card-description"] { color: color-mix(in srgb, var(--primary-foreground) 88%, transparent); }
 .reference-page [data-slot="tabs-list"] { height: auto; min-height: 40px; max-width: 100%; flex-wrap: wrap; justify-content: flex-start; border-radius: 0; background: transparent; padding: 0; border-bottom: 1px solid var(--border); }
 .reference-page [data-slot="tabs-trigger"] { flex: none; border-radius: 4px 4px 0 0; padding: 10px 16px; color: var(--primary); border: 1px solid transparent; margin-bottom: -1px; }

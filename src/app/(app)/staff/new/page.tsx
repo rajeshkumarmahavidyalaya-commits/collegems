@@ -15,7 +15,7 @@ export default async function NewStaffPage() {
   return (
     <div className="mx-auto flex w-full max-w-3xl flex-col gap-4">
       <div>
-        <h1 className="text-2xl font-semibold">Add staff</h1>
+        <h1 className="text-2xl font-semibold">Add New Staff</h1>
         <p className="text-sm text-muted-foreground">
           Creates the person and their employment record together, in one transaction.
         </p>

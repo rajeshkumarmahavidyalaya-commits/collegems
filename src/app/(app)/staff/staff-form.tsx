@@ -94,7 +94,7 @@ export function StaffForm({ staff }: { staff?: StaffInput & { id: string } }) {
 
         <Card>
           <CardHeader>
-            <CardTitle>Personal details</CardTitle>
+            <CardTitle>Personal Detail</CardTitle>
             <CardDescription>
               Biographical facts about the person, kept separately from their employment record —
               which is what lets a teacher also be a parent here without being two people.

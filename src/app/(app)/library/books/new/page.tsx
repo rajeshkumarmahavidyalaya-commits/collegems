@@ -14,7 +14,7 @@ export default async function NewBookPage() {
   return (
     <div className="mx-auto flex w-full max-w-3xl flex-col gap-4">
       <div>
-        <h1 className="text-2xl font-semibold">Add a book</h1>
+        <h1 className="text-2xl font-semibold">Add New Book</h1>
         <p className="text-sm text-muted-foreground">
           New titles become available to issue as soon as they&apos;re saved.
         </p>

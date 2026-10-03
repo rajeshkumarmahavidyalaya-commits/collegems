@@ -133,7 +133,7 @@ export function StudentForm({
 
         <Card>
           <CardHeader>
-            <CardTitle>Personal details</CardTitle>
+            <CardTitle>Personal Detail</CardTitle>
             <CardDescription>
               Biographical facts about the person, kept separately from their student record.
             </CardDescription>
@@ -181,7 +181,7 @@ export function StudentForm({
 
         <Card>
           <CardHeader>
-            <CardTitle>Admission details</CardTitle>
+            <CardTitle>Admission Detail</CardTitle>
             <CardDescription>
               Enrolment places the student in a section for the current session. It can be left
               blank now and set later.
