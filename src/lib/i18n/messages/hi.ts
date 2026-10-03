@@ -179,6 +179,8 @@ export const hi: Messages = {
   "login.submit": "साइन इन",
   "login.submitting": "साइन इन हो रहा है…",
   "login.forgot": "पासवर्ड भूल गए?",
+  "login.newHere": "नए हैं?",
+  "login.createAccount": "खाता बनाएँ और अपना कॉलेज शुरू करें",
   "login.showPassword": "पासवर्ड दिखाएँ",
   "login.brandHeadline": "प्रवेश, उपस्थिति, शुल्क और वह सब कुछ जो विद्यालय को चलाता है — एक ही प्रणाली में।",
   "login.brandSub": "उन लोगों के लिए बनाया गया जो विद्यालय चलाते हैं, केवल उनके लिए नहीं जो सॉफ़्टवेयर खरीदते हैं।",

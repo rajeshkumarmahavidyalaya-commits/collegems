@@ -1,5 +1,6 @@
 "use server";
 
+import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { signupSchema } from "@/lib/validations/platform";
@@ -40,10 +41,19 @@ export async function signup(
     };
   }
 
+  // The confirmation link comes back through the callback, which sets the
+  // session and sends a new founder on to /start. Without it Supabase uses the
+  // project's Site URL, which drops them on a page that asks them to sign in.
+  const h = await headers();
+  const host = h.get("x-forwarded-host") ?? h.get("host");
+  const proto = h.get("x-forwarded-proto") ?? (host?.startsWith("localhost") || host?.startsWith("127.") ? "http" : "https");
+  const origin = h.get("origin")?.startsWith("http") ? h.get("origin") : host ? `${proto}://${host}` : null;
+
   const supabase = await createClient();
   const { data, error } = await supabase.auth.signUp({
     email: parsed.data.email,
     password: parsed.data.password,
+    options: origin ? { emailRedirectTo: `${origin}/auth/callback?next=/start` } : undefined,
   });
 
   if (error) {

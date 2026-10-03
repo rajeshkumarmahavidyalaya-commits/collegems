@@ -179,6 +179,8 @@ export const ur: Messages = {
   "login.submit": "سائن اِن",
   "login.submitting": "سائن اِن ہو رہا ہے…",
   "login.forgot": "پاس ورڈ بھول گئے؟",
+  "login.newHere": "نئے ہیں؟",
+  "login.createAccount": "اکاؤنٹ بنائیں اور اپنا کالج شروع کریں",
   "login.showPassword": "پاس ورڈ دکھائیں",
   "login.brandHeadline": "داخلے، حاضری، فیس اور وہ سب کچھ جو اسکول کو چلاتا ہے — ایک ہی نظام میں۔",
   "login.brandSub": "اُن لوگوں کے لیے بنایا گیا جو اسکول چلاتے ہیں، صرف اُن کے لیے نہیں جو سافٹ ویئر خریدتے ہیں۔",

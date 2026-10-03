@@ -1,3 +1,4 @@
+import Link from "next/link";
 import type { Metadata } from "next";
 import { LoginBranding, LoginBrandingCompact, LoginForm } from "./login-form";
 import { LanguageSwitcher } from "@/components/app-shell/language-switcher";
@@ -35,6 +36,14 @@ export default async function LoginPage({
           <h1 className="text-2xl font-semibold text-foreground">{t("login.title")}</h1>
           <p className="mt-1 mb-8 text-sm text-muted-foreground">{t("login.subtitle")}</p>
           <LoginForm next={next} />
+          {/* The way in for somebody with no account yet: sign up, then found
+              their college on /start and land on School Management (0323). */}
+          <p className="mt-6 text-center text-sm text-muted-foreground">
+            {t("login.newHere")}{" "}
+            <Link href="/signup" className="font-medium text-foreground underline underline-offset-4">
+              {t("login.createAccount")}
+            </Link>
+          </p>
         </div>
       </div>
     </main>

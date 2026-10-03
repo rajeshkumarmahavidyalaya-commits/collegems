@@ -59,5 +59,7 @@ export async function startSchool(
   // person who just created it — an empty dashboard that looks like a failure.
   await supabase.auth.refreshSession();
 
-  redirect("/");
+  // The reference's first page: School Management, where the new college is
+  // the first card and Add New School founds the next (0323).
+  redirect("/schools");
 }

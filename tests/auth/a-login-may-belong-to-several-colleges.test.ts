@@ -145,4 +145,11 @@ describe("the screens", () => {
     expect(rpc).toBeGreaterThan(0);
     expect(refresh).toBeGreaterThan(rpc);
   });
+
+  it("a stranger can find sign-up, and founding a college lands on School Management", () => {
+    expect(src("src/app/login/page.tsx")).toMatch(/href="\/signup"/);
+    // The confirmation link comes back through the callback and on to /start.
+    expect(src("src/app/signup/actions.ts")).toMatch(/emailRedirectTo: `\$\{origin\}\/auth\/callback\?next=\/start`/);
+    expect(src("src/app/start/actions.ts")).toMatch(/redirect\("\/schools"\)/);
+  });
 });

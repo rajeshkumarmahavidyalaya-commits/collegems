@@ -199,6 +199,8 @@ export const en = {
   "login.submit": "Sign in",
   "login.submitting": "Signing in…",
   "login.forgot": "Forgotten your password?",
+  "login.newHere": "New here?",
+  "login.createAccount": "Create an account and start your college",
   "login.showPassword": "Show password",
   "login.brandHeadline": "One system for admissions, attendance, fees, and everything else that keeps a school running.",
   "login.brandSub": "Built for the people who run the school, not just the people who buy the software.",

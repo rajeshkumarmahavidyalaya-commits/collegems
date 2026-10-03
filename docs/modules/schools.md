@@ -60,6 +60,34 @@ belonging to the Northgate test administrator. Its first year is named
 "2026-2026" because it was founded before `0324` fixed the naming; rename it on
 its Academic years screen.
 
+## Starting from zero
+
+1. **Sign in page → "Create an account and start your college"** (`/signup`):
+   email and password.
+2. **Confirmation email.** Sign-ups are enabled on the Supabase project and
+   "Confirm email" is on, so the account is usable only after the link is
+   clicked. The link returns through `/auth/callback?next=/start`, which sets
+   the session.
+3. **`/start`**: the college's name, web address and time zone.
+   `platform_start_school` founds it through `college_create`, makes the
+   person its administrator, and the session is refreshed.
+4. **`/schools`**: School Management with the new college as the first card.
+   Add New School founds the next one under the same login.
+
+Probed in a rolled-back transaction with a brand-new confirmed login and no
+invitation: no profile and an empty picker before; one card, current, as
+administrator, year named "2026" after founding; two cards after Add New
+School. The sign-in link, the sign-up form and the guard on `/start` were
+checked in the browser. **Not checked: the confirmation email reaching an
+outside address**, which depends on the project's SMTP settings (below).
+
+**Email delivery is a setting, not code.** Supabase's built-in mailer delivers
+only to the project's own team addresses and is heavily rate-limited, so a
+stranger signing up would never receive the link. Before opening sign-up to the
+public, set a custom SMTP server in Supabase (Authentication → Emails → SMTP
+Settings), for example Resend, which `notify-dispatch` already uses. Turning
+"Confirm email" off would avoid the email but lets anybody claim any address.
+
 ## Not done
 
 - Inviting a login that already exists into a second college. Invitations still
