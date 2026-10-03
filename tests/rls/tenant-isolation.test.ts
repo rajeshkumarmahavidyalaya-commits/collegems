@@ -91,6 +91,7 @@ describeDb("cross-tenant isolation", () => {
     "accounts",
     "journal_vouchers",
     "voucher_lines",
+    "cash_entry_details",
     "posting_rules",
     "homework",
     "homework_submissions",
