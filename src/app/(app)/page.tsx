@@ -174,7 +174,11 @@ export default async function DashboardPage({
           label="Students on roll"
           value={brief.school ? String(brief.school.students) : "—"}
           icon={GraduationCap}
-          hint={brief.school ? `Across ${brief.school.sections} sections` : "Not shown for your role"}
+          hint={
+            brief.school
+              ? `Across ${brief.school.sections} ${brief.school.sections === 1 ? "section" : "sections"}`
+              : "Not shown for your role"
+          }
         />
         <StatCard
           label="Staff on roll"

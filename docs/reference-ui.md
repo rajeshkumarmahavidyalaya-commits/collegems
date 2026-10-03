@@ -15,12 +15,94 @@ was ported file by file rather than copied. The corrections are listed below.
 
 ## What is verified, and what is not
 
+Walked through on 3 Oct 2026, after the environment was given access to the
+Supabase project and to the reference site. The app was a production build
+(`next build` + `next start`), signed in as Northgate Academy's test
+administrator and test teacher. Northgate is the designated test college,
+and nothing was written anywhere else.
+
 | | status |
 |---|---|
-| **Visual parity with the reference** | **Not verified.** `wpschool.weblizar.com` is refused by this environment's network policy, so no screen was compared. The layout comes from the supplied implementation, whose own notes say it is "not a verified pixel-perfect clone". |
-| **Browser walkthrough of signed-in screens** | **Blocked.** The Supabase project host is refused by the same policy (`403` at the egress proxy), so the app runs here but cannot sign anybody in. The login page renders and, after the fix below, says so. |
-| **The backend calls the new screens make** | **Probed in the database** as Northgate Academy's test administrator and test teacher: `setup_progress()` 11 steps for the admin (2 done), 0 for the teacher; `school_calendar()` reads; each login sees 1 student, its own college's, and 0 of the other college's; `dashboard_summary()` withholds `staff_attendance` and `fees` from the teacher. |
+| **Every signed-in screen loads** | 77 routes opened as the admin and as the teacher. All return 200. The one failure is `/checks` (see below). A role refused a screen gets a sentence or a redirect, never a crash. |
+| **Menu per role** | Admin 64 entries, teacher 36. Every entry the teacher is offered opens. |
+| **Writes, checked in the database** | Through the UI: a class (`UIT Grade 1`), its section `A`, a student admitted into it (`UIT-0001`, enrolled in the current year, audit row naming the test admin) and two library books. Each row is in Northgate. |
+| **Search Students by class** | Returns only that class's student, in the table and in the CSV. |
+| **Export** | The CSV holds the filtered set (one row), not the page. |
+| **Phone width (375 px)** | 9 screens per role, none scrolls sideways. |
+| **School isolation** | Each login sees only Northgate's students (DB probe, both directions). |
+| **Layout against the reference** | Compared with the public demo's super admin screens, read-only (below). Not pixel-compared. |
 | **Types, lint, unit tests, production build** | Pass. |
+
+### Compared with the reference
+
+The reference was opened through its public "Super Admin Log in" demo button.
+The browser could send only GET requests, apart from that one sign-in POST.
+Any navigation whose address mentioned delete, remove, reset, trash, logout,
+licence or an `action=` was blocked. Its tables load their rows through POST
+requests, so they came up empty; no reference record was read or copied.
+
+**Matches:** the green toolbar, the module sidebar and its headings, the
+lavender school and session band ("Current Session:" with a pill), the green
+"School Dashboard" bar with buttons on the right, horizontal stat cards with
+an icon tile, the School Calendar with Today and a coloured legend, the
+Search Students panel (keyword or class radio, "Get Students!"), and the table
+toolbar (Show N rows, Copy, CSV, Excel, PDF, Print, Column visibility).
+
+**Differs, not done:**
+
+- **Module page headers.** The reference puts a green, centred title bar with
+  an icon and the main button on every module page ("Students" + "Add
+  Student"). Our module pages keep their own heading and description.
+  Only the dashboard has the green bar.
+- **Dashboard.** The reference has 12 cards (active inquiries, students,
+  classes, staff, income, fees collected, pending dues, unpaid invoices,
+  expenses, books, pending student and staff leave) and a "Last 10 Active
+  Inquiries" table. Ours has 4 cards, the calendar, and the module grid. Its
+  buttons are Add Class, Manage Sections and Assign Admins; ours are Classes
+  & Sections, Add Student and Setup Wizard.
+- **Columns.** The reference lists students with type, email, father's name
+  and phone, login email and username, admission date and enrollment number.
+  Its staff list shows salary, role and login, its invoices show father's
+  name and enrollment number, and its books show rack, book number and price.
+  Ours show fewer. Each would need its read path widened, and whether to show
+  a salary in a list is a permission question (rule 4).
+- **Search Students "Search Field".** The reference picks which field a
+  keyword searches. Ours searches the admission number only, and says so.
+- **Modules this backend does not have**: Medium, House, Activities, Lessons
+  and Chapters, Tickets, Gate Pass, Chat, Staff Rating, Donation, ID card
+  layouts, transfer between schools, webcam and QR attendance.
+
+### Found and fixed during the walkthrough
+
+- **`/checks` timed out.** One critic, `certificate_school_values_problems`,
+  built a whole student certificate to compare seven school fields: 1.6-8.9 s
+  against the 8 s statement timeout, which takes every other critic down with
+  it. `supabase/drafts/0319_...` removes the cause. That migration is checked
+  (9 snapshots across both colleges, 0 different) but **not applied**: the
+  connector's `apply_migration` timed out three times. Until it is applied,
+  `/checks` shows its error boundary.
+- **A teacher opening `/staff` saw a table loading for ever**, then "That did
+  not load". The roster RPC refuses them, correctly. The page now says "Your
+  role does not open the staff roster" instead of mounting the table.
+- **"Classes & Sections" opened the Subjects tab** once a class existed. That
+  default dates from when one menu entry led there. It now opens Classes,
+  and the two "Assign subjects" links name their tab.
+- **"Across 1 sections"** on the dashboard.
+
+### Measured, not fixed
+
+- **Pages take 3-9 s here, and a save takes 2-8 s to show.** Each request from
+  this container to Supabase costs about 170 ms. The database's own statistics
+  show the same reads running in 8-21 ms on average. A page makes 6-18
+  requests in 4-6 sequential steps. So the time is the distance between this
+  environment and the database, not the pages. A deployment near the database
+  should not see it, but that is not measured.
+- **Northgate's current year ended on 31 Mar 2026**, so a child admitted today
+  counts as 0 "admitted this year". This is rule 2's stale flag, and
+  `/academics/sessions` is where a school switches years.
+- The first of two "Add book" attempts saved its book and then left the form
+  on screen for 60 s. The second went to the book's page in 7.6 s. Not
+  reproduced.
 
 ## Reference screen → route → backend
 
@@ -99,7 +181,8 @@ cp .env.production .env.local   # public URL and publishable key only
 npm ci && npm run dev           # http://localhost:3000
 ```
 
-The browser walkthrough needs `bbwdkglcndaoiqmzdliq.supabase.co` reachable.
+The browser walkthrough needs `bbwdkglcndaoiqmzdliq.supabase.co` reachable
+from wherever the app runs.
 Test logins for **Northgate Academy** (the designated test college) are
 `ui-test.admin@northgate.test` and `ui-test.teacher@northgate.test`. Their
 passwords are not in the repository; reset them from the Supabase dashboard

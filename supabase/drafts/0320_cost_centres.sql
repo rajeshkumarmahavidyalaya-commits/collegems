@@ -1,4 +1,4 @@
--- 0319: cost centres.
+-- 0320: cost centres.
 --
 -- ## Cost centres
 --
@@ -32,7 +32,7 @@ create table public.cost_centres (
 );
 
 comment on table public.cost_centres is
-  'An activity the college wants its own income and expenditure for -- the hostel, transport, the canteen (0319). A tag on voucher lines, not a set of accounts.';
+  'An activity the college wants its own income and expenditure for -- the hostel, transport, the canteen (0320). A tag on voucher lines, not a set of accounts.';
 
 create trigger set_updated_at before update on public.cost_centres
   for each row execute function public.set_updated_at();
@@ -64,7 +64,7 @@ create index voucher_lines_cost_centre_idx
   on public.voucher_lines (tenant_id, cost_centre_id) where cost_centre_id is not null;
 
 comment on column public.voucher_lines.cost_centre_id is
-  'Which activity this income or expense belongs to, if the college tracks it (0319). Never on an asset, liability or equity line.';
+  'Which activity this income or expense belongs to, if the college tracks it (0320). Never on an asset, liability or equity line.';
 
 -- A reversal carries the tag with it (same signature as before, so grants are kept).
 create or replace function public.accounts_reverse_voucher(p_voucher_id uuid, p_date date default null::date, p_narration text default null::text)

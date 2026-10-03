@@ -68,7 +68,7 @@ export function NewTestButton({ courses }: { courses: Course[] }) {
       <p className="max-w-md text-sm text-muted-foreground">
         There is no class to set a test for: no subject is assigned to you in a year that has not
         ended yet.{" "}
-        <Link href="/academics" className="underline underline-offset-2">
+        <Link href="/academics?tab=assignments" className="underline underline-offset-2">
           Assign subjects in Academics
         </Link>
         .

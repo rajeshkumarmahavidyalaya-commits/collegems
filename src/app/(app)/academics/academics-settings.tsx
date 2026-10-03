@@ -129,14 +129,12 @@ export function AcademicsSettings(props: Props) {
   const { canManage } = props;
 
   return (
+    // Classes unless the link names a tab. This used to open Subjects once a
+    // class existed, which was right while one menu entry led here; the menu
+    // now has "Classes & Sections" and "Subjects" (?tab=subjects) side by
+    // side, and the first must not land on the second.
     <Tabs
-      defaultValue={
-        props.initialTab && TABS.includes(props.initialTab)
-          ? props.initialTab
-          : props.classLevels.length === 0
-            ? "classes"
-            : "subjects"
-      }
+      defaultValue={props.initialTab && TABS.includes(props.initialTab) ? props.initialTab : "classes"}
     >
       <TabsList className="flex-wrap">
         <TabsTrigger value="classes">Classes</TabsTrigger>

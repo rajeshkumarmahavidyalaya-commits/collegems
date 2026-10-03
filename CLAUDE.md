@@ -4380,10 +4380,11 @@ riders `0293` had added. See `docs/ui-review.md` and `docs/modules/transport.md`
 The interface follows the Weblizar School Management plugin: a green toolbar,
 a sidebar of modules, a lavender school and session band, green title bars.
 `docs/reference-ui.md` has the mapping from each reference screen to its
-route, components, RPCs and gate. It also lists what is unverified: no screen
-has been compared with the reference, and no signed-in page has been walked
-through, because this environment can reach neither host. Three things about
-it are load-bearing:
+route, components, RPCs and gate. It also records the 3 Oct 2026 walkthrough:
+77 routes as an administrator and a teacher, writes checked in the database,
+and a read-only comparison with the public demo. The comparison found the
+layout matching and the content not (module title bars, dashboard cards,
+columns). Three things about it are load-bearing:
 
 - **The module menu is presentation only.** `referenceNavigation()` regroups
   and renames what `navForRole` already allowed. It adds exactly two entries,

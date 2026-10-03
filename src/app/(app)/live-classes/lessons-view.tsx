@@ -231,7 +231,7 @@ export function ScheduleButton({ courses }: { courses: Course[] }) {
       <p className="max-w-md text-sm text-muted-foreground">
         There is no class to schedule for: no subject is assigned to a class in a year that has not
         ended yet.{" "}
-        <Link href="/academics" className="underline underline-offset-2">
+        <Link href="/academics?tab=assignments" className="underline underline-offset-2">
           Assign subjects in Academics
         </Link>
         .
