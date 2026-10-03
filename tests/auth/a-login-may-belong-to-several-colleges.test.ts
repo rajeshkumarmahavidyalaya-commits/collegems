@@ -49,6 +49,17 @@ describe("the picker lists the caller's own colleges and nothing else", () => {
     }
   });
 
+  it("choosing a college is the super admin's: only colleges they administer are listed or opened (0325)", () => {
+    expect(latest("my_schools").body).toMatch(/where m\.user_id = auth\.uid\(\)\s+and a\.admin/);
+    const { body } = latest("school_switch");
+    const gate = body.search(/rp\.permission_code = 'users\.manage' and rp\.allowed\) then/);
+    const move = body.indexOf("perform public.membership_activate_profile(v_uid, p_tenant_id)");
+    expect(gate).toBeGreaterThan(0);
+    expect(move).toBeGreaterThan(gate);
+    // The band offers the picker only where the menu does.
+    expect(src("src/components/app-shell/school-context.tsx")).toMatch(/canChooseSchool \? \(/);
+  });
+
   it("the counts are only for a college the caller administers", () => {
     const { body } = latest("my_schools");
     expect(body.match(/case when a\.admin and m\.is_active then/g)?.length).toBe(2);
@@ -59,7 +70,7 @@ describe("switching is a write to the active profile, never a wider read", () =>
   it("school_switch checks the membership, and that it is active, before anything moves", () => {
     const { header, body } = latest("school_switch");
     expect(header).toMatch(/security definer/);
-    const check = body.indexOf("if m.id is null or not m.is_active then");
+    const check = body.indexOf("if m.id is null or not m.is_active or not exists (");
     const move = body.indexOf("perform public.membership_activate_profile(v_uid, p_tenant_id)");
     expect(check).toBeGreaterThan(0);
     expect(move).toBeGreaterThan(check);

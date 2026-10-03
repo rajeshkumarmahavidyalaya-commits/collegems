@@ -116,6 +116,7 @@ export const hi: Messages = {
   "schools.switchedOff": "यहाँ आपका लॉगिन बंद है",
   "schools.switching": "{name} खुल रहा है…",
   "schools.none": "यह लॉगिन अभी किसी विद्यालय से जुड़ा नहीं है।",
+  "schools.superAdminOnly": "विद्यालय चुनना सुपर एडमिन का काम है: वह प्रशासक जो लॉगिन संभालता है। आपका लॉगिन ऊपर दिखाए गए विद्यालय में काम करता है।",
   "schools.list.title": "विद्यालय",
   "schools.add": "नया विद्यालय जोड़ें",
   "schools.viewAll": "सभी देखें",

@@ -44,13 +44,12 @@ export async function login(
   const next = safeNext(typeof raw === "string" ? raw : null);
   if (next !== "/") redirect(next);
 
-  // The reference's first page is School Management: a card per school. It
-  // is where an administrator -- the seat that adds schools -- and anybody who
-  // belongs to more than one school starts (0323). Everybody else goes
-  // straight to their school's dashboard; a list of one is not a choice.
+  // The reference's first page is School Management: a card per school, and
+  // it is the super admin's (0325). `my_schools` lists only the colleges the
+  // caller administers, so a non-empty list is exactly the super admin; every
+  // other seat goes straight to their school's dashboard.
   const { data: schools } = await supabase.rpc("my_schools");
-  const rows = schools ?? [];
-  redirect(rows.length > 1 || rows.some((r) => r.is_admin && r.is_current) ? "/schools" : "/");
+  redirect((schools ?? []).length > 0 ? "/schools" : "/");
 }
 
 export async function logout() {

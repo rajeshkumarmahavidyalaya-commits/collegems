@@ -563,6 +563,9 @@ Three things it settled:
 - **A college's team screen lists members who are working elsewhere today**,
   or a leaver could switch back in. `team_logins`, the last-way-back count and
   the leaver trigger read memberships.
+- **Choosing is the super admin's (0325).** The picker lists, and the switch
+  opens, only colleges where the caller's role holds `users.manage`; every
+  other seat works in the college its login is in and never sees the choice.
 - **Not an operator console.** An operator still belongs to no college and
   cannot switch into, add or own one; seeing another customer's children
   remains the impersonation this file refuses.

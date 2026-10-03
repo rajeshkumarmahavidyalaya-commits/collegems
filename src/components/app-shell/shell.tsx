@@ -48,6 +48,9 @@ export function AppShell({
   // The session link is offered where the sessions screen is already in this
   // person's menu; the screen checks academics.manage itself.
   const canManageSessions = navGroups.some((g) => g.items.some((i) => i.href === "/academics/sessions"));
+  // The school's name opens the picker only for the seat the menu offers it
+  // to; `school_switch` is the gate either way (0325).
+  const canChooseSchool = navGroups.some((g) => g.items.some((i) => i.href === "/schools"));
   // The reference puts an icon beside every module title. The page draws its
   // own heading, so the shell lends it the active menu entry's icon through a
   // CSS variable rather than every page importing one: the icon is rendered
@@ -155,6 +158,7 @@ export function AppShell({
               tenantName={tenantName}
               currentSessionName={currentSessionName}
               canManageSessions={canManageSessions}
+              canChooseSchool={canChooseSchool}
             />
             <span ref={iconSource} hidden aria-hidden="true">
               <ActiveIcon />

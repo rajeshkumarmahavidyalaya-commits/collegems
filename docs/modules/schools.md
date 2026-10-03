@@ -6,9 +6,20 @@ card makes it the school every other screen works in. Its **Schools** page is
 a table (School Name, Phone, Email, Address, Number of Classes, Admins,
 Status, Action) with **Add New School**.
 
+## Who chooses
+
+**Only the super admin (0325)**: a login whose role holds `users.manage` in
+the college, the same seat that may add a school. `my_schools` lists only the
+colleges the caller administers and `school_switch` refuses any other, so a
+teacher, accountant, librarian, parent or student never sees the picker: they
+land on their school's dashboard, the school's name in the band is plain text,
+and `/schools` tells them choosing is the super admin's. Probed: the Northgate
+administrator lists Northgate Academy and Northgate Test Annex and switches;
+the Northgate teacher lists none and is refused.
+
 ## What a login may see
 
-Only the colleges it belongs to. The platform owner does not see every
+Only the colleges it belongs to and administers. The platform owner does not see every
 customer's college here; that is the operator console's job, and it never
 shows a child, a family, money or marks (0209). Chosen by the product owner on
 3 Oct 2026 as "Schools you belong to".

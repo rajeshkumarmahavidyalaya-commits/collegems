@@ -13,9 +13,10 @@ export const metadata = { title: "School Management" };
  * The reference's first page: School Management > Dashboard, a card per
  * school this login belongs to, the current one highlighted. Choosing a card
  * makes that school the one every other screen works in (`school_switch`,
- * 0323). Only the caller's own schools are listed -- never another
- * customer's -- and one school is visible at a time, because the college is
- * in the token and every policy reads it from there.
+ * 0323). Only the super admin chooses (0325): `my_schools` lists the
+ * caller's own colleges where their role holds users.manage, and nothing for
+ * anybody else, who is told so. One school is visible at a time, because the
+ * college is in the token and every policy reads it from there.
  */
 export default async function SchoolsDashboardPage() {
   const [schools, canAdd, t] = await Promise.all([listMySchools(), hasPermission("users.manage"), getT()]);
@@ -23,12 +24,14 @@ export default async function SchoolsDashboardPage() {
   return (
     <div className="flex flex-col gap-6">
       <PageToolbar title={t("schools.title")} icon={School}>
-        <Button asChild variant="outline">
-          <Link href="/schools/manage">
-            <List className="size-4" aria-hidden="true" />
-            {t("schools.list.title")}
-          </Link>
-        </Button>
+        {schools.length > 0 && (
+          <Button asChild variant="outline">
+            <Link href="/schools/manage">
+              <List className="size-4" aria-hidden="true" />
+              {t("schools.list.title")}
+            </Link>
+          </Button>
+        )}
         {canAdd && (
           <Button asChild variant="outline">
             <Link href="/schools/new">
@@ -38,9 +41,9 @@ export default async function SchoolsDashboardPage() {
           </Button>
         )}
       </PageToolbar>
-      <p className="text-sm text-muted-foreground">{t("schools.intro")}</p>
+      {schools.length > 0 && <p className="text-sm text-muted-foreground">{t("schools.intro")}</p>}
       {schools.length === 0 ? (
-        <p className="rounded-lg border bg-card px-6 py-10 text-center text-sm text-muted-foreground">{t("schools.none")}</p>
+        <p className="rounded-lg border bg-card px-6 py-10 text-center text-sm text-muted-foreground">{t("schools.superAdminOnly")}</p>
       ) : (
         <ul className="grid gap-6 sm:grid-cols-2 xl:grid-cols-3" role="list">
           {schools.map((s) => (

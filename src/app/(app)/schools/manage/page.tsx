@@ -47,7 +47,7 @@ export default async function SchoolsListPage() {
         )}
       </PageToolbar>
       {schools.length === 0 ? (
-        <p className="rounded-lg border bg-card px-6 py-10 text-center text-sm text-muted-foreground">{t("schools.none")}</p>
+        <p className="rounded-lg border bg-card px-6 py-10 text-center text-sm text-muted-foreground">{t("schools.superAdminOnly")}</p>
       ) : (
         <>
           <div className="overflow-x-auto rounded-md border">

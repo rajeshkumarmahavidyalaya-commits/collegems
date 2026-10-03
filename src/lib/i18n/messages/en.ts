@@ -133,6 +133,7 @@ export const en = {
   "schools.switchedOff": "Your login is switched off here",
   "schools.switching": "Opening {name}…",
   "schools.none": "This login belongs to no school yet.",
+  "schools.superAdminOnly": "Choosing a school is for the super admin: the administrator who manages logins. Your login works in the school shown above.",
   "schools.list.title": "Schools",
   "schools.add": "Add New School",
   "schools.viewAll": "View All",

@@ -116,6 +116,7 @@ export const ur: Messages = {
   "schools.switchedOff": "یہاں آپ کا لاگ اِن بند ہے",
   "schools.switching": "{name} کھل رہا ہے…",
   "schools.none": "یہ لاگ اِن ابھی کسی اسکول سے منسلک نہیں ہے۔",
+  "schools.superAdminOnly": "اسکول منتخب کرنا سپر ایڈمن کا کام ہے: وہ منتظم جو لاگ اِن سنبھالتا ہے۔ آپ کا لاگ اِن اوپر دکھائے گئے اسکول میں کام کرتا ہے۔",
   "schools.list.title": "اسکول",
   "schools.add": "نیا اسکول شامل کریں",
   "schools.viewAll": "سب دیکھیں",
