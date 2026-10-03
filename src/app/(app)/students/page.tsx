@@ -30,7 +30,7 @@ export default async function StudentsPage() {
           <Button asChild>
             <Link href="/students/new">
               <UserPlus className="size-4" aria-hidden="true" />
-              Admit student
+              Add Student
             </Link>
           </Button>
         )}

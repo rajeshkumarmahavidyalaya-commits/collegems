@@ -18,7 +18,7 @@ export default async function HostelPage() {
   if (!canView) {
     return (
       <div className="flex flex-col gap-6">
-        <h1 className="text-2xl font-semibold">Hostel</h1>
+        <h1 className="text-2xl font-semibold">Hostels</h1>
         <p className="max-w-2xl text-sm text-muted-foreground">
           Ask an administrator to grant you <code className="font-mono">hostel.view</code>.
         </p>
@@ -44,7 +44,7 @@ export default async function HostelPage() {
     <div className="flex flex-col gap-6">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-semibold">Hostel</h1>
+          <h1 className="text-2xl font-semibold">Hostels</h1>
           <p className="max-w-2xl text-sm text-muted-foreground">
             Boarding houses, their rooms, and who sleeps where. The fare is on the room, not the
             hostel — a four-bed dormitory costs less per child than a two-bed room.

@@ -51,7 +51,7 @@ export default async function ConcessionsPage() {
           <ArrowLeft className="size-3.5 rtl:rotate-180" aria-hidden="true" />
           Fees
         </Link>
-        <h1 className="mt-1 text-2xl font-semibold">Concessions</h1>
+        <h1 className="mt-1 text-2xl font-semibold">Students with Concession</h1>
         <p className="max-w-2xl text-sm text-muted-foreground">
           Sibling discounts, staff wards, free seats and scholarships. A concession is granted to a
           named child for a stated reason, and comes off the next invoice automatically &mdash; the

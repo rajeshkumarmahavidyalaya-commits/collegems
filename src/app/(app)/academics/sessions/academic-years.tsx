@@ -321,7 +321,7 @@ export function AcademicYears({
         {canManage && (
           <Button onClick={() => setAdding(true)}>
             <Plus className="size-4" aria-hidden="true" />
-            Add year
+            Add New Session
           </Button>
         )}
       </div>

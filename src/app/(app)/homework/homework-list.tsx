@@ -182,7 +182,7 @@ export function HomeworkList({
             }}
           >
             <Plus className="size-4" aria-hidden="true" />
-            Set homework
+            Add New Homework
           </Button>
         )}
       </CardHeader>
@@ -432,7 +432,7 @@ function EmptyState({
       {canManage && (
         <Button variant="outline" size="sm" onClick={onAdd}>
           <Plus className="size-4" aria-hidden="true" />
-          Set homework
+          Add New Homework
         </Button>
       )}
     </div>

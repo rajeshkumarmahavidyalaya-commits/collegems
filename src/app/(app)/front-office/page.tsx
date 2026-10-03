@@ -36,7 +36,7 @@ export default async function FrontOfficePage({
   if (!canView) {
     return (
       <div className="flex flex-col gap-6">
-        <h1 className="text-2xl font-semibold">Front office</h1>
+        <h1 className="text-2xl font-semibold">Inquiries</h1>
         <p className="max-w-2xl text-sm text-muted-foreground">
           Enquiries hold a child&apos;s date of birth and a family&apos;s phone number before either
           has any relationship with the school, so the register is kept to the office. Ask an
@@ -61,7 +61,7 @@ export default async function FrontOfficePage({
   return (
     <div className="flex flex-col gap-6">
       <div>
-        <h1 className="text-2xl font-semibold">Front office</h1>
+        <h1 className="text-2xl font-semibold">Inquiries</h1>
         <p className="max-w-2xl text-sm text-muted-foreground">
           The admissions funnel for {ctx?.currentSessionName ?? "the current session"}, and who is in
           the building. An enquiry is not a student record until somebody admits it — which is one

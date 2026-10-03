@@ -84,7 +84,7 @@ export function IssueBookDialog({
     <>
       <Button onClick={() => setOpen(true)}>
         <BookUp className="size-4" aria-hidden="true" />
-        Issue a book
+        Issue Book
       </Button>
       <Dialog
         open={open}
@@ -95,7 +95,7 @@ export function IssueBookDialog({
       >
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Issue a book</DialogTitle>
+            <DialogTitle>Issue Book</DialogTitle>
             <DialogDescription>
               {book ? book.title : "Type part of the title, then part of the borrower's name or card number."}
             </DialogDescription>

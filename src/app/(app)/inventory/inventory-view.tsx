@@ -183,7 +183,7 @@ function StockTab({
         {canManage && (
           <Button size="sm" onClick={onAdd} className="cursor-pointer">
             <Plus className="size-4" aria-hidden="true" />
-            New item
+            Add New Item
           </Button>
         )}
       </CardHeader>

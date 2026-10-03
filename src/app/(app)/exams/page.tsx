@@ -17,7 +17,7 @@ export default async function ExamsPage() {
   return (
     <div className="flex flex-col gap-6">
       <div>
-        <h1 className="text-2xl font-semibold">Exams</h1>
+        <h1 className="text-2xl font-semibold">Manage Exams</h1>
         <p className="max-w-2xl text-sm text-muted-foreground">
           Examinations for {ctx?.currentSessionName ?? "the current session"}. How marks become a
           result — grade bands, grace, best-of-N, additional subjects — is a grading scheme, stored

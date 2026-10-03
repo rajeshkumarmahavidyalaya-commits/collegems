@@ -22,7 +22,7 @@ export default async function InventoryPage() {
   if (!canView) {
     return (
       <div className="flex flex-col gap-6">
-        <h1 className="text-2xl font-semibold">Store and stock</h1>
+        <h1 className="text-2xl font-semibold">Stationary Items</h1>
         <p className="max-w-2xl text-sm text-muted-foreground">
           Ask an administrator to grant you <code className="font-mono">inventory.view</code>.
         </p>
@@ -47,7 +47,7 @@ export default async function InventoryPage() {
     <div className="flex flex-col gap-6">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-semibold">Store and stock</h1>
+          <h1 className="text-2xl font-semibold">Stationary Items</h1>
           <p className="max-w-2xl text-sm text-muted-foreground">
             What the school holds, and what happened to it. Quantity on hand is a sum over every
             movement, never a stored number — so it cannot drift away from the events that produced

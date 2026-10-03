@@ -180,7 +180,7 @@ function ExamsTab({
         {canManage && (
           <Button size="sm" onClick={onAdd}>
             <Plus className="size-4" aria-hidden="true" />
-            New exam
+            Add New Exam
           </Button>
         )}
       </CardHeader>
@@ -203,7 +203,7 @@ function ExamsTab({
             {canManage && (
               <Button variant="outline" size="sm" onClick={onAdd}>
                 <Plus className="size-4" aria-hidden="true" />
-                New exam
+                Add New Exam
               </Button>
             )}
           </div>

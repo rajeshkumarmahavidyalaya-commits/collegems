@@ -3,6 +3,7 @@ import { CalendarDays, GraduationCap, IndianRupee, Megaphone, Palmtree } from "l
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { MonthCalendar } from "@/components/calendar/month-calendar";
+import { CalendarActions } from "@/components/calendar/calendar-actions";
 import { createClient } from "@/lib/supabase/server";
 import { getLocale, getT } from "@/lib/i18n/server";
 import { formatDate } from "@/lib/i18n/format";
@@ -41,6 +42,7 @@ export default async function CalendarPage({
           <h1 className="text-2xl font-semibold">{t("calendar.title")}</h1>
           <p className="max-w-2xl text-sm text-muted-foreground">{t("calendar.intro")}</p>
         </div>
+        <CalendarActions />
       </div>
 
       {/* The reference's month grid; the agenda below lists the same entries

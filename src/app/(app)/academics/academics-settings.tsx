@@ -273,7 +273,7 @@ function SubjectsTab({
         {canManage && (
           <Button size="sm" onClick={() => setCreating(true)}>
             <Plus className="size-4" aria-hidden="true" />
-            Add subject
+            Add New Subject
           </Button>
         )}
       </div>
@@ -954,7 +954,7 @@ function HolidaysTab({
         {canManage && (
           <Button size="sm" onClick={() => setCreating(true)}>
             <Plus className="size-4" aria-hidden="true" />
-            Add holiday
+            Add New Holiday
           </Button>
         )}
       </div>

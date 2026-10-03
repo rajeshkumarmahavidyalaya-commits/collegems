@@ -97,7 +97,7 @@ export function ExamDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-h-[90svh] overflow-y-auto sm:max-w-lg">
         <DialogHeader>
-          <DialogTitle>{exam ? "Edit exam" : "New exam"}</DialogTitle>
+          <DialogTitle>{exam ? "Edit exam" : "Add New Exam"}</DialogTitle>
           <DialogDescription>
             Leaving the scheme empty uses whichever scheme the school has marked
             as its default, so changing that default moves every exam that never

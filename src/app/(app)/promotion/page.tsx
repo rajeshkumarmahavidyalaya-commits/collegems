@@ -25,7 +25,7 @@ export default async function PromotionPage() {
   return (
     <div className="flex flex-col gap-6">
       <div>
-        <h1 className="text-2xl font-semibold">Promotion</h1>
+        <h1 className="text-2xl font-semibold">Student Promotion</h1>
         <p className="max-w-2xl text-sm text-muted-foreground">
           Moving a whole school up a year. The rules produce a first answer; the preview is a set of
           rows you can change, and applying writes what the rows say — because every year there are

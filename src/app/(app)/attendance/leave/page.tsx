@@ -38,7 +38,7 @@ export default async function StudentLeavePage() {
           <ArrowLeft className="size-3.5 rtl:rotate-180" aria-hidden="true" />
           Attendance
         </Link>
-        <h1 className="mt-1 text-2xl font-semibold">Student leave</h1>
+        <h1 className="mt-1 text-2xl font-semibold">Student Leaves</h1>
         <p className="max-w-2xl text-sm text-muted-foreground">
           A family tells the school a child will be away; a class teacher or the office decides.
         </p>

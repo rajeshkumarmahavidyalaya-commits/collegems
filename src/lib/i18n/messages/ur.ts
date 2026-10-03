@@ -251,7 +251,7 @@ export const ur: Messages = {
   "notices.title": "نوٹس بورڈ",
   "notices.body":
     "سرکلر اور اعلانات، جو بعد میں دوبارہ پڑھے جا سکیں۔ آپ کو صرف وہی دکھائے جاتے ہیں جو آپ کے لیے ہیں۔",
-  "notices.manage": "نوٹس لکھیں اور سنبھالیں",
+  "notices.manage": "نیا نوٹس شامل کریں",
   "notices.empty.title": "بورڈ پر کچھ نہیں",
   "notices.empty.staff":
     "ابھی تک کچھ شائع نہیں ہوا۔ اعلان کے بعد بھی نوٹس یہیں رہتا ہے، تاکہ دوبارہ پڑھا جا سکے۔",
@@ -692,6 +692,8 @@ export const ur: Messages = {
   "onlineTests.state.lapsed": "وقت ختم ہو گیا",
   "idCard.scanLabel": "اس کارڈ کا اسکین کوڈ",
   "calendar.title": "اسکول کیلنڈر",
+  "calendar.addEvent": "تقریب شامل کریں",
+  "calendar.addHoliday": "تعطیل شامل کریں",
   "calendar.intro": "چھٹیاں، امتحانات، فیس کی آخری تاریخیں اور نوٹس، ہر ایک اسی ماڈیول سے جس کا وہ ہے۔ چھٹیاں تعلیمی حصے میں شامل کی جاتی ہیں۔",
   "calendar.month": "مہینہ",
   "calendar.previous": "پچھلا مہینہ",

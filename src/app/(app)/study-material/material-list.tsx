@@ -131,7 +131,7 @@ export function MaterialList({ material, sections, subjects, canManage }: Props)
         {canManage && (
           <Button size="sm" onClick={() => setOpen(true)}>
             <Plus className="size-4" aria-hidden="true" />
-            Add material
+            Add New Study Material
           </Button>
         )}
       </CardHeader>
@@ -153,7 +153,7 @@ export function MaterialList({ material, sections, subjects, canManage }: Props)
             {canManage && (
               <Button variant="outline" size="sm" onClick={() => setOpen(true)}>
                 <Plus className="size-4" aria-hidden="true" />
-                Add material
+                Add New Study Material
               </Button>
             )}
           </div>

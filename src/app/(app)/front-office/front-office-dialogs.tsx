@@ -100,7 +100,7 @@ export function EnquiryDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-h-[90svh] overflow-y-auto sm:max-w-lg">
         <DialogHeader>
-          <DialogTitle>New enquiry</DialogTitle>
+          <DialogTitle>Add New Inquiry</DialogTitle>
           <DialogDescription>
             This does not create a student. It records a family that asked, so
             somebody can ring them back and the school can say what happened.

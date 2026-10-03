@@ -91,7 +91,7 @@ export function HostelDialog({
       <DialogContent className="max-h-[90svh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>
-            {hostel ? "Edit house" : "New boarding house"}
+            {hostel ? "Edit house" : "Add New Hostel"}
           </DialogTitle>
           <DialogDescription>
             Give it a fee head so its room fares reach the bill, and a warden so
@@ -244,7 +244,7 @@ export function RoomDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-h-[90svh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>{room ? "Edit room" : "New room"}</DialogTitle>
+          <DialogTitle>{room ? "Edit room" : "Add New Room"}</DialogTitle>
           <DialogDescription>
             Changing a fare here does not restate a bill already raised: a stay
             keeps the fare it was made at. Lowering the bed count below the

@@ -13,7 +13,7 @@ export default async function DayBookPage() {
     <div className="flex flex-col gap-4">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-semibold">Day book</h1>
+          <h1 className="text-2xl font-semibold">Payment History</h1>
           <p className="text-sm text-muted-foreground">
             Every payment and refund that crossed the counter, for{" "}
             {ctx?.currentSessionName ?? "the current session"} — what the drawer is reconciled

@@ -38,7 +38,7 @@ export default async function FeeCounterPage({
     <div className="flex flex-col gap-4">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-semibold">Fee counter</h1>
+          <h1 className="text-2xl font-semibold">Collect Payments</h1>
           <p className="text-sm text-muted-foreground">
             Take payments, add dues, apply discounts and fines for{" "}
             {ctx?.currentSessionName ?? "the current session"}.

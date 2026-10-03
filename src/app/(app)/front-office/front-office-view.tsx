@@ -298,7 +298,7 @@ function EnquiryTable({
         {canManage && (
           <Button size="sm" onClick={onAdd} className="cursor-pointer">
             <Plus className="size-4" aria-hidden="true" />
-            New enquiry
+            Add New Inquiry
           </Button>
         )}
       </CardHeader>

@@ -31,7 +31,7 @@ export default async function AcademicYearsPage() {
   return (
     <div className="flex flex-col gap-4">
       <div>
-        <h1 className="text-2xl font-semibold">Academic years</h1>
+        <h1 className="text-2xl font-semibold">Sessions</h1>
         <p className="text-sm text-muted-foreground">
           {ctx?.tenantName ?? "This school"} files every register, invoice and receipt under the
           year that is current when it is written. Making the right one current is how those rows

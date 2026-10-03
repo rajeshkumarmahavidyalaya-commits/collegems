@@ -176,7 +176,7 @@ function RoutesTab({
         {canManage && (
           <Button size="sm" onClick={onAdd} className="cursor-pointer">
             <Plus className="size-4" aria-hidden="true" />
-            New route
+            Add New Route
           </Button>
         )}
       </CardHeader>
@@ -313,7 +313,7 @@ function FleetTab({
         {canManage && (
           <Button size="sm" onClick={onAdd} className="cursor-pointer">
             <Plus className="size-4" aria-hidden="true" />
-            New vehicle
+            Add New Vehicle
           </Button>
         )}
       </CardHeader>

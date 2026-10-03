@@ -151,4 +151,13 @@ describe("the school calendar", () => {
     expect(page).toMatch(/rpc\("school_calendar"/);
     expect(page).not.toMatch(/roleCode|roleTier|hasPermission/);
   });
+
+  it("draws its Add Event / Add Holiday buttons from a component that reads nothing", () => {
+    // The buttons are gated on the permission each destination checks; the
+    // calendar's entries stay decided by school_calendar() alone.
+    const actions = src("src/components/calendar/calendar-actions.tsx");
+    expect(actions).toMatch(/hasPermission\("notices\.manage"\)/);
+    expect(actions).toMatch(/hasPermission\("academics\.manage"\)/);
+    expect(actions).not.toMatch(/\.rpc\(|\.from\(|createClient/);
+  });
 });

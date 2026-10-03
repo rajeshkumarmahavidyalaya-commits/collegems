@@ -115,7 +115,7 @@ export function RouteDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-h-[90svh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>{route ? "Edit route" : "New route"}</DialogTitle>
+          <DialogTitle>{route ? "Edit route" : "Add New Transport Route"}</DialogTitle>
           <DialogDescription>
             A route is one trip. Give it a vehicle to have its seats counted,
             and a fee head so its fares reach the bill.
@@ -310,7 +310,7 @@ export function VehicleDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-h-[90svh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>{vehicle ? "Edit vehicle" : "New vehicle"}</DialogTitle>
+          <DialogTitle>{vehicle ? "Edit vehicle" : "Add New Vehicle"}</DialogTitle>
           <DialogDescription>
             Seats are what the vehicle is licensed to carry — the number on the
             door, and the number every route using it checks against.

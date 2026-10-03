@@ -129,7 +129,7 @@ export function HomeworkDialog({
       <DialogContent className="max-h-[90svh] overflow-y-auto sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>
-            {homework ? "Edit homework" : "Set homework"}
+            {homework ? "Edit homework" : "Assign Homework"}
           </DialogTitle>
           <DialogDescription>
             Saving creates a draft. Nobody sees it until you set it for the

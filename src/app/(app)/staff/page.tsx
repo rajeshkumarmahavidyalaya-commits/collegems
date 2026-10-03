@@ -62,13 +62,13 @@ export default async function StaffPage() {
             <Button asChild variant="outline">
               <Link href="/staff/import">
                 <FileUp className="size-4" aria-hidden="true" />
-                Import from a spreadsheet
+                Bulk Import Staff
               </Link>
             </Button>
             <Button asChild>
               <Link href="/staff/new">
                 <UserPlus className="size-4" aria-hidden="true" />
-                Add staff
+                Add New Staff
               </Link>
             </Button>
           </div>

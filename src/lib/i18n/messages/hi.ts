@@ -251,7 +251,7 @@ export const hi: Messages = {
   "notices.title": "सूचना पट",
   "notices.body":
     "परिपत्र और घोषणाएँ, जो बाद में फिर पढ़ी जा सकें। आपको केवल वही दिखती हैं जो आपके लिए हैं।",
-  "notices.manage": "सूचनाएँ लिखें और प्रबंधित करें",
+  "notices.manage": "नई सूचना जोड़ें",
   "notices.empty.title": "पट पर कुछ नहीं है",
   "notices.empty.staff":
     "अभी तक कुछ प्रकाशित नहीं हुआ। घोषणा के बाद भी सूचना यहीं रहती है, ताकि फिर पढ़ी जा सके।",
@@ -695,6 +695,8 @@ export const hi: Messages = {
   "onlineTests.state.lapsed": "समय समाप्त",
   "idCard.scanLabel": "इस कार्ड का स्कैन कोड",
   "calendar.title": "विद्यालय कैलेंडर",
+  "calendar.addEvent": "कार्यक्रम जोड़ें",
+  "calendar.addHoliday": "अवकाश जोड़ें",
   "calendar.intro": "छुट्टियाँ, परीक्षाएँ, शुल्क की देय तिथियाँ और सूचनाएँ, हर एक उसी मॉड्यूल से जिसका वह है। छुट्टियाँ शैक्षणिक में जोड़ी जाती हैं।",
   "calendar.month": "माह",
   "calendar.previous": "पिछला माह",

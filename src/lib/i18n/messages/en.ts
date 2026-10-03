@@ -280,7 +280,7 @@ export const en = {
   "notices.title": "Notice board",
   "notices.body":
     "Circulars and announcements, kept so they can be read again. You are only shown the ones addressed to you.",
-  "notices.manage": "Write and manage notices",
+  "notices.manage": "Add New Notice",
   "notices.empty.title": "Nothing on the board",
   "notices.empty.staff":
     "Nothing has been published yet. A notice stays here after it is announced, so it can be read again.",
@@ -753,6 +753,8 @@ export const en = {
 
   // The newer screens: calendar, class tests, behaviour, the admitted screen.
   "calendar.title": "School calendar",
+  "calendar.addEvent": "Add Event",
+  "calendar.addHoliday": "Add Holiday",
   "calendar.intro": "Holidays, exams, fee due dates and notices, each from the module that owns it. Holidays are added under Academics.",
   "calendar.month": "Month",
   "calendar.previous": "Previous month",

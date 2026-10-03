@@ -21,29 +21,34 @@ export default async function BooksPage() {
     <div className="flex flex-col gap-4">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-semibold">Catalog</h1>
+          <h1 className="text-2xl font-semibold">Books</h1>
           <p className="text-sm text-muted-foreground">
             Every title held by {ctx?.tenantName ?? "the school"} library.
           </p>
         </div>
-        {canManage && (
-          <div className="flex flex-wrap gap-2">
-            <CategoriesDialog
-              title="Book categories"
-              description="Deleting a category leaves its books in the catalogue, uncategorised."
-              categories={categories}
-              save={saveBookCategory}
-              remove={deleteBookCategory}
-              deleteNote="Its books stay, uncategorised."
-            />
-            <Button asChild>
-              <Link href="/library/books/new">
-                <BookPlus className="size-4" aria-hidden="true" />
-                Add book
-              </Link>
-            </Button>
-          </div>
-        )}
+        <div className="flex flex-wrap gap-2">
+          <Button asChild variant="outline">
+            <Link href="/library/issues">View Books Issued</Link>
+          </Button>
+          {canManage && (
+            <>
+              <CategoriesDialog
+                title="Book categories"
+                description="Deleting a category leaves its books in the catalogue, uncategorised."
+                categories={categories}
+                save={saveBookCategory}
+                remove={deleteBookCategory}
+                deleteNote="Its books stay, uncategorised."
+              />
+              <Button asChild>
+                <Link href="/library/books/new">
+                  <BookPlus className="size-4" aria-hidden="true" />
+                  Add New Book
+                </Link>
+              </Button>
+            </>
+          )}
+        </div>
       </div>
 
       <BooksTable categories={categories} canManage={canManage} />

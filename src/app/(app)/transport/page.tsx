@@ -24,7 +24,7 @@ export default async function TransportPage() {
     return (
       <div className="flex flex-col gap-6">
         <div>
-          <h1 className="text-2xl font-semibold">Transport</h1>
+          <h1 className="text-2xl font-semibold">Transport Routes</h1>
           <p className="max-w-2xl text-sm text-muted-foreground">
             Routes and buses are visible to the office. Ask an administrator to grant you{" "}
             <code className="font-mono">transport.view</code>.
@@ -46,7 +46,7 @@ export default async function TransportPage() {
     <div className="flex flex-col gap-6">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-semibold">Transport</h1>
+          <h1 className="text-2xl font-semibold">Transport Routes</h1>
           <p className="max-w-2xl text-sm text-muted-foreground">
             Routes running in {ctx?.currentSessionName ?? "the current session"}. A route is a{" "}
             <span className="font-medium">trip</span>, not a bus: one vehicle doing a morning and an

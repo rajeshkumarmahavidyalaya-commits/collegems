@@ -19,7 +19,7 @@ export default async function StudyMaterialPage() {
   return (
     <div className="flex flex-col gap-6">
       <div>
-        <h1 className="text-2xl font-semibold">Study material</h1>
+        <h1 className="text-2xl font-semibold">Study Materials</h1>
         <p className="max-w-2xl text-sm text-muted-foreground">
           Worksheets, notes and recordings for {ctx?.currentSessionName ?? "this session"}. Files
           are private: a download is signed for the person who asked, ten minutes at a time, after

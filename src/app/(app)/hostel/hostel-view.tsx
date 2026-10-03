@@ -227,7 +227,7 @@ function RoomsTab({
             onClick={() => onAdd(hostels[0].id)}
           >
             <Plus className="size-4" aria-hidden="true" />
-            New room
+            Add New Room
           </Button>
         )}
       </CardHeader>
@@ -359,7 +359,7 @@ function HousesTab({
         {canManage && (
           <Button size="sm" className="cursor-pointer" onClick={onAdd}>
             <Plus className="size-4" aria-hidden="true" />
-            New house
+            Add New Hostel
           </Button>
         )}
       </CardHeader>

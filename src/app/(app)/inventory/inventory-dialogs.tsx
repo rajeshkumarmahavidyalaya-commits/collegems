@@ -539,7 +539,7 @@ export function ItemDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-h-[90svh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>{item ? "Edit item" : "New item"}</DialogTitle>
+          <DialogTitle>{item ? "Edit item" : "Add New Item"}</DialogTitle>
           <DialogDescription>
             A reorder level of zero means the item is never flagged — which is
             the right setting for a projector, and the wrong one for chalk.
