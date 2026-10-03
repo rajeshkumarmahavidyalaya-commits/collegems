@@ -4387,9 +4387,9 @@ layout matching and the content not (module title bars, dashboard cards,
 columns). Three things about it are load-bearing:
 
 - **The module menu is presentation only.** `referenceNavigation()` regroups
-  and renames what `navForRole` already allowed. It adds exactly two entries,
-  the setup wizard and the subjects tab, each beside a screen already in that
-  person's menu. `tests/app-shell/reference-navigation.test.ts` checks that
+  and renames what `navForRole` already allowed. It adds exactly three entries,
+  the setup wizard and the subjects and holidays tabs, each beside a screen
+  already in that person's menu. `tests/app-shell/reference-navigation.test.ts` checks that
   for all six seats.
 - **An export is the filtered set, not the page.** Every server-paged list
   passes `loadAll`, which reads every page as the signed-in person, so RLS is

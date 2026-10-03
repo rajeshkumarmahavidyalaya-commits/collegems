@@ -48,29 +48,57 @@ an icon tile, the School Calendar with Today and a coloured legend, the
 Search Students panel (keyword or class radio, "Get Students!"), and the table
 toolbar (Show N rows, Copy, CSV, Excel, PDF, Print, Column visibility).
 
-**Differs, not done:**
+**Brought into line on 3 Oct 2026, from `docs/reference-inventory.md`:**
 
-- **Module page headers.** The reference puts a green, centred title bar with
-  an icon and the main button on every module page ("Students" + "Add
-  Student"). Our module pages keep their own heading and description.
-  Only the dashboard has the green bar.
-- **Dashboard.** The reference has 12 cards (active inquiries, students,
-  classes, staff, income, fees collected, pending dues, unpaid invoices,
-  expenses, books, pending student and staff leave) and a "Last 10 Active
-  Inquiries" table. Ours has 4 cards, the calendar, and the module grid. Its
-  buttons are Add Class, Manage Sections and Assign Admins; ours are Classes
-  & Sections, Add Student and Setup Wizard.
-- **Columns.** The reference lists students with type, email, father's name
-  and phone, login email and username, admission date and enrollment number.
-  Its staff list shows salary, role and login, its invoices show father's
-  name and enrollment number, and its books show rack, book number and price.
-  Ours show fewer. Each would need its read path widened, and whether to show
-  a salary in a list is a permission question (rule 4).
-- **Search Students "Search Field".** The reference picks which field a
-  keyword searches. Ours searches the admission number only, and says so.
+- **Every module page** has the green, centred title bar with an icon and
+  its buttons outlined in white. It is one CSS rule over each page's own
+  heading block, and the shell lends the heading the active menu entry's
+  icon. Measured over 78 routes in light and dark mode: every page has the
+  bar, at 4.53:1 and 7.03:1 contrast.
+- **Every table** has the green header row, and the table buttons are the
+  grey group.
+- **Every form section** is a white card with an inset, centred green bar.
+- **The dashboard** has the reference's twelve cards in its order and
+  colours, its three buttons, and its two lists (last 10 active inquiries,
+  last 15 admissions this session). Each figure is gated on the permission of
+  whoever acts on it, and a hidden one is named, never shown as zero.
+- **Menu names, page titles and button names** are the reference's (Manage
+  Classes, Staff List, Fee Types, Books Issued; Student Fee Invoices, Collect
+  Payments, Manage Exams; Add New Book, Add Student, Issue Book, and so on),
+  with Holidays beside Subjects. Header links where this product has the
+  destination: View Books Issued, Payment History, Add New Fee Invoice, Add
+  Event, Add Holiday, Bulk Admission, View Students.
+- **Students** has the reference's columns and its Search Field (Admission
+  Number, Name, Phone, Email, Address). **Invoices** shows Payable, Paid, Due
+  and Paid / Partially Paid / Unpaid. **Staff** shows email and joining date.
+- **Admission** is titled "New Admission For Session: ...", with sections
+  named Personal Detail and Admission Detail.
+
+**Still differs:**
+
+- **"Unpaid Invoices"** on the dashboard is shown as students with dues.
+  This backend keeps balances per child, not per invoice.
+- **Fields this backend does not store**: religion, caste, category, mother
+  tongue, birth place, previous school, medium, house, student type on the
+  admission form; per-student fee structure and login creation inside
+  admission (logins are invited from Admins); suspension.
+- **Columns not shown**: a staff member's salary, role and login (a
+  permission decision, not a layout one); a student's login and enrollment
+  number; a book's rack, book number and price, and other module lists not
+  reworked yet (books, exams, routes, hostels, items).
+- **Placement**: on Hostels and Transport Routes, "Add New ..." sits on each
+  section's card rather than in the title bar. Library Cards has no "Issue
+  Library Cards" button, because a card is issued from the student's or
+  staff member's own record.
+- **Our extras stay** under the reference dashboard: the setup checklist,
+  the module grid, the two registers and the charts.
 - **Modules this backend does not have**: Medium, House, Activities, Lessons
-  and Chapters, Tickets, Gate Pass, Chat, Staff Rating, Donation, ID card
-  layouts, transfer between schools, webcam and QR attendance.
+  and Chapters, Tickets, Gate Pass, Chat, Staff Rating, Donation, Expenses as
+  their own screen, ID card layouts, transfer between schools, webcam and QR
+  attendance, Student Birthdays.
+- **No pixel comparison.** Layout and structure were matched against
+  screenshots side by side. The reference's own CSS and images were not
+  copied.
 
 ### Found and fixed during the walkthrough
 
@@ -88,8 +116,18 @@ toolbar (Show N rows, Copy, CSV, Excel, PDF, Print, Column visibility).
   default dates from when one menu entry led there. It now opens Classes,
   and the two "Assign subjects" links name their tab.
 - **"Across 1 sections"** on the dashboard.
+- **The students list showed any year's class.** Its embedded enrolments
+  had no session filter, so whichever enrolment the join returned first was
+  shown. It now reads the current session's.
 
 ### Measured, not fixed
+
+- **Statement timeouts recur under load.** `/library/issues` and `/students`
+  each timed out once during the sweeps. The cause is not the cron jobs:
+  `jobs_tick` and both schedule ticks stayed under 2.7 s over two hours. The
+  same queries run in 12-285 ms on their own. `pg_stat_statements` shows
+  spikes (`module_cards` averages 503 ms with a 7.5 s maximum), which points
+  at the database instance's capacity when several pages load at once.
 
 - **Pages take 3-9 s here, and a save takes 2-8 s to show.** Each request from
   this container to Supabase costs about 170 ms. The database's own statistics
