@@ -123,16 +123,22 @@ describe("the tiles", () => {
 });
 
 describe("the home page", () => {
-  const page = src("src/app/(app)/page.tsx");
+  // The page streams its sections (lazy loading); the grid and its feed live
+  // in dashboard-sections.tsx, which the page renders.
+  const page = src("src/components/dashboard/dashboard-sections.tsx");
 
   it("gives staff the grid and a family their own links", () => {
-    expect(page).toMatch(/ctx\?\.roleTier === "student" \? \(/);
+    expect(src("src/app/(app)/page.tsx")).toMatch(/<DashboardModules /);
+    expect(page).toMatch(/roleTier === "student" \? \(/);
     expect(page).toMatch(/<ModuleGrid/);
   });
 
   it("feeds the grid the brief's receipts and staff register rather than asking twice", () => {
     expect(page).toMatch(/receipts_today/);
     expect(page).toMatch(/staff_attendance\?\.marked/);
+    // ...from the same memoised summary every section reads, not a second call.
+    expect(page.match(/rpc\("dashboard_summary"\)/g)).toHaveLength(1);
+    expect(page).toMatch(/const getBrief = cache\(/);
   });
 
   it("the grid decides nothing about roles", () => {

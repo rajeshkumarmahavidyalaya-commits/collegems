@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import Link from "next/link";
 import { ArrowUpRight } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
@@ -15,7 +16,32 @@ import { cn } from "@/lib/utils";
  * caller may not see is a card the function did not return. When it returns
  * nothing, the strip draws nothing -- the list below is still the page.
  */
-export async function ModuleCards({ module }: { module: string }) {
+export function ModuleCards({ module }: { module: string }) {
+  // Lazy: the page around the strip renders at once and the counts stream in
+  // when module_cards() answers, behind a placeholder of the same height, so
+  // one slow count never holds up the list below it.
+  return (
+    <Suspense fallback={<ModuleCardsSkeleton module={module} />}>
+      <ModuleCardsContent module={module} />
+    </Suspense>
+  );
+}
+
+function ModuleCardsSkeleton({ module }: { module: string }) {
+  const n = Math.min(Object.keys(MODULE_CARDS[module] ?? {}).length || 4, 8);
+  return (
+    <ul aria-hidden="true" className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+      {Array.from({ length: n }, (_, i) => (
+        <li key={i} className="flex h-[82px] flex-col gap-2 rounded-xl border border-border bg-card p-4">
+          <span className="h-7 w-12 animate-pulse rounded bg-muted" />
+          <span className="h-4 w-28 animate-pulse rounded bg-muted" />
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+async function ModuleCardsContent({ module }: { module: string }) {
   const supabase = await createClient();
   const { data, error } = await supabase.rpc("module_cards", { p_module: module });
   if (error) return null;

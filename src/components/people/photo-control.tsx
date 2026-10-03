@@ -97,7 +97,7 @@ export function PhotoControl({
       <div className="flex size-20 shrink-0 items-center justify-center overflow-hidden rounded-md border bg-muted">
         {preview ? (
           // eslint-disable-next-line @next/next/no-img-element
-          <img src={preview} alt="" className="size-full object-cover" />
+          <img src={preview} alt="" loading="lazy" decoding="async" className="size-full object-cover" />
         ) : (
           <User className="size-6 text-muted-foreground" aria-hidden="true" />
         )}
