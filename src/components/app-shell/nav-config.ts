@@ -2,7 +2,6 @@ import type { LucideIcon } from "lucide-react";
 import type { MessageKey } from "@/lib/i18n/messages/en";
 import { referenceNavigation } from "./reference-navigation";
 import {
-  CalendarDays,
   AlarmClock,
   ArrowUpNarrowWide,
   BadgePercent,
@@ -16,6 +15,7 @@ import {
   Bus,
   CalendarCheck,
   CalendarClock,
+  CalendarDays,
   CalendarOff,
   CalendarRange,
   ClipboardCheck,
@@ -23,9 +23,11 @@ import {
   CreditCard,
   DoorOpen,
   FileBadge,
+  FileQuestion,
   FileSpreadsheet,
   FileText,
   FileUp,
+  Fingerprint,
   FolderOpen,
   GraduationCap,
   Hourglass,
@@ -37,25 +39,24 @@ import {
   LayoutDashboard,
   Library,
   ListChecks,
+  ListTodo,
   MapPin,
   NotebookPen,
-  ScanLine,
-  Fingerprint,
-  FileQuestion,
-  Video,
+  Palette,
   PenLine,
   PenSquare,
   Plane,
   Radio,
+  ScanLine,
   ScrollText,
   Settings2,
   ShieldAlert,
   Sigma,
   Sparkles,
-  ListTodo,
   UserCheck,
   UserPlus,
   Users,
+  Video,
   Wallet,
 } from "lucide-react";
 
@@ -796,6 +797,9 @@ export const NAV_GROUPS: NavGroup[] = [
         roles: ["admin", "accountant", "teacher", "librarian"],
       },
       { title: "Language", messageKey: "app.language", href: "/settings/language", icon: Languages },
+      // How the app looks to the person reading it -- a palette and light or
+      // dark, in their own cookie -- so every seat has it, like Language.
+      { title: "Appearance", messageKey: "settings.appearance.nav", href: "/settings/appearance", icon: Palette },
     ],
   },
 ];

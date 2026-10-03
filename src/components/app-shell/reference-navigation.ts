@@ -75,7 +75,7 @@ const MODULES: { title: string; messageKey: MessageKey; icon: NavGroup["icon"]; 
     icon: Bell,
     paths: ["/notifications", "/notifications/compose", "/notifications/log", "/notifications/channels", "/notifications/schedules"],
   },
-  { title: "SchoolOS Tools", messageKey: "nav.module.tools", icon: Sparkles, paths: ["/assistant", "/scan", "/settings/jobs", "/settings/language"] },
+  { title: "SchoolOS Tools", messageKey: "nav.module.tools", icon: Sparkles, paths: ["/assistant", "/scan", "/settings/jobs", "/settings/language", "/settings/appearance"] },
 ];
 
 /** The reference's names for screens this product already has. */

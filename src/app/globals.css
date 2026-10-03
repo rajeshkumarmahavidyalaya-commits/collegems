@@ -170,6 +170,266 @@
   --calendar-today: #a5b4fc;
 }
 
+/* ------------------------------------------------------------ palettes --
+   Chosen per person on Settings → Appearance (src/lib/theme/palettes.ts).
+   Indigo is :root above; it also answers to [data-palette="indigo"] below so
+   a preview of it can sit inside another palette. The selectors match any
+   element, not only <html>, so the picker's preview cards draw each palette
+   from these same tokens rather than carrying a copy of its colours. Each block overrides only the brand colours; the
+   meaning colours (paid, due, overdue) never change. Every pairing measured
+   at 4.5:1 or better, light and dark, before it was written. */
+[data-palette="indigo"] {
+  --primary: #4f46e5;
+  --ring: #4f46e5;
+  --sidebar-primary: #4f46e5;
+  --sidebar-ring: #4f46e5;
+  --accent: #eef0ff;
+  --accent-foreground: #3730a3;
+  --sidebar-accent: #eef0ff;
+  --sidebar-accent-foreground: #3730a3;
+  --muted: #eef0ff;
+  --school-header: #eef0ff;
+  --toolbar: #312e81;
+  --bar: #4f46e5;
+  --primary-gradient-end: #7c3aed;
+  --metric-blue: #4f46e5;
+  --metric-blue-bg: #eef0ff;
+  --calendar-today: #4f46e5;
+  --chart-1: #4f46e5;
+}
+.dark[data-palette="indigo"],
+.dark [data-palette="indigo"] {
+  --primary: #a5b4fc;
+  --ring: #a5b4fc;
+  --sidebar-primary: #a5b4fc;
+  --sidebar-ring: #a5b4fc;
+  --accent: #1e2250;
+  --sidebar-accent: #1e2250;
+  /* Reset what the light block set, or it leaks into dark mode. */
+  --accent-foreground: #e6e9f5;
+  --sidebar-accent-foreground: #e6e9f5;
+  --metric-blue-bg: #1e2250;
+  --muted: #181d3d;
+  --school-header: #181d3d;
+  --toolbar: #312e81;
+  --bar: #312e81;
+  --bar-foreground: #eef0ff;
+  --primary-gradient-end: #5b21b6;
+  --metric-blue: #a5b4fc;
+  --calendar-today: #a5b4fc;
+  --chart-1: #a5b4fc;
+}
+/* Emerald: white on #047857 5.48:1, on #0f766e 5.47:1; dark text on #6ee7b7 12.51:1. */
+[data-palette="emerald"] {
+  --primary: #047857;
+  --ring: #047857;
+  --sidebar-primary: #047857;
+  --sidebar-ring: #047857;
+  --accent: #ecfdf5;
+  --accent-foreground: #065f46;
+  --sidebar-accent: #ecfdf5;
+  --sidebar-accent-foreground: #065f46;
+  --muted: #ecfdf5;
+  --school-header: #ecfdf5;
+  --toolbar: #064e3b;
+  --bar: #047857;
+  --primary-gradient-end: #0f766e;
+  --metric-blue: #047857;
+  --metric-blue-bg: #ecfdf5;
+  --calendar-today: #047857;
+  --chart-1: #047857;
+}
+.dark[data-palette="emerald"],
+.dark [data-palette="emerald"] {
+  --primary: #6ee7b7;
+  --ring: #6ee7b7;
+  --sidebar-primary: #6ee7b7;
+  --sidebar-ring: #6ee7b7;
+  --accent: #13302a;
+  --sidebar-accent: #13302a;
+  /* Reset what the light block set, or it leaks into dark mode. */
+  --accent-foreground: #e6e9f5;
+  --sidebar-accent-foreground: #e6e9f5;
+  --metric-blue-bg: #13302a;
+  --muted: #0f2420;
+  --school-header: #0f2420;
+  --toolbar: #064e3b;
+  --bar: #064e3b;
+  --bar-foreground: #ecfdf5;
+  --primary-gradient-end: #115e59;
+  --metric-blue: #6ee7b7;
+  --calendar-today: #6ee7b7;
+  --chart-1: #6ee7b7;
+}
+/* Ocean: white on #1d4ed8 6.70:1, on #0e7490 5.36:1; dark text on #93c5fd 10.57:1. */
+[data-palette="ocean"] {
+  --primary: #1d4ed8;
+  --ring: #1d4ed8;
+  --sidebar-primary: #1d4ed8;
+  --sidebar-ring: #1d4ed8;
+  --accent: #eff6ff;
+  --accent-foreground: #1e40af;
+  --sidebar-accent: #eff6ff;
+  --sidebar-accent-foreground: #1e40af;
+  --muted: #eff6ff;
+  --school-header: #eff6ff;
+  --toolbar: #1e3a8a;
+  --bar: #1d4ed8;
+  --primary-gradient-end: #0e7490;
+  --metric-blue: #1d4ed8;
+  --metric-blue-bg: #eff6ff;
+  --calendar-today: #1d4ed8;
+  --chart-1: #1d4ed8;
+}
+.dark[data-palette="ocean"],
+.dark [data-palette="ocean"] {
+  --primary: #93c5fd;
+  --ring: #93c5fd;
+  --sidebar-primary: #93c5fd;
+  --sidebar-ring: #93c5fd;
+  --accent: #16284a;
+  --sidebar-accent: #16284a;
+  /* Reset what the light block set, or it leaks into dark mode. */
+  --accent-foreground: #e6e9f5;
+  --sidebar-accent-foreground: #e6e9f5;
+  --metric-blue-bg: #16284a;
+  --muted: #0f1d36;
+  --school-header: #0f1d36;
+  --toolbar: #1e3a8a;
+  --bar: #1e3a8a;
+  --bar-foreground: #eff6ff;
+  --primary-gradient-end: #155e75;
+  --metric-blue: #93c5fd;
+  --calendar-today: #93c5fd;
+  --chart-1: #93c5fd;
+}
+/* Berry: white on #be185d 6.04:1, on #7c3aed 5.70:1; dark text on #f9a8d4 10.51:1. */
+[data-palette="berry"] {
+  --primary: #be185d;
+  --ring: #be185d;
+  --sidebar-primary: #be185d;
+  --sidebar-ring: #be185d;
+  --accent: #fdf2f8;
+  --accent-foreground: #9d174d;
+  --sidebar-accent: #fdf2f8;
+  --sidebar-accent-foreground: #9d174d;
+  --muted: #fdf2f8;
+  --school-header: #fdf2f8;
+  --toolbar: #500724;
+  --bar: #be185d;
+  --primary-gradient-end: #7c3aed;
+  --metric-blue: #be185d;
+  --metric-blue-bg: #fdf2f8;
+  --calendar-today: #be185d;
+  --chart-1: #be185d;
+}
+.dark[data-palette="berry"],
+.dark [data-palette="berry"] {
+  --primary: #f9a8d4;
+  --ring: #f9a8d4;
+  --sidebar-primary: #f9a8d4;
+  --sidebar-ring: #f9a8d4;
+  --accent: #3a1530;
+  --sidebar-accent: #3a1530;
+  /* Reset what the light block set, or it leaks into dark mode. */
+  --accent-foreground: #e6e9f5;
+  --sidebar-accent-foreground: #e6e9f5;
+  --metric-blue-bg: #3a1530;
+  --muted: #2a1022;
+  --school-header: #2a1022;
+  --toolbar: #831843;
+  --bar: #831843;
+  --bar-foreground: #fdf2f8;
+  --primary-gradient-end: #5b21b6;
+  --metric-blue: #f9a8d4;
+  --calendar-today: #f9a8d4;
+  --chart-1: #f9a8d4;
+}
+/* Sunset: white on #c2410c 5.18:1, on #be123c 6.29:1; dark text on #fdba74 11.31:1. */
+[data-palette="sunset"] {
+  --primary: #c2410c;
+  --ring: #c2410c;
+  --sidebar-primary: #c2410c;
+  --sidebar-ring: #c2410c;
+  --accent: #fff7ed;
+  --accent-foreground: #9a3412;
+  --sidebar-accent: #fff7ed;
+  --sidebar-accent-foreground: #9a3412;
+  --muted: #fff7ed;
+  --school-header: #fff7ed;
+  --toolbar: #7c2d12;
+  --bar: #c2410c;
+  --primary-gradient-end: #be123c;
+  --metric-blue: #c2410c;
+  --metric-blue-bg: #fff7ed;
+  --calendar-today: #c2410c;
+  --chart-1: #c2410c;
+}
+.dark[data-palette="sunset"],
+.dark [data-palette="sunset"] {
+  --primary: #fdba74;
+  --ring: #fdba74;
+  --sidebar-primary: #fdba74;
+  --sidebar-ring: #fdba74;
+  --accent: #3a2414;
+  --sidebar-accent: #3a2414;
+  /* Reset what the light block set, or it leaks into dark mode. */
+  --accent-foreground: #e6e9f5;
+  --sidebar-accent-foreground: #e6e9f5;
+  --metric-blue-bg: #3a2414;
+  --muted: #2a1a0f;
+  --school-header: #2a1a0f;
+  --toolbar: #7c2d12;
+  --bar: #7c2d12;
+  --bar-foreground: #fff7ed;
+  --primary-gradient-end: #881337;
+  --metric-blue: #fdba74;
+  --calendar-today: #fdba74;
+  --chart-1: #fdba74;
+}
+/* Classic green (the reference's own): white on #198754 4.53:1, on #198754 4.53:1; dark text on #3fb27f 7.16:1. */
+[data-palette="classic"] {
+  --primary: #198754;
+  --ring: #198754;
+  --sidebar-primary: #198754;
+  --sidebar-ring: #198754;
+  --accent: #eef6f1;
+  --accent-foreground: #146c43;
+  --sidebar-accent: #eef6f1;
+  --sidebar-accent-foreground: #146c43;
+  --muted: #f5f6ff;
+  --school-header: #f5f6ff;
+  --toolbar: #198754;
+  --bar: #198754;
+  --primary-gradient-end: #198754;
+  --metric-blue: #146c43;
+  --metric-blue-bg: #e8f5ee;
+  --calendar-today: #146c43;
+  --chart-1: #198754;
+}
+.dark[data-palette="classic"],
+.dark [data-palette="classic"] {
+  --primary: #3fb27f;
+  --ring: #3fb27f;
+  --sidebar-primary: #3fb27f;
+  --sidebar-ring: #3fb27f;
+  --accent: #1b2740;
+  --sidebar-accent: #1b2740;
+  /* Reset what the light block set, or it leaks into dark mode. */
+  --accent-foreground: #e6e9f5;
+  --sidebar-accent-foreground: #e6e9f5;
+  --metric-blue-bg: #1b2740;
+  --muted: #172839;
+  --school-header: #172839;
+  --toolbar: #14532d;
+  --bar: #14532d;
+  --bar-foreground: #e5edfb;
+  --primary-gradient-end: #14532d;
+  --metric-blue: #3fb27f;
+  --calendar-today: #3fb27f;
+  --chart-1: #3fb27f;
+}
+
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
@@ -434,6 +694,9 @@
   content: ""; width: 22px; height: 22px; flex-shrink: 0; background-color: currentColor;
   -webkit-mask: var(--page-icon) center / contain no-repeat; mask: var(--page-icon) center / contain no-repeat;
 }
+/* Settings → Appearance: a palette's title bar in miniature, drawn from the
+   palette's own tokens via data-palette on the card. */
+.palette-preview-bar { background: var(--bar) linear-gradient(120deg, var(--bar), var(--primary-gradient-end)); }
 .reference-page h1 { font-size: 22px; font-weight: 500; line-height: 1.35; }
 .reference-page h2 { font-size: 18px; }
 .reference-page [data-slot="card"] { border-radius: 12px; gap: 16px; padding-block: 16px; box-shadow: 0 1px 2px rgb(15 23 42 / 0.04), 0 4px 12px rgb(15 23 42 / 0.04); }

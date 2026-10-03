@@ -4,6 +4,7 @@ import { I18nProvider } from "@/components/providers/i18n-provider";
 import { getLocale } from "@/lib/i18n/server";
 import { clientMessagesFor } from "@/lib/i18n/translate";
 import { directionOf } from "@/lib/i18n/config";
+import { getPalette } from "@/lib/theme/server";
 import { QueryProvider } from "@/components/providers/query-provider";
 import { Toaster } from "@/components/ui/sonner";
 import "./globals.css";
@@ -32,12 +33,15 @@ export const metadata: Metadata = {
  * around after hydration, which is a visible flip on every load.
  */
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
-  const locale = await getLocale();
+  const [locale, palette] = await Promise.all([getLocale(), getPalette()]);
 
   return (
     <html
       lang={locale}
       dir={directionOf(locale)}
+      // The reader's colour palette, from their cookie (Settings → Appearance),
+      // set here so the page arrives in it rather than flipping after load.
+      data-palette={palette}
       suppressHydrationWarning
       className="h-full antialiased"
     >

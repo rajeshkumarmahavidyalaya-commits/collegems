@@ -42,6 +42,7 @@ const EVERY_ROLE_ON_PURPOSE = new Map<string, string>([
   ["/calendar", "school_calendar() reads each source through its own policies, so a seat sees its own dates."],
   ["/library/books", "The catalogue is a catalogue."],
   ["/settings/language", "Somebody who cannot read the page needs this most."],
+  ["/settings/appearance", "A palette and light or dark are the reader's own, kept in their own cookie."],
   ["/assistant", "It reads with the asker's own token, so RLS and the matrix scope each seat's answers."],
 ]);
 
