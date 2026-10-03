@@ -20,9 +20,9 @@ import type { NavGroup, NavItem } from "./nav-config";
 /**
  * The reference's module menu (School Management, SM School, SM Academic, ...)
  * laid over the role-filtered tree. **Presentation only**: it regroups and
- * renames entries `navForRole` already allowed, and may add exactly two
- * destinations -- the setup wizard and the subjects tab -- each only beside a
- * screen already in the person's menu. It never grants an entry,
+ * renames entries `navForRole` already allowed, and may add exactly three
+ * destinations -- the setup wizard, and the subjects and holidays tabs -- each
+ * only beside a screen already in the person's menu. It never grants an entry,
  * and every page still checks its own permission (rule 4).
  *
  * Each module and label has a message key, so the menu is not English-only in
@@ -37,9 +37,9 @@ const MODULES: { title: string; messageKey: MessageKey; icon: NavGroup["icon"]; 
     messageKey: "nav.module.academic",
     icon: BookOpen,
     paths: [
-      "/academics/electives", "/my-subjects", "/timetable", "/timetable/me", "/timetable/substitutions",
-      "/attendance", "/attendance/report", "/attendance/leave", "/study-material", "/homework", "/notices",
-      "/calendar", "/live-classes",
+      "/timetable", "/timetable/me", "/timetable/substitutions", "/attendance", "/attendance/report",
+      "/attendance/leave", "/study-material", "/homework", "/notices", "/calendar", "/live-classes",
+      "/academics/electives", "/my-subjects",
     ],
   },
   {
@@ -82,7 +82,7 @@ const MODULES: { title: string; messageKey: MessageKey; icon: NavGroup["icon"]; 
 const LABELS: Record<string, { title: string; messageKey: MessageKey }> = {
   "/academics/sessions": { title: "Sessions", messageKey: "nav.ref.sessions" },
   "/settings/plan": { title: "Plan & License", messageKey: "nav.ref.plan" },
-  "/academics": { title: "Classes & Sections", messageKey: "nav.ref.classes" },
+  "/academics": { title: "Manage Classes", messageKey: "nav.ref.classes" },
   "/settings/school": { title: "Settings", messageKey: "nav.ref.settings" },
   "/checks": { title: "Setup Checks", messageKey: "nav.ref.checks" },
   "/timetable": { title: "Class Timetable", messageKey: "nav.ref.classTimetable" },
@@ -91,32 +91,34 @@ const LABELS: Record<string, { title: string; messageKey: MessageKey }> = {
   "/study-material": { title: "Study Materials", messageKey: "nav.ref.studyMaterials" },
   "/notices": { title: "Noticeboard", messageKey: "nav.ref.noticeboard" },
   "/calendar": { title: "Calendar", messageKey: "nav.ref.calendar" },
-  "/front-office": { title: "Inquiries & Pre-Admissions", messageKey: "nav.ref.inquiries" },
+  "/front-office": { title: "Inquiries", messageKey: "nav.ref.inquiries" },
   "/students/import": { title: "Bulk Admission", messageKey: "nav.ref.bulkAdmission" },
   "/students/id-cards": { title: "Print ID Cards", messageKey: "nav.ref.idCards" },
-  "/promotion": { title: "Promote Students", messageKey: "nav.ref.promote" },
-  "/settings/team": { title: "Admins & Logins", messageKey: "nav.ref.admins" },
-  "/settings/permissions": { title: "Roles & Permissions", messageKey: "nav.ref.roles" },
+  "/promotion": { title: "Promote", messageKey: "nav.ref.promote" },
+  "/settings/team": { title: "Admins", messageKey: "nav.ref.admins" },
+  "/settings/permissions": { title: "Roles", messageKey: "nav.ref.roles" },
+  "/staff": { title: "Staff List", messageKey: "nav.ref.staffList" },
   "/hr": { title: "Staff Attendance", messageKey: "nav.ref.staffAttendance" },
   "/hr/leave": { title: "Staff Leaves", messageKey: "nav.ref.staffLeaves" },
   "/payroll": { title: "Staff Payroll", messageKey: "nav.ref.payroll" },
-  "/fees/setup": { title: "Fee Types & Structures", messageKey: "nav.ref.feeTypes" },
-  "/fees/concessions": { title: "Concessions", messageKey: "nav.ref.concessions" },
+  "/fees/setup": { title: "Fee Types", messageKey: "nav.ref.feeTypes" },
+  "/fees/concessions": { title: "Students Concession", messageKey: "nav.ref.concessions" },
   "/fees/invoices": { title: "Fee Invoices", messageKey: "nav.ref.invoices" },
   "/fees/counter": { title: "Collect Payment", messageKey: "nav.ref.collect" },
   "/fees": { title: "Fee Balances", messageKey: "nav.ref.balances" },
   "/fees/daybook": { title: "Payment History", messageKey: "nav.ref.payments" },
   "/exams": { title: "Manage Exams", messageKey: "nav.ref.exams" },
   "/library/books": { title: "All Books", messageKey: "nav.ref.books" },
-  "/library/issues": { title: "Books Issued & Returns", messageKey: "nav.ref.issues" },
+  "/library/issues": { title: "Books Issued", messageKey: "nav.ref.issues" },
   "/library/members": { title: "Library Cards", messageKey: "nav.ref.libraryCards" },
   "/transport": { title: "Vehicles & Routes", messageKey: "nav.ref.routes" },
   "/transport/assignments": { title: "Assign Transport", messageKey: "nav.ref.assignTransport" },
-  "/inventory": { title: "Items & Stock", messageKey: "nav.ref.stock" },
+  "/inventory": { title: "Items", messageKey: "nav.ref.stock" },
+  "/hostel": { title: "Hostels", messageKey: "nav.ref.hostels" },
 };
 
-/** The two entries the reference has that the source tree does not. */
-export const REFERENCE_EXTRA_HREFS = ["/setup", "/academics?tab=subjects"] as const;
+/** The entries the reference has that the source tree does not. */
+export const REFERENCE_EXTRA_HREFS = ["/setup", "/academics?tab=subjects", "/academics?tab=holidays"] as const;
 
 export function referenceNavigation(groups: NavGroup[]): NavGroup[] {
   const available = new Map(groups.flatMap((g) => g.items).map((item) => [item.href, item]));
@@ -144,6 +146,16 @@ export function referenceNavigation(groups: NavGroup[]): NavGroup[] {
         title: "Subjects",
         messageKey: "nav.ref.subjects",
         href: "/academics?tab=subjects",
+      });
+    }
+    // The holidays tab, like subjects, beside the classes screen it lives on.
+    if (group.messageKey === "nav.module.academic" && available.has("/academics")) {
+      const at = items.findIndex((i) => i.href === "/calendar");
+      items.splice(at < 0 ? items.length : at + 1, 0, {
+        ...available.get("/academics")!,
+        title: "Holidays",
+        messageKey: "nav.ref.holidays",
+        href: "/academics?tab=holidays",
       });
     }
     // The wizard's steps come from setup_progress(), which answers only the

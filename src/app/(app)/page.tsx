@@ -1,14 +1,27 @@
 import {
   Award,
   BookMarked,
+  BookOpen,
   Building2,
+  CalendarClock,
+  CalendarX2,
+  CircleAlert,
   ClipboardCheck,
   EyeOff,
+  FileWarning,
   GraduationCap,
+  HandCoins,
   IndianRupee,
+  Layers,
+  MessageSquareText,
+  Receipt,
   TriangleAlert,
   Users,
+  type LucideIcon,
 } from "lucide-react";
+import { getReferenceFigures } from "@/components/dashboard/reference-figures";
+import { ReferenceLists } from "@/components/dashboard/reference-lists";
+import type { StatTone } from "@/components/dashboard/stat-card";
 import { createClient } from "@/lib/supabase/server";
 import { getUserContext } from "@/lib/auth/context";
 import Link from "next/link";
@@ -36,11 +49,12 @@ import {
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import {
   parseDashboardSummary,
-  studentRegisterReading,
   withheldSentence,
 } from "@/lib/validations/dashboard";
 
 export const metadata = { title: "Dashboard" };
+
+const TONES: StatTone[] = ["default", "success", "warning", "danger"];
 
 /**
  * The home page: a brief of everything, in one round trip.
@@ -67,38 +81,43 @@ export default async function DashboardPage({
 }: {
   searchParams: Promise<{ month?: string }>;
 }) {
-  // The two buttons are drawn on the permissions their screens check; the
-  // screens remain the gate (rule 4).
-  const [{ month }, ctx, locale, t, supabase, canAdmit, canConfigure] = await Promise.all([
+  // The buttons are drawn on the permissions their screens check; the screens
+  // remain the gate (rule 4).
+  const [{ month }, ctx, locale, t, supabase, canConfigure, canInvite] = await Promise.all([
     searchParams,
     getUserContext(),
     getLocale(),
     getT(),
     createClient(),
-    hasPermission("students.manage"),
     hasPermission("academics.manage"),
+    hasPermission("users.manage"),
   ]);
 
-  const { data, error } = await supabase.rpc("dashboard_summary");
+  const [{ data, error }, figures] = await Promise.all([
+    supabase.rpc("dashboard_summary"),
+    getReferenceFigures(ctx?.currentSessionId ?? null),
+  ]);
   const brief = error ? null : parseDashboardSummary(data);
 
-  // The reference's green title bar, with the school's main actions. The
-  // school and the session are in the band above every page (SchoolContext).
+  // The reference's green title bar and its three buttons. "Add Class" and
+  // "Manage Sections" both land on the classes tab, where a class is added and
+  // its sections are kept; "Assign Admins" is the logins screen. The school and
+  // the session are in the band above every page (SchoolContext).
   const heading = (
     <PageToolbar title={t("dashboard.toolbarTitle")}>
       {canConfigure && (
         <Button asChild>
-          <Link href="/academics?tab=classes">{t("nav.ref.classes")}</Link>
-        </Button>
-      )}
-      {canAdmit && (
-        <Button asChild>
-          <Link href="/students/new">{t("dashboard.addStudent")}</Link>
+          <Link href="/academics?tab=classes">{t("dashboard.ref.addClass")}</Link>
         </Button>
       )}
       {canConfigure && (
         <Button asChild>
-          <Link href="/setup">{t("nav.ref.setupWizard")}</Link>
+          <Link href="/academics?tab=classes">{t("dashboard.ref.manageSections")}</Link>
+        </Button>
+      )}
+      {canInvite && (
+        <Button asChild>
+          <Link href="/settings/team">{t("dashboard.ref.assignAdmins")}</Link>
         </Button>
       )}
     </PageToolbar>
@@ -151,15 +170,34 @@ export default async function DashboardPage({
   ].filter((d) => d.value > 0);
 
   const studentRegister = brief.student_attendance;
-  const attendanceReading = studentRegister ? studentRegisterReading(studentRegister) : null;
-  const attendanceValue =
-    attendanceReading === null
-      ? "—"
-      : attendanceReading.kind === "taken"
-        ? `${attendanceReading.percent}%`
-        : attendanceReading.kind === "holiday"
-          ? "Holiday"
-          : "Not taken";
+
+  const money = (v: number) =>
+    formatNumber(v, locale, { style: "currency", currency: "INR", maximumFractionDigits: 0, notation: "compact" });
+  const session = ctx?.currentSessionName ?? t("dashboard.ref.thisYear");
+  const all: { key: string; label: string; value: string | null; icon: LucideIcon; hint?: string }[] = [
+    { key: "inquiries", label: t("dashboard.ref.activeInquiries"), value: figures.activeInquiries === null ? null : String(figures.activeInquiries), icon: MessageSquareText },
+    { key: "students", label: t("dashboard.ref.activeStudents"), value: brief.school ? String(brief.school.students) : null, icon: GraduationCap, hint: session },
+    { key: "classes", label: t("dashboard.ref.totalClasses"), value: figures.classes === null ? null : String(figures.classes), icon: Layers },
+    { key: "staff", label: t("dashboard.ref.totalStaff"), value: brief.school?.staff == null ? null : String(brief.school.staff), icon: Users },
+    { key: "income", label: t("dashboard.ref.totalIncome"), value: figures.income === null ? null : money(figures.income), icon: HandCoins, hint: session },
+    { key: "collected", label: t("dashboard.ref.feesCollected"), value: brief.fees ? money(brief.fees.collected) : null, icon: IndianRupee, hint: session },
+    { key: "dues", label: t("dashboard.ref.pendingDues"), value: brief.fees ? money(brief.fees.outstanding) : null, icon: CircleAlert, hint: session },
+    // The reference counts unpaid invoices; this backend keeps balances per
+    // child, not per invoice, so it counts the children who owe instead.
+    { key: "owing", label: t("dashboard.ref.studentsWithDues"), value: brief.fees ? String(brief.fees.students_owing) : null, icon: FileWarning, hint: session },
+    { key: "expenses", label: t("dashboard.ref.totalExpenses"), value: figures.expenses === null ? null : money(figures.expenses), icon: Receipt, hint: session },
+    { key: "books", label: t("dashboard.ref.totalBooks"), value: figures.books === null ? null : String(figures.books), icon: BookOpen, hint: t("dashboard.ref.titles") },
+    { key: "studentLeave", label: t("dashboard.ref.pendingStudentLeaves"), value: figures.pendingStudentLeave === null ? null : String(figures.pendingStudentLeave), icon: CalendarClock, hint: t("dashboard.ref.awaitingDecision") },
+    { key: "staffLeave", label: t("dashboard.ref.pendingStaffLeaves"), value: figures.pendingStaffLeave === null ? null : String(figures.pendingStaffLeave), icon: CalendarX2, hint: t("dashboard.ref.awaitingDecision") },
+  ];
+  const cards = all.filter((c): c is typeof c & { value: string } => c.value !== null);
+  const hiddenCards = [
+    ...all.filter((c) => c.value === null).map((c) => c.label),
+    ...(figures.admissions === null ? [t("dashboard.ref.lastAdmissions", { session })] : []),
+  ];
+  const hiddenSentence = hiddenCards.length
+    ? t("dashboard.ref.withheld", { list: new Intl.ListFormat(locale, { type: "conjunction" }).format(hiddenCards) })
+    : null;
 
   const withheld = withheldSentence(brief.withheld);
 
@@ -167,75 +205,27 @@ export default async function DashboardPage({
     <div className="flex flex-col gap-6">
       {heading}
 
-      {/* The headline row: the four numbers somebody wants before they have
-          finished sitting down. */}
+      {/* The reference's twelve figures, in its order and its four colours.
+          A figure this person may not see is left out and named at the foot
+          of the page; it is never drawn as a zero (rule 11). */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <StatCard
-          label="Students on roll"
-          value={brief.school ? String(brief.school.students) : "—"}
-          icon={GraduationCap}
-          hint={
-            brief.school
-              ? `Across ${brief.school.sections} ${brief.school.sections === 1 ? "section" : "sections"}`
-              : "Not shown for your role"
-          }
-        />
-        <StatCard
-          label="Staff on roll"
-          value={brief.school?.staff !== null && brief.school?.staff !== undefined ? String(brief.school.staff) : "—"}
-          icon={Users}
-          hint={
-            brief.school?.staff === null || brief.school?.staff === undefined
-              ? "Not shown for your role"
-              : "Active employees"
-          }
-        />
-        <StatCard
-          label="Attendance today"
-          value={attendanceValue}
-          icon={ClipboardCheck}
-          tone={
-            attendanceReading?.kind !== "taken"
-              ? "default"
-              : attendanceReading.percent >= 85
-                ? "success"
-                : "warning"
-          }
-          hint={
-            studentRegister
-              ? `${studentRegister.present} present · ${studentRegister.absent} absent`
-              : "Not shown for your role"
-          }
-        />
-        <StatCard
-          label="Fees outstanding"
-          // Compact, because a headline card is not where somebody reads a
-          // figure to the paisa -- the fees card below prints it in full.
-          // Through `formatNumber`, never a locale tag written here: rule 15.
-          value={
-            brief.fees
-              ? formatNumber(brief.fees.outstanding, locale, {
-                  style: "currency",
-                  currency: "INR",
-                  maximumFractionDigits: 0,
-                  notation: "compact",
-                })
-              : "—"
-          }
-          icon={IndianRupee}
-          tone={brief.fees && brief.fees.outstanding > 0 ? "warning" : "success"}
-          hint={
-            brief.fees
-              ? `${brief.fees.students_owing} still to pay`
-              : "Not shown for your role"
-          }
-        />
+        {cards.map((c, i) => (
+          <StatCard key={c.key} label={c.label} value={c.value} icon={c.icon} hint={c.hint} tone={TONES[i % 4]} />
+        ))}
       </div>
 
       {/* The reference's month, under the figures: holidays, exams, fee due
           dates and notices from school_calendar(), as each module's policies
           allow this seat to see them. */}
       <SchoolCalendar today={brief.today} month={month} locale={locale} />
+
+      <ReferenceLists
+        inquiries={figures.inquiries}
+        admissions={figures.admissions}
+        sessionName={ctx?.currentSessionName ?? null}
+        locale={locale}
+        t={t}
+      />
 
       {/* Only while something is left to set up, and only the steps this
           person may act on (0284). */}
@@ -311,11 +301,13 @@ export default async function DashboardPage({
         />
       </div>
 
-      {withheld && (
+      {(withheld || hiddenSentence) && (
         <Alert>
           <EyeOff className="size-4" aria-hidden="true" />
           <AlertTitle>Some cards are hidden</AlertTitle>
-          <AlertDescription>{withheld}</AlertDescription>
+          <AlertDescription>
+            {[withheld, hiddenSentence].filter(Boolean).join(" ")}
+          </AlertDescription>
         </Alert>
       )}
     </div>

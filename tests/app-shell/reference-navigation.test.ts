@@ -27,6 +27,7 @@ describe("the reference menu grants nothing", () => {
       }
       expect(new Set(adapted).size).toBe(adapted.length);
       if (!original.includes("/academics")) expect(adapted).not.toContain("/academics?tab=subjects");
+      if (!original.includes("/academics")) expect(adapted).not.toContain("/academics?tab=holidays");
       // setup_progress() gives every role but the administrator 0 steps on the
       // default matrix, so the wizard follows the sessions screen.
       if (!original.includes("/academics/sessions")) expect(adapted).not.toContain("/setup");

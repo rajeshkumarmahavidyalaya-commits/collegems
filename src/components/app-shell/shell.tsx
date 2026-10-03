@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { Menu, Search } from "lucide-react";
+import { usePathname, useSearchParams } from "next/navigation";
+import { FileText, Menu, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { DesktopSidebar, SidebarContent } from "./app-sidebar";
@@ -13,6 +14,7 @@ import { ThemeToggle } from "./theme-toggle";
 import { UserMenu } from "./user-menu";
 import { LanguageSwitcher } from "./language-switcher";
 import { navForRole } from "./nav-config";
+import { activeDestination } from "./navigation-state";
 import { SchoolContext } from "./school-context";
 import { useI18n, useT } from "@/components/providers/i18n-provider";
 
@@ -46,6 +48,25 @@ export function AppShell({
   // The session link is offered where the sessions screen is already in this
   // person's menu; the screen checks academics.manage itself.
   const canManageSessions = navGroups.some((g) => g.items.some((i) => i.href === "/academics/sessions"));
+  // The reference puts an icon beside every module title. The page draws its
+  // own heading, so the shell lends it the active menu entry's icon through a
+  // CSS variable rather than every page importing one: the icon is rendered
+  // hidden here and its SVG becomes a mask on the heading (globals.css).
+  const pathname = usePathname();
+  const search = useSearchParams().toString();
+  const navItems = navGroups.flatMap((g) => g.items);
+  const activeHref = activeDestination(pathname, search, navItems.map((i) => i.href));
+  // A page outside this person's menu (their account, a family's own
+  // screens) still gets an icon, as every page in the reference does.
+  const ActiveIcon = navItems.find((i) => i.href === activeHref)?.icon ?? FileText;
+  const iconSource = useRef<HTMLSpanElement>(null);
+  const page = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const svg = iconSource.current?.innerHTML;
+    if (!page.current) return;
+    if (svg) page.current.style.setProperty("--page-icon", `url("data:image/svg+xml,${encodeURIComponent(svg)}")`);
+    else page.current.style.removeProperty("--page-icon");
+  }, [activeHref]);
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
 
@@ -135,7 +156,12 @@ export function AppShell({
               currentSessionName={currentSessionName}
               canManageSessions={canManageSessions}
             />
-            <div className="reference-page">{children}</div>
+            <span ref={iconSource} hidden aria-hidden="true">
+              <ActiveIcon />
+            </span>
+            <div ref={page} className="reference-page">
+              {children}
+            </div>
           </main>
           <footer data-print="hide" className="reference-footer px-4 py-4 text-xs text-muted-foreground sm:px-8">
             {t("app.footer")}

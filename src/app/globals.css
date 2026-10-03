@@ -68,6 +68,9 @@
   /* Reference-only surfaces. */
   --toolbar: #198754;
   --toolbar-foreground: #ffffff;
+  /* The table button group (#6c757d: white on it is 4.69:1). */
+  --table-tools: #6c757d;
+  --table-tools-foreground: #ffffff;
   --school-header: #f5f6ff;
   --metric-blue: #0d6efd;
   --metric-blue-bg: #e7f0ff;
@@ -139,6 +142,8 @@
   --sidebar-ring: #3fb27f;
   --toolbar: #14532d;
   --toolbar-foreground: #e5edfb;
+  --table-tools: #3a4556;
+  --table-tools-foreground: #e5edfb;
   --school-header: #172839;
   --metric-blue: #7da2ff;
   --metric-blue-bg: #182e4a;
@@ -392,9 +397,33 @@
 .page-toolbar-actions [data-slot="button"] { border: 1px solid color-mix(in srgb, var(--primary-foreground) 60%, transparent); background: transparent; color: inherit; height: 30px; font-size: 13px; }
 .page-toolbar-actions [data-slot="button"]:hover { background: color-mix(in srgb, var(--primary-foreground) 15%, transparent); }
 .page-toolbar-actions [data-slot="button"]:focus-visible { outline: 2px solid var(--primary-foreground); outline-offset: 2px; }
-/* A page's own heading block reads as the reference's lavender title band. */
+/* A page's own heading block is the reference's green module title bar: the
+   title centred, the page's description under it, its buttons outlined in
+   white on the right. Done here rather than in eighty pages, so a page keeps
+   its own markup and its one <h1>. */
 .reference-page > div > div:first-child:has(> h1):not(.page-toolbar),
-.reference-page > div > div:first-child:has(> div > h1):not(.page-toolbar) { background: var(--school-header); border-radius: 10px; padding: 16px; }
+.reference-page > div > div:first-child:has(> div > h1):not(.page-toolbar),
+.reference-page .page-heading {
+  display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 8px 12px;
+  background: var(--primary); color: var(--primary-foreground); border-radius: 6px; padding: 10px 16px;
+  box-shadow: 0 3px 7px color-mix(in srgb, var(--primary) 22%, transparent); text-align: center;
+}
+:is(.reference-page > div > div:first-child:has(> div > h1), .reference-page .page-heading):not(.page-toolbar) > div:has(> h1) { flex: 1 1 280px; }
+:is(.reference-page > div > div:first-child:is(:has(> h1), :has(> div > h1)), .reference-page .page-heading):not(.page-toolbar) :is(h1, p, a:not([data-slot="button"]), span) { color: inherit; }
+:is(.reference-page > div > div:first-child:is(:has(> h1), :has(> div > h1)), .reference-page .page-heading):not(.page-toolbar) h1 { display: flex; justify-content: center; align-items: center; gap: 8px; font-size: 21px; font-weight: 600; }
+:is(.reference-page > div > div:first-child:is(:has(> h1), :has(> div > h1)), .reference-page .page-heading):not(.page-toolbar) h1 + p { font-size: 13px; margin-top: 2px; }
+:is(.reference-page > div > div:first-child:is(:has(> h1), :has(> div > h1)), .reference-page .page-heading):not(.page-toolbar) a:not([data-slot="button"]) { text-decoration: underline; }
+:is(.reference-page > div > div:first-child:is(:has(> h1), :has(> div > h1)), .reference-page .page-heading):not(.page-toolbar) [data-slot="button"],
+:is(.reference-page > div > div:first-child:is(:has(> h1), :has(> div > h1)), .reference-page .page-heading):not(.page-toolbar) [data-slot="select-trigger"] {
+  border: 1px solid color-mix(in srgb, var(--primary-foreground) 70%, transparent); background: transparent; color: inherit; box-shadow: none; height: 32px; font-size: 13px;
+}
+:is(.reference-page > div > div:first-child:is(:has(> h1), :has(> div > h1)), .reference-page .page-heading):not(.page-toolbar) [data-slot="button"]:hover { background: color-mix(in srgb, var(--primary-foreground) 15%, transparent); }
+:is(.reference-page > div > div:first-child:is(:has(> h1), :has(> div > h1)), .reference-page .page-heading):not(.page-toolbar) :is([data-slot="button"], [data-slot="select-trigger"], a):focus-visible { outline: 2px solid var(--primary-foreground); outline-offset: 2px; }
+:is(.reference-page > div > div:first-child:is(:has(> h1), :has(> div > h1)), .reference-page .page-heading):not(.page-toolbar) [data-slot="badge"] { border-color: color-mix(in srgb, var(--primary-foreground) 70%, transparent); color: inherit; background: transparent; }
+.reference-page[style*="--page-icon"] :is(.reference-page > div > div:first-child:is(:has(> h1), :has(> div > h1)), .page-heading):not(.page-toolbar) h1::before {
+  content: ""; width: 22px; height: 22px; flex-shrink: 0; background-color: currentColor;
+  -webkit-mask: var(--page-icon) center / contain no-repeat; mask: var(--page-icon) center / contain no-repeat;
+}
 .reference-page h1 { font-size: 22px; font-weight: 500; line-height: 1.35; }
 .reference-page h2 { font-size: 18px; }
 .reference-page [data-slot="card"] { border-radius: 6px; gap: 16px; padding-block: 16px; box-shadow: 0 1px 3px rgb(0 0 0 / 0.06); }
@@ -406,7 +435,12 @@
 .reference-page [data-slot="tabs-trigger"] { flex: none; border-radius: 4px 4px 0 0; padding: 10px 16px; color: var(--primary); border: 1px solid transparent; margin-bottom: -1px; }
 .reference-page [data-slot="tabs-trigger"][data-state="active"] { background: var(--card); color: var(--foreground); border-color: var(--border); border-bottom-color: var(--card); box-shadow: none; }
 .reference-page [data-slot="input"], .reference-page [data-slot="select-trigger"], .reference-page [data-slot="textarea"] { border-radius: 4px; box-shadow: none; background: var(--card); }
-.reference-page [data-slot="table-head"] { color: var(--foreground); font-weight: 600; background: var(--card); height: 42px; }
+/* The reference's table header: green, white and bold, on every list. */
+.reference-page [data-slot="table-head"] { color: var(--toolbar-foreground); font-weight: 600; background: var(--toolbar); height: 46px; border-bottom: 2px solid color-mix(in srgb, var(--toolbar) 70%, black); }
+.reference-page [data-slot="table-head"] [data-slot="button"] { color: inherit; font-weight: inherit; }
+.reference-page [data-slot="table-head"] [data-slot="button"]:hover { background: color-mix(in srgb, var(--toolbar-foreground) 15%, transparent); color: inherit; }
+.reference-page [data-slot="table-head"] [data-slot="button"]:focus-visible { outline: 2px solid var(--toolbar-foreground); outline-offset: 1px; }
+.reference-page [data-slot="table-head"] [data-slot="checkbox"] { border-color: var(--toolbar-foreground); }
 .reference-page [data-slot="table-cell"] { padding: 10px 12px; }
 .reference-page [data-slot="table-row"]:nth-child(even) { background: color-mix(in srgb, var(--muted) 35%, transparent); }
 .reference-stat { padding-block: 20px; min-height: 90px; }
@@ -421,6 +455,15 @@
 .reference-stat-value { margin-inline-start: auto; font-size: 22px; font-weight: 600; white-space: nowrap; }
 .reference-table-toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 0; padding-bottom: 12px; }
 .reference-table-toolbar [data-slot="button"] { border-radius: 0; height: 34px; box-shadow: none; }
+/* Show rows, Copy, CSV, Excel, PDF, Print and Column visibility read as the
+   reference's one dark button group. Filters and search keep their own look. */
+.reference-table-toolbar > select,
+.reference-table-toolbar > [role="group"] [data-slot="button"],
+.reference-table-toolbar > div:last-child [data-slot="button"] { background: var(--table-tools); color: var(--table-tools-foreground); border-color: color-mix(in srgb, var(--table-tools) 80%, black); }
+.reference-table-toolbar > select:hover,
+.reference-table-toolbar > [role="group"] [data-slot="button"]:hover,
+.reference-table-toolbar > div:last-child [data-slot="button"]:hover { background: color-mix(in srgb, var(--table-tools) 85%, black); color: var(--table-tools-foreground); }
+.reference-table-toolbar > :is(select, [role="group"] [data-slot="button"], div:last-child [data-slot="button"]):focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; }
 .reference-table-search { margin-inline-start: auto; display: flex; align-items: center; gap: 8px; padding-inline-start: 12px; }
 .reference-table-search [data-slot="input"] { width: 200px; height: 34px; }
 .reference-calendar { width: 100%; min-width: 560px; table-layout: fixed; border-collapse: collapse; }
