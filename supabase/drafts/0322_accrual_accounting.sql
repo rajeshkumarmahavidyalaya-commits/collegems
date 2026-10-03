@@ -1,7 +1,7 @@
--- 0321: accrual accounting.
+-- 0322: accrual accounting.
 --
--- The second of the three gaps docs/modules/accounts.md listed (0320 has
--- cost centres, 0322 bank reconciliation).
+-- The second of the three gaps docs/modules/accounts.md listed (0321 has
+-- cost centres, 0323 bank reconciliation).
 --
 -- ## Accrual accounting
 --
@@ -64,7 +64,7 @@ create table public.accounting_basis (
 );
 
 comment on table public.accounting_basis is
-  'The day a college moved its books from a cash to an accrual basis, and the opening receivable posted that day (0321). No row: cash basis.';
+  'The day a college moved its books from a cash to an accrual basis, and the opening receivable posted that day (0322). No row: cash basis.';
 
 create trigger set_updated_at before update on public.accounting_basis
   for each row execute function public.set_updated_at();

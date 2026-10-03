@@ -105,10 +105,8 @@ toolbar (Show N rows, Copy, CSV, Excel, PDF, Print, Column visibility).
 - **`/checks` timed out.** One critic, `certificate_school_values_problems`,
   built a whole student certificate to compare seven school fields: 1.6-8.9 s
   against the 8 s statement timeout, which takes every other critic down with
-  it. `supabase/drafts/0319_...` removes the cause. That migration is checked
-  (9 snapshots across both colleges, 0 different) but **not applied**: the
-  connector's `apply_migration` timed out three times. Until it is applied,
-  `/checks` shows its error boundary.
+  it. Migration 0319 removes the cause: checked on 9 snapshots across both
+  colleges (0 different) and applied on 3 Oct 2026.
 - **A teacher opening `/staff` saw a table loading for ever**, then "That did
   not load". The roster RPC refuses them, correctly. The page now says "Your
   role does not open the staff roster" instead of mounting the table.
@@ -122,15 +120,12 @@ toolbar (Show N rows, Copy, CSV, Excel, PDF, Print, Column visibility).
 
 ### Measured, not fixed
 
-- **`/online-tests` times out for an administrator under load.**
-  `online_tests_list()` takes 193-486 ms on a quiet database, for a college
-  with no tests. The same join run directly takes 1-12 ms. The difference is
-  its four correlated subqueries on `online_test_questions` and
-  `online_test_attempts`: each one brings in that table's row-level security
-  policies (the plan carries 137 init plans). Under the sweep's load the
-  function took 3-34 s against the 8 s timeout. The fix is a migration that
-  reads each of the two tables once, grouped by test; it is not written yet.
-
+- **`/online-tests` timed out for an administrator under load.** Fixed in
+  migration 0320: `online_tests_list()` now reads each of its two tables
+  once, grouped by test, instead of in four correlated subqueries that each
+  brought in that table's policies. 68-99 ms against 155-289 ms on a quiet
+  database, with the same rows (checked on seeded data, rolled back).
+- **`/checks` timed out.** Fixed in migration 0319 (0.4-1.6 s now).
 - **Statement timeouts recur under load.** `/library/issues` and `/students`
   each timed out once during the sweeps. The cause is not the cron jobs:
   `jobs_tick` and both schedule ticks stayed under 2.7 s over two hours. The

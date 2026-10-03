@@ -3,8 +3,8 @@
 These files are written and not yet applied to the database. They live outside
 `supabase/migrations/` so nothing treats them as part of the applied sequence.
 
-- `0320_cost_centres.sql` — cost centres on voucher lines, and a report by cost centre.
-- `0321_accrual_accounting.sql` — dated switch to accrual accounting, and the
+- `0321_cost_centres.sql` — cost centres on voucher lines, and a report by cost centre.
+- `0322_accrual_accounting.sql` — dated switch to accrual accounting, and the
   accrual branch of `accounts_sync`.
 
 They were not applied because the Supabase connector's `apply_migration`
