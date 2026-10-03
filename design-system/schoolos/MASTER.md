@@ -4,14 +4,14 @@
 > If that file exists, its rules **override** this Master file.
 > If not, strictly follow the rules below.
 
-> **Superseded for colour, type and layout (2 Oct 2026).** The product now
-> follows the Weblizar School Management reference layout: Bootstrap green
-> `#198754` on white, a lavender school band `#f5f6ff`, the system font stack,
-> and a green toolbar and module sidebar. The tokens in `src/app/globals.css`
-> are the source of truth, and `docs/reference-ui.md` says why each value was
-> chosen and which were adjusted for contrast. The Fira fonts and the blue
-> palette below are no longer loaded. Spacing, motion and accessibility rules
-> here still apply.
+> **Superseded for colour, type and layout.** The layout follows the Weblizar
+> School Management reference (2 Oct 2026): a toolbar, a module sidebar, a
+> school band and title bars. The palette is royal indigo with a violet
+> gradient on the title bars (3 Oct 2026), with emerald, amber and red keeping
+> their meanings. The tokens in `src/app/globals.css` are the source of truth
+> and carry their measured contrast. The Fira fonts and the blue palette below
+> are no longer loaded. Spacing, motion and accessibility rules here still
+> apply.
 
 ---
 

@@ -11,153 +11,163 @@
  * component -- use these semantic tokens.
  */
 :root {
-  /* The reference's palette (Weblizar School Management): Bootstrap's green
-     and greys on white, a lavender band for the school and session. Measured
-     against WCAG: white on --primary is 4.53:1, --muted-foreground on the
-     lavender header 5.66:1 (the reference's #6c757d is 4.36:1 there, so it is
-     one shade darker here). */
+  /* Royal indigo with a violet gradient on the title bars (3 Oct 2026),
+     over the reference's layout. Emerald, amber and red keep their meanings.
+     Every text pairing measured against WCAG: white on --primary 6.29:1, on
+     the violet end 5.70:1, on --toolbar 9.93:1; --muted-foreground on cards
+     7.58:1 and on the school band 6.69:1; each metric colour on its tile
+     4.84:1 or better. Dark mode: 7.3:1 or better throughout. */
   --radius: 0.375rem;
 
-  --background: #ffffff;
-  --foreground: #212529;
+  --background: #f6f7fb;
+  --foreground: #0f172a;
   --card: #ffffff;
-  --card-foreground: #212529;
+  --card-foreground: #0f172a;
   --popover: #ffffff;
-  --popover-foreground: #212529;
+  --popover-foreground: #0f172a;
 
-  --primary: #198754;
+  --primary: #4f46e5;
   --primary-foreground: #ffffff;
-  --secondary: #f1f3f5;
-  --secondary-foreground: #343a40;
-  --muted: #f5f6ff;
-  --muted-foreground: #5c636a;
-  --accent: #eef6f1;
-  --accent-foreground: #146c43;
+  --secondary: #eef0f6;
+  --secondary-foreground: #1e293b;
+  --muted: #eef0ff;
+  --muted-foreground: #475569;
+  --accent: #eef0ff;
+  --accent-foreground: #3730a3;
 
   /* Amber "brand accent" -- reserved for sparing emphasis (a highlighted
      stat, a due-fee callout), never for default hover/focus states. */
   --brand-accent: #d97706;
   --brand-accent-foreground: #1a1200;
 
-  --destructive: #dc3545;
+  --destructive: #dc2626;
   --destructive-foreground: #ffffff;
-  --success: #198754;
+  --success: #047857;
   --success-foreground: #ffffff;
   --warning: #b45309;
   --warning-foreground: #ffffff;
 
-  --border: #dee2e6;
-  --input: #ced4da;
-  --ring: #198754;
+  --border: #e2e5f0;
+  --input: #cbd2e1;
+  --ring: #4f46e5;
 
-  --chart-1: #198754;
-  --chart-2: #d97706;
-  --chart-3: #0d6efd;
-  --chart-4: #6f42c1;
-  --chart-5: #6c757d;
+  --chart-1: #4f46e5;
+  --chart-2: #0d9488;
+  --chart-3: #f59e0b;
+  --chart-4: #db2777;
+  --chart-5: #64748b;
 
   --sidebar: #ffffff;
-  --sidebar-foreground: #343a40;
-  --sidebar-primary: #198754;
+  --sidebar-foreground: #1e293b;
+  --sidebar-primary: #4f46e5;
   --sidebar-primary-foreground: #ffffff;
-  --sidebar-accent: #f0f6f2;
-  --sidebar-accent-foreground: #146c43;
-  --sidebar-border: #dcdcde;
-  --sidebar-ring: #198754;
+  --sidebar-accent: #eef0ff;
+  --sidebar-accent-foreground: #3730a3;
+  --sidebar-border: #e2e5f0;
+  --sidebar-ring: #4f46e5;
 
   /* Reference-only surfaces. */
-  --toolbar: #198754;
+  --toolbar: #312e81;
+  /* The title bars run from --primary to this (white on it is 5.70:1). */
+  --primary-gradient-end: #7c3aed;
+  /* What the title bars and table headers are drawn in: the primary in
+     light mode; in dark mode the primary is a light tint, so bars use the
+     deep indigo with light text instead (10.09:1, 7.93:1 at the violet end). */
+  --bar: #4f46e5;
+  --bar-foreground: #ffffff;
   --toolbar-foreground: #ffffff;
   /* The table button group (#6c757d: white on it is 4.69:1). */
-  --table-tools: #6c757d;
+  --table-tools: #475569;
   --table-tools-foreground: #ffffff;
-  --school-header: #f5f6ff;
-  --metric-blue: #0d6efd;
-  --metric-blue-bg: #e7f0ff;
-  --metric-green: #198754;
-  --metric-green-bg: #e8f5ee;
-  --metric-amber: #a87b00;
-  --metric-amber-bg: #fff8df;
-  --metric-red: #dc3545;
-  --metric-red-bg: #ffebee;
-  --calendar-exam: #6f42c1;
-  --calendar-notice: #0d6efd;
-  --calendar-holiday: #ffc107;
-  --calendar-fee: #198754;
-  --calendar-today: #0d6efd;
+  --school-header: #eef0ff;
+  --metric-blue: #4f46e5;
+  --metric-blue-bg: #eef0ff;
+  --metric-green: #047857;
+  --metric-green-bg: #ecfdf5;
+  --metric-amber: #b45309;
+  --metric-amber-bg: #fffbeb;
+  --metric-red: #b91c1c;
+  --metric-red-bg: #fef2f2;
+  --calendar-exam: #7c3aed;
+  --calendar-notice: #2563eb;
+  --calendar-holiday: #f59e0b;
+  --calendar-fee: #059669;
+  --calendar-today: #4f46e5;
 }
 
 .dark {
-  --background: #0b1220;
-  --foreground: #e5edfb;
+  --background: #0b0f1e;
+  --foreground: #e6e9f5;
 
-  --card: #111a2e;
-  --card-foreground: #e5edfb;
-  --popover: #111a2e;
-  --popover-foreground: #e5edfb;
+  --card: #131833;
+  --card-foreground: #e6e9f5;
+  --popover: #131833;
+  --popover-foreground: #e6e9f5;
 
 
-  --secondary: #1b2740;
-  --secondary-foreground: #e5edfb;
+  --secondary: #1c2244;
+  --secondary-foreground: #e6e9f5;
 
-  --muted: #16213a;
-  --muted-foreground: #93a4c3;
+  --muted: #181d3d;
+  --muted-foreground: #a5adcb;
 
-  --accent: #1b2740;
-  --accent-foreground: #e5edfb;
+  --accent: #1e2250;
+  --accent-foreground: #e6e9f5;
 
   --brand-accent: #fbbf24;
   --brand-accent-foreground: #1a1200;
 
-  --destructive: #ef4444;
-  --destructive-foreground: #0b1220;
+  --destructive: #f87171;
+  --destructive-foreground: #0b0f1e;
 
-  --success: #4ade80;
-  --success-foreground: #06210f;
+  --success: #34d399;
+  --success-foreground: #052e1b;
   --warning: #fbbf24;
   --warning-foreground: #1a1200;
 
-  --border: #26324b;
-  --input: #26324b;
+  --border: #262c52;
+  --input: #2c335e;
 
-  --chart-1: #7da2ff;
-  --chart-2: #fbbf24;
-  --chart-3: #2dd4bf;
-  --chart-4: #a78bfa;
+  --chart-1: #a5b4fc;
+  --chart-2: #2dd4bf;
+  --chart-3: #fbbf24;
+  --chart-4: #f472b6;
   --chart-5: #94a3b8;
 
-  --sidebar: #111a2e;
-  --sidebar-foreground: #e5edfb;
-  --sidebar-accent: #1b2740;
-  --sidebar-accent-foreground: #e5edfb;
-  --sidebar-border: #26324b;
+  --sidebar: #131833;
+  --sidebar-foreground: #e6e9f5;
+  --sidebar-accent: #1e2250;
+  --sidebar-accent-foreground: #e6e9f5;
+  --sidebar-border: #262c52;
 
-  /* The reference has no dark theme; this keeps its green as the accent
-     colour, measured 7.03:1 against the dark page. */
-  --primary: #3fb27f;
-  --primary-foreground: #0b1220;
-  --ring: #3fb27f;
-  --sidebar-primary: #3fb27f;
-  --sidebar-primary-foreground: #0b1220;
-  --sidebar-ring: #3fb27f;
-  --toolbar: #14532d;
-  --toolbar-foreground: #e5edfb;
-  --table-tools: #3a4556;
-  --table-tools-foreground: #e5edfb;
-  --school-header: #172839;
-  --metric-blue: #7da2ff;
-  --metric-blue-bg: #182e4a;
-  --metric-green: #4ade80;
-  --metric-green-bg: #17362a;
+  /* A light indigo primary with dark text (9.57:1); bars stay deep indigo. */
+  --primary: #a5b4fc;
+  --primary-foreground: #0b0f1e;
+  --ring: #a5b4fc;
+  --sidebar-primary: #a5b4fc;
+  --sidebar-primary-foreground: #0b0f1e;
+  --sidebar-ring: #a5b4fc;
+  --toolbar: #312e81;
+  --primary-gradient-end: #5b21b6;
+  --bar: #312e81;
+  --bar-foreground: #eef0ff;
+  --toolbar-foreground: #eef0ff;
+  --table-tools: #334155;
+  --table-tools-foreground: #e2e8f0;
+  --school-header: #181d3d;
+  --metric-blue: #a5b4fc;
+  --metric-blue-bg: #1e2250;
+  --metric-green: #34d399;
+  --metric-green-bg: #0f2e26;
   --metric-amber: #fbbf24;
-  --metric-amber-bg: #3c331c;
+  --metric-amber-bg: #3a2e12;
   --metric-red: #f87171;
-  --metric-red-bg: #3b2029;
-  --calendar-exam: #a78bfa;
-  --calendar-notice: #7da2ff;
+  --metric-red-bg: #3b1c22;
+  --calendar-exam: #c4b5fd;
+  --calendar-notice: #93c5fd;
   --calendar-holiday: #fbbf24;
-  --calendar-fee: #4ade80;
-  --calendar-today: #7da2ff;
+  --calendar-fee: #34d399;
+  --calendar-today: #a5b4fc;
 }
 
 @theme inline {
@@ -391,12 +401,12 @@
 .school-context-session { display: flex; justify-content: center; align-items: center; gap: 8px; margin-top: 8px; color: var(--muted-foreground); }
 .school-context-selector { display: inline-flex; align-items: center; gap: 10px; background: var(--card); border: 1px solid var(--input); border-radius: 15px; padding: 9px 12px; color: var(--foreground); }
 .school-context-selector:focus-visible { outline: 2px solid var(--ring); outline-offset: 3px; }
-.page-toolbar { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 12px; padding: 8px 16px; background: var(--primary); color: var(--primary-foreground); border-radius: 10px; box-shadow: 0 3px 7px color-mix(in srgb, var(--primary) 18%, transparent); }
+.page-toolbar { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 12px; padding: 10px 18px; background: var(--bar) linear-gradient(120deg, var(--bar), var(--primary-gradient-end)); color: var(--bar-foreground); border-radius: 12px; box-shadow: 0 6px 18px color-mix(in srgb, var(--bar) 28%, transparent); }
 .page-toolbar h1 { display: flex; align-items: center; gap: 8px; font-size: 20px; font-weight: 600; margin: 0; }
 .page-toolbar-actions { display: flex; flex-wrap: wrap; gap: 6px; }
-.page-toolbar-actions [data-slot="button"] { border: 1px solid color-mix(in srgb, var(--primary-foreground) 60%, transparent); background: transparent; color: inherit; height: 30px; font-size: 13px; }
-.page-toolbar-actions [data-slot="button"]:hover { background: color-mix(in srgb, var(--primary-foreground) 15%, transparent); }
-.page-toolbar-actions [data-slot="button"]:focus-visible { outline: 2px solid var(--primary-foreground); outline-offset: 2px; }
+.page-toolbar-actions [data-slot="button"] { border: 1px solid color-mix(in srgb, var(--bar-foreground) 60%, transparent); background: transparent; color: inherit; height: 30px; font-size: 13px; }
+.page-toolbar-actions [data-slot="button"]:hover { background: color-mix(in srgb, var(--bar-foreground) 15%, transparent); }
+.page-toolbar-actions [data-slot="button"]:focus-visible { outline: 2px solid var(--bar-foreground); outline-offset: 2px; }
 /* A page's own heading block is the reference's green module title bar: the
    title centred, the page's description under it, its buttons outlined in
    white on the right. Done here rather than in eighty pages, so a page keeps
@@ -405,8 +415,8 @@
 .reference-page > div > div:first-child:has(> div > h1):not(.page-toolbar),
 .reference-page .page-heading {
   display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 8px 12px;
-  background: var(--primary); color: var(--primary-foreground); border-radius: 6px; padding: 10px 16px;
-  box-shadow: 0 3px 7px color-mix(in srgb, var(--primary) 22%, transparent); text-align: center;
+  background: var(--bar) linear-gradient(120deg, var(--bar), var(--primary-gradient-end)); color: var(--bar-foreground); border-radius: 12px; padding: 12px 18px;
+  box-shadow: 0 6px 18px color-mix(in srgb, var(--bar) 28%, transparent); text-align: center;
 }
 :is(.reference-page > div > div:first-child:has(> div > h1), .reference-page .page-heading):not(.page-toolbar) > div:has(> h1) { flex: 1 1 280px; }
 :is(.reference-page > div > div:first-child:is(:has(> h1), :has(> div > h1)), .reference-page .page-heading):not(.page-toolbar) :is(h1, p, a:not([data-slot="button"]), span) { color: inherit; }
@@ -415,31 +425,31 @@
 :is(.reference-page > div > div:first-child:is(:has(> h1), :has(> div > h1)), .reference-page .page-heading):not(.page-toolbar) a:not([data-slot="button"]) { text-decoration: underline; }
 :is(.reference-page > div > div:first-child:is(:has(> h1), :has(> div > h1)), .reference-page .page-heading):not(.page-toolbar) [data-slot="button"],
 :is(.reference-page > div > div:first-child:is(:has(> h1), :has(> div > h1)), .reference-page .page-heading):not(.page-toolbar) [data-slot="select-trigger"] {
-  border: 1px solid color-mix(in srgb, var(--primary-foreground) 70%, transparent); background: transparent; color: inherit; box-shadow: none; height: 32px; font-size: 13px;
+  border: 1px solid color-mix(in srgb, var(--bar-foreground) 70%, transparent); background: transparent; color: inherit; box-shadow: none; height: 32px; font-size: 13px;
 }
-:is(.reference-page > div > div:first-child:is(:has(> h1), :has(> div > h1)), .reference-page .page-heading):not(.page-toolbar) [data-slot="button"]:hover { background: color-mix(in srgb, var(--primary-foreground) 15%, transparent); }
-:is(.reference-page > div > div:first-child:is(:has(> h1), :has(> div > h1)), .reference-page .page-heading):not(.page-toolbar) :is([data-slot="button"], [data-slot="select-trigger"], a):focus-visible { outline: 2px solid var(--primary-foreground); outline-offset: 2px; }
-:is(.reference-page > div > div:first-child:is(:has(> h1), :has(> div > h1)), .reference-page .page-heading):not(.page-toolbar) [data-slot="badge"] { border-color: color-mix(in srgb, var(--primary-foreground) 70%, transparent); color: inherit; background: transparent; }
+:is(.reference-page > div > div:first-child:is(:has(> h1), :has(> div > h1)), .reference-page .page-heading):not(.page-toolbar) [data-slot="button"]:hover { background: color-mix(in srgb, var(--bar-foreground) 15%, transparent); }
+:is(.reference-page > div > div:first-child:is(:has(> h1), :has(> div > h1)), .reference-page .page-heading):not(.page-toolbar) :is([data-slot="button"], [data-slot="select-trigger"], a):focus-visible { outline: 2px solid var(--bar-foreground); outline-offset: 2px; }
+:is(.reference-page > div > div:first-child:is(:has(> h1), :has(> div > h1)), .reference-page .page-heading):not(.page-toolbar) [data-slot="badge"] { border-color: color-mix(in srgb, var(--bar-foreground) 70%, transparent); color: inherit; background: transparent; }
 .reference-page[style*="--page-icon"] :is(.reference-page > div > div:first-child:is(:has(> h1), :has(> div > h1)), .page-heading):not(.page-toolbar) h1::before {
   content: ""; width: 22px; height: 22px; flex-shrink: 0; background-color: currentColor;
   -webkit-mask: var(--page-icon) center / contain no-repeat; mask: var(--page-icon) center / contain no-repeat;
 }
 .reference-page h1 { font-size: 22px; font-weight: 500; line-height: 1.35; }
 .reference-page h2 { font-size: 18px; }
-.reference-page [data-slot="card"] { border-radius: 6px; gap: 16px; padding-block: 16px; box-shadow: 0 1px 3px rgb(0 0 0 / 0.06); }
+.reference-page [data-slot="card"] { border-radius: 12px; gap: 16px; padding-block: 16px; box-shadow: 0 1px 2px rgb(15 23 42 / 0.04), 0 4px 12px rgb(15 23 42 / 0.04); }
 .reference-page [data-slot="card-header"], .reference-page [data-slot="card-content"], .reference-page [data-slot="card-footer"] { padding-inline: 16px; }
 /* A form section is the reference's white card with an inset green bar
    carrying the section's name, centred. */
 .reference-page form [data-slot="card"] { overflow: hidden; padding-top: 16px; }
-.reference-page form [data-slot="card-header"] { margin-inline: 16px; padding: 9px 16px; border-radius: 4px; background: var(--primary); color: var(--primary-foreground); text-align: center; box-shadow: 0 2px 5px color-mix(in srgb, var(--primary) 22%, transparent); }
+.reference-page form [data-slot="card-header"] { margin-inline: 16px; padding: 9px 16px; border-radius: 8px; background: var(--bar); color: var(--bar-foreground); text-align: center; box-shadow: 0 3px 8px color-mix(in srgb, var(--bar) 25%, transparent); }
 .reference-page form [data-slot="card-header"] [data-slot="card-title"] { font-weight: 600; }
-.reference-page form [data-slot="card-header"] [data-slot="card-description"] { color: color-mix(in srgb, var(--primary-foreground) 88%, transparent); }
+.reference-page form [data-slot="card-header"] [data-slot="card-description"] { color: var(--bar-foreground); }
 .reference-page [data-slot="tabs-list"] { height: auto; min-height: 40px; max-width: 100%; flex-wrap: wrap; justify-content: flex-start; border-radius: 0; background: transparent; padding: 0; border-bottom: 1px solid var(--border); }
 .reference-page [data-slot="tabs-trigger"] { flex: none; border-radius: 4px 4px 0 0; padding: 10px 16px; color: var(--primary); border: 1px solid transparent; margin-bottom: -1px; }
 .reference-page [data-slot="tabs-trigger"][data-state="active"] { background: var(--card); color: var(--foreground); border-color: var(--border); border-bottom-color: var(--card); box-shadow: none; }
 .reference-page [data-slot="input"], .reference-page [data-slot="select-trigger"], .reference-page [data-slot="textarea"] { border-radius: 4px; box-shadow: none; background: var(--card); }
 /* The reference's table header: green, white and bold, on every list. */
-.reference-page [data-slot="table-head"] { color: var(--toolbar-foreground); font-weight: 600; background: var(--toolbar); height: 46px; border-bottom: 2px solid color-mix(in srgb, var(--toolbar) 70%, black); }
+.reference-page [data-slot="table-head"] { color: var(--bar-foreground); font-weight: 600; background: var(--bar); height: 46px; border-bottom: 2px solid color-mix(in srgb, var(--bar) 70%, black); }
 .reference-page [data-slot="table-head"] :is([data-slot="button"], [data-slot="dropdown-menu-trigger"]) { color: inherit; font-weight: inherit; }
 .reference-page [data-slot="table-head"] :is([data-slot="button"], [data-slot="dropdown-menu-trigger"]):hover { background: color-mix(in srgb, var(--toolbar-foreground) 15%, transparent); color: inherit; }
 .reference-page [data-slot="table-head"] :is([data-slot="button"], [data-slot="dropdown-menu-trigger"]):focus-visible { outline: 2px solid var(--toolbar-foreground); outline-offset: 1px; }
