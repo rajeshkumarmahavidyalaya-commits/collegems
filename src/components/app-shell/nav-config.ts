@@ -48,6 +48,7 @@ import {
   PenLine,
   PenSquare,
   Receipt,
+  School,
   Plane,
   Radio,
   ScanLine,
@@ -98,6 +99,26 @@ export const NAV_GROUPS: NavGroup[] = [
     title: "Overview",
     messageKey: "nav.overview",
     items: [
+      // The reference's first page: a card per school this login belongs to
+      // (0323). Offered to the administrator, who is the seat that holds
+      // several colleges and adds new ones; anybody else who belongs to two
+      // reaches it from the school's name in the band. `my_schools` lists only
+      // the caller's own colleges, so the menu decides nothing.
+      {
+        title: "School Management",
+        messageKey: "nav.schoolsDashboard",
+        href: "/schools",
+        icon: School,
+        roles: ["admin"],
+      },
+      {
+        title: "Schools",
+        messageKey: "nav.schools",
+        href: "/schools/manage",
+        setup: true,
+        icon: School,
+        roles: ["admin"],
+      },
       { title: "Dashboard", messageKey: "nav.dashboard", href: "/", icon: LayoutDashboard },
       // Every seat, because the assistant has no access of its own: it reads
       // with the asker's token, so RLS and the matrix decide what each seat's

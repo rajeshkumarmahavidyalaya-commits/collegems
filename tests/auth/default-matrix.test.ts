@@ -168,7 +168,9 @@ describe("every permission says who gets it in a new college", () => {
     let body = "";
     for (const file of migrationFiles()) {
       const sql = stripComments(readFileSync(join(MIGRATIONS, file), "utf8"));
-      const at = sql.search(/create (?:or replace )?function public\.platform_start_school\s*\(/);
+      // Since 0323 a college is founded by college_create, which both
+      // platform_start_school and school_add call.
+      const at = sql.search(/create (?:or replace )?function public\.college_create\s*\(/);
       if (at === -1) continue;
       const rest = sql.slice(at);
       body = rest.slice(0, rest.indexOf("\n$$;"));

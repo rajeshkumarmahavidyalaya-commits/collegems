@@ -12,8 +12,24 @@ const initialState: StartActionState = { error: null };
 
 type SlugState = "idle" | "checking" | "free" | "taken";
 
-export function StartForm({ timezones }: { timezones: string[] }) {
-  const [state, formAction, isPending] = useActionState(startSchool, initialState);
+/**
+ * Found a school: the sign-up page's form, and the reference's Add New School
+ * (0323), which passes its own action. The action is a prop because a server
+ * action is a serialisable reference -- the form shares the choreography and
+ * each caller keeps its own authorisation.
+ */
+export function StartForm({
+  timezones,
+  action = startSchool,
+  submitLabel = "Create the school",
+  note = "You get thirty days of everything, up to 50 children and 10 staff. No card needed.",
+}: {
+  timezones: string[];
+  action?: (state: StartActionState, formData: FormData) => Promise<StartActionState>;
+  submitLabel?: string;
+  note?: string;
+}) {
+  const [state, formAction, isPending] = useActionState(action, initialState);
   const [name, setName] = useState("");
   const [slug, setSlug] = useState("");
   // Whether the person has taken the address into their own hands. Until they
@@ -153,12 +169,10 @@ export function StartForm({ timezones }: { timezones: string[] }) {
 
       <Button type="submit" disabled={isPending || slugState === "taken"} className="w-full">
         {isPending && <Loader2 className="me-2 size-4 animate-spin" aria-hidden="true" />}
-        Create the school
+        {submitLabel}
       </Button>
 
-      <p className="text-xs text-muted-foreground">
-        You get thirty days of everything, up to 50 children and 10 staff. No card needed.
-      </p>
+      <p className="text-xs text-muted-foreground">{note}</p>
     </form>
   );
 }

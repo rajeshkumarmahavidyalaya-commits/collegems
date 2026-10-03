@@ -5982,6 +5982,63 @@ export type Database = {
           },
         ]
       }
+      school_memberships: {
+        Row: {
+          created_at: string
+          guardian_id: string | null
+          id: string
+          is_active: boolean
+          person_id: string | null
+          role_id: string
+          staff_id: string | null
+          student_id: string | null
+          tenant_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          guardian_id?: string | null
+          id?: string
+          is_active?: boolean
+          person_id?: string | null
+          role_id: string
+          staff_id?: string | null
+          student_id?: string | null
+          tenant_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          guardian_id?: string | null
+          id?: string
+          is_active?: boolean
+          person_id?: string | null
+          role_id?: string
+          staff_id?: string | null
+          student_id?: string | null
+          tenant_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "school_memberships_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "school_memberships_role_id_fkey"
+            columns: ["role_id"]
+            isOneToOne: false
+            referencedRelation: "roles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       schedules: {
         Row: {
           channels: string[] | null
@@ -10499,6 +10556,24 @@ export type Database = {
         }
         Returns: number
       }
+      my_schools: {
+        Args: never
+        Returns: {
+          address: string
+          admin_count: number
+          class_count: number
+          email: string
+          is_active: boolean
+          is_admin: boolean
+          is_current: boolean
+          name: string
+          phone: string
+          plan_status: string
+          role_name: string
+          slug: string
+          tenant_id: string
+        }[]
+      }
       mobile_bootstrap: { Args: never; Returns: Json }
       mobile_device_summary: {
         Args: never
@@ -11455,6 +11530,18 @@ export type Database = {
           title: string
         }[]
       }
+      school_add: {
+        Args: {
+          p_school_name: string
+          p_session_end?: string
+          p_session_name?: string
+          p_session_start?: string
+          p_slug: string
+          p_timezone?: string
+        }
+        Returns: Json
+      }
+      school_switch: { Args: { p_tenant_id: string }; Returns: Json }
       set_my_locale: { Args: { p_locale: string }; Returns: string }
       setting_number: {
         Args: { p_field?: string; p_key: string }
@@ -12105,6 +12192,14 @@ export type Database = {
           student_id: string
           student_name: string
         }[]
+      }
+      team_set_access: {
+        Args: { p_active: boolean; p_user_id: string }
+        Returns: Json
+      }
+      team_set_role: {
+        Args: { p_role_id: string; p_user_id: string }
+        Returns: Json
       }
       team_logins: {
         Args: never

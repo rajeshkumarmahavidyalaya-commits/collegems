@@ -119,6 +119,7 @@ describeDb("cross-tenant isolation", () => {
     "notification_preferences",
     "roles",
     "role_permissions",
+    "school_memberships",
     "settings",
   ] as const;
 

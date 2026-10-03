@@ -45,13 +45,16 @@ describe("who can sign in", () => {
     const { header, body } = latest("team_logins");
     expect(header).toMatch(/security definer/);
     // Inside a definer no policy runs, so the tenant predicate IS the isolation.
-    expect(body).toMatch(/where up\.tenant_id = v_tenant/);
+    // Read over memberships (0323), so a member working in another college
+    // today is still on this college's list.
+    expect(body).toMatch(/from public\.school_memberships m/);
+    expect(body).toMatch(/where m\.tenant_id = v_tenant/);
     expect(body).toMatch(/v_tenant uuid := public\.current_tenant_id\(\)/);
     expect(body).toMatch(/role_has_permission\('users\.manage'\)/);
     expect(ALL).toMatch(/revoke all on function public\.team_logins\(\) from public, anon;/);
   });
 
-  for (const fn of ["login_set_access", "login_set_role"]) {
+  for (const fn of ["login_set_access", "login_set_role", "team_set_access", "team_set_role"]) {
     it(`${fn} refuses the caller acting on themselves and keeps a way back`, () => {
       const { header, body } = latest(fn);
       expect(header).toMatch(/security definer/);
@@ -68,6 +71,14 @@ describe("who can sign in", () => {
       "login_close\\(uuid, uuid, boolean\\)",
       "logins_that_can_manage_users\\(uuid, uuid\\)",
       "staff_leaving_closes_logins\\(\\)",
+      "membership_leave\\(uuid, uuid\\)",
+      "membership_activate_profile\\(uuid, uuid\\)",
+      "user_profiles_keep_membership\\(\\)",
+      "college_create\\(text, text, text, text, date, date\\)",
+      // Called directly they act on the profile alone and would ban somebody
+      // in every college; the team doors call them where right (0323).
+      "login_set_access\\(uuid, boolean\\)",
+      "login_set_role\\(uuid, uuid\\)",
     ]) {
       expect(ALL).toMatch(new RegExp(`revoke all on function public\\.${sig} from public, anon, authenticated`));
     }
@@ -86,7 +97,11 @@ describe("who can sign in", () => {
     );
     const { body } = latest("staff_leaving_closes_logins");
     expect(body).toMatch(/old\.status = 'active' and new\.status <> 'active'/);
-    expect(body).toMatch(/perform public\.login_close\(new\.tenant_id, u\.id, false\)/);
+    // Over memberships, so a leaver working in another college today is
+    // still closed here (0323); membership_leave falls back to login_close.
+    expect(body).toMatch(/from public\.school_memberships m/);
+    expect(body).toMatch(/perform public\.membership_leave\(new\.tenant_id, u\.user_id\)/);
+    expect(latest("membership_leave").body).toMatch(/perform public\.login_close\(p_tenant, p_user, false\)/);
   });
 
   it("the team screen mounts the list, and the staff record offers a login", () => {

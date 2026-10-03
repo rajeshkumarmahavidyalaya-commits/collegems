@@ -6,7 +6,8 @@ import { useT } from "@/components/providers/i18n-provider";
 
 /**
  * The reference's lavender band: the school's name and the session it is
- * working in. The session is school-wide here, decided on the guarded
+ * working in. The name is a link to the School Management dashboard, where a
+ * login that belongs to several schools chooses one (0323). The session is school-wide here, decided on the guarded
  * Academic years screen with its promotion checks, so the "selector" is a link
  * to that screen for somebody who may change it -- never a browser-only filter
  * that would show one year while every write files into another (rule 2).
@@ -26,7 +27,15 @@ export function SchoolContext({
     <section className="school-context" aria-label={t("context.region")} data-print="hide">
       <div className="school-context-title">
         <School aria-hidden="true" />
-        <span>{tenantName || "SchoolOS"}</span>
+        {/* The school's name opens the School Management dashboard (0323),
+            where a login that belongs to several schools picks one. */}
+        <Link
+          href="/schools"
+          className="underline-offset-4 hover:underline"
+          aria-label={t("context.switchSchool", { name: tenantName || "SchoolOS" })}
+        >
+          {tenantName || "SchoolOS"}
+        </Link>
         {currentSessionName && <span className="school-context-year">{currentSessionName}</span>}
       </div>
       <div className="school-context-session">

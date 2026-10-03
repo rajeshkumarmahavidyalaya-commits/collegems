@@ -14,6 +14,22 @@
 export const SLUG_PATTERN = /^[a-z0-9][a-z0-9-]{1,48}[a-z0-9]$/;
 
 /**
+ * A short, honest list rather than the full IANA database. Every one of these
+ * is a place this product is actually sold into; a 400-entry dropdown is a
+ * worse answer to "where are you?" than six. Shared by the sign-up page and
+ * Add New School (0323), so the two cannot offer different clocks.
+ */
+export const TIMEZONES = [
+  "Asia/Kolkata",
+  "Asia/Karachi",
+  "Asia/Dhaka",
+  "Asia/Kathmandu",
+  "Asia/Colombo",
+  "Asia/Dubai",
+  "UTC",
+];
+
+/**
  * Turn a school's name into a candidate address. Only ever a suggestion — the
  * person can overwrite it, and the database decides whether it is free.
  */

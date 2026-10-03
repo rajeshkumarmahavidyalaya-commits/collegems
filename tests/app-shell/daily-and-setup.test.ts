@@ -33,7 +33,10 @@ describe("the daily menu and the setup menu", () => {
     // 45 (0321): Expenses and Donation are written as the money moves, the
     // way the voucher book is, and Student Birthdays is read each morning --
     // three of the reference's everyday screens, none of them set-up.
-    expect(everyday).toBeLessThanOrEqual(45);
+    // 46 (0323): School Management, the card per school, is the reference's
+    // first page and where an administrator starts every day. The Schools
+    // table beside it is Setup.
+    expect(everyday).toBeLessThanOrEqual(46);
   });
 
   it("never marks a screen a family uses as setup", () => {

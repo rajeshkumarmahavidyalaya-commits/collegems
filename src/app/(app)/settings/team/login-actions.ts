@@ -44,17 +44,19 @@ export async function listLogins(): Promise<LoginRow[] | null> {
 }
 
 /**
- * Switch a login off or back on. Off bans the auth user and ends their
- * sessions, so the next page they open signs them out; a token already issued
- * lasts until it expires, at most an hour. The function refuses the caller's
- * own login and the last login that can manage users, in a sentence.
+ * Switch a login off or back on in this college (`team_set_access`, 0323).
+ * Somebody who belongs to no other active college is banned and signed out,
+ * as before; somebody who does is only switched off here, and if this was the
+ * college they were working in, their next page opens their other one. A
+ * token already issued lasts until it expires, at most an hour. The function
+ * refuses the caller's own login and the last login that can manage users.
  */
 export async function setLoginAccess(
   userId: string,
   active: boolean,
 ): Promise<ActionResult<{ name: string }>> {
   const supabase = await createClient();
-  const { data, error } = await supabase.rpc("login_set_access", {
+  const { data, error } = await supabase.rpc("team_set_access", {
     p_user_id: userId,
     p_active: active,
   });
@@ -63,13 +65,17 @@ export async function setLoginAccess(
   return { ok: true, data: { name: (data as { name: string }).name } };
 }
 
-/** Change what a login is for; they are signed out so it applies now. */
+/**
+ * Change what a login is for in this college (`team_set_role`, 0323). If they
+ * are working here today they are signed out so it applies now; if they are
+ * working in another college it applies when they switch back.
+ */
 export async function setLoginRole(
   userId: string,
   roleId: string,
 ): Promise<ActionResult<{ name: string; role: string }>> {
   const supabase = await createClient();
-  const { data, error } = await supabase.rpc("login_set_role", {
+  const { data, error } = await supabase.rpc("team_set_role", {
     p_user_id: userId,
     p_role_id: roleId,
   });

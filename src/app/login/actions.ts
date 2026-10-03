@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { loginSchema } from "@/lib/validations/auth";
 import { getT } from "@/lib/i18n/server";
+import { safeNext } from "@/lib/validations/password";
 
 export type LoginActionState = {
   error: string | null;
@@ -38,8 +39,18 @@ export async function login(
     return { error: t("login.unavailable") };
   }
 
-  const next = formData.get("next");
-  redirect(typeof next === "string" && next.startsWith("/") ? next : "/");
+  // safeNext keeps the link inside the app: "//elsewhere" is not a path here.
+  const raw = formData.get("next");
+  const next = safeNext(typeof raw === "string" ? raw : null);
+  if (next !== "/") redirect(next);
+
+  // The reference's first page is School Management: a card per school. It
+  // is where an administrator -- the seat that adds schools -- and anybody who
+  // belongs to more than one school starts (0323). Everybody else goes
+  // straight to their school's dashboard; a list of one is not a choice.
+  const { data: schools } = await supabase.rpc("my_schools");
+  const rows = schools ?? [];
+  redirect(rows.length > 1 || rows.some((r) => r.is_admin && r.is_current) ? "/schools" : "/");
 }
 
 export async function logout() {

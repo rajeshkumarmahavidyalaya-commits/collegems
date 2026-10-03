@@ -74,6 +74,15 @@ toolbar (Show N rows, Copy, CSV, Excel, PDF, Print, Column visibility).
 - **Admission** is titled "New Admission For Session: ...", with sections
   named Personal Detail and Admission Detail.
 
+**The first page, built on 3 Oct 2026 (migrations `0323`-`0324`):** the
+reference opens on School Management > Dashboard, a card per school with the
+current one highlighted. The first pass of this port skipped it, because a
+login here belonged to exactly one college. It is built now: `/schools` is the
+card dashboard and the first page after signing in for an administrator,
+`/schools/manage` the Schools table, `/schools/new` Add New School, and the
+school's name in the band opens the picker. A login sees only the colleges it
+belongs to. See `docs/modules/schools.md`.
+
 **Built on 3 Oct 2026 (migration `0321`):**
 
 - **Expenses and Donation**, with their category pages and add forms, in the

@@ -531,6 +531,45 @@ And the thing it refuses, which matters more than what it builds:
 
 See `docs/modules/saas.md`.
 
+### …and a login may belong to several colleges, one at a time (0323)
+
+The sentence above, *"one school per login comes free"*, was changed on purpose,
+because the reference's first page is a card per school with the current one
+highlighted, and a trust running two colleges is one person with one login.
+
+> **A token carries one college at a time.** Every policy still reads the
+> tenant from the JWT, so somebody who belongs to two colleges sees exactly one
+> of them on every request. Switching is a write and a token refresh, never a
+> wider read.
+
+`school_memberships` records every college a login belongs to, with its role
+and record there. `user_profiles` stays one row per login and is the active
+membership, so none of the 94 policies or 56 functions that read it changed. A
+trigger keeps the active membership in step with every existing writer of the
+profile. `school_switch` copies a membership into the profile and the token's
+claims; `my_schools` is the one read model that crosses tenants, filtered by
+`auth.uid()` and projecting metadata only. `school_add` and
+`platform_start_school` share `college_create`.
+
+Three things it settled:
+
+- **One college's decision must not reach another.** `login_close` bans the
+  auth user, which is global. So switching somebody off in a college they are
+  not the only member of deactivates that membership and, if it was their
+  active one, moves them to the other; only a login with no other active
+  college gets the full close. `login_set_access` and `login_set_role` are
+  revoked from JWT roles and reached through `team_set_access` and
+  `team_set_role`, which know about memberships.
+- **A college's team screen lists members who are working elsewhere today**,
+  or a leaver could switch back in. `team_logins`, the last-way-back count and
+  the leaver trigger read memberships.
+- **Not an operator console.** An operator still belongs to no college and
+  cannot switch into, add or own one; seeing another customer's children
+  remains the impersonation this file refuses.
+
+Probed live in rolled-back transactions as two administrators and a teacher,
+and walked in the browser. See `docs/modules/schools.md`.
+
 ### …and it was built on exactly those terms
 
 The paragraph above is the specification, and `0209` met it. What made it

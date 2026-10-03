@@ -30,7 +30,7 @@ import type { NavGroup, NavItem } from "./nav-config";
  * rather than disappearing.
  */
 const MODULES: { title: string; messageKey: MessageKey; icon: NavGroup["icon"]; paths: string[] }[] = [
-  { title: "School Management", messageKey: "nav.module.management", icon: GraduationCap, paths: ["/academics/sessions", "/settings/plan"] },
+  { title: "School Management", messageKey: "nav.module.management", icon: GraduationCap, paths: ["/schools", "/schools/manage", "/academics/sessions", "/settings/plan"] },
   { title: "SM School", messageKey: "nav.module.school", icon: School, paths: ["/", "/academics", "/settings/school", "/checks"] },
   {
     title: "SM Academic",
@@ -80,6 +80,8 @@ const MODULES: { title: string; messageKey: MessageKey; icon: NavGroup["icon"]; 
 
 /** The reference's names for screens this product already has. */
 const LABELS: Record<string, { title: string; messageKey: MessageKey }> = {
+  "/schools": { title: "Dashboard", messageKey: "nav.ref.schoolsDashboard" },
+  "/schools/manage": { title: "Schools", messageKey: "nav.schools" },
   "/academics/sessions": { title: "Sessions", messageKey: "nav.ref.sessions" },
   "/settings/plan": { title: "Plan & License", messageKey: "nav.ref.plan" },
   "/academics": { title: "Manage Classes", messageKey: "nav.ref.classes" },

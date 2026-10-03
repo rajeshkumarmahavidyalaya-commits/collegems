@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { LoginBrandingCompact } from "../login/login-form";
 import { StartForm } from "./start-form";
+import { TIMEZONES } from "@/lib/validations/platform-display";
 import { getUserContext } from "@/lib/auth/context";
 import { amIAnOperator } from "../platform/actions";
 import { logout } from "../login/actions";
@@ -9,18 +10,6 @@ import { Button } from "@/components/ui/button";
 
 export const metadata: Metadata = { title: "Start your school" };
 
-// A short, honest list rather than the full IANA database. Every one of these
-// is a place this product is actually sold into; a 400-entry dropdown is a
-// worse answer to "where are you?" than six.
-const TIMEZONES = [
-  "Asia/Kolkata",
-  "Asia/Karachi",
-  "Asia/Dhaka",
-  "Asia/Kathmandu",
-  "Asia/Colombo",
-  "Asia/Dubai",
-  "UTC",
-];
 
 export default async function StartPage() {
   const ctx = await getUserContext();
