@@ -906,13 +906,42 @@ export const NAV_GROUPS: NavGroup[] = [
   },
 ];
 
-export function navForRole(roleCode: string): NavGroup[] {
+/**
+ * The modules a school can leave out of its menu (`modules.menu`, 0326), and
+ * the addresses each one owns. Presentation only: a switched-off module's
+ * pages still check their own permissions, as the reference's "Menu show"
+ * switches do.
+ */
+export const MODULE_PREFIXES: Record<string, readonly string[]> = {
+  library: ["/library"],
+  transport: ["/transport", "/arrangements"],
+  hostel: ["/hostel"],
+  inventory: ["/inventory"],
+  exams: ["/exams", "/online-tests", "/class-tests", "/report-card"],
+  accounts: ["/accounts"],
+  payroll: ["/payroll", "/hr/salary"],
+  certificates: ["/certificates"],
+  homework: ["/homework"],
+  live_classes: ["/live-classes"],
+};
+
+function hiddenByModule(href: string, hidden: readonly string[]): boolean {
+  const path = href.split("?")[0];
+  return hidden.some((m) =>
+    (MODULE_PREFIXES[m] ?? []).some((p) => path === p || path.startsWith(`${p}/`)),
+  );
+}
+
+export function navForRole(roleCode: string, hiddenModules: readonly string[] = []): NavGroup[] {
   // The filter decides what a role may be offered; the reference grouping only
-  // rearranges what survived it (see reference-navigation.ts).
+  // rearranges what survived it (see reference-navigation.ts). A school's own
+  // menu switches then leave out whole modules, which can only take away.
   return referenceNavigation(
     NAV_GROUPS.map((group) => ({
       ...group,
-      items: group.items.filter((item) => !item.roles || item.roles.includes(roleCode)),
+      items: group.items.filter(
+        (item) => (!item.roles || item.roles.includes(roleCode)) && !hiddenByModule(item.href, hiddenModules),
+      ),
     })).filter((group) => group.items.length > 0),
   );
 }

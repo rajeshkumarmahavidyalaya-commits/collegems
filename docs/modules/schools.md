@@ -104,3 +104,43 @@ Settings), for example Resend, which `notify-dispatch` already uses. Turning
 - Inviting a login that already exists into a second college. Invitations still
   resolve at sign-up; a second college is reached by the administrator adding it.
 - The reference's photo and logo on each card; a college's logo is not stored.
+
+## What a super admin does with several schools: the screens (0326, 0327)
+
+The functions are described in migration `0326`. Each opens with
+`school_require_admin(that school)`. These are their screens.
+
+- **Admins per school**: `/schools/[id]/admins` lists the school's
+  administrators and pending administrator invitations. Adding an address
+  answers in one sentence whether or not it has a login. Removing goes through
+  `membership_leave`. Nobody removes themselves, and the last administrator
+  stays.
+- **Edit a school**: `/schools/[id]/edit` covers the name, the eight contact
+  lines, the logo and the menu switches. `school_profile` (0327) reads it,
+  because the school being edited may not be the one in the token. The browser
+  shrinks the logo to 256 px and encodes it as a data URL under the
+  `tenants_logo_chk` limit, so a large photograph never leaves the device.
+- **Pause and resume**: a button on each Schools row, confirmed. In a paused
+  school the layout shows its members a notice instead of the app. Its
+  administrators keep working, with the notice above every page. Its online
+  form closes. This is not a boundary: data, logins and RLS are untouched.
+- **Copy setup**: on the edit page while the school has no classes, and as
+  "Copy setup from" on Add New School. A refused copy is a sentence on the
+  next page, never a failed founding.
+- **Figures on each card**: `my_school_figures` gives students on roll,
+  collected this month and dues outstanding, for schools the caller
+  administers. The card also shows the logo and a Paused badge.
+- **Menu switches**: `modules.menu`, read in the `(app)` layout and passed to
+  `navForRole(roleCode, hiddenModules)`. `MODULE_PREFIXES` names the addresses
+  each module owns. A switch can only take entries away, which
+  `tests/app-shell/school-menu-switches.test.ts` checks for all six seats.
+
+Walked in the browser on 4 Oct 2026 as the Northgate test administrator, on
+Northgate and Northgate Test Annex:
+
+- the annex's phone and logo were saved;
+- an `example.com` address was added as an invited administrator;
+- the annex was paused (badge on the card and the row) and resumed;
+- Library was switched off for Northgate, SM Library left the menu, and it
+  came back when switched on;
+- no horizontal scroll at 375 px.

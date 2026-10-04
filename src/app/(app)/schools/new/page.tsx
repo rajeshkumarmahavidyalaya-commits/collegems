@@ -6,7 +6,7 @@ import { hasPermission } from "@/lib/auth/permissions";
 import { getT } from "@/lib/i18n/server";
 import { TIMEZONES } from "@/lib/validations/platform-display";
 import { StartForm } from "../../../start/start-form";
-import { addSchool } from "../actions";
+import { addSchool, listMySchools } from "../actions";
 
 export const metadata = { title: "Add New School" };
 
@@ -16,7 +16,8 @@ export const metadata = { title: "Add New School" };
  * without users.manage in a sentence. The button is drawn on that permission.
  */
 export default async function AddSchoolPage() {
-  const [canAdd, t] = await Promise.all([hasPermission("users.manage"), getT()]);
+  const [canAdd, t, mine] = await Promise.all([hasPermission("users.manage"), getT(), listMySchools()]);
+  const copySources = mine.filter((s) => s.isAdmin).map((s) => ({ id: s.tenantId, name: s.name }));
 
   return (
     <div className="flex flex-col gap-4">
@@ -36,6 +37,7 @@ export default async function AddSchoolPage() {
             action={addSchool}
             submitLabel={t("schools.add")}
             note="The new school starts on a thirty-day trial, as every new school does."
+            copySources={copySources}
           />
         </div>
       ) : (

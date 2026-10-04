@@ -1,17 +1,20 @@
 "use client";
 
-import { useActionState } from "react";
-import { Info, Loader2, Mail, MapPin, Phone, School } from "lucide-react";
-import { useT } from "@/components/providers/i18n-provider";
-import { switchSchool, type MySchool, type SwitchState } from "./actions";
+import { useActionState, useTransition } from "react";
+import { useRouter } from "next/navigation";
+import { Info, Loader2, Mail, MapPin, Pause, Phone, Play, School } from "lucide-react";
+import { toast } from "sonner";
+import { useI18n, useT } from "@/components/providers/i18n-provider";
+import { setSchoolActive, switchSchool, type MySchool, type SchoolFigures, type SwitchState } from "./actions";
 
 /**
  * One school on the School Management dashboard, as the reference draws it:
  * an icon, the name, phone, email, address and status, the current one in
  * the brand colour. The whole card is the button that opens the school.
  */
-export function SchoolCard({ school }: { school: MySchool }) {
+export function SchoolCard({ school, figures }: { school: MySchool; figures?: SchoolFigures }) {
   const t = useT();
+  const { formatCurrency, formatNumber } = useI18n();
   const [state, formAction, pending] = useActionState<SwitchState, FormData>(
     switchSchool.bind(null, school.tenantId),
     { error: null },
@@ -37,14 +40,49 @@ export function SchoolCard({ school }: { school: MySchool }) {
         <span className="flex items-center gap-4">
           <span
             className={[
-              "flex size-12 shrink-0 items-center justify-center rounded-lg",
+              "flex size-12 shrink-0 items-center justify-center overflow-hidden rounded-lg",
               current ? "bg-primary-foreground text-primary" : "bg-muted text-primary",
             ].join(" ")}
           >
-            <School className="size-6" aria-hidden="true" />
+            {figures?.logo ? (
+              // A small data URL from the school's own row (0326).
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={figures.logo} alt="" className="size-full object-contain" />
+            ) : (
+              <School className="size-6" aria-hidden="true" />
+            )}
           </span>
-          <span className="text-lg font-semibold italic">{school.name}</span>
+          <span className="flex min-w-0 flex-col">
+            <span className="text-lg font-semibold italic">{school.name}</span>
+            {figures?.isPaused && (
+              <span className="mt-0.5 w-fit rounded bg-warning px-1.5 py-0.5 text-xs font-semibold text-warning-foreground">
+                Paused
+              </span>
+            )}
+          </span>
         </span>
+        {figures && (
+          // Totals only, and only for a school this login administers (0326).
+          <span
+            className={[
+              "grid grid-cols-3 gap-2 rounded-lg p-2 text-center",
+              current ? "bg-primary-foreground/15" : "bg-muted/60",
+            ].join(" ")}
+          >
+            <span className="flex flex-col">
+              <span className="text-base font-semibold tabular-nums">{formatNumber(figures.studentsOnRoll)}</span>
+              <span className="text-[11px] leading-tight opacity-80">Students on roll</span>
+            </span>
+            <span className="flex flex-col">
+              <span className="text-base font-semibold tabular-nums">{formatCurrency(figures.collectedThisMonth)}</span>
+              <span className="text-[11px] leading-tight opacity-80">Collected this month</span>
+            </span>
+            <span className="flex flex-col">
+              <span className="text-base font-semibold tabular-nums">{formatCurrency(figures.duesOutstanding)}</span>
+              <span className="text-[11px] leading-tight opacity-80">Dues outstanding</span>
+            </span>
+          </span>
+        )}
         <span className="flex flex-col gap-1.5 text-sm">
           {school.phone && (
             <span className="flex items-start gap-2">
@@ -123,5 +161,38 @@ export function OpenSchoolButton({ tenantId, name, disabled }: { tenantId: strin
         </span>
       )}
     </form>
+  );
+}
+
+/**
+ * Pause or resume a school (0326). Paused, its members other than its
+ * administrators see a notice instead of the app, and its online form closes.
+ * Not a boundary -- logins and data are untouched -- so the confirmation says
+ * exactly that.
+ */
+export function PauseSchoolButton({ tenantId, name, paused }: { tenantId: string; name: string; paused: boolean }) {
+  const router = useRouter();
+  const [pending, start] = useTransition();
+  return (
+    <button
+      type="button"
+      disabled={pending}
+      onClick={() => {
+        const ask = paused
+          ? `Resume ${name}? Its staff, students and families can use it again.`
+          : `Pause ${name}? Everybody except its administrators will see a "paused" notice instead of the app, and its online application form closes. Nothing is deleted, and you can resume it at any time.`;
+        if (!window.confirm(ask)) return;
+        start(async () => {
+          const r = await setSchoolActive(tenantId, paused);
+          if (!r.ok) return void toast.error(r.error);
+          toast.success(r.data.active ? `${name} is active again.` : `${name} is paused.`);
+          router.refresh();
+        });
+      }}
+      className="inline-flex h-8 cursor-pointer items-center gap-1.5 rounded-md border bg-background px-3 text-sm font-medium hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-60"
+    >
+      {pending ? <Loader2 className="size-3.5 animate-spin" aria-hidden="true" /> : paused ? <Play className="size-3.5" aria-hidden="true" /> : <Pause className="size-3.5" aria-hidden="true" />}
+      {paused ? "Resume" : "Pause"}
+    </button>
   );
 }

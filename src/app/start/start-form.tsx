@@ -23,8 +23,11 @@ export function StartForm({
   action = startSchool,
   submitLabel = "Create the school",
   note = "You get thirty days of everything, up to 50 children and 10 staff. No card needed.",
+  copySources = [],
 }: {
   timezones: string[];
+  /** Add New School only (0326): schools the caller administers, to copy setup from. */
+  copySources?: { id: string; name: string }[];
   action?: (state: StartActionState, formData: FormData) => Promise<StartActionState>;
   submitLabel?: string;
   note?: string;
@@ -166,6 +169,28 @@ export function StartForm({
           Registers, receipts and evening notices all use this clock.
         </p>
       </div>
+
+      {copySources.length > 0 && (
+        <div className="grid gap-2">
+          <Label htmlFor={`${tzId}-copy`}>Copy setup from (optional)</Label>
+          <select
+            id={`${tzId}-copy`}
+            name="copyFrom"
+            defaultValue=""
+            className="h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          >
+            <option value="">Start empty</option>
+            {copySources.map((s) => (
+              <option key={s.id} value={s.id}>
+                {s.name}
+              </option>
+            ))}
+          </select>
+          <p className="text-xs text-muted-foreground">
+            Classes, sections, subjects, periods, fee heads and amounts. Never a student, a staff member or a payment.
+          </p>
+        </div>
+      )}
 
       <Button type="submit" disabled={isPending || slugState === "taken"} className="w-full">
         {isPending && <Loader2 className="me-2 size-4 animate-spin" aria-hidden="true" />}

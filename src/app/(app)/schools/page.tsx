@@ -5,7 +5,7 @@ import { PageToolbar } from "@/components/page-toolbar";
 import { SuccessNotice } from "@/components/success-notice";
 import { hasPermission } from "@/lib/auth/permissions";
 import { getT } from "@/lib/i18n/server";
-import { listMySchools } from "./actions";
+import { listMySchools, listSchoolFigures } from "./actions";
 import { SchoolCard } from "./school-card";
 
 export const metadata = { title: "School Management" };
@@ -25,7 +25,12 @@ export default async function SchoolsDashboardPage({
   searchParams: Promise<{ created?: string }>;
 }) {
   const created = ((await searchParams).created ?? "").slice(0, 120);
-  const [schools, canAdd, t] = await Promise.all([listMySchools(), hasPermission("users.manage"), getT()]);
+  const [schools, figures, canAdd, t] = await Promise.all([
+    listMySchools(),
+    listSchoolFigures(),
+    hasPermission("users.manage"),
+    getT(),
+  ]);
 
   return (
     <div className="flex flex-col gap-6">
@@ -60,7 +65,7 @@ export default async function SchoolsDashboardPage({
         <ul className="grid gap-6 sm:grid-cols-2 xl:grid-cols-3" role="list">
           {schools.map((s) => (
             <li key={s.tenantId} className="min-w-0">
-              <SchoolCard school={s} />
+              <SchoolCard school={s} figures={figures.get(s.tenantId)} />
             </li>
           ))}
         </ul>

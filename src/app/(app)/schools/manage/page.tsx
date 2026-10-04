@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { LayoutGrid, Plus, School } from "lucide-react";
+import { LayoutGrid, Pencil, Plus, School, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -8,8 +8,8 @@ import { SuccessNotice } from "@/components/success-notice";
 import { hasPermission } from "@/lib/auth/permissions";
 import { getLocale, getT } from "@/lib/i18n/server";
 import { formatNumber } from "@/lib/i18n/format";
-import { listMySchools } from "../actions";
-import { OpenSchoolButton } from "../school-card";
+import { listMySchools, listSchoolFigures } from "../actions";
+import { OpenSchoolButton, PauseSchoolButton } from "../school-card";
 
 export const metadata = { title: "Schools" };
 
@@ -23,11 +23,14 @@ export const metadata = { title: "Schools" };
 export default async function SchoolsListPage({
   searchParams,
 }: {
-  searchParams: Promise<{ added?: string }>;
+  searchParams: Promise<{ added?: string; copied?: string }>;
 }) {
-  const added = ((await searchParams).added ?? "").slice(0, 120);
-  const [schools, canAdd, t, locale] = await Promise.all([
+  const params = await searchParams;
+  const added = (params.added ?? "").slice(0, 120);
+  const copied = (params.copied ?? "").slice(0, 200);
+  const [schools, figures, canAdd, t, locale] = await Promise.all([
     listMySchools(),
+    listSchoolFigures(),
     hasPermission("users.manage"),
     getT(),
     getLocale(),
@@ -54,8 +57,11 @@ export default async function SchoolsListPage({
       </PageToolbar>
       {added && (
         <SuccessNotice title={`School "${added}" was created.`}>
-          It has its own academic year and starts empty. Open it to add classes, sections and staff —
-          the Setup Wizard walks through each step.
+          {copied.startsWith("failed:")
+            ? `Its setup was not copied: ${copied.slice(7)} Open it to add classes, sections and staff.`
+            : copied
+              ? `${copied} classes, with their sections, subjects, periods and fees, were copied into it. Open it to add staff and students.`
+              : "It has its own academic year and starts empty. Open it to add classes, sections and staff — the Setup Wizard walks through each step."}
         </SuccessNotice>
       )}
       {schools.length === 0 ? (
@@ -79,6 +85,7 @@ export default async function SchoolsListPage({
               <TableBody>
                 {schools.map((s) => {
                   const active = s.planStatus === "active" || s.planStatus === "trialing";
+                  const paused = figures.get(s.tenantId)?.isPaused === true;
                   return (
                     <TableRow key={s.tenantId} aria-current={s.isCurrent ? "true" : undefined}>
                       <TableCell className="font-medium">{s.name}</TableCell>
@@ -92,16 +99,41 @@ export default async function SchoolsListPage({
                         {s.adminCount === null ? dash : formatNumber(s.adminCount, locale)}
                       </TableCell>
                       <TableCell>
-                        <Badge variant={active ? "default" : "secondary"}>
-                          {active ? t("schools.status.active") : t("schools.status.inactive")}
-                        </Badge>
+                        {paused ? (
+                          <Badge variant="warning">Paused</Badge>
+                        ) : (
+                          <Badge variant={active ? "default" : "secondary"}>
+                            {active ? t("schools.status.active") : t("schools.status.inactive")}
+                          </Badge>
+                        )}
                       </TableCell>
                       <TableCell>
-                        {s.isCurrent ? (
-                          <span className="text-sm font-medium">{t("schools.current")}</span>
-                        ) : (
-                          <OpenSchoolButton tenantId={s.tenantId} name={s.name} disabled={!s.isActive} />
-                        )}
+                        <div className="flex flex-wrap items-start gap-1.5">
+                          {s.isCurrent ? (
+                            <span className="inline-flex h-8 items-center text-sm font-medium">{t("schools.current")}</span>
+                          ) : (
+                            <OpenSchoolButton tenantId={s.tenantId} name={s.name} disabled={!s.isActive} />
+                          )}
+                          {/* Drawn where my_schools says this login administers the
+                              school; each function refuses anybody else anyway. */}
+                          {s.isAdmin && (
+                            <>
+                              <Button asChild variant="outline" size="sm">
+                                <Link href={`/schools/${s.tenantId}/edit`}>
+                                  <Pencil className="size-3.5" aria-hidden="true" />
+                                  Edit
+                                </Link>
+                              </Button>
+                              <Button asChild variant="outline" size="sm">
+                                <Link href={`/schools/${s.tenantId}/admins`}>
+                                  <ShieldCheck className="size-3.5" aria-hidden="true" />
+                                  Admins
+                                </Link>
+                              </Button>
+                              <PauseSchoolButton tenantId={s.tenantId} name={s.name} paused={paused} />
+                            </>
+                          )}
+                        </div>
                       </TableCell>
                     </TableRow>
                   );

@@ -25,6 +25,7 @@ export function AppShell({
   displayName,
   roleName,
   unreadCount,
+  hiddenModules = [],
   children,
 }: {
   /**
@@ -41,10 +42,12 @@ export function AppShell({
   roleName: string;
   /** Unread in-app messages, resolved server-side in the layout. */
   unreadCount: number;
+  /** Modules this school has switched off in its menu (`modules.menu`, 0326). */
+  hiddenModules?: string[];
   children: React.ReactNode;
 }) {
   const { t, direction } = useI18n();
-  const navGroups = navForRole(roleCode);
+  const navGroups = navForRole(roleCode, hiddenModules);
   // The session link is offered where the sessions screen is already in this
   // person's menu; the screen checks academics.manage itself.
   const canManageSessions = navGroups.some((g) => g.items.some((i) => i.href === "/academics/sessions"));
