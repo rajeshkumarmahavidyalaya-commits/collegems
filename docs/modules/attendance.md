@@ -418,3 +418,39 @@ rather than a shrug.
 attendance is a real college's real decision, and the matrix is where a college
 expresses it — narrowing the policy would take the decision away from them to
 fix a screen.
+
+## Attendance by month and by subject (0329)
+
+The reference's View Attendance asks two questions of a class: **by month**
+and **by subject**, each for one section or all of them. `/attendance/report`
+answers both above its older date-range totals.
+
+- **By month** is `attendance_month_sheet(class, section | null, month)`:
+  one row per child, the month's daily marks keyed by day, and present,
+  absent, late and excused. INVOKER over the daily register's policies, so a
+  class teacher sees their own class and the office every class. Both the
+  roll (`enrolments`) and the marks (`attendance_records`) are narrowed by
+  the same policies, which is what keeps the sheet honest (0201). Gated on
+  `attendance.view` inside.
+- **By subject** reads a **subject register**, which did not exist.
+  `subject_attendance_records` is its own table, deliberately not a column on
+  `attendance_records`: twelve functions read the daily register as one row
+  per child per day, and every one of them would have counted a lecture as a
+  second day.
+- **Who takes it.** The teacher of a subject is often not the class teacher,
+  and cannot read the class's enrolments (0304). So the table has read
+  policies only, and `mark_subject_attendance` / `subject_register` are
+  definers answering an administrator, the class teacher, or the teacher of
+  that subject in that class (`subject_register_may`, closed to JWT roles).
+  They filter by tenant by hand and resolve the year by tenant by hand.
+  `/attendance/subject` is the screen.
+- `attendance_subject_month_sheet` is a definer for the same reason. It answers
+  every section to an administrator or accountant holding `attendance.view`,
+  and otherwise only the sections whose register the caller could take. When
+  none qualify it refuses in a sentence rather than returning an empty sheet.
+
+Probed in a rolled-back transaction in Northgate. The administrator marked
+and read the sheet. A date in another year was refused, naming both years.
+The subject teacher, who is not the class teacher, took and read their own
+subject and was refused another subject's register and sheet. A direct insert
+was refused. `tests/attendance/subject-register.test.ts` pins the shape.

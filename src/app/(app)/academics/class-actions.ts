@@ -107,6 +107,40 @@ export async function saveClassLevel(
   return { ok: true, data: { id: data[0].id } };
 }
 
+/**
+ * A new class and its sections for the current year, in one transaction
+ * (`class_level_add`, 0328). The position is the next one; nobody types it.
+ * Sections are typed as "A, B" and split here; the function trims, removes
+ * duplicates and refuses an empty list in a sentence.
+ */
+export async function addClassLevel(
+  name: string,
+  sectionsText: string,
+): Promise<ActionResult<{ id: string; sections: string[] }>> {
+  const clean = (name ?? "").trim();
+  if (!clean) return fail("Give the class a name.", { name: ["Give the class a name"] });
+  if (clean.length > 60) return fail("A class name is at most 60 characters.", { name: ["At most 60 characters"] });
+  const sections = [...new Set((sectionsText ?? "").split(",").map((x) => x.trim()).filter(Boolean))];
+  if (!sections.length) {
+    return fail("Name at least one section, such as A.", { sections: ["Name at least one section"] });
+  }
+
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("class_level_add", { p_name: clean, p_sections: sections });
+  if (error) {
+    if (error.code === "23505") return fail(error.message, { name: ["Already used"] });
+    if (error.code === "22023") return fail(error.message, { sections: [error.message] });
+    return fail(error.message);
+  }
+  const id = (data as { id?: string } | null)?.id;
+  if (!id) return fail("The class was not saved.");
+
+  revalidatePath("/academics");
+  revalidatePath("/students/new");
+  revalidatePath("/setup");
+  return { ok: true, data: { id, sections: sections.slice().sort() } };
+}
+
 /** Refused by the database, in a sentence, while the class has any section. */
 export async function deleteClassLevel(id: string): Promise<ActionResult> {
   const supabase = await createClient();

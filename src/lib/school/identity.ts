@@ -25,7 +25,7 @@ import { getUserContext } from "@/lib/auth/context";
  * which is exactly why it is safe to print on a card a child carries.
  */
 
-type ProfileRow = {
+export type ProfileRow = {
   address_line1?: string | null;
   address_line2?: string | null;
   city?: string | null;
@@ -49,10 +49,19 @@ export type SchoolIdentity = {
   sessionName: string | null;
 };
 
-export async function schoolIdentity(): Promise<SchoolIdentity> {
-  const [ctx, supabase] = await Promise.all([getUserContext(), createClient()]);
+/**
+ * The setting itself, every line of it -- for a form that edits one line and
+ * must write the others back unchanged (the setup wizard's phone, 0330). Still
+ * the one reader; `schoolIdentity` is built on it.
+ */
+export async function schoolProfile(): Promise<ProfileRow> {
+  const supabase = await createClient();
   const { data } = await supabase.rpc("setting_value", { p_key: "school.profile" });
-  const profile = (data ?? {}) as ProfileRow;
+  return data && typeof data === "object" && !Array.isArray(data) ? (data as ProfileRow) : {};
+}
+
+export async function schoolIdentity(): Promise<SchoolIdentity> {
+  const [ctx, profile] = await Promise.all([getUserContext(), schoolProfile()]);
 
   const addressLine =
     [profile.address_line1, profile.address_line2, profile.city, profile.state, profile.postal_code]

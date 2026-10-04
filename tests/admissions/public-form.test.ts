@@ -129,10 +129,12 @@ describe("the public application form", () => {
   });
 
   describe("what an anonymous caller may learn", () => {
-    it("the form's projection is a name, a year, class levels and the college's note", () => {
+    it("the form's projection is a name, a year, class levels and the college's own two sentences", () => {
       const built = form.slice(form.indexOf("return jsonb_build_object("));
       const keys = [...built.matchAll(/^\s*'(\w+)',/gm)].map((m) => m[1]);
-      expect(keys.sort()).toEqual(["class_levels", "college", "note", "session", "slug"]);
+      // success_message (0330) is the college's own words after applying, as
+      // the note is before: nothing an applicant did not already need.
+      expect(keys.sort()).toEqual(["class_levels", "college", "note", "session", "slug", "success_message"]);
     });
 
     it("one null for every reason, never a sentence that distinguishes them", () => {

@@ -54,6 +54,11 @@ export default async function AttendancePage({
               {t("attendance.take")}
             </Link>
           </Button>
+          {canMark && (
+            <Button asChild variant="outline">
+              <Link href="/attendance/subject">{t("attendance.subject")}</Link>
+            </Button>
+          )}
           <Button asChild variant="outline">
             <Link href="/attendance/report">{t("attendance.view")}</Link>
           </Button>

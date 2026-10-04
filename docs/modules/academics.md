@@ -146,3 +146,34 @@ Probed in a rolled-back transaction on the demo college:
   carries name, start, end and `is_current` with a partial unique index. A
   year-above-session layer buys nothing until a school runs two sessions in one
   year, and none of the modules ahead need it.
+
+## Medium, House, kinds of student, and a class that arrives with a section (0328)
+
+- **Manage Medium** and **Manage House** (`/academics/mediums`,
+  `/academics/houses`) are two short named lists. Any member reads them; the
+  administrator writes them (the `class_levels` pair of policies). A child's
+  are `students.medium_id` and `students.house_id`, chosen on the admission
+  form. One still on a record cannot be removed: the foreign key refuses, and
+  the screen says rename it instead.
+- **Kinds of student** (0281) now start from
+  `reference.student_type_defaults`: Regular, Carry Forward, Carry-over,
+  Private Candidate, Management Quota, Direct Admission, Admission Through
+  Counselling. An AFTER INSERT trigger on `tenants` copies them into every new
+  college; existing colleges got the ones they lacked. A college adds its own
+  on `/students/types` (SM Student), on fee setup, or inline on the admission
+  form. "Regular" with no fee rows of its own pays exactly the untyped amount.
+- **Adding a class names its sections** (`class_level_add`, default "A"), in
+  one transaction, and takes the next list position. Nobody types a position
+  any more. The cause, measured on a college founded on 4 Oct 2026: a class
+  made at 07:12 with no section, a child admitted at 07:21 with no class, the
+  section added at 07:36. Every picker that enrols lists sections, so that
+  class was invisible to the admission form.
+- **Admission requires a class, a section and a kind of student**
+  (`admissionSchema`, checked in the server action). The admission form lists
+  every class, and a class with no section this year is shown with the reason
+  rather than left out. Editing keeps them optional, because an alumnus has no
+  class this year.
+- **`admissions.required_fields`** (0330) lets a college require more of the
+  form: date of birth, phone, address, medium, house and so on. The form marks
+  them and the action refuses without them. Every switch defaults to off,
+  which is the form as it was.

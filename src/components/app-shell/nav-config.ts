@@ -11,9 +11,9 @@ import {
   BookOpen,
   BookOpenCheck,
   BookText,
-  Cake,
   Boxes,
   Bus,
+  Cake,
   CalendarCheck,
   CalendarClock,
   CalendarDays,
@@ -29,6 +29,7 @@ import {
   FileText,
   FileUp,
   Fingerprint,
+  Flag,
   FolderOpen,
   GraduationCap,
   HandCoins,
@@ -47,16 +48,17 @@ import {
   Palette,
   PenLine,
   PenSquare,
-  Receipt,
-  School,
   Plane,
   Radio,
+  Receipt,
   ScanLine,
+  School,
   ScrollText,
   Settings2,
   ShieldAlert,
   Sigma,
   Sparkles,
+  Tags,
   UserCheck,
   UserPlus,
   Users,
@@ -139,6 +141,17 @@ export const NAV_GROUPS: NavGroup[] = [
       },
       // The reference's birthday list. Read from the roll through the same
       // policies, so it is offered to the same four roles as the roll.
+      // Kinds of student (0281, 0328): Regular, Carry Forward, Management
+      // Quota and whatever a college adds. Written by an administrator or an
+      // accountant -- the policy on student_types -- so offered to them.
+      {
+        title: "Student Types",
+        messageKey: "nav.studentTypes",
+        href: "/students/types",
+        setup: true,
+        icon: Tags,
+        roles: ["admin", "accountant"],
+      },
       {
         title: "Student Birthdays",
         messageKey: "nav.studentBirthdays",
@@ -201,6 +214,24 @@ export const NAV_GROUPS: NavGroup[] = [
         href: "/academics",
         setup: true,
         icon: Library,
+        roles: ["admin", "teacher", "accountant"],
+      },
+      // The reference's Manage Medium and Manage House (0328): short lists an
+      // administrator writes once and the admission form reads.
+      {
+        title: "Mediums",
+        messageKey: "nav.mediums",
+        href: "/academics/mediums",
+        setup: true,
+        icon: Languages,
+        roles: ["admin", "teacher", "accountant"],
+      },
+      {
+        title: "Houses",
+        messageKey: "nav.houses",
+        href: "/academics/houses",
+        setup: true,
+        icon: Flag,
         roles: ["admin", "teacher", "accountant"],
       },
       // The year everything is filed under, and the only place the flag that
@@ -301,6 +332,15 @@ export const NAV_GROUPS: NavGroup[] = [
         messageKey: "nav.attendanceReport",
         href: "/attendance/report",
         icon: BarChart3,
+        roles: ["admin", "teacher"],
+      },
+      // The subject register (0329): taken by whoever teaches the subject,
+      // who is often not the class teacher. Its functions decide who may.
+      {
+        title: "Subject attendance",
+        messageKey: "nav.subjectAttendance",
+        href: "/attendance/subject",
+        icon: BookOpenCheck,
         roles: ["admin", "teacher"],
       },
       {

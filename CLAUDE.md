@@ -3679,6 +3679,16 @@ policy runs inside it, it resolves the year by tenant **by hand**:
 `academics_session_for_date` relies on RLS, and from inside a definer it would
 answer with any college's year. See `docs/modules/biometric.md`.
 
+**And a second kind of observation gets its own table (`0329`).** Attendance
+by subject needed a lecture register, and the obvious place, a `subject_id` on
+`attendance_records`, would have doubled every day count. Twelve functions read
+the daily register as one row per child per day, from the dashboard to the
+evening absence notice. So `subject_attendance_records` stands beside it. Its
+only write is a definer that answers an administrator, the class teacher or
+that subject's teacher, because a subject teacher cannot read the class's
+enrolments (`0304`). **Before adding a column to a table many readers count,
+ask what each of them would now count twice.** See `docs/modules/attendance.md`.
+
 ### A document a person keeps is frozen, and its wording is data too
 
 Report cards said the first half of this. Certificates — transfer, bonafide,

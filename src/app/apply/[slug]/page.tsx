@@ -19,6 +19,7 @@ type AdmissionForm = {
   college: string;
   session: string | null;
   note: string | null;
+  successMessage: string | null;
   classLevels: { id: string; name: string }[];
 };
 
@@ -36,6 +37,7 @@ function readForm(data: unknown): AdmissionForm | null {
     college: d.college,
     session: typeof d.session === "string" ? d.session : null,
     note: typeof d.note === "string" ? d.note : null,
+    successMessage: typeof d.success_message === "string" ? d.success_message : null,
     classLevels: levels.flatMap((l) =>
       l && typeof l === "object" && typeof (l as { id?: unknown }).id === "string"
         ? [{ id: (l as { id: string }).id, name: String((l as { name?: unknown }).name ?? "") }]
@@ -94,6 +96,7 @@ export default async function ApplyPage({ params }: { params: Promise<{ slug: st
             <ApplyForm
               slug={slug}
               college={form.college}
+              successMessage={form.successMessage}
               classLevels={form.classLevels}
               labels={labelsFor(t, form.college)}
               genders={ADMISSION_GENDERS.map((g) => ({ value: g, label: t(`apply.gender.${g}` as MessageKey) }))}

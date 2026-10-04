@@ -28,6 +28,7 @@ import {
 import {
   deleteClassLevel,
   deleteSection,
+  addClassLevel,
   saveClassLevel,
   saveSection,
   type ClassLevelRow,
@@ -239,7 +240,9 @@ function FieldError({ id, message }: { id: string; message?: string }) {
 function ClassDialog({ level, onClose }: { level: ClassLevelRow | null; onClose: () => void }) {
   const router = useRouter();
   const [name, setName] = useState(level?.name ?? "");
-  const [sequence, setSequence] = useState(level ? String(level.sequence) : "");
+  // A new class arrives with its sections (0328): a class with none cannot
+  // take a child, and its position is simply the next one.
+  const [sections, setSections] = useState("A");
   const [errors, setErrors] = useState<Record<string, string[] | undefined>>({});
   const [serverError, setServerError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
@@ -247,13 +250,25 @@ function ClassDialog({ level, onClose }: { level: ClassLevelRow | null; onClose:
   function submit(e: React.FormEvent) {
     e.preventDefault();
     startTransition(async () => {
-      const result = await saveClassLevel({ name, sequence }, level?.id);
+      const result = level
+        ? await saveClassLevel({ name }, level.id)
+        : await addClassLevel(name, sections);
       if (!result.ok) {
         setErrors(result.fieldErrors ?? {});
         setServerError(result.error);
+        toast.error(result.error);
         return;
       }
-      toast.success(level ? "Class renamed." : `${name.trim()} added.`);
+      if (level) {
+        toast.success(`Class renamed to ${name.trim()}.`);
+      } else {
+        const made = "sections" in result.data ? (result.data.sections as string[]) : [];
+        toast.success(`Class ${name.trim()} added`, {
+          description: made.length
+            ? `With ${made.length === 1 ? "section" : "sections"} ${made.join(", ")}. Students can now be admitted into it.`
+            : undefined,
+        });
+      }
       onClose();
       router.refresh();
     });
@@ -288,22 +303,24 @@ function ClassDialog({ level, onClose }: { level: ClassLevelRow | null; onClose:
             />
             <FieldError id="class-name-error" message={errors.name?.[0]} />
           </div>
-          <div className="flex flex-col gap-1.5">
-            <Label htmlFor="class-sequence">Position (optional)</Label>
-            <Input
-              id="class-sequence"
-              inputMode="numeric"
-              value={sequence}
-              onChange={(e) => setSequence(e.target.value)}
-              placeholder={level ? undefined : "After the last class"}
-              aria-invalid={Boolean(errors.sequence)}
-              aria-describedby="class-sequence-hint"
-            />
-            <p id="class-sequence-hint" className="text-xs text-muted-foreground">
-              The order classes are listed in, and the order promotion moves children up.
-            </p>
-            <FieldError id="class-sequence-error" message={errors.sequence?.[0]} />
-          </div>
+          {!level && (
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="class-sections">Sections</Label>
+              <Input
+                id="class-sections"
+                value={sections}
+                onChange={(e) => setSections(e.target.value)}
+                placeholder="A, B"
+                aria-invalid={Boolean(errors.sections)}
+                aria-describedby="class-sections-hint"
+              />
+              <p id="class-sections-hint" className="text-xs text-muted-foreground">
+                Separate several with commas. Every class needs at least one section before a
+                student can join it.
+              </p>
+              <FieldError id="class-sections-error" message={errors.sections?.[0]} />
+            </div>
+          )}
           <DialogFooter>
             <Button type="button" variant="ghost" onClick={onClose}>
               Cancel

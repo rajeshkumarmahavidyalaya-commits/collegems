@@ -8,7 +8,11 @@ import { z } from "zod";
  */
 export const classLevelSchema = z.object({
   name: z.string().trim().min(1, "Give the class a name").max(60),
-  /** Position in lists and promotion order; blank means "after the last one". */
+  /**
+   * Position in lists and promotion order. No longer asked for on the form
+   * (0328): a new class takes the next position in `class_level_add`, and a
+   * rename keeps its own.
+   */
   sequence: z.string().regex(/^\d{0,4}$/, "A whole number").optional(),
 });
 export type ClassLevelInput = z.infer<typeof classLevelSchema>;

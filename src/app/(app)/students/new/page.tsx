@@ -3,21 +3,23 @@ import { redirect } from "next/navigation";
 import { FileUp, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { getUserContext } from "@/lib/auth/context";
+import { STUDENT_TYPE_WRITERS } from "@/lib/validations/student-types";
 import { hasPermission } from "@/lib/auth/permissions";
-import { listSections } from "../actions";
+import { admissionOptions, admissionRequiredFields } from "../actions";
 import { bedOptions, busStopOptions } from "../arrangement-actions";
 import { StudentForm } from "../student-form";
 
 export const metadata = { title: "Admit student" };
 
 export default async function NewStudentPage() {
-  const [sections, canManage, canAssignBus, canAllocateBed, ctx, canImport] = await Promise.all([
-    listSections(),
+  const [options, canManage, canAssignBus, canAllocateBed, ctx, canImport, required] = await Promise.all([
+    admissionOptions(),
     hasPermission("students.manage"),
     hasPermission("transport.assign"),
     hasPermission("hostel.allocate"),
     getUserContext(),
     hasPermission("import.view"),
+    admissionRequiredFields(),
   ]);
   // Offered only to somebody who may assign them: a field whose write will be
   // refused is a control that costs the person the work of trying.
@@ -41,7 +43,8 @@ export default async function NewStudentPage() {
             New Admission For Session: {ctx?.currentSessionName ?? "—"}
           </h1>
           <p className="text-sm text-muted-foreground">
-            Creates the person, their student record, and their enrolment together.
+            Creates the person, their student record, and their place in a class together.
+            Fields marked * are required.
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
@@ -61,7 +64,15 @@ export default async function NewStudentPage() {
           </Button>
         </div>
       </div>
-      <StudentForm sections={sections} busStops={busStops} hostelRooms={hostelRooms} />
+      <StudentForm
+        options={options}
+        required={required}
+        // Mirrors "finance roles manage student_types": the button is drawn for
+        // the two roles whose write the policy accepts.
+        canAddType={STUDENT_TYPE_WRITERS.includes(ctx?.roleCode ?? "")}
+        busStops={busStops}
+        hostelRooms={hostelRooms}
+      />
     </div>
   );
 }

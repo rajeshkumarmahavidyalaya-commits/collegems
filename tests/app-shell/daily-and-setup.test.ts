@@ -36,7 +36,10 @@ describe("the daily menu and the setup menu", () => {
     // 46 (0323): School Management, the card per school, is the reference's
     // first page and where an administrator starts every day. The Schools
     // table beside it is Setup.
-    expect(everyday).toBeLessThanOrEqual(46);
+    // 47 (0329): Subject Attendance, where the teacher of a subject takes its
+    // register every day it is taught -- an everyday screen beside the daily
+    // register, not a set-up one.
+    expect(everyday).toBeLessThanOrEqual(47);
   });
 
   it("never marks a screen a family uses as setup", () => {

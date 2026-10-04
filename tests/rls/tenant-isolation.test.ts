@@ -121,6 +121,9 @@ describeDb("cross-tenant isolation", () => {
     "role_permissions",
     "school_memberships",
     "settings",
+    "mediums",
+    "houses",
+    "subject_attendance_records",
   ] as const;
 
   it.each(tables)("%s never returns another tenant's rows", async (table) => {

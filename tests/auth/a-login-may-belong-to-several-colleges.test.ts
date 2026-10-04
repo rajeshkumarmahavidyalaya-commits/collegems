@@ -161,6 +161,7 @@ describe("the screens", () => {
     expect(src("src/app/login/page.tsx")).toMatch(/href="\/signup"/);
     // The confirmation link comes back through the callback and on to /start.
     expect(src("src/app/signup/actions.ts")).toMatch(/emailRedirectTo: `\$\{origin\}\/auth\/callback\?next=\/start`/);
-    expect(src("src/app/start/actions.ts")).toMatch(/redirect\("\/schools"\)/);
+    // ...with the school's name, so the page can say it was created.
+    expect(src("src/app/start/actions.ts")).toMatch(/redirect\(`\/schools\?created=/);
   });
 });

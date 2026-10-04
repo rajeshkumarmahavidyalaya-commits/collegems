@@ -126,3 +126,11 @@ export function studentTypeCode(name: string): string {
 
 /** The sentinel a `<Select>` uses for "every student": Radix will not take "". */
 export const ALL_STUDENTS = "all";
+
+/**
+ * The roles the policies on `student_types` and `student_type_assignments`
+ * let write (0281): "finance roles manage ...". A copy of one policy's own
+ * list, kept in one place so a screen can decide whether to draw an editor
+ * that would otherwise refuse -- never the gate, which is the policy.
+ */
+export const STUDENT_TYPE_WRITERS: readonly string[] = ["admin", "accountant"];

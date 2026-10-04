@@ -101,5 +101,6 @@ export async function addSchool(_prev: StartActionState, formData: FormData): Pr
 
   revalidatePath("/schools");
   revalidatePath("/schools/manage");
-  redirect("/schools/manage");
+  // The page says what happened: a redirect cannot carry a toast.
+  redirect(`/schools/manage?added=${encodeURIComponent(parsed.data.schoolName)}`);
 }

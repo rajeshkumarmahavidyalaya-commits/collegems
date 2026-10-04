@@ -136,8 +136,8 @@ birthday list was checked with dates set inside a rolled-back transaction
 - **"Unpaid Invoices"** on the dashboard is shown as students with dues.
   This backend keeps balances per child, not per invoice.
 - **Fields this backend does not store**: religion, caste, category, mother
-  tongue, birth place, previous school, medium, house, student type on the
-  admission form; per-student fee structure and login creation inside
+  tongue, birth place, previous school on the admission form (medium, house
+  and student type are now asked, 0328); per-student fee structure and login creation inside
   admission (logins are invited from Admins); suspension.
 - **Columns not shown**: a staff member's salary, role and login (a
   permission decision, not a layout one); a student's login and enrollment
@@ -149,7 +149,7 @@ birthday list was checked with dates set inside a rolled-back transaction
   staff member's own record.
 - **Our extras stay** under the reference dashboard: the setup checklist,
   the module grid, the two registers and the charts.
-- **Modules this backend does not have**: Medium, House, Activities, Lessons
+- **Modules this backend does not have**: Activities, Lessons
   and Chapters, Tickets, Gate Pass, Chat, Staff Rating, ID card layouts,
   transfer between schools, webcam and QR attendance.
 - **No pixel comparison.** Layout and structure were matched against
@@ -208,12 +208,16 @@ birthday list was checked with dates set inside a rolled-back transaction
 |---|---|---|---|---|---|
 | Toolbar, sidebar, school/session band | every signed-in page | `shell.tsx`, `app-sidebar.tsx`, `reference-navigation.ts`, `school-context.tsx` | `navForRole` (role filter), `getUserContext` | `user_profiles`, `roles`, `academic_sessions` | menu: role list; each page checks its own permission |
 | School Dashboard | `/` | `PageToolbar`, `StatCard`, `SchoolCalendar` → `MonthCalendar` | `dashboard_summary()`, `school_calendar()` | aggregates of every module | blocks gated inside `dashboard_summary`; buttons on `academics.manage` / `students.manage` |
-| Setup Wizard | `/setup` (new) | `SetupWizard` | `setup_progress()` (0284/0310) | settings, sessions, classes, fees, staff, students, logins | steps per permission inside the RPC; menu entry beside `/academics/sessions` |
+| Setup Wizard (7 steps: Welcome, Assign Classes, Add Subjects, Student Types, Fee Types, Registration Settings, Extras) | `/setup?step=…` | `setup/page.tsx`, `setup/wizard-steps.tsx`; the Extras step keeps `SetupWizard` over `setup_progress()` | `class_level_add` (0328), `academics_add_subject`, `saveStudentType`, `fee_heads` + `fee_structures`, `setting_set` (`admissions.online`, `admissions.required_fields` 0330, `contact_email`, `school.profile`) | classes, sections, subjects, student types, fee heads and amounts, settings | administrator only (every write is an administrator's under the policies); menu entry beside `/academics/sessions` |
+| Manage Medium, Manage House | `/academics/mediums`, `/academics/houses` (new) | `NamedListManager` | `mediums`, `houses` (0328) | `students.medium_id`, `students.house_id` | read: any member; write: admin policy |
+| Manage Student type | `/students/types` (new, under SM Student) | `StudentTypesPanel` (shared with fee setup) | `student_types`, `student_type_assignments` (0281), defaults `reference.student_type_defaults` (0328) | seven kinds every college starts with | admin and accountant policies |
+| Attendance By Month / By Subject | `/attendance/report` | `AttendanceBy` | `attendance_month_sheet` (invoker), `attendance_subject_month_sheet` (definer) (0329) | `attendance_records`, `subject_attendance_records` | `attendance.view`; by subject also the class or subject teacher |
+| Subject attendance (not in the reference; needed for By Subject) | `/attendance/subject` (new) | `SubjectRegister` | `subject_register`, `mark_subject_attendance` (0329) | `subject_attendance_records` | admin, class teacher, or that subject's teacher |
 | Sessions | `/academics/sessions` | existing | existing guarded switch | `academic_sessions` | `academics.manage` |
 | Classes & Sections / Subjects | `/academics`, `/academics?tab=subjects` | existing editor | existing actions | `class_levels`, `sections`, `subjects` | `academics.manage` to edit |
 | Settings (tabs) | `/settings/school` | `SettingsTabs` | `setting_set`, catalogue | `settings`, `reference.settings_catalog` | per key |
 | Students (Search Students) | `/students` | `StudentsTable` search panel | `listStudents` — **class filter fixed** (below) | `students`, `enrolments`, `people`, `guardian_student` | RLS |
-| Admission | `/students/new` | existing form, three columns on wide screens | existing `createStudent` | `people`, `students`, `enrolments` | `students.manage` |
+| Admission | `/students/new` | form, three columns on wide screens; Class then Section, Student type (add a new one inline), Medium, House | `admit_student`, then `student_type_assign` and the medium/house update (0328) | `people`, `students`, `enrolments`, `student_type_assignments` | `students.manage`; class, section and kind required by `admissionSchema` in the action; more fields by `admissions.required_fields` (0330) |
 | Attendance (Take / View) | `/attendance`, `/attendance/report` | existing | existing | `attendance_records` | `attendance.mark`; View drawn on `attendance.view` |
 | Calendar | `/calendar` | `MonthCalendar` + agenda | `school_calendar()` | holidays, exams, instalments, notices | invoker, each source's policies |
 | Fee invoices, balances, collect, history | `/fees/*` | existing, new toolbar | existing | `invoices`, `ledger_entries` | existing |
@@ -223,7 +227,7 @@ birthday list was checked with dates set inside a rolled-back transaction
 | Students Birthdays | `/students/birthdays` (new) | page | `student_birthdays` (0321) | `students`, `people`, `enrolments` | `students.view`; RLS decides rows |
 | Platform "School Management" | `/platform` | toolbar, platform menu, `PageToolbar` | `platform_colleges()` | metadata only (0209) | operator only |
 
-Not reproduced, because this backend has no such capability: Medium, House,
+Not reproduced, because this backend has no such capability:
 ticketing, chat, staff ratings, gate pass, and the
 plugin's own license, reset and uninstall screens. Nothing in the menu
 pretends otherwise.

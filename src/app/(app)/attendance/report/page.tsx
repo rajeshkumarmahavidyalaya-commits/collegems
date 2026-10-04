@@ -1,18 +1,21 @@
 import Link from "next/link";
-import { ClipboardCheck } from "lucide-react";
+import { BookOpenCheck, ClipboardCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { getUserContext } from "@/lib/auth/context";
 import { hasPermission } from "@/lib/auth/permissions";
 import { listAllSections } from "../actions";
 import { AttendanceReport } from "./attendance-report";
+import { AttendanceBy } from "./attendance-by";
+import { attendanceFilters } from "../by-actions";
 import { CoverageCard } from "./coverage-card";
 
 export const metadata = { title: "Attendance report" };
 
 export default async function AttendanceReportPage() {
-  const [ctx, sections, canSeeCoverage, canRead] = await Promise.all([
+  const [ctx, sections, filters, canSeeCoverage, canRead] = await Promise.all([
     getUserContext(),
     listAllSections(),
+    attendanceFilters(),
     // The same question is `attendance.gaps` in the report catalogue, and
     // migration 0201 moved that to `attendance.mark` -- the permission held by
     // somebody who can go and take the missing register. A card showing the
@@ -40,25 +43,37 @@ export default async function AttendanceReportPage() {
     <div className="flex flex-col gap-4">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-semibold">Attendance report</h1>
+          <h1 className="text-2xl font-semibold">View Attendance</h1>
           <p className="text-sm text-muted-foreground">
-            Per-student totals for a class over a date range, for{" "}
+            By month or by subject for a class, one section or all of them, for{" "}
             {ctx?.currentSessionName ?? "the current session"}. Late counts as attended; excused
             days are left out of the percentage rather than counted against the student.
           </p>
         </div>
         {canSeeCoverage && (
-          <Button asChild variant="outline">
-            <Link href="/attendance">
-              <ClipboardCheck className="size-4" aria-hidden="true" />
-              Take register
-            </Link>
-          </Button>
+          <div className="flex flex-wrap gap-2">
+            <Button asChild variant="outline">
+              <Link href="/attendance">
+                <ClipboardCheck className="size-4" aria-hidden="true" />
+                Take Attendance
+              </Link>
+            </Button>
+            <Button asChild variant="outline">
+              <Link href="/attendance/subject">
+                <BookOpenCheck className="size-4" aria-hidden="true" />
+                Subject Attendance
+              </Link>
+            </Button>
+          </div>
         )}
       </div>
 
       {canRead ? (
-        <AttendanceReport sections={sections} />
+        <>
+          <AttendanceBy classes={filters} />
+          <h2 className="mt-2 text-lg font-semibold">Totals over a date range</h2>
+          <AttendanceReport sections={sections} />
+        </>
       ) : (
         // Absent-and-withheld reads as a bug, so it is a sentence (rule 11).
         <div

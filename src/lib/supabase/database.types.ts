@@ -6856,6 +6856,130 @@ export type Database = {
           },
         ]
       }
+      houses: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "houses_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      mediums: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mediums_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      subject_attendance_records: {
+        Row: {
+          attendance_date: string
+          created_at: string
+          enrolment_id: string
+          id: string
+          marked_by: string | null
+          note: string | null
+          section_id: string
+          session_id: string
+          status: string
+          subject_id: string
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          attendance_date: string
+          created_at?: string
+          enrolment_id: string
+          id?: string
+          marked_by?: string | null
+          note?: string | null
+          section_id: string
+          session_id: string
+          status: string
+          subject_id: string
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          attendance_date?: string
+          created_at?: string
+          enrolment_id?: string
+          id?: string
+          marked_by?: string | null
+          note?: string | null
+          section_id?: string
+          session_id?: string
+          status?: string
+          subject_id?: string
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "subject_attendance_records_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "academic_sessions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "subject_attendance_records_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       student_types: {
         Row: {
           code: string
@@ -6904,7 +7028,9 @@ export type Database = {
           created_at: string
           date_of_leaving: string | null
           exit_reason: string | null
+          house_id: string | null
           id: string
+          medium_id: string | null
           person_id: string
           status: string
           tenant_id: string
@@ -6916,7 +7042,9 @@ export type Database = {
           created_at?: string
           date_of_leaving?: string | null
           exit_reason?: string | null
+          house_id?: string | null
           id?: string
+          medium_id?: string | null
           person_id: string
           status?: string
           tenant_id: string
@@ -6928,7 +7056,9 @@ export type Database = {
           created_at?: string
           date_of_leaving?: string | null
           exit_reason?: string | null
+          house_id?: string | null
           id?: string
+          medium_id?: string | null
           person_id?: string
           status?: string
           tenant_id?: string
@@ -7615,6 +7745,8 @@ export type Database = {
           created_at: string
           default_locale: string
           id: string
+          is_active: boolean
+          logo: string | null
           name: string
           slug: string
           timezone: string
@@ -7624,6 +7756,8 @@ export type Database = {
           created_at?: string
           default_locale?: string
           id?: string
+          is_active?: boolean
+          logo?: string | null
           name: string
           slug: string
           timezone?: string
@@ -7633,6 +7767,8 @@ export type Database = {
           created_at?: string
           default_locale?: string
           id?: string
+          is_active?: boolean
+          logo?: string | null
           name?: string
           slug?: string
           timezone?: string
@@ -10572,6 +10708,112 @@ export type Database = {
           role_name: string
           slug: string
           tenant_id: string
+        }[]
+      }
+      attendance_month_sheet: {
+        Args: { p_class_level_id: string; p_month: string; p_section_id?: string }
+        Returns: {
+          absent: number
+          admission_number: string
+          excused: number
+          full_name: string
+          late: number
+          marks: Json
+          present: number
+          roll_number: string
+          section_name: string
+          student_id: string
+        }[]
+      }
+      attendance_subject_month_sheet: {
+        Args: {
+          p_class_level_id: string
+          p_month: string
+          p_section_id?: string
+          p_subject_id: string
+        }
+        Returns: {
+          absent: number
+          admission_number: string
+          excused: number
+          full_name: string
+          late: number
+          marks: Json
+          present: number
+          roll_number: string
+          section_name: string
+          student_id: string
+        }[]
+      }
+      class_level_add: {
+        Args: { p_name: string; p_sections?: string[] }
+        Returns: Json
+      }
+      mark_subject_attendance: {
+        Args: {
+          p_date: string
+          p_entries: Json
+          p_section_id: string
+          p_subject_id: string
+        }
+        Returns: number
+      }
+      my_school_figures: {
+        Args: never
+        Returns: {
+          collected_this_month: number
+          dues_outstanding: number
+          is_paused: boolean
+          logo: string
+          session_name: string
+          students_on_roll: number
+          tenant_id: string
+        }[]
+      }
+      school_admins: {
+        Args: { p_tenant: string }
+        Returns: {
+          display_name: string
+          email: string
+          is_you: boolean
+          status: string
+          user_id: string
+        }[]
+      }
+      school_assign_admin: {
+        Args: { p_email: string; p_tenant: string }
+        Returns: Json
+      }
+      school_copy_setup: { Args: { p_from: string; p_to: string }; Returns: Json }
+      school_profile: { Args: { p_tenant: string }; Returns: Json }
+      school_remove_admin: {
+        Args: { p_tenant: string; p_user: string }
+        Returns: Json
+      }
+      school_set_active: {
+        Args: { p_active: boolean; p_tenant: string }
+        Returns: Json
+      }
+      school_update_profile: {
+        Args: {
+          p_logo: string
+          p_menu: Json
+          p_name: string
+          p_profile: Json
+          p_tenant: string
+        }
+        Returns: Json
+      }
+      subject_register: {
+        Args: { p_date: string; p_section_id: string; p_subject_id: string }
+        Returns: {
+          admission_number: string
+          enrolment_id: string
+          note: string
+          roll_number: string
+          status: string
+          student_id: string
+          student_name: string
         }[]
       }
       mobile_bootstrap: { Args: never; Returns: Json }

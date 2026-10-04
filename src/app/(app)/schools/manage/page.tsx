@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { PageToolbar } from "@/components/page-toolbar";
+import { SuccessNotice } from "@/components/success-notice";
 import { hasPermission } from "@/lib/auth/permissions";
 import { getLocale, getT } from "@/lib/i18n/server";
 import { formatNumber } from "@/lib/i18n/format";
@@ -19,7 +20,12 @@ export const metadata = { title: "Schools" };
  * a zero. The action opens the school through the same switch the dashboard
  * cards use.
  */
-export default async function SchoolsListPage() {
+export default async function SchoolsListPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ added?: string }>;
+}) {
+  const added = ((await searchParams).added ?? "").slice(0, 120);
   const [schools, canAdd, t, locale] = await Promise.all([
     listMySchools(),
     hasPermission("users.manage"),
@@ -46,6 +52,12 @@ export default async function SchoolsListPage() {
           </Button>
         )}
       </PageToolbar>
+      {added && (
+        <SuccessNotice title={`School "${added}" was created.`}>
+          It has its own academic year and starts empty. Open it to add classes, sections and staff —
+          the Setup Wizard walks through each step.
+        </SuccessNotice>
+      )}
       {schools.length === 0 ? (
         <p className="rounded-lg border bg-card px-6 py-10 text-center text-sm text-muted-foreground">{t("schools.superAdminOnly")}</p>
       ) : (

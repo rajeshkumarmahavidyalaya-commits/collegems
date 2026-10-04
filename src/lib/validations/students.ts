@@ -27,8 +27,16 @@ export const studentSchema = z.object({
   admissionDate: z.string().min(1, "Admission date is required"),
   status: z.enum(["active", "inactive", "alumni", "transferred", "expelled"]),
 
+  /** The form's first picker; the section beneath it is what is enrolled. */
+  classLevelId: z.string().optional(),
   sectionId: z.string().uuid().optional().or(z.literal("")),
   rollNumber: z.string().max(20).optional(),
+
+  // Kind of student, medium and house (0328). `""` is "not set": a Select
+  // cannot hold undefined without going uncontrolled.
+  studentTypeId: z.string().uuid().optional().or(z.literal("")),
+  mediumId: z.string().uuid().optional().or(z.literal("")),
+  houseId: z.string().uuid().optional().or(z.literal("")),
 
   // At admission only (0296), each optional: a bus stop and a hostel room,
   // so a boarder on the bus is one form rather than three screens. Ignored
@@ -38,3 +46,16 @@ export const studentSchema = z.object({
 });
 
 export type StudentInput = z.infer<typeof studentSchema>;
+
+/**
+ * Admitting a child names their class and their kind. A child admitted with
+ * no section is on no register, no timetable and no invoice run -- invisible
+ * to every screen that lists a class -- and a college asked that it be
+ * impossible. Editing keeps both optional, because an alumnus has no class
+ * this year.
+ */
+export const admissionSchema = studentSchema.extend({
+  sectionId: z.string().uuid("Choose the class and section the student joins"),
+  studentTypeId: z.string().uuid("Choose the kind of student"),
+});
+

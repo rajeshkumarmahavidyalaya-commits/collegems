@@ -113,8 +113,9 @@ export function StudentTypesPanel({
               Kinds of student
             </CardTitle>
             <CardDescription>
-              Students with no kind are regular and pay the regular fees. Give a kind its
-              own amount for any fee under Fees by class.
+              Every student is given a kind on the admission form. A student with no kind
+              pays the regular fees, and so does any kind with no amount of its own under
+              Fees by class.
             </CardDescription>
           </CardHeader>
           <CardContent className="flex flex-col gap-2">

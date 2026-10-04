@@ -73,6 +73,7 @@ export async function saveStudentType(input: {
     // An UPDATE no policy matches touches nothing and raises nothing (rule 6).
     if (!data?.length) return fail("Only an administrator or an accountant can change the kinds of student.");
     revalidatePath("/fees/setup");
+  revalidatePath("/students/types");
     return { ok: true, data: { id: data[0].id } };
   }
 
@@ -95,6 +96,7 @@ export async function saveStudentType(input: {
     return fail(error.message);
   }
   revalidatePath("/fees/setup");
+  revalidatePath("/students/types");
   return { ok: true, data: { id: data.id } };
 }
 
@@ -110,6 +112,7 @@ export async function deleteStudentType(id: string): Promise<ActionResult> {
   }
   if (!data?.length) return fail("Only an administrator or an accountant can remove a kind of student.");
   revalidatePath("/fees/setup");
+  revalidatePath("/students/types");
   return { ok: true, data: undefined };
 }
 
@@ -188,6 +191,7 @@ export async function assignStudentType(
   const result = (data ?? {}) as { type?: string | null; changed?: boolean };
 
   revalidatePath("/fees/setup");
+  revalidatePath("/students/types");
   revalidatePath(`/students/${studentId}`);
   return { ok: true, data: { type: result.type ?? null, changed: result.changed === true } };
 }
@@ -279,5 +283,6 @@ export async function assignStudentTypeToMany(
     else unchanged += 1;
   }
   revalidatePath("/fees/setup");
+  revalidatePath("/students/types");
   return { ok: true, data: { changed, unchanged, failed } };
 }

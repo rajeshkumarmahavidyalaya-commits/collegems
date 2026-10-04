@@ -4,9 +4,10 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { deletePhotoObject } from "@/lib/storage/photos";
 import { getUserContext } from "@/lib/auth/context";
-import { studentSchema, type StudentInput } from "@/lib/validations/students";
+import { admissionSchema, studentSchema, type StudentInput } from "@/lib/validations/students";
 import { STUDENT_SEARCH_FIELDS, type StudentSearchField } from "@/lib/validations/students-display";
 import { admissionBillSentence, parseAdmissionBill } from "@/lib/validations/admission-bill";
+import { missingRequired, requiredFieldNames } from "@/lib/validations/admission-required";
 import { formatCurrency } from "@/lib/i18n/format";
 import { getLocale } from "@/lib/i18n/server";
 import type { ActionResult, ListParams } from "../library/actions";
@@ -161,8 +162,9 @@ export async function listSections() {
   const supabase = await createClient();
   let query = supabase
     .from("sections")
-    .select("id, name, class_levels ( name, sequence )")
-    .order("name");
+    .select("id, name, class_level_id, class_levels ( name, sequence )")
+    .order("name")
+    .order("id");
 
   if (ctx?.currentSessionId) query = query.eq("session_id", ctx.currentSessionId);
 
@@ -173,8 +175,70 @@ export async function listSections() {
       id: s.id,
       label: s.class_levels ? `${s.class_levels.name} · ${s.name}` : s.name,
       sequence: s.class_levels?.sequence ?? 0,
+      classLevelId: s.class_level_id,
+      sectionName: s.name,
     }))
     .sort((a, b) => a.sequence - b.sequence || a.label.localeCompare(b.label));
+}
+
+export type AdmissionOptions = {
+  /** Every class, with this year's sections; a class with none says so. */
+  classes: { id: string; name: string; sections: { id: string; name: string }[] }[];
+  types: { id: string; name: string }[];
+  mediums: { id: string; name: string }[];
+  houses: { id: string; name: string }[];
+};
+
+/**
+ * What the admission and edit forms choose from (0328). Classes come from
+ * `class_levels`, not from the sections list, so a class with no section this
+ * year is still shown -- disabled, with the reason -- instead of silently
+ * missing from the picker, which is how a college came to believe its class
+ * had not been saved.
+ */
+export async function admissionOptions(): Promise<AdmissionOptions> {
+  const supabase = await createClient();
+  const [levels, sections, types, mediums, houses] = await Promise.all([
+    supabase.from("class_levels").select("id, name, sequence").order("sequence").order("name"),
+    listSections(),
+    supabase.from("student_types").select("id, name, code, is_active").eq("is_active", true).order("name"),
+    supabase.from("mediums").select("id, name").order("name"),
+    supabase.from("houses").select("id, name").order("name"),
+  ]);
+  if (levels.error) throw new Error(levels.error.message);
+  // Regular first: it is the answer for most children.
+  const typeRows = (types.data ?? []).slice().sort((a, b) => Number(b.code === "regular") - Number(a.code === "regular"));
+  return {
+    classes: (levels.data ?? []).map((l) => ({
+      id: l.id,
+      name: l.name,
+      sections: sections.filter((s) => s.classLevelId === l.id).map((s) => ({ id: s.id, name: s.sectionName })),
+    })),
+    types: typeRows.map((t) => ({ id: t.id, name: t.name })),
+    mediums: mediums.data ?? [],
+    houses: houses.data ?? [],
+  };
+}
+
+/** The admission form's fields this college has made required (0330). */
+export async function admissionRequiredFields(): Promise<string[]> {
+  const supabase = await createClient();
+  const { data } = await supabase.rpc("setting_value", { p_key: "admissions.required_fields" });
+  return requiredFieldNames(data);
+}
+
+/** The kind of student a child is this year, or "" (0281). Finance roles and the administrator read it. */
+export async function currentStudentType(studentId: string): Promise<string> {
+  const ctx = await getUserContext();
+  if (!ctx?.currentSessionId) return "";
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("student_type_assignments")
+    .select("student_type_id")
+    .eq("student_id", studentId)
+    .eq("session_id", ctx.currentSessionId)
+    .maybeSingle();
+  return data?.student_type_id ?? "";
 }
 
 export async function getStudent(id: string) {
@@ -182,7 +246,7 @@ export async function getStudent(id: string) {
   const { data, error } = await supabase
     .from("students")
     .select(
-      `id, admission_number, admission_date, status,
+      `id, admission_number, admission_date, status, medium_id, house_id,
        people:person_id ( first_name, middle_name, last_name, date_of_birth, gender,
                           blood_group, email, phone, address_line1, address_line2,
                           city, state, postal_code, photo_path ),
@@ -228,6 +292,23 @@ function duplicateAdmissionNumber(message: string): ActionResult<never> {
   };
 }
 
+/** Null when saved; otherwise the sentence to show beside the success. */
+async function saveMediumAndHouse(
+  studentId: string,
+  v: Pick<StudentInput, "mediumId" | "houseId">,
+): Promise<{ ok: false; message: string } | null> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("students")
+    .update({ medium_id: v.mediumId || null, house_id: v.houseId || null })
+    .eq("id", studentId)
+    .select("id");
+  if (error) return { ok: false, message: `Medium and house not saved: ${error.message}` };
+  // An update no policy matches touches nothing and raises nothing (rule 6).
+  if (!data?.length) return { ok: false, message: "Medium and house not saved: only an administrator can change a student record." };
+  return null;
+}
+
 /**
  * `billing` is the second fact the office is told: whether the admission fee
  * was invoiced (0286). Null when no fee head is set to bill on admission.
@@ -242,7 +323,9 @@ export async function admitStudent(
     arrangements: { ok: boolean; message: string }[];
   }>
 > {
-  const parsed = studentSchema.safeParse(input);
+  // The class and the kind of student are required here and not on an edit
+  // (0328): the server is the gate, whatever the form already checked.
+  const parsed = admissionSchema.safeParse(input);
   if (!parsed.success) {
     return { ok: false, error: "Check the highlighted fields.", fieldErrors: parsed.error.flatten().fieldErrors };
   }
@@ -251,6 +334,14 @@ export async function admitStudent(
   if (!ctx) return { ok: false, error: "Not signed in." };
 
   const supabase = await createClient();
+  // The fields this college requires at admission (0330), checked here
+  // whatever the form already did.
+  const required = await admissionRequiredFields();
+  const missing = missingRequired(parsed.data, required);
+  if (Object.keys(missing).length) {
+    return { ok: false, error: "Fill in the fields your college requires at admission.", fieldErrors: missing };
+  }
+
   const { data, error } = await supabase.rpc("admit_student", {
     p_person: toPersonPayload(parsed.data),
     p_admission_number: parsed.data.admissionNumber,
@@ -312,7 +403,19 @@ export async function admitStudent(
     );
   }
 
+  // Kind of student, medium and house (0328), after the admission has
+  // committed, like the seat and the bed: each refusal is a sentence beside
+  // "admitted", never an un-admission.
+  const typed = await supabase.rpc("student_type_assign", {
+    p_student_id: id,
+    p_student_type_id: parsed.data.studentTypeId,
+  });
+  if (typed.error) arrangements.push({ ok: false, message: `Kind of student not saved: ${typed.error.message}` });
+  const details = await saveMediumAndHouse(id, parsed.data);
+  if (details) arrangements.push(details);
+
   revalidatePath("/students");
+  revalidatePath("/students/types");
   return { ok: true, data: { id, billing, arrangements } };
 }
 
@@ -341,8 +444,25 @@ export async function updateStudent(id: string, input: unknown): Promise<ActionR
     return { ok: false, error: error.message };
   }
 
+  const details = await saveMediumAndHouse(id, parsed.data);
+  if (details) return { ok: false, error: details.message };
+
+  // The kind of student this year, only when it changed: the edit form shows
+  // the current one, and "" means none.
+  const before = await currentStudentType(id);
+  const after = parsed.data.studentTypeId ?? "";
+  if (before !== after && (after || before)) {
+    const { error: typeError } = await supabase.rpc("student_type_assign", {
+      p_student_id: id,
+      // Null takes the kind away; every SQL argument accepts it.
+      p_student_type_id: (after || null) as string,
+    });
+    if (typeError) return { ok: false, error: `Saved, except the kind of student: ${typeError.message}` };
+  }
+
   revalidatePath("/students");
   revalidatePath(`/students/${id}`);
+  revalidatePath("/students/types");
   return { ok: true, data: { id } };
 }
 

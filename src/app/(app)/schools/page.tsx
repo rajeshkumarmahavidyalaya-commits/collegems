@@ -2,6 +2,7 @@ import Link from "next/link";
 import { List, Plus, School } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { PageToolbar } from "@/components/page-toolbar";
+import { SuccessNotice } from "@/components/success-notice";
 import { hasPermission } from "@/lib/auth/permissions";
 import { getT } from "@/lib/i18n/server";
 import { listMySchools } from "./actions";
@@ -18,7 +19,12 @@ export const metadata = { title: "School Management" };
  * anybody else, who is told so. One school is visible at a time, because the
  * college is in the token and every policy reads it from there.
  */
-export default async function SchoolsDashboardPage() {
+export default async function SchoolsDashboardPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ created?: string }>;
+}) {
+  const created = ((await searchParams).created ?? "").slice(0, 120);
   const [schools, canAdd, t] = await Promise.all([listMySchools(), hasPermission("users.manage"), getT()]);
 
   return (
@@ -41,6 +47,12 @@ export default async function SchoolsDashboardPage() {
           </Button>
         )}
       </PageToolbar>
+      {created && (
+        <SuccessNotice title={`School "${created}" was created.`}>
+          It has its own academic year and starts empty. Open it to add classes, sections and staff —
+          the Setup Wizard walks through each step.
+        </SuccessNotice>
+      )}
       {schools.length > 0 && <p className="text-sm text-muted-foreground">{t("schools.intro")}</p>}
       {schools.length === 0 ? (
         <p className="rounded-lg border bg-card px-6 py-10 text-center text-sm text-muted-foreground">{t("schools.superAdminOnly")}</p>

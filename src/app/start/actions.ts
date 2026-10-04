@@ -61,5 +61,5 @@ export async function startSchool(
 
   // The reference's first page: School Management, where the new college is
   // the first card and Add New School founds the next (0323).
-  redirect("/schools");
+  redirect(`/schools?created=${encodeURIComponent(parsed.data.schoolName)}`);
 }

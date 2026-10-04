@@ -40,6 +40,8 @@ export type ApplyLabels = {
 type Props = {
   slug: string;
   college: string;
+  /** The college's own words after an application is accepted (0330). */
+  successMessage: string | null;
   classLevels: { id: string; name: string }[];
   labels: ApplyLabels;
   genders: { value: string; label: string }[];
@@ -63,6 +65,7 @@ const selectClass =
 
 function OneApplication({
   slug,
+  successMessage,
   classLevels,
   labels,
   genders,
@@ -90,7 +93,8 @@ function OneApplication({
           <CheckCircle2 className="size-5 shrink-0 text-primary" aria-hidden="true" />
           {labels.doneTitle}
         </h2>
-        <p className="text-sm text-muted-foreground">{labels.doneBody}</p>
+        {/* The college's own words when it wrote some (0330), else ours. */}
+        <p className="text-sm text-muted-foreground">{successMessage ?? labels.doneBody}</p>
         {state.done.reference ? (
           <div className="flex flex-col gap-1">
             <span className="text-xs text-muted-foreground">{labels.doneReference}</span>
