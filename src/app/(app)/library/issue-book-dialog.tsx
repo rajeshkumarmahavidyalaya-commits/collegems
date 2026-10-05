@@ -35,9 +35,15 @@ function defaultDueDate() {
 export function IssueBookDialog({
   book,
   defaultOpen = false,
+  compact = false,
+  onIssued,
 }: {
   book?: { id: string; title: string };
   defaultOpen?: boolean;
+  /** A small outline button, for a table row (the catalogue's Issue Book column). */
+  compact?: boolean;
+  /** Called after a successful issue, e.g. to re-read a client-paged list. */
+  onIssued?: () => void;
 }) {
   const router = useRouter();
   const [open, setOpen] = useState(defaultOpen);
@@ -77,12 +83,18 @@ export function IssueBookDialog({
     } else {
       setPicked(null);
     }
+    onIssued?.();
     router.refresh();
   }
 
   return (
     <>
-      <Button onClick={() => setOpen(true)}>
+      <Button
+        size={compact ? "sm" : "default"}
+        variant={compact ? "outline" : "default"}
+        aria-label={compact && book ? `Issue ${book.title}` : undefined}
+        onClick={() => setOpen(true)}
+      >
         <BookUp className="size-4" aria-hidden="true" />
         Issue Book
       </Button>
@@ -112,7 +124,7 @@ export function IssueBookDialog({
               <Picker
                 id="issue-book"
                 label="Book"
-                placeholder="Title, author or ISBN"
+                placeholder="Title, author, ISBN or book number"
                 empty="No book with a copy on the shelf matches that."
                 picked={picked}
                 onPick={setPicked}

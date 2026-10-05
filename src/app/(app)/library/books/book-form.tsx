@@ -34,6 +34,8 @@ export function BookForm({
       publisher: "",
       edition: "",
       shelfLocation: "",
+      bookNumber: "",
+      price: null,
       totalCopies: 1,
     },
   });
@@ -76,23 +78,36 @@ export function BookForm({
             <SelectField
               control={form.control}
               name="categoryId"
-              label="Category"
+              label="Subject"
               placeholder="Uncategorised"
               options={categories.map((c) => ({ value: c.id, label: c.name }))}
             />
-            <TextField control={form.control} name="isbn" label="ISBN" />
+            <TextField
+              control={form.control}
+              name="bookNumber"
+              label="Book number"
+              description="The library's own number for it, if it has one. No two books share one."
+            />
+            <TextField control={form.control} name="isbn" label="ISBN number" />
             <TextField control={form.control} name="publisher" label="Publisher" />
             <TextField control={form.control} name="edition" label="Edition" />
             <TextField
               control={form.control}
               name="shelfLocation"
-              label="Shelf location"
+              label="Rack number"
               description="Where the book physically sits, e.g. SCI-04"
             />
             <TextField
               control={form.control}
+              name="price"
+              label="Price"
+              type="number"
+              description="What one copy cost. Leave empty if not known."
+            />
+            <TextField
+              control={form.control}
               name="totalCopies"
-              label="Total copies"
+              label="Quantity"
               type="number"
               required
               description={

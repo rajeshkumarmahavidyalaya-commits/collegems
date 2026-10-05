@@ -101,20 +101,31 @@ export function InventoryView({
       )}
 
       <Tabs defaultValue="stock">
-        <TabsList>
-          <TabsTrigger value="stock">Stock</TabsTrigger>
-          <TabsTrigger value="out">Out with people</TabsTrigger>
-        </TabsList>
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <TabsList>
+            <TabsTrigger value="stock">Items</TabsTrigger>
+            <TabsTrigger value="out">Out with people</TabsTrigger>
+          </TabsList>
+          {canManage && (
+            <Button
+              size="sm"
+              className="cursor-pointer"
+              onClick={() => {
+                setEditingItem(null);
+                setItemOpen(true);
+              }}
+            >
+              <Plus className="size-4" aria-hidden="true" />
+              Add New Item
+            </Button>
+          )}
+        </div>
 
         <TabsContent value="stock" className="mt-4">
           <StockTab
             stock={stock}
             canManage={canManage}
             canAdjust={canAdjust}
-            onAdd={() => {
-              setEditingItem(null);
-              setItemOpen(true);
-            }}
             onEdit={(item) => {
               setEditingItem(item);
               setItemOpen(true);
@@ -156,7 +167,6 @@ function StockTab({
   stock,
   canManage,
   canAdjust,
-  onAdd,
   onEdit,
   onMove,
   onSell,
@@ -164,7 +174,6 @@ function StockTab({
   stock: StockRow[];
   canManage: boolean;
   canAdjust: boolean;
-  onAdd: () => void;
   onEdit: (item: StockRow) => void;
   onMove: (item: StockRow) => void;
   onSell: (item: StockRow) => void;
@@ -180,12 +189,6 @@ function StockTab({
             There is no stored total to go stale.
           </CardDescription>
         </div>
-        {canManage && (
-          <Button size="sm" onClick={onAdd} className="cursor-pointer">
-            <Plus className="size-4" aria-hidden="true" />
-            Add New Item
-          </Button>
-        )}
       </CardHeader>
       <CardContent>
         {stock.length === 0 ? (
@@ -209,13 +212,12 @@ function StockTab({
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Item</TableHead>
+                  <TableHead>Item Name</TableHead>
                   <TableHead>Category</TableHead>
-                  <TableHead>On hand</TableHead>
-                  <TableHead className="text-end">Unit cost</TableHead>
-                  <TableHead className="text-end">Sells for</TableHead>
-                  <TableHead>Last moved</TableHead>
-                  <TableHead className="w-24 text-end">Actions</TableHead>
+                  <TableHead>Unit</TableHead>
+                  <TableHead className="text-end">Price</TableHead>
+                  <TableHead>Stock</TableHead>
+                  <TableHead className="w-24 text-end">Action</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -239,6 +241,16 @@ function StockTab({
                       <TableCell className="text-muted-foreground">
                         {item.categoryName ?? "—"}
                       </TableCell>
+                      <TableCell className="text-muted-foreground">{item.unit}</TableCell>
+                      <TableCell className="text-end font-mono tabular-nums">
+                        {/* Null is "not for sale", and says so. A zero here
+                            would say the school gives it away. */}
+                        {item.salePrice === null ? (
+                          <span className="font-sans text-xs text-muted-foreground">Not for sale</span>
+                        ) : (
+                          formatCurrency(item.salePrice)
+                        )}
+                      </TableCell>
                       <TableCell>
                         {/* Text carries it; the variant only echoes. */}
                         <Badge
@@ -261,23 +273,12 @@ function StockTab({
                             {quantityWithUnit(item.issuedOut, item.unit)} out
                           </span>
                         )}
-                      </TableCell>
-                      <TableCell className="text-end font-mono tabular-nums text-muted-foreground">
-                        {item.averageCost === null
-                          ? "—"
-                          : formatCurrency(item.averageCost)}
-                      </TableCell>
-                      <TableCell className="text-end font-mono tabular-nums">
-                        {/* Null is "not for sale", and a dash says that. A zero
-                            here would say the school gives it away. */}
-                        {item.salePrice === null ? (
-                          <span className="text-muted-foreground">—</span>
-                        ) : (
-                          formatCurrency(item.salePrice)
-                        )}
-                      </TableCell>
-                      <TableCell className="font-mono tabular-nums text-muted-foreground">
-                        {item.lastMovement ?? "—"}
+                        <span className="block text-xs text-muted-foreground">
+                          {item.averageCost === null
+                            ? "Cost not recorded"
+                            : `Cost ${formatCurrency(item.averageCost)} each`}
+                          {item.lastMovement && ` · last moved ${item.lastMovement}`}
+                        </span>
                       </TableCell>
                       <TableCell className="text-end">
                         {/* Drawn only when the counter could actually serve

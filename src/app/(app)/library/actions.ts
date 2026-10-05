@@ -30,15 +30,27 @@ export type BookRow = {
   categoryName: string | null;
   totalCopies: number;
   availableCopies: number;
+  bookNumber: string | null;
+  price: number | null;
 };
 
-const BOOK_SORT_COLUMNS = new Set(["title", "author", "total_copies", "available_copies", "created_at"]);
+const BOOK_SORT_COLUMNS = new Set([
+  "title",
+  "author",
+  "total_copies",
+  "available_copies",
+  "created_at",
+  "book_number",
+  "price",
+  "shelf_location",
+]);
 
 export async function listBooks(params: ListParams): Promise<{ rows: BookRow[]; total: number }> {
   const supabase = await createClient();
   const { pageIndex, pageSize, sortBy, sortDesc, search, categoryId } = params;
 
-  // The two filters go into `library_books` (migration `0259`) and the paging
+  // The two filters go into `library_catalogue` (0337; `library_books` before
+  // it, 0259) and the paging
   // stays here: PostgREST applies `.order()`, `.range()` and `count: exact` to
   // a set-returning function exactly as it does to a table, which is the idiom
   // `fees_student_balances` already established. What this replaced was
@@ -53,7 +65,7 @@ export async function listBooks(params: ListParams): Promise<{ rows: BookRow[]; 
 
   const { data, count, error } = await supabase
     .rpc(
-      "library_books",
+      "library_catalogue",
       { p_query: search?.trim() || "", p_category_id: categoryId || undefined },
       { count: "exact" },
     )
@@ -75,6 +87,8 @@ export async function listBooks(params: ListParams): Promise<{ rows: BookRow[]; 
       categoryName: b.category_name,
       totalCopies: b.total_copies,
       availableCopies: b.available_copies,
+      bookNumber: b.book_number,
+      price: b.price,
     })),
     total: count ?? 0,
   };
@@ -108,13 +122,24 @@ export async function createBook(input: unknown): Promise<ActionResult<{ id: str
       publisher: parsed.data.publisher || null,
       edition: parsed.data.edition || null,
       shelf_location: parsed.data.shelfLocation || null,
+      book_number: parsed.data.bookNumber?.trim() || null,
+      price: parsed.data.price ?? null,
       total_copies: parsed.data.totalCopies,
       available_copies: parsed.data.totalCopies,
     })
     .select("id")
     .single();
 
-  if (error) return { ok: false, error: error.message };
+  if (error) {
+    if (error.code === "23505") {
+      return {
+        ok: false,
+        error: "Another book already has that book number.",
+        fieldErrors: { bookNumber: ["Already in use"] },
+      };
+    }
+    return { ok: false, error: error.message };
+  }
 
   revalidatePath("/library/books");
   return { ok: true, data: { id: data.id } };
@@ -144,7 +169,7 @@ export async function updateBook(id: string, input: unknown): Promise<ActionResu
     Math.max(0, existing.available_copies + delta),
   );
 
-  const { error } = await supabase
+  const { data: updated, error } = await supabase
     .from("books")
     .update({
       title: parsed.data.title,
@@ -154,12 +179,26 @@ export async function updateBook(id: string, input: unknown): Promise<ActionResu
       publisher: parsed.data.publisher || null,
       edition: parsed.data.edition || null,
       shelf_location: parsed.data.shelfLocation || null,
+      book_number: parsed.data.bookNumber?.trim() || null,
+      price: parsed.data.price ?? null,
       total_copies: parsed.data.totalCopies,
       available_copies: nextAvailable,
     })
-    .eq("id", id);
+    .eq("id", id)
+    .select("id");
 
-  if (error) return { ok: false, error: error.message };
+  if (error) {
+    if (error.code === "23505") {
+      return {
+        ok: false,
+        error: "Another book already has that book number.",
+        fieldErrors: { bookNumber: ["Already in use"] },
+      };
+    }
+    return { ok: false, error: error.message };
+  }
+  // An update no policy matches writes nothing and raises nothing (rule 6).
+  if (!updated?.length) return { ok: false, error: "This book could not be changed. It may have been deleted, or your role may not edit the catalogue." };
 
   revalidatePath("/library/books");
   revalidatePath(`/library/books/${id}`);
@@ -185,6 +224,11 @@ export type MemberRow = {
   status: string;
   maxBooks: number;
   booksOut: number;
+  /** The day the card was issued. */
+  joinedAt: string;
+  /** A student's class and section this year; null for staff or a child not enrolled. */
+  className: string | null;
+  sectionName: string | null;
 };
 
 export async function listMembers(params: ListParams): Promise<{ rows: MemberRow[]; total: number }> {
@@ -194,7 +238,7 @@ export async function listMembers(params: ListParams): Promise<{ rows: MemberRow
   let query = supabase
     .from("members")
     .select(
-      `id, membership_number, status, max_books,
+      `id, membership_number, status, max_books, joined_at, student_id,
        students ( admission_number, people:person_id ( first_name, last_name ) ),
        staff ( employee_code, people:person_id ( first_name, last_name ) ),
        book_issues ( id, status )`,
@@ -215,9 +259,15 @@ export async function listMembers(params: ListParams): Promise<{ rows: MemberRow
   const { data, count, error } = await query;
   if (error) throw new Error(error.message);
 
+  const placed = await currentClassOf(
+    supabase,
+    (data ?? []).map((m) => m.student_id).filter((id): id is string => !!id),
+  );
+
   return {
     rows: (data ?? []).map((m) => {
       const isStudent = !!m.students;
+      const where = m.student_id ? placed.get(m.student_id) : undefined;
       const person = m.students?.people ?? m.staff?.people;
       return {
         id: m.id,
@@ -228,10 +278,81 @@ export async function listMembers(params: ListParams): Promise<{ rows: MemberRow
         status: m.status,
         maxBooks: m.max_books,
         booksOut: (m.book_issues ?? []).filter((i) => i.status === "issued").length,
+        joinedAt: m.joined_at,
+        className: where?.className ?? null,
+        sectionName: where?.sectionName ?? null,
       };
     }),
     total: count ?? 0,
   };
+}
+
+/** One card, for printing. Read by id through RLS: null when it is not there or not the caller's. */
+export async function getMemberCard(id: string): Promise<MemberRow | null> {
+  const supabase = await createClient();
+  const { data: m } = await supabase
+    .from("members")
+    .select(
+      `id, membership_number, status, max_books, joined_at, student_id,
+       students ( admission_number, people:person_id ( first_name, last_name ) ),
+       staff ( employee_code, people:person_id ( first_name, last_name ) ),
+       book_issues ( id, status )`,
+    )
+    .eq("id", id)
+    .maybeSingle();
+  if (!m) return null;
+  const placed = await currentClassOf(supabase, m.student_id ? [m.student_id] : []);
+  const where = m.student_id ? placed.get(m.student_id) : undefined;
+  const person = m.students?.people ?? m.staff?.people;
+  return {
+    id: m.id,
+    membershipNumber: m.membership_number,
+    holderName: person ? `${person.first_name} ${person.last_name}` : "—",
+    holderType: m.students ? "Student" : "Staff",
+    holderRef: m.students?.admission_number ?? m.staff?.employee_code ?? "—",
+    status: m.status,
+    maxBooks: m.max_books,
+    booksOut: (m.book_issues ?? []).filter((i) => i.status === "issued").length,
+    joinedAt: m.joined_at,
+    className: where?.className ?? null,
+    sectionName: where?.sectionName ?? null,
+  };
+}
+
+/**
+ * Each student's class and section in the current year, for the cards on one
+ * page. Three plain reads rather than embeds: `enrolments` reaches `sections`
+ * through a composite key. The year comes from the server (rule 2).
+ */
+async function currentClassOf(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  studentIds: string[],
+): Promise<Map<string, { className: string | null; sectionName: string }>> {
+  const out = new Map<string, { className: string | null; sectionName: string }>();
+  if (studentIds.length === 0) return out;
+  const ctx = await getUserContext();
+  if (!ctx?.currentSessionId) return out;
+  const { data: enrolled } = await supabase
+    .from("enrolments")
+    .select("student_id, section_id")
+    .eq("session_id", ctx.currentSessionId)
+    .eq("status", "active")
+    .in("student_id", studentIds);
+  const sectionIds = [...new Set((enrolled ?? []).map((e) => e.section_id))];
+  if (sectionIds.length === 0) return out;
+  const { data: sections } = await supabase
+    .from("sections")
+    .select("id, name, class_level_id")
+    .in("id", sectionIds);
+  const levelIds = [...new Set((sections ?? []).map((s) => s.class_level_id))];
+  const { data: levels } = await supabase.from("class_levels").select("id, name").in("id", levelIds);
+  const levelName = new Map((levels ?? []).map((l) => [l.id, l.name]));
+  const section = new Map((sections ?? []).map((s) => [s.id, s]));
+  for (const e of enrolled ?? []) {
+    const s = section.get(e.section_id);
+    if (s) out.set(e.student_id, { className: levelName.get(s.class_level_id) ?? null, sectionName: s.name });
+  }
+  return out;
 }
 
 export async function createMember(input: unknown): Promise<ActionResult<{ id: string }>> {
@@ -271,8 +392,15 @@ export type IssueRow = {
   id: string;
   bookTitle: string;
   bookId: string;
+  bookAuthor: string | null;
+  bookNumber: string | null;
+  rackNumber: string | null;
   memberName: string;
   membershipNumber: string;
+  /** Admission number for a student, employee code for staff. */
+  holderRef: string | null;
+  className: string | null;
+  sectionName: string | null;
   status: string;
   issuedAt: string;
   dueAt: string;
@@ -327,10 +455,10 @@ export async function listIssues(params: ListParams): Promise<{ rows: IssueRow[]
     .select(
       `id, status, issued_at, due_at, returned_at, fine_amount,
        staff_fine_payslip_id, staff_fine_waived_at,
-       books ( id, title ),
+       books ( id, title, author, book_number, shelf_location ),
        members ( membership_number, student_id, staff_id,
-                 students ( people:person_id ( first_name, last_name ) ),
-                 staff ( people:person_id ( first_name, last_name ) ) )`,
+                 students ( admission_number, people:person_id ( first_name, last_name ) ),
+                 staff ( employee_code, people:person_id ( first_name, last_name ) ) )`,
       { count: "exact" },
     );
 
@@ -370,8 +498,14 @@ export async function listIssues(params: ListParams): Promise<{ rows: IssueRow[]
     );
   }
 
+  const placed = await currentClassOf(
+    supabase,
+    [...new Set((data ?? []).map((i) => i.members?.student_id).filter((id): id is string => !!id))],
+  );
+
   let rows = (data ?? []).map((i) => {
     const person = i.members?.students?.people ?? i.members?.staff?.people;
+    const where = i.members?.student_id ? placed.get(i.members.student_id) : undefined;
     const isOverdue = i.status === "issued" && i.due_at < today;
     const daysLate = Math.max(
       0,
@@ -386,8 +520,14 @@ export async function listIssues(params: ListParams): Promise<{ rows: IssueRow[]
       id: i.id,
       bookId: i.books?.id ?? "",
       bookTitle: i.books?.title ?? "—",
+      bookAuthor: i.books?.author ?? null,
+      bookNumber: i.books?.book_number ?? null,
+      rackNumber: i.books?.shelf_location ?? null,
       memberName: person ? `${person.first_name} ${person.last_name}` : "—",
       membershipNumber: i.members?.membership_number ?? "—",
+      holderRef: i.members?.students?.admission_number ?? i.members?.staff?.employee_code ?? null,
+      className: where?.className ?? null,
+      sectionName: where?.sectionName ?? null,
       status: i.status,
       issuedAt: i.issued_at,
       dueAt: i.due_at,
@@ -606,12 +746,12 @@ export async function searchMembersForIssue(term: string): Promise<IssuePick[]> 
   }));
 }
 
-/** A book with a copy on the shelf, by title, author or ISBN -- `library_books`, the catalogue's own search. */
+/** A book with a copy on the shelf, by title, author, ISBN or book number -- `library_catalogue`, the catalogue's own search. */
 export async function searchBooksForIssue(term: string): Promise<IssuePick[]> {
   if (term.trim().length < 2) return [];
   const supabase = await createClient();
   const { data } = await supabase
-    .rpc("library_books", { p_query: term.trim() })
+    .rpc("library_catalogue", { p_query: term.trim() })
     .gt("available_copies", 0)
     .order("title")
     .order("id")
@@ -619,6 +759,8 @@ export async function searchBooksForIssue(term: string): Promise<IssuePick[]> {
   return (data ?? []).map((b) => ({
     id: b.id,
     label: b.title,
-    detail: [b.author, `${b.available_copies} on the shelf`].filter(Boolean).join(" · "),
+    detail: [b.book_number ? `No. ${b.book_number}` : null, b.author, `${b.available_copies} on the shelf`]
+      .filter(Boolean)
+      .join(" · "),
   }));
 }

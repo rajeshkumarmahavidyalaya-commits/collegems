@@ -145,51 +145,92 @@ export function IssuesTable({ canManage }: { canManage: boolean }) {
   const columns: ColumnDef<IssueRow>[] = [
     {
       accessorKey: "bookTitle",
-      header: "Book",
-      cell: ({ row }) => (
-        <Link
-          href={`/library/books/${row.original.bookId}`}
-          className="font-medium underline-offset-4 hover:underline"
-        >
-          {row.original.bookTitle}
-        </Link>
-      ),
-      enableSorting: false,
-      meta: { label: "Book" },
-    },
-    {
-      accessorKey: "memberName",
-      header: "Member",
+      header: "Book Title",
       cell: ({ row }) => (
         <div className="flex flex-col">
-          <span>{row.original.memberName}</span>
-          <span className="font-mono text-xs text-muted-foreground">
-            {row.original.membershipNumber}
+          <Link
+            href={`/library/books/${row.original.bookId}`}
+            className="font-medium underline-offset-4 hover:underline"
+          >
+            {row.original.bookTitle}
+          </Link>
+          <span className="text-xs text-muted-foreground">
+            {[
+              row.original.bookAuthor,
+              row.original.bookNumber ? `No. ${row.original.bookNumber}` : null,
+              row.original.rackNumber ? `Rack ${row.original.rackNumber}` : null,
+            ]
+              .filter(Boolean)
+              .join(" · ")}
           </span>
         </div>
       ),
       enableSorting: false,
-      meta: { label: "Member" },
+      meta: { label: "Book Title" },
+    },
+    {
+      accessorKey: "memberName",
+      header: "Issued to",
+      cell: ({ row }) => (
+        <div className="flex flex-col">
+          <span>{row.original.memberName}</span>
+          <span className="font-mono text-xs text-muted-foreground">
+            Card {row.original.membershipNumber}
+          </span>
+        </div>
+      ),
+      enableSorting: false,
+      meta: { label: "Issued to" },
+    },
+    {
+      accessorKey: "holderRef",
+      header: "Enrollment Number",
+      cell: ({ row }) => (
+        <span className="font-mono text-xs">{row.original.holderRef ?? "—"}</span>
+      ),
+      enableSorting: false,
+      meta: { label: "Enrollment Number" },
+    },
+    {
+      accessorKey: "className",
+      header: "Class",
+      cell: ({ row }) => row.original.className ?? <span className="text-muted-foreground">—</span>,
+      enableSorting: false,
+      meta: { label: "Class" },
+    },
+    {
+      accessorKey: "sectionName",
+      header: "Section",
+      cell: ({ row }) => row.original.sectionName ?? <span className="text-muted-foreground">—</span>,
+      enableSorting: false,
+      meta: { label: "Section" },
     },
     {
       accessorKey: "issuedAt",
-      header: "Issued",
+      header: "Date Issued",
       cell: ({ row }) => (
         <span className="tabular-nums">
           {formatDate(row.original.issuedAt, locale)}
         </span>
       ),
       enableSorting: false,
-      meta: { label: "Issued" },
+      meta: { label: "Date Issued" },
     },
     {
       accessorKey: "dueAt",
-      header: "Due",
+      header: "Return Date",
       cell: ({ row }) => (
-        <span className="tabular-nums">{formatDate(row.original.dueAt, locale)}</span>
+        <div className="flex flex-col">
+          <span className="tabular-nums">{formatDate(row.original.dueAt, locale)}</span>
+          {row.original.returnedAt && (
+            <span className="text-xs text-muted-foreground">
+              Returned {formatDate(row.original.returnedAt, locale)}
+            </span>
+          )}
+        </div>
       ),
       enableSorting: false,
-      meta: { label: "Due" },
+      meta: { label: "Return Date" },
     },
     {
       accessorKey: "status",
@@ -257,7 +298,7 @@ export function IssuesTable({ canManage }: { canManage: boolean }) {
       ? [
           {
             id: "actions",
-            header: "",
+            header: "Action",
             cell: ({ row }) => {
               const issue = row.original;
               const canWaive =

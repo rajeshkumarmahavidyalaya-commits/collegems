@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { formatDate } from "@/lib/i18n/format";
 import { getLocale } from "@/lib/i18n/server";
+import { formatCurrency } from "@/lib/i18n/format";
 import { Pencil } from "lucide-react";
 import { ConfirmDeleteButton } from "@/components/confirm-delete-button";
 import { createClient } from "@/lib/supabase/server";
@@ -31,7 +32,7 @@ export default async function BookDetailPage({ params }: { params: Promise<{ id:
   const { data: book } = await supabase
     .from("books")
     .select(
-      "id, title, author, isbn, publisher, edition, shelf_location, total_copies, available_copies, created_at, book_categories ( name )",
+      "id, title, author, isbn, publisher, edition, shelf_location, book_number, price, total_copies, available_copies, created_at, book_categories ( name )",
     )
     .eq("id", id)
     .maybeSingle();
@@ -58,7 +59,9 @@ export default async function BookDetailPage({ params }: { params: Promise<{ id:
     { label: "ISBN", value: book.isbn ?? "—", mono: true },
     { label: "Publisher", value: book.publisher ?? "—" },
     { label: "Edition", value: book.edition ?? "—" },
-    { label: "Shelf", value: book.shelf_location ?? "—", mono: true },
+    { label: "Rack number", value: book.shelf_location ?? "—", mono: true },
+    { label: "Book number", value: book.book_number ?? "—", mono: true },
+    { label: "Price", value: book.price === null ? "—" : formatCurrency(book.price, locale), mono: true },
   ];
 
   return (

@@ -14,9 +14,16 @@ import { formatDate } from "@/lib/i18n/format";
 
 export const metadata = { title: "Exam" };
 
-export default async function ExamPage({ params }: { params: Promise<{ examId: string }> }) {
+export default async function ExamPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ examId: string }>;
+  searchParams: Promise<{ tab?: string }>;
+}) {
   const t = await getT();
   const { examId } = await params;
+  const { tab } = await searchParams;
   const locale = await getLocale();
 
   const [
@@ -68,6 +75,7 @@ export default async function ExamPage({ params }: { params: Promise<{ examId: s
                 {formatDate(exam.startsOn, locale)}
               </span>
             )}
+            {exam.centre && <span>Centre: {exam.centre}</span>}
             <span className="inline-flex items-center gap-1">
               <Scale className="size-3.5" aria-hidden="true" />
               {exam.gradingSchemeName ?? "The school's default scheme"}
@@ -120,6 +128,7 @@ export default async function ExamPage({ params }: { params: Promise<{ examId: s
         canManage={canManage}
         canGrade={canGrade}
         canPublish={canPublish}
+        initialTab={tab === "papers" || tab === "results" ? tab : undefined}
       />
     </div>
   );

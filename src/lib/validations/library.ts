@@ -8,6 +8,10 @@ export const bookSchema = z.object({
   publisher: z.string().max(200).nullable().optional(),
   edition: z.string().max(50).nullable().optional(),
   shelfLocation: z.string().max(100).nullable().optional(),
+  /** The library's own number for the book (its accession number); unique in a college when given. */
+  bookNumber: z.string().max(50).nullable().optional(),
+  /** What the book cost; empty means not recorded, never free. */
+  price: z.number().min(0, "A price cannot be negative").max(10000000).nullable().optional(),
   totalCopies: z.number().int().min(1, "Must have at least 1 copy").max(1000),
 });
 

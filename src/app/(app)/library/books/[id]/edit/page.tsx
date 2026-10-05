@@ -15,7 +15,7 @@ export default async function EditBookPage({ params }: { params: Promise<{ id: s
   const [{ data: book }, categories] = await Promise.all([
     supabase
       .from("books")
-      .select("id, title, author, category_id, isbn, publisher, edition, shelf_location, total_copies")
+      .select("id, title, author, category_id, isbn, publisher, edition, shelf_location, book_number, price, total_copies")
       .eq("id", id)
       .maybeSingle(),
     listCategories(),
@@ -40,6 +40,8 @@ export default async function EditBookPage({ params }: { params: Promise<{ id: s
           publisher: book.publisher,
           edition: book.edition,
           shelfLocation: book.shelf_location,
+          bookNumber: book.book_number,
+          price: book.price,
           totalCopies: book.total_copies,
         }}
       />

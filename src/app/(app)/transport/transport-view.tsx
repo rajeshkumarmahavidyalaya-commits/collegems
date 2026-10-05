@@ -94,19 +94,44 @@ export function TransportView({
       )}
 
       <Tabs defaultValue="routes">
-        <TabsList>
-          <TabsTrigger value="routes">Routes</TabsTrigger>
-          <TabsTrigger value="fleet">Fleet</TabsTrigger>
-        </TabsList>
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <TabsList>
+            <TabsTrigger value="routes">Routes</TabsTrigger>
+            <TabsTrigger value="fleet">Vehicles</TabsTrigger>
+          </TabsList>
+          {canManage && (
+            <div className="flex flex-wrap gap-2">
+              <Button
+                size="sm"
+                variant="outline"
+                className="cursor-pointer"
+                onClick={() => {
+                  setEditingVehicle(null);
+                  setVehicleOpen(true);
+                }}
+              >
+                <Plus className="size-4" aria-hidden="true" />
+                Add New Vehicle
+              </Button>
+              <Button
+                size="sm"
+                className="cursor-pointer"
+                onClick={() => {
+                  setEditingRoute(null);
+                  setRouteOpen(true);
+                }}
+              >
+                <Plus className="size-4" aria-hidden="true" />
+                Add New Route
+              </Button>
+            </div>
+          )}
+        </div>
 
         <TabsContent value="routes" className="mt-4">
           <RoutesTab
             routes={routes}
             canManage={canManage}
-            onAdd={() => {
-              setEditingRoute(null);
-              setRouteOpen(true);
-            }}
             onEdit={(route) => {
               setEditingRoute(route);
               setRouteOpen(true);
@@ -118,10 +143,6 @@ export function TransportView({
           <FleetTab
             vehicles={vehicles}
             canManage={canManage}
-            onAdd={() => {
-              setEditingVehicle(null);
-              setVehicleOpen(true);
-            }}
             onEdit={(vehicle) => {
               setEditingVehicle(vehicle);
               setVehicleOpen(true);
@@ -154,12 +175,10 @@ export function TransportView({
 function RoutesTab({
   routes,
   canManage,
-  onAdd,
   onEdit,
 }: {
   routes: RouteLoadRow[];
   canManage: boolean;
-  onAdd: () => void;
   onEdit: (route: RouteLoadRow) => void;
 }) {
   const { t, formatCurrency } = useI18n();
@@ -173,12 +192,6 @@ function RoutesTab({
             the route, because that is where the money actually varies.
           </CardDescription>
         </div>
-        {canManage && (
-          <Button size="sm" onClick={onAdd} className="cursor-pointer">
-            <Plus className="size-4" aria-hidden="true" />
-            Add New Route
-          </Button>
-        )}
       </CardHeader>
       <CardContent>
         {routes.length === 0 ? (
@@ -197,13 +210,11 @@ function RoutesTab({
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Route</TableHead>
-                  <TableHead>Runs</TableHead>
-                  <TableHead>Vehicle</TableHead>
-                  <TableHead className="text-end">Stops</TableHead>
+                  <TableHead>Route Name</TableHead>
+                  <TableHead>Route Fare</TableHead>
+                  <TableHead>Number of Vehicles</TableHead>
                   <TableHead>Seats</TableHead>
-                  <TableHead className="text-end">Monthly fares</TableHead>
-                  <TableHead className="w-20 text-end">Edit</TableHead>
+                  {canManage && <TableHead className="w-20 text-end">Action</TableHead>}
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -216,34 +227,37 @@ function RoutesTab({
                           href={`/transport/${route.routeId}`}
                           className="font-medium underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                         >
-                          <span className="font-mono">{route.code}</span> ·{" "}
                           {route.name}
                         </Link>
-                        {!route.isActive && (
-                          <span className="ms-2 text-xs text-muted-foreground">
-                            (not running)
-                          </span>
-                        )}
+                        <span className="block text-xs text-muted-foreground">
+                          <span className="font-mono">{route.code}</span> · {directionLabel(route.direction, t)} ·{" "}
+                          {route.stopCount} {route.stopCount === 1 ? "stop" : "stops"}
+                          {!route.isActive && " · not running"}
+                        </span>
                       </TableCell>
-                      <TableCell className="text-muted-foreground">
-                        {directionLabel(route.direction, t)}
-                      </TableCell>
-                      <TableCell className="text-muted-foreground">
-                        {route.registrationNumber ? (
-                          <span className="font-mono">
-                            {route.registrationNumber}
-                          </span>
+                      <TableCell className="font-mono tabular-nums">
+                        {route.fareMin === null ? (
+                          <span className="font-sans text-xs text-muted-foreground">No stops yet</span>
+                        ) : route.fareMin === route.fareMax ? (
+                          formatCurrency(route.fareMin)
                         ) : (
-                          "Not assigned"
+                          `${formatCurrency(route.fareMin)} – ${formatCurrency(route.fareMax)}`
                         )}
-                        {route.driverName && (
-                          <span className="block text-xs">
-                            {route.driverName}
-                          </span>
+                        {route.fareMin !== null && (
+                          <span className="block font-sans text-xs text-muted-foreground">a month, by stop</span>
                         )}
                       </TableCell>
-                      <TableCell className="text-end font-mono tabular-nums">
-                        {route.stopCount}
+                      <TableCell>
+                        {route.registrationNumber ? (
+                          <>
+                            1 <span className="font-mono text-muted-foreground">({route.registrationNumber})</span>
+                            {route.driverName && (
+                              <span className="block text-xs text-muted-foreground">{route.driverName}</span>
+                            )}
+                          </>
+                        ) : (
+                          <span className="text-muted-foreground">0 · not assigned</span>
+                        )}
                       </TableCell>
                       <TableCell>
                         {/* Text first, colour second: a full bus must read as
@@ -260,11 +274,8 @@ function RoutesTab({
                           {seatsSentence(route.capacity, route.assigned)}
                         </Badge>
                       </TableCell>
-                      <TableCell className="text-end font-mono tabular-nums">
-                        {formatCurrency(route.monthlyRevenue)}
-                      </TableCell>
-                      <TableCell className="text-end">
-                        {canManage && (
+                      {canManage && (
+                        <TableCell className="text-end">
                           <Button
                             variant="ghost"
                             size="icon"
@@ -274,8 +285,8 @@ function RoutesTab({
                             <Pencil className="size-4" aria-hidden="true" />
                             <span className="sr-only">Edit {route.code}</span>
                           </Button>
-                        )}
-                      </TableCell>
+                        </TableCell>
+                      )}
                     </TableRow>
                   );
                 })}
@@ -291,31 +302,23 @@ function RoutesTab({
 function FleetTab({
   vehicles,
   canManage,
-  onAdd,
   onEdit,
 }: {
   vehicles: VehicleRow[];
   canManage: boolean;
-  onAdd: () => void;
   onEdit: (vehicle: VehicleRow) => void;
 }) {
   return (
     <Card>
       <CardHeader className="flex flex-row flex-wrap items-start justify-between gap-3">
         <div>
-          <CardTitle>Fleet</CardTitle>
+          <CardTitle>Vehicles</CardTitle>
           <CardDescription className="max-w-2xl">
             Vehicles are not tied to a session — a bus the school owns outlives
             an academic year. Changing a vehicle&apos;s seat count updates every
             route that uses it.
           </CardDescription>
         </div>
-        {canManage && (
-          <Button size="sm" onClick={onAdd} className="cursor-pointer">
-            <Plus className="size-4" aria-hidden="true" />
-            Add New Vehicle
-          </Button>
-        )}
       </CardHeader>
       <CardContent>
         {vehicles.length === 0 ? (
@@ -334,42 +337,39 @@ function FleetTab({
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Registration</TableHead>
-                  <TableHead>Model</TableHead>
-                  <TableHead className="text-end">Seats</TableHead>
-                  <TableHead>Driver</TableHead>
-                  <TableHead className="text-end">Routes</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead className="w-20 text-end">Edit</TableHead>
+                  <TableHead>Vehicle Number</TableHead>
+                  <TableHead>Vehicle Model</TableHead>
+                  <TableHead>Driver Name</TableHead>
+                  <TableHead>Driver Phone</TableHead>
+                  <TableHead>In-charge</TableHead>
+                  {canManage && <TableHead className="w-20 text-end">Action</TableHead>}
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {vehicles.map((vehicle) => (
                   <TableRow key={vehicle.id}>
-                    <TableCell className="font-mono font-medium">
-                      {vehicle.registrationNumber}
-                    </TableCell>
-                    <TableCell className="text-muted-foreground">
-                      {vehicle.model ?? "—"}
-                    </TableCell>
-                    <TableCell className="text-end font-mono tabular-nums">
-                      {vehicle.capacity}
-                    </TableCell>
-                    <TableCell className="text-muted-foreground">
-                      {vehicle.driverName ?? "Not recorded"}
-                    </TableCell>
-                    <TableCell className="text-end font-mono tabular-nums">
-                      {vehicle.routeCount}
-                    </TableCell>
                     <TableCell>
-                      <Badge
-                        variant={vehicle.isActive ? "outline" : "secondary"}
-                      >
-                        {vehicle.isActive ? "In service" : "Off the road"}
-                      </Badge>
+                      <span className="font-mono font-medium">{vehicle.registrationNumber}</span>
+                      <span className="block text-xs text-muted-foreground">
+                        {vehicle.capacity} seats · {vehicle.routeCount}{" "}
+                        {vehicle.routeCount === 1 ? "route" : "routes"} ·{" "}
+                        {vehicle.isActive ? "in service" : "off the road"}
+                      </span>
                     </TableCell>
-                    <TableCell className="text-end">
-                      {canManage && (
+                    <TableCell className="text-muted-foreground">{vehicle.model ?? "—"}</TableCell>
+                    <TableCell className="text-muted-foreground">{vehicle.driverName ?? "Not recorded"}</TableCell>
+                    <TableCell>
+                      {vehicle.driverPhone ? (
+                        <a href={`tel:${vehicle.driverPhone}`} className="font-mono underline-offset-4 hover:underline">
+                          {vehicle.driverPhone}
+                        </a>
+                      ) : (
+                        <span className="text-muted-foreground">—</span>
+                      )}
+                    </TableCell>
+                    <TableCell className="text-muted-foreground">{vehicle.attendantName ?? "Not recorded"}</TableCell>
+                    {canManage && (
+                      <TableCell className="text-end">
                         <Button
                           variant="ghost"
                           size="icon"
@@ -377,12 +377,10 @@ function FleetTab({
                           className="cursor-pointer"
                         >
                           <Pencil className="size-4" aria-hidden="true" />
-                          <span className="sr-only">
-                            Edit {vehicle.registrationNumber}
-                          </span>
+                          <span className="sr-only">Edit {vehicle.registrationNumber}</span>
                         </Button>
-                      )}
-                    </TableCell>
+                      </TableCell>
+                    )}
                   </TableRow>
                 ))}
               </TableBody>

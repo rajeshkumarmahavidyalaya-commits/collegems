@@ -135,18 +135,30 @@ birthday list was checked with dates set inside a rolled-back transaction
 
 - **"Unpaid Invoices"** on the dashboard is shown as students with dues.
   This backend keeps balances per child, not per invoice.
-- **Fields this backend does not store**: religion, caste, category, mother
-  tongue, birth place, previous school on the admission form (medium, house
-  and student type are now asked, 0328); per-student fee structure and login creation inside
-  admission (logins are invited from Admins); suspension.
+- **Fields this backend does not store**: category, mother tongue, birth
+  place and previous school on the admission form (religion, caste, an ID
+  number and medical notes are stored since 0331; medium, house and student
+  type since 0328); suspension. A stationery item has no image.
 - **Columns not shown**: a staff member's salary, role and login (a
-  permission decision, not a layout one); a student's login and enrollment
-  number; a book's rack, book number and price, and other module lists not
-  reworked yet (books, exams, routes, hostels, items).
-- **Placement**: on Hostels and Transport Routes, "Add New ..." sits on each
-  section's card rather than in the title bar. Library Cards has no "Issue
-  Library Cards" button, because a card is issued from the student's or
-  staff member's own record.
+  permission decision, not a layout one); a student's login; an enquiry's
+  message (the enquiry board does not carry it); the issued quantity on
+  Books Issued, because one issue is one copy here.
+- **Lists matched on 5 Oct 2026 (0337)**: Books (Title, Author, Subject, Rack
+  Number, Book Number, ISBN Number, Price, Quantity, Issue Book, Action, with
+  book number and price now stored and the book number searchable), Books
+  Issued, Library Cards (with a printable card and "Issue Library Card"),
+  Exams (Class, Exam Center, dates, Time Table, Admit Cards and Exam Results
+  links; the centre is printed on the admit card), Transport routes (Route
+  Fare is the range of stop fares, since a fare is per stop) and vehicles
+  (Driver Phone, In-charge), Hostels and rooms, Stationary Items and
+  Inquiries. Where the reference has no column for something a person acts
+  on (seats left on a bus, a room's fare, an item's stock level, a card's
+  status), it stays, as a column or a line under the name.
+- **Still missing on those pages**: "Add New Books In Bulk" (there is no
+  book importer).
+- **Placement**: "Add New Route/Vehicle", "Add New Hostel/Room" and "Add New
+  Item" sit on the tab row above the list, beside the tabs, rather than in
+  each section's card.
 - **Our extras stay** under the reference dashboard: the setup checklist,
   the module grid, the two registers and the charts.
 - **Modules this backend does not have**: Activities, Lessons

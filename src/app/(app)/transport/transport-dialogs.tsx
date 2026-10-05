@@ -287,7 +287,9 @@ export function VehicleDialog({
       model: vehicle?.model ?? "",
       capacity: vehicle?.capacity ?? 40,
       driverStaffId: vehicle?.driverStaffId ?? "",
-      attendantStaffId: "",
+      // Was always "" -- with no field on the form, editing a vehicle cleared
+      // its in-charge (found matching the fleet list to the reference).
+      attendantStaffId: vehicle?.attendantStaffId ?? "",
       isActive: vehicle?.isActive ?? true,
       notes: vehicle?.notes ?? "",
     },
@@ -378,6 +380,16 @@ export function VehicleDialog({
               control={form.control}
               name="driverStaffId"
               label="Driver"
+              options={[
+                { value: "", label: "Not recorded" },
+                ...staff.map((s) => ({ value: s.id, label: s.label })),
+              ]}
+            />
+            <SelectField
+              control={form.control}
+              name="attendantStaffId"
+              label="In-charge"
+              description="The member of staff who rides with the children."
               options={[
                 { value: "", label: "Not recorded" },
                 ...staff.map((s) => ({ value: s.id, label: s.label })),

@@ -283,7 +283,7 @@ function EnquiryTable({
   onFollowUp: (enquiry: EnquiryRow) => void;
   onConvert: (enquiry: EnquiryRow) => void;
 }) {
-  const { t } = useI18n();
+  const { t, formatDate } = useI18n();
   return (
     <Card>
       <CardHeader className="flex flex-row flex-wrap items-start justify-between gap-3">
@@ -324,13 +324,14 @@ function EnquiryTable({
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Enquiry</TableHead>
-                  <TableHead>Child</TableHead>
-                  <TableHead>Contact</TableHead>
-                  <TableHead>Source</TableHead>
-                  <TableHead>Stage</TableHead>
-                  <TableHead>Follow up</TableHead>
-                  <TableHead className="w-32 text-end">Actions</TableHead>
+                  <TableHead>Class</TableHead>
+                  <TableHead>Name</TableHead>
+                  <TableHead>Phone</TableHead>
+                  <TableHead>Email</TableHead>
+                  <TableHead>Date</TableHead>
+                  <TableHead>Follow Up Date</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead className="w-32 text-end">Action</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -339,47 +340,35 @@ function EnquiryTable({
                   const tone = stageTone(e.status);
                   return (
                     <TableRow key={e.id}>
-                      <TableCell className="font-mono text-xs">
-                        {e.enquiryNumber}
+                      <TableCell>
+                        {e.classLevelName ?? (
+                          <span className="text-xs text-muted-foreground">Not settled</span>
+                        )}
                       </TableCell>
                       <TableCell>
                         <span className="font-medium">{e.applicantName}</span>
                         <span className="block text-xs text-muted-foreground">
-                          {e.classLevelName ?? "Class not settled"}
+                          <span className="font-mono">{e.enquiryNumber}</span> · {e.contactName} ·{" "}
+                          {sourceLabel(e.source, t)}
                         </span>
                       </TableCell>
                       <TableCell>
-                        <span>{e.contactName}</span>
-                        {e.contactPhone && (
+                        {e.contactPhone ? (
                           <a
                             href={`tel:${e.contactPhone}`}
-                            className="block font-mono text-xs underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                            className="font-mono text-sm underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                           >
                             {e.contactPhone}
                           </a>
+                        ) : (
+                          <span className="text-muted-foreground">—</span>
                         )}
                       </TableCell>
-                      <TableCell className="text-muted-foreground">
-                        {sourceLabel(e.source, t)}
+                      <TableCell className="max-w-48 break-all text-sm">
+                        {e.contactEmail ?? <span className="text-muted-foreground">—</span>}
                       </TableCell>
-                      <TableCell>
-                        {/* Text carries the meaning; the variant echoes it. */}
-                        <Badge
-                          variant={
-                            tone === "won"
-                              ? "default"
-                              : tone === "lost"
-                                ? "destructive"
-                                : "outline"
-                          }
-                        >
-                          {stageLabel(e.status, t)}
-                        </Badge>
-                        {e.lostReason && (
-                          <span className="block max-w-40 truncate text-xs text-muted-foreground">
-                            {e.lostReason}
-                          </span>
-                        )}
+                      <TableCell className="whitespace-nowrap text-sm">
+                        {formatDate(e.createdAt)}
                       </TableCell>
                       <TableCell>
                         {phrase ? (
@@ -401,6 +390,25 @@ function EnquiryTable({
                           {e.followUpCount} contact
                           {e.followUpCount === 1 ? "" : "s"}
                         </span>
+                      </TableCell>
+                      <TableCell>
+                        {/* Text carries the meaning; the variant echoes it. */}
+                        <Badge
+                          variant={
+                            tone === "won"
+                              ? "default"
+                              : tone === "lost"
+                                ? "destructive"
+                                : "outline"
+                          }
+                        >
+                          {stageLabel(e.status, t)}
+                        </Badge>
+                        {e.lostReason && (
+                          <span className="block max-w-40 truncate text-xs text-muted-foreground">
+                            {e.lostReason}
+                          </span>
+                        )}
                       </TableCell>
                       <TableCell className="text-end">
                         {canManage && e.status !== "admitted" && (

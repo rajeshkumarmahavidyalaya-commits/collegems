@@ -112,6 +112,7 @@ export default async function AdmitCardsPage({
               card={card}
               school={ctx?.tenantName ?? ""}
               examName={exam.name}
+              centre={exam.centre}
               locale={locale}
             />
           ))}
@@ -129,11 +130,13 @@ function AdmitCardSheet({
   card,
   school,
   examName,
+  centre,
   locale,
 }: {
   card: AdmitCard;
   school: string;
   examName: string;
+  centre: string | null;
   locale: Locale;
 }) {
   const dash = "—";
@@ -146,6 +149,7 @@ function AdmitCardSheet({
       <header className="border-b pb-3 text-center">
         <p className="text-lg font-semibold">{school}</p>
         <p className="text-sm">{examName}</p>
+        {centre && <p className="text-xs">Exam Centre: {centre}</p>}
         <p className="mt-1 text-xs font-semibold tracking-widest uppercase">Admit Card</p>
       </header>
       <dl className="grid gap-x-6 gap-y-1 py-3 text-sm sm:grid-cols-2">

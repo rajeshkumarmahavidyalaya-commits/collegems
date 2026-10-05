@@ -48,6 +48,9 @@ export type RouteLoadRow = {
   assigned: number;
   seatsFree: number | null;
   monthlyRevenue: number;
+  /** The cheapest and dearest stop's monthly fare: the reference's "Route Fare". Null with no stops. */
+  fareMin: number | null;
+  fareMax: number | null;
 };
 
 export async function listRoutes(): Promise<RouteLoadRow[]> {
@@ -55,14 +58,22 @@ export async function listRoutes(): Promise<RouteLoadRow[]> {
   const supabase = await createClient();
 
   // The session comes from the server context, never from the client (rule 2).
-  const [{ data, error }, heads] = await Promise.all([
+  let stopsQuery = supabase.from("route_stops").select("route_id, monthly_fare");
+  if (ctx?.currentSessionId) stopsQuery = stopsQuery.eq("session_id", ctx.currentSessionId);
+  const [{ data, error }, heads, stops] = await Promise.all([
     supabase.rpc("transport_route_load", {
       p_session_id: ctx?.currentSessionId ?? undefined,
     }),
     supabase.from("transport_routes").select("id, fee_head_id"),
+    stopsQuery,
   ]);
   if (error) throw new Error(error.message);
   const headOf = new Map((heads.data ?? []).map((r) => [r.id, r.fee_head_id]));
+  const fares = new Map<string, number[]>();
+  for (const st of stops.data ?? []) {
+    if (!fares.has(st.route_id)) fares.set(st.route_id, []);
+    fares.get(st.route_id)!.push(Number(st.monthly_fare));
+  }
 
   return (data ?? []).map((r) => ({
     routeId: r.route_id,
@@ -79,6 +90,8 @@ export async function listRoutes(): Promise<RouteLoadRow[]> {
     assigned: r.assigned,
     seatsFree: r.seats_free,
     monthlyRevenue: Number(r.monthly_revenue ?? 0),
+    fareMin: fares.has(r.route_id) ? Math.min(...fares.get(r.route_id)!) : null,
+    fareMax: fares.has(r.route_id) ? Math.max(...fares.get(r.route_id)!) : null,
   }));
 }
 
@@ -301,6 +314,10 @@ export type VehicleRow = {
   capacity: number;
   driverStaffId: string | null;
   driverName: string | null;
+  driverPhone: string | null;
+  /** The reference's "In-charge": the attendant who rides with the children. */
+  attendantStaffId: string | null;
+  attendantName: string | null;
   isActive: boolean;
   notes: string | null;
   routeCount: number;
@@ -318,7 +335,7 @@ export async function listVehicles(): Promise<VehicleRow[]> {
   const [vehiclesRes, routesRes] = await Promise.all([
     supabase
       .from("vehicles")
-      .select("id, registration_number, model, capacity, driver_staff_id, is_active, notes")
+      .select("id, registration_number, model, capacity, driver_staff_id, attendant_staff_id, is_active, notes")
       .order("registration_number"),
     supabase.from("transport_routes").select("vehicle_id"),
   ]);
@@ -326,20 +343,24 @@ export async function listVehicles(): Promise<VehicleRow[]> {
   if (vehiclesRes.error) throw new Error(vehiclesRes.error.message);
   if (routesRes.error) throw new Error(routesRes.error.message);
 
-  const driverIds = [
-    ...new Set((vehiclesRes.data ?? []).map((v) => v.driver_staff_id).filter(Boolean)),
+  const staffIds = [
+    ...new Set(
+      (vehiclesRes.data ?? []).flatMap((v) => [v.driver_staff_id, v.attendant_staff_id]).filter(Boolean),
+    ),
   ] as string[];
 
-  const driverNames = new Map<string, string>();
-  if (driverIds.length > 0) {
+  const staffNames = new Map<string, { name: string; phone: string | null }>();
+  if (staffIds.length > 0) {
     const { data: staff, error } = await supabase
       .from("staff")
-      .select("id, people:person_id ( first_name, last_name )")
-      .in("id", driverIds);
+      .select("id, people:person_id ( first_name, last_name, phone )")
+      .in("id", staffIds);
     if (error) throw new Error(error.message);
     for (const row of staff ?? []) {
-      const person = row.people as { first_name: string; last_name: string } | null;
-      if (person) driverNames.set(row.id, `${person.first_name} ${person.last_name}`);
+      const person = row.people as { first_name: string; last_name: string; phone: string | null } | null;
+      if (person) {
+        staffNames.set(row.id, { name: `${person.first_name} ${person.last_name}`, phone: person.phone });
+      }
     }
   }
 
@@ -354,7 +375,10 @@ export async function listVehicles(): Promise<VehicleRow[]> {
     model: v.model,
     capacity: v.capacity,
     driverStaffId: v.driver_staff_id,
-    driverName: v.driver_staff_id ? (driverNames.get(v.driver_staff_id) ?? null) : null,
+    driverName: v.driver_staff_id ? (staffNames.get(v.driver_staff_id)?.name ?? null) : null,
+    driverPhone: v.driver_staff_id ? (staffNames.get(v.driver_staff_id)?.phone ?? null) : null,
+    attendantStaffId: v.attendant_staff_id,
+    attendantName: v.attendant_staff_id ? (staffNames.get(v.attendant_staff_id)?.name ?? null) : null,
     isActive: v.is_active,
     notes: v.notes,
     routeCount: routeCounts.get(v.id) ?? 0,

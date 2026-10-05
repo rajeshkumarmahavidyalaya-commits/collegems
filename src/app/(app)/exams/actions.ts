@@ -41,6 +41,10 @@ export type ExamRow = {
   gradingSchemeId: string | null;
   gradingSchemeName: string | null;
   paperCount: number;
+  /** Where the papers are sat, if the office has said (0337). */
+  centre: string | null;
+  /** The classes this exam has papers for, in class order. */
+  classNames: string[];
 };
 
 /**
@@ -65,23 +69,39 @@ export async function listExams(): Promise<ExamRow[]> {
   // composite key is not something this project has been able to verify.
   let examsQuery = supabase
     .from("exams")
-    .select("id, name, kind, starts_on, ends_on, status, published_at, grading_scheme_id")
+    .select("id, name, kind, starts_on, ends_on, status, published_at, grading_scheme_id, centre")
     .order("starts_on", { ascending: false, nullsFirst: false });
   if (ctx?.currentSessionId) examsQuery = examsQuery.eq("session_id", ctx.currentSessionId);
 
-  const [examsRes, schemesRes, papersRes] = await Promise.all([
+  const [examsRes, schemesRes, papersRes, sectionsRes, levelsRes] = await Promise.all([
     examsQuery,
     supabase.from("grading_schemes").select("id, name"),
-    supabase.from("exam_subjects").select("exam_id"),
+    supabase.from("exam_subjects").select("exam_id, section_id"),
+    supabase.from("sections").select("id, class_level_id"),
+    supabase.from("class_levels").select("id, name, sequence"),
   ]);
 
   if (examsRes.error) throw new Error(examsRes.error.message);
 
   const schemeName = new Map((schemesRes.data ?? []).map((s) => [s.id, s.name]));
+  const levelOf = new Map((sectionsRes.data ?? []).map((s) => [s.id, s.class_level_id]));
+  const level = new Map((levelsRes.data ?? []).map((l) => [l.id, l]));
   const papers = new Map<string, number>();
+  const levels = new Map<string, Set<string>>();
   for (const row of papersRes.data ?? []) {
     papers.set(row.exam_id, (papers.get(row.exam_id) ?? 0) + 1);
+    const l = levelOf.get(row.section_id);
+    if (l) {
+      if (!levels.has(row.exam_id)) levels.set(row.exam_id, new Set());
+      levels.get(row.exam_id)!.add(l);
+    }
   }
+  const classNames = (examId: string) =>
+    [...(levels.get(examId) ?? [])]
+      .map((id) => level.get(id))
+      .filter((l): l is NonNullable<typeof l> => !!l)
+      .sort((a, b) => a.sequence - b.sequence)
+      .map((l) => l.name);
 
   return (examsRes.data ?? []).map((e) => ({
     id: e.id,
@@ -94,6 +114,8 @@ export async function listExams(): Promise<ExamRow[]> {
     gradingSchemeId: e.grading_scheme_id,
     gradingSchemeName: e.grading_scheme_id ? (schemeName.get(e.grading_scheme_id) ?? null) : null,
     paperCount: papers.get(e.id) ?? 0,
+    centre: e.centre,
+    classNames: classNames(e.id),
   }));
 }
 
@@ -113,7 +135,7 @@ export async function getExam(examId: string): Promise<ExamRow | null> {
   const [examRes, schemesRes, papersRes] = await Promise.all([
     supabase
       .from("exams")
-      .select("id, name, kind, starts_on, ends_on, status, published_at, grading_scheme_id")
+      .select("id, name, kind, starts_on, ends_on, status, published_at, grading_scheme_id, centre")
       .eq("id", examId)
       .maybeSingle(),
     supabase.from("grading_schemes").select("id, name"),
@@ -137,6 +159,8 @@ export async function getExam(examId: string): Promise<ExamRow | null> {
     gradingSchemeId: e.grading_scheme_id,
     gradingSchemeName: e.grading_scheme_id ? (schemeName.get(e.grading_scheme_id) ?? null) : null,
     paperCount: (papersRes.data ?? []).length,
+    centre: e.centre,
+    classNames: [],
   };
 }
 
@@ -157,6 +181,7 @@ export async function saveExam(input: unknown, id?: string): Promise<ActionResul
     starts_on: parsed.data.startsOn || null,
     ends_on: parsed.data.endsOn || null,
     grading_scheme_id: parsed.data.gradingSchemeId || null,
+    centre: parsed.data.centre?.trim() || null,
   };
 
   const { data, error } = id

@@ -125,25 +125,51 @@ export function HostelView({
         </Alert>
       )}
 
-      <Tabs defaultValue="rooms">
-        <TabsList>
-          <TabsTrigger value="rooms">Rooms</TabsTrigger>
-          <TabsTrigger value="houses">Houses</TabsTrigger>
-          {canAllocate && (
-            <TabsTrigger value="place">Place a child</TabsTrigger>
+      <Tabs defaultValue="houses">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <TabsList>
+            <TabsTrigger value="houses">Hostels</TabsTrigger>
+            <TabsTrigger value="rooms">Rooms</TabsTrigger>
+            {canAllocate && (
+              <TabsTrigger value="place">Place a child</TabsTrigger>
+            )}
+          </TabsList>
+          {canManage && (
+            <div className="flex flex-wrap gap-2">
+              {hostels.length > 0 && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="cursor-pointer"
+                  onClick={() => {
+                    setEditingRoom(null);
+                    setRoomHostelId(hostels[0].id);
+                    setRoomOpen(true);
+                  }}
+                >
+                  <Plus className="size-4" aria-hidden="true" />
+                  Add New Room
+                </Button>
+              )}
+              <Button
+                size="sm"
+                className="cursor-pointer"
+                onClick={() => {
+                  setEditingHostel(null);
+                  setHostelOpen(true);
+                }}
+              >
+                <Plus className="size-4" aria-hidden="true" />
+                Add New Hostel
+              </Button>
+            </div>
           )}
-        </TabsList>
+        </div>
 
         <TabsContent value="rooms" className="mt-4">
           <RoomsTab
             rooms={rooms}
-            hostels={hostels}
             canManage={canManage}
-            onAdd={(hostelId) => {
-              setEditingRoom(null);
-              setRoomHostelId(hostelId);
-              setRoomOpen(true);
-            }}
             onEdit={(room) => {
               setEditingRoom(room);
               setRoomHostelId(room.hostelId);
@@ -156,10 +182,6 @@ export function HostelView({
           <HousesTab
             hostels={hostels}
             canManage={canManage}
-            onAdd={() => {
-              setEditingHostel(null);
-              setHostelOpen(true);
-            }}
             onEdit={(hostel) => {
               setEditingHostel(hostel);
               setHostelOpen(true);
@@ -197,18 +219,14 @@ export function HostelView({
 
 function RoomsTab({
   rooms,
-  hostels,
   canManage,
-  onAdd,
   onEdit,
 }: {
   rooms: RoomRow[];
-  hostels: HostelRow[];
   canManage: boolean;
-  onAdd: (hostelId: string) => void;
   onEdit: (room: RoomRow) => void;
 }) {
-  const { t, formatCurrency } = useI18n();
+  const { formatCurrency } = useI18n();
   return (
     <Card>
       <CardHeader className="flex flex-row flex-wrap items-start justify-between gap-3">
@@ -220,16 +238,6 @@ function RoomsTab({
             rate sets the same number on every room.
           </CardDescription>
         </div>
-        {canManage && hostels.length > 0 && (
-          <Button
-            size="sm"
-            className="cursor-pointer"
-            onClick={() => onAdd(hostels[0].id)}
-          >
-            <Plus className="size-4" aria-hidden="true" />
-            Add New Room
-          </Button>
-        )}
       </CardHeader>
       <CardContent>
         {rooms.length === 0 ? (
@@ -248,38 +256,35 @@ function RoomsTab({
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>House</TableHead>
-                  <TableHead>Room</TableHead>
-                  <TableHead>Floor</TableHead>
-                  <TableHead>Beds</TableHead>
+                  <TableHead className="w-12">ID</TableHead>
+                  <TableHead>Room Number</TableHead>
+                  <TableHead>Number of Beds</TableHead>
                   <TableHead className="text-end">Monthly fare</TableHead>
-                  <TableHead>Status</TableHead>
                   {canManage && (
-                    <TableHead className="w-16 text-end">Edit</TableHead>
+                    <TableHead className="w-16 text-end">Action</TableHead>
                   )}
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {rooms.map((room) => {
+                {rooms.map((room, index) => {
                   const tone = occupancyTone(room.beds, room.occupied);
                   return (
                     <TableRow key={room.roomId}>
+                      <TableCell className="font-mono text-muted-foreground tabular-nums">
+                        {index + 1}
+                      </TableCell>
                       <TableCell>
-                        <Link
-                          href={`/hostel/${room.hostelId}`}
-                          className="underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                        >
-                          {room.hostelName}
-                        </Link>
+                        <span className="font-mono font-medium">{room.roomNumber}</span>
                         <span className="block text-xs text-muted-foreground">
-                          {hostelKindLabel(room.hostelKind, t)}
+                          <Link
+                            href={`/hostel/${room.hostelId}`}
+                            className="underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                          >
+                            {room.hostelName}
+                          </Link>
+                          {room.floor ? ` · floor ${room.floor}` : ""}
+                          {!room.isActive && " · out of use"}
                         </span>
-                      </TableCell>
-                      <TableCell className="font-mono font-medium">
-                        {room.roomNumber}
-                      </TableCell>
-                      <TableCell className="text-muted-foreground">
-                        {room.floor ?? "—"}
                       </TableCell>
                       <TableCell>
                         {/* Text carries the meaning; the variant only echoes it. */}
@@ -299,13 +304,6 @@ function RoomsTab({
                         {room.monthlyFare > 0
                           ? formatCurrency(room.monthlyFare)
                           : "Free"}
-                      </TableCell>
-                      <TableCell>
-                        <Badge
-                          variant={room.isActive ? "outline" : "secondary"}
-                        >
-                          {room.isActive ? "In use" : "Out of use"}
-                        </Badge>
                       </TableCell>
                       {canManage && (
                         <TableCell className="text-end">
@@ -337,12 +335,10 @@ function RoomsTab({
 function HousesTab({
   hostels,
   canManage,
-  onAdd,
   onEdit,
 }: {
   hostels: HostelRow[];
   canManage: boolean;
-  onAdd: () => void;
   onEdit: (hostel: HostelRow) => void;
 }) {
   const { t } = useI18n();
@@ -350,18 +346,12 @@ function HousesTab({
     <Card>
       <CardHeader className="flex flex-row flex-wrap items-start justify-between gap-3">
         <div>
-          <CardTitle>Boarding houses</CardTitle>
+          <CardTitle>Hostels</CardTitle>
           <CardDescription className="max-w-2xl">
             A house that takes only boys or only girls enforces it when a child
             is placed. A mixed house is a real answer, not a fallback.
           </CardDescription>
         </div>
-        {canManage && (
-          <Button size="sm" className="cursor-pointer" onClick={onAdd}>
-            <Plus className="size-4" aria-hidden="true" />
-            Add New Hostel
-          </Button>
-        )}
       </CardHeader>
       <CardContent>
         {hostels.length === 0 ? (
@@ -380,20 +370,23 @@ function HousesTab({
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>House</TableHead>
-                  <TableHead>Takes</TableHead>
-                  <TableHead>Warden</TableHead>
+                  <TableHead className="w-12">ID</TableHead>
+                  <TableHead>Hostel Name</TableHead>
+                  <TableHead>Hostel Type</TableHead>
                   <TableHead className="text-end">Rooms</TableHead>
-                  <TableHead>Beds</TableHead>
-                  <TableHead>Status</TableHead>
+                  <TableHead>Address</TableHead>
+                  <TableHead>Intake</TableHead>
                   {canManage && (
-                    <TableHead className="w-16 text-end">Edit</TableHead>
+                    <TableHead className="w-16 text-end">Action</TableHead>
                   )}
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {hostels.map((hostel) => (
+                {hostels.map((hostel, index) => (
                   <TableRow key={hostel.id}>
+                    <TableCell className="font-mono text-muted-foreground tabular-nums">
+                      {index + 1}
+                    </TableCell>
                     <TableCell>
                       <Link
                         href={`/hostel/${hostel.id}`}
@@ -401,25 +394,24 @@ function HousesTab({
                       >
                         {hostel.name}
                       </Link>
+                      <span className="block text-xs text-muted-foreground">
+                        Warden: {hostel.wardenName ?? "not recorded"}
+                        {!hostel.isActive && " · closed"}
+                      </span>
                     </TableCell>
                     <TableCell className="text-muted-foreground">
                       {hostelKindLabel(hostel.kind, t)}
                     </TableCell>
-                    <TableCell className="text-muted-foreground">
-                      {hostel.wardenName ?? "Not recorded"}
-                    </TableCell>
                     <TableCell className="text-end font-mono tabular-nums">
                       {hostel.roomCount}
                     </TableCell>
-                    <TableCell className="font-mono tabular-nums">
-                      {hostel.occupied} / {hostel.beds}
+                    <TableCell className="max-w-56 text-sm text-muted-foreground">
+                      {hostel.address ?? "—"}
                     </TableCell>
-                    <TableCell>
-                      <Badge
-                        variant={hostel.isActive ? "outline" : "secondary"}
-                      >
-                        {hostel.isActive ? "Open" : "Closed"}
-                      </Badge>
+                    <TableCell className="font-mono tabular-nums">
+                      <span title={`${hostel.occupied} of ${hostel.beds} beds taken`}>
+                        {hostel.occupied} / {hostel.beds}
+                      </span>
                     </TableCell>
                     {canManage && (
                       <TableCell className="text-end">

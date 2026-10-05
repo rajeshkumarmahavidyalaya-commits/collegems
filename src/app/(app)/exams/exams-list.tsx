@@ -212,12 +212,16 @@ function ExamsTab({
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Exam</TableHead>
-                  <TableHead>Kind</TableHead>
-                  <TableHead>Scheme</TableHead>
-                  <TableHead className="text-end">Papers</TableHead>
+                  <TableHead>Exam Title</TableHead>
+                  <TableHead>Class</TableHead>
+                  <TableHead>Exam Center</TableHead>
+                  <TableHead>Start Date</TableHead>
+                  <TableHead>End Date</TableHead>
+                  <TableHead>Time Table</TableHead>
+                  {canManage && <TableHead>Admit Cards</TableHead>}
+                  <TableHead>Exam Results</TableHead>
                   <TableHead>Status</TableHead>
-                  <TableHead className="w-28 text-end">Actions</TableHead>
+                  {canManage && <TableHead className="w-24 text-end">Action</TableHead>}
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -230,32 +234,57 @@ function ExamsTab({
                       >
                         {exam.name}
                       </Link>
-                      {exam.startsOn && (
-                        <p className="text-xs text-muted-foreground">
-                          {formatDate(exam.startsOn)}
-                        </p>
+                      <p className="text-xs text-muted-foreground">
+                        {examKindLabel(exam.kind, t)} · {exam.gradingSchemeName ?? "School default scheme"}
+                      </p>
+                    </TableCell>
+                    <TableCell className="max-w-48">
+                      {exam.classNames.length > 0 ? (
+                        <span className="text-sm">{exam.classNames.join(", ")}</span>
+                      ) : (
+                        <span className="text-xs text-muted-foreground">No papers yet</span>
                       )}
                     </TableCell>
-                    <TableCell className="text-muted-foreground">
-                      {examKindLabel(exam.kind, t)}
+                    <TableCell className="text-muted-foreground">{exam.centre ?? "—"}</TableCell>
+                    <TableCell className="whitespace-nowrap">
+                      {exam.startsOn ? formatDate(exam.startsOn) : "—"}
                     </TableCell>
-                    <TableCell className="text-muted-foreground">
-                      {exam.gradingSchemeName ?? "School default"}
-                    </TableCell>
-                    <TableCell className="text-end font-mono tabular-nums">
-                      {exam.paperCount}
+                    <TableCell className="whitespace-nowrap">
+                      {exam.endsOn ? formatDate(exam.endsOn) : "—"}
                     </TableCell>
                     <TableCell>
-                      <Badge
-                        variant={
-                          exam.status === "published" ? "default" : "outline"
-                        }
+                      <Link
+                        href={`/exams/${exam.id}?tab=papers`}
+                        className="text-sm underline-offset-4 hover:underline"
                       >
+                        {exam.paperCount} {exam.paperCount === 1 ? "paper" : "papers"}
+                      </Link>
+                    </TableCell>
+                    {canManage && (
+                      <TableCell>
+                        <Link
+                          href={`/exams/${exam.id}/admit-cards`}
+                          className="text-sm underline-offset-4 hover:underline"
+                        >
+                          Admit cards
+                        </Link>
+                      </TableCell>
+                    )}
+                    <TableCell>
+                      <Link
+                        href={`/exams/${exam.id}?tab=results`}
+                        className="text-sm underline-offset-4 hover:underline"
+                      >
+                        Results
+                      </Link>
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant={exam.status === "published" ? "default" : "outline"}>
                         {exam.status === "published" ? "Published" : "Draft"}
                       </Badge>
                     </TableCell>
-                    <TableCell className="text-end">
-                      {canManage && (
+                    {canManage && (
+                      <TableCell className="text-end">
                         <div className="flex justify-end gap-1">
                           <Button
                             variant="ghost"
@@ -275,8 +304,8 @@ function ExamsTab({
                             <Trash2 className="size-4" aria-hidden="true" />
                           </Button>
                         </div>
-                      )}
-                    </TableCell>
+                      </TableCell>
+                    )}
                   </TableRow>
                 ))}
               </TableBody>

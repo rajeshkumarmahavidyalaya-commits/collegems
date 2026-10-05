@@ -72,6 +72,7 @@ export function ExamDialog({
       startsOn: exam?.startsOn ?? "",
       endsOn: exam?.endsOn ?? "",
       gradingSchemeId: exam?.gradingSchemeId ?? "",
+      centre: exam?.centre ?? "",
     },
   });
 
@@ -119,8 +120,15 @@ export function ExamDialog({
             <TextField
               control={form.control}
               name="name"
-              label="Name"
+              label="Exam title"
               required
+            />
+
+            <TextField
+              control={form.control}
+              name="centre"
+              label="Exam centre"
+              description="Where the papers are sat. Printed on every admit card."
             />
 
             <div className="grid gap-4 sm:grid-cols-2">

@@ -606,6 +606,8 @@ export type Database = {
       }
       books: {
         Row: {
+          book_number: string | null
+          price: number | null
           author: string
           available_copies: number
           category_id: string | null
@@ -622,6 +624,8 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          book_number?: string | null
+          price?: number | null
           author: string
           available_copies?: number
           category_id?: string | null
@@ -638,6 +642,8 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          book_number?: string | null
+          price?: number | null
           author?: string
           available_copies?: number
           category_id?: string | null
@@ -1926,6 +1932,7 @@ export type Database = {
       }
       exams: {
         Row: {
+          centre: string | null
           created_at: string
           ends_on: string | null
           grading_scheme_id: string | null
@@ -1941,6 +1948,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          centre?: string | null
           created_at?: string
           ends_on?: string | null
           grading_scheme_id?: string | null
@@ -1956,6 +1964,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          centre?: string | null
           created_at?: string
           ends_on?: string | null
           grading_scheme_id?: string | null
@@ -10581,6 +10590,22 @@ export type Database = {
           category_name: string
           id: string
           isbn: string
+          publisher: string
+          shelf_location: string
+          title: string
+          total_copies: number
+        }[]
+      }
+      library_catalogue: {
+        Args: { p_category_id?: string; p_query?: string }
+        Returns: {
+          author: string
+          available_copies: number
+          book_number: string | null
+          category_name: string
+          id: string
+          isbn: string
+          price: number | null
           publisher: string
           shelf_location: string
           title: string

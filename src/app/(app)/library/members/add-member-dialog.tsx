@@ -105,7 +105,7 @@ export default function AddMemberDialog({
       >
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Give a library card</DialogTitle>
+            <DialogTitle>Issue Library Card</DialogTitle>
             <DialogDescription>A student or a member of staff can borrow once they have one.</DialogDescription>
           </DialogHeader>
           <div className="flex flex-col gap-4">

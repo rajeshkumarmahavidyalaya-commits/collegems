@@ -101,6 +101,8 @@ type Props = {
   canManage: boolean;
   canGrade: boolean;
   canPublish: boolean;
+  /** Which tab to open on, from the list's Time Table and Exam Results links. */
+  initialTab?: "papers" | "results";
 };
 
 export function ExamDetail({
@@ -113,6 +115,7 @@ export function ExamDetail({
   canManage,
   canGrade,
   canPublish,
+  initialTab,
 }: Props) {
   const [editing, setEditing] = useState<PaperRow | null>(null);
   const [paperOpen, setPaperOpen] = useState(false);
@@ -126,7 +129,7 @@ export function ExamDetail({
   );
 
   return (
-    <Tabs defaultValue={published ? "results" : "papers"}>
+    <Tabs defaultValue={initialTab ?? (published ? "results" : "papers")}>
       <TabsList>
         <TabsTrigger value="papers">Papers</TabsTrigger>
         <TabsTrigger value="results">Results</TabsTrigger>
