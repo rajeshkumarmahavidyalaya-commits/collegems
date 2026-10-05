@@ -76,7 +76,7 @@ export function ComposeForm({
 
     const next = eventTypes.find((e) => e.key === values.eventKey);
     if (next?.defaultChannels?.length) {
-      form.setValue("channels", next.defaultChannels as ComposeInput["channels"]);
+      form.setValue("channels", next.defaultChannels as ComposeInput["channels"], { shouldValidate: form.formState.submitCount > 0 });
     }
   }, [values.eventKey, channelsTouched, eventTypes, form]);
 

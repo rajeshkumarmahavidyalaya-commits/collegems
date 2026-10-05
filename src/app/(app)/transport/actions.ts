@@ -145,7 +145,9 @@ export async function deleteRoute(id: string): Promise<ActionResult> {
   const { error } = await supabase.from("transport_routes").delete().eq("id", id);
   if (error) {
     if (error.code === "23503") {
-      return fail("Children are assigned to this route. Take them off it first.");
+      return fail(
+        "Somebody has ridden this route, or its stops are on a record, so it stays as history. Mark it not running instead.",
+      );
     }
     return fail(error.message);
   }

@@ -10812,6 +10812,7 @@ export type Database = {
         }
         Returns: number
       }
+      leave_types_add_defaults: { Args: never; Returns: number }
       next_admission_number: { Args: never; Returns: string }
       next_roll_number: { Args: { p_section_id: string }; Returns: string }
       my_school_figures: {

@@ -230,13 +230,6 @@ export async function admissionOptions(): Promise<AdmissionOptions> {
   };
 }
 
-/** The admission form's fields this college has made required (0330). */
-export async function admissionRequiredFields(): Promise<string[]> {
-  const supabase = await createClient();
-  const { data } = await supabase.rpc("setting_value", { p_key: "admissions.required_fields" });
-  return requiredFieldNames(data);
-}
-
 export type AdmissionSettings = {
   required: string[];
   panels: FormPanels;

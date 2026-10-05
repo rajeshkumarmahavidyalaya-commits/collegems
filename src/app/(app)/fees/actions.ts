@@ -670,6 +670,8 @@ export async function cancelInvoice(input: unknown): Promise<ActionResult<{ id: 
   if (error) return fail(error.message);
 
   revalidatePath("/fees");
+  revalidatePath(`/fees/invoices/${parsed.data.invoiceId}`);
+  revalidatePath(`/fees/students/${data!.student_id}`);
   return { ok: true, data: { id: data!.id } };
 }
 

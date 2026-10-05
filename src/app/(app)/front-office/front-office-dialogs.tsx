@@ -1,6 +1,6 @@
 "use client";
 
-import { useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 
 import { useForm } from "react-hook-form";
@@ -32,14 +32,17 @@ import {
 } from "@/components/forms/form-fields";
 
 import type { ConvertInput, EnquiryInput, FollowUpInput, VisitorInput } from "@/lib/validations/front-office";
-import { ENQUIRY_SOURCES, FOLLOW_UP_CHANNELS, FOLLOW_UP_OUTCOMES } from "@/lib/validations/front-office-display";
+import { ENQUIRY_SOURCES, FOLLOW_UP_CHANNELS, FOLLOW_UP_OUTCOMES, stageLabel } from "@/lib/validations/front-office-display";
 import {
   checkInVisitor,
   convertEnquiry,
   createEnquiry,
+  listFollowUps,
   logFollowUp,
   type EnquiryRow,
+  type FollowUpRow,
 } from "./actions";
+import { useI18n } from "@/components/providers/i18n-provider";
 
 import type { Options } from "./front-office-view";
 
@@ -246,7 +249,22 @@ export function FollowUpDialog({
   onClose: () => void;
 }) {
   const router = useRouter();
+  const { formatDateTime, t } = useI18n();
   const [pending, startTransition] = useTransition();
+  // The log is append-only and was never shown: listFollowUps had no caller
+  // (the 0333 sweep). Read when the dialog opens, newest first.
+  const [history, setHistory] = useState<FollowUpRow[] | null>(null);
+  useEffect(() => {
+    if (!enquiry) return;
+    let live = true;
+    setHistory(null);
+    listFollowUps(enquiry.id)
+      .then((rows) => live && setHistory(rows))
+      .catch(() => live && setHistory([]));
+    return () => {
+      live = false;
+    };
+  }, [enquiry]);
 
   const form = useForm<FollowUpInput>({
     resolver: lazyZodResolver<FollowUpInput>(() => import("@/lib/validations/front-office").then((m) => m.followUpSchema)),
@@ -287,6 +305,28 @@ export function FollowUpDialog({
             of what happened.
           </DialogDescription>
         </DialogHeader>
+
+        <section aria-label="Earlier contacts" className="rounded-md border bg-muted/30 p-3 text-sm">
+          <p className="mb-2 font-medium">Earlier contacts</p>
+          {history === null ? (
+            <p className="text-muted-foreground">Loading…</p>
+          ) : history.length === 0 ? (
+            <p className="text-muted-foreground">None yet. This will be the first.</p>
+          ) : (
+            <ol className="flex max-h-48 flex-col gap-2 overflow-y-auto">
+              {history.map((h) => (
+                <li key={h.id} className="border-b pb-2 last:border-0 last:pb-0">
+                  <span className="text-xs text-muted-foreground">
+                    {formatDateTime(h.happenedAt)} ·{" "}
+                    {FOLLOW_UP_CHANNELS.find((c) => c.value === h.channel)?.label ?? h.channel}
+                    {h.outcome ? ` · ${stageLabel(h.outcome, t)}` : ""}
+                  </span>
+                  <span className="block whitespace-pre-line">{h.note}</span>
+                </li>
+              ))}
+            </ol>
+          )}
+        </section>
 
         <Form {...form}>
           <form

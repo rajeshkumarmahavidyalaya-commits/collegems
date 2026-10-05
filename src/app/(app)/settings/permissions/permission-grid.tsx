@@ -76,6 +76,7 @@ export function PermissionGrid({
         return;
       }
 
+      toast.success(allowed ? `Granted ${code}.` : `Taken away: ${code}.`);
       setGranted((state) => {
         const current = state[roleId] ?? [];
         return {

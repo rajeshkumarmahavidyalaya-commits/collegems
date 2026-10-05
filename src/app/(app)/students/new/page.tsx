@@ -8,6 +8,7 @@ import { hasPermission } from "@/lib/auth/permissions";
 import { admissionOptions, admissionSettings } from "../actions";
 import { bedOptions, busStopOptions } from "../arrangement-actions";
 import { StudentForm } from "../student-form";
+import { createClient } from "@/lib/supabase/server";
 
 export const metadata = { title: "Admit student" };
 
@@ -27,6 +28,23 @@ export default async function NewStudentPage() {
     canAssignBus ? busStopOptions() : Promise.resolve([]),
     canAllocateBed ? bedOptions() : Promise.resolve([]),
   ]);
+
+  // A route with no stops, or a hostel with no rooms, offers nothing to pick,
+  // and the field would simply be absent -- the shape of a class with no
+  // section. Say so instead, to somebody who may assign one.
+  const supabase = await createClient();
+  const [routes, hostels] = await Promise.all([
+    canAssignBus && busStops.length === 0
+      ? supabase.from("transport_routes").select("id", { count: "exact", head: true }).eq("is_active", true)
+      : Promise.resolve({ count: 0 }),
+    canAllocateBed && hostelRooms.length === 0
+      ? supabase.from("hostels").select("id", { count: "exact", head: true }).eq("is_active", true)
+      : Promise.resolve({ count: 0 }),
+  ]);
+  const arrangementHints = [
+    (routes.count ?? 0) > 0 ? "The bus routes have no stops yet, so there is no seat to choose. Add stops under Transport." : null,
+    (hostels.count ?? 0) > 0 ? "The hostels have no rooms yet, so there is no bed to choose. Add rooms under Hostel." : null,
+  ].filter((h): h is string => h !== null);
 
   // The RLS policy is the real gate; this just avoids showing a form whose
   // submit is guaranteed to be rejected.
@@ -74,6 +92,7 @@ export default async function NewStudentPage() {
         profileEditable={ctx?.roleCode === "admin"}
         busStops={busStops}
         hostelRooms={hostelRooms}
+        arrangementHints={arrangementHints}
       />
     </div>
   );

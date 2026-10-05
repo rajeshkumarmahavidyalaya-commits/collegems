@@ -81,6 +81,7 @@ export function RenewalLauncher({ sessions, runs }: Props) {
         toast.error(result.error);
         return;
       }
+      toast.success("Renewal list prepared. Check it, then apply.");
       router.push(`/promotion/renewals/${result.data.runId}`);
     });
   }

@@ -154,9 +154,9 @@ export async function saveLeaveType(input: unknown, id?: string): Promise<Action
     is_active: parsed.data.isActive,
   };
 
-  const { error } = id
-    ? await supabase.from("leave_types").update(payload).eq("id", id)
-    : await supabase.from("leave_types").insert(payload);
+  const { data: written, error } = id
+    ? await supabase.from("leave_types").update(payload).eq("id", id).select("id")
+    : await supabase.from("leave_types").insert(payload).select("id");
 
   if (error) {
     if (error.code === "23505") {
@@ -168,9 +168,23 @@ export async function saveLeaveType(input: unknown, id?: string): Promise<Action
     }
     return fail(error.message);
   }
+  // An update no policy matches writes nothing and says nothing (rule 6).
+  if (!written?.length) return fail("Only an administrator can change the kinds of leave.");
 
   revalidatePath("/hr/leave");
   return { ok: true, data: undefined };
+}
+
+/**
+ * The usual kinds of leave (0333, `reference.leave_type_defaults`) for a
+ * college that has none or only some: without one, nobody can apply.
+ */
+export async function addDefaultLeaveTypes(): Promise<ActionResult<{ added: number }>> {
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("leave_types_add_defaults");
+  if (error) return fail(error.code === "42501" ? "Only an administrator can add kinds of leave." : error.message);
+  revalidatePath("/hr/leave");
+  return { ok: true, data: { added: Number(data ?? 0) } };
 }
 
 // ---------------------------------------------------------------------------

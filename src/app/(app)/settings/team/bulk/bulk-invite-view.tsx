@@ -171,7 +171,12 @@ export function BulkInviteView({
             variant="ghost"
             onClick={() =>
               startTransition(async () => {
-                await discardList(run.id);
+                const result = await discardList(run.id);
+                if (!result.ok) {
+                  toast.error(result.error);
+                  return;
+                }
+                toast.success("The list was discarded. Nobody was invited.");
                 router.refresh();
               })
             }

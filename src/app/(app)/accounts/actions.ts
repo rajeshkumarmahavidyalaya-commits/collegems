@@ -102,7 +102,7 @@ export async function saveAccount(input: unknown, id?: string): Promise<ActionRe
 
 export async function deleteAccount(id: string): Promise<ActionResult> {
   const supabase = await createClient();
-  const { error } = await supabase.from("accounts").delete().eq("id", id);
+  const { data, error } = await supabase.from("accounts").delete().eq("id", id).select("id");
   if (error) {
     if (error.code === "23503") {
       return fail(
@@ -111,6 +111,7 @@ export async function deleteAccount(id: string): Promise<ActionResult> {
     }
     return fail(error.message);
   }
+  if (!data?.length) return fail("Only somebody who manages the accounts can delete one.");
   revalidatePath("/accounts");
   return { ok: true, data: undefined };
 }

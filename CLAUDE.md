@@ -1161,6 +1161,13 @@ Found by the setup wizard's walkthrough, in the Annex. The subject is now
 no staff record. `tests/auth/role-subject-defaults.test.ts` fails when a shipped
 role is added without one.
 
+**And the week, the leave and the grades (`0333`).** The same comparison over
+every table found a new college with no weekend rows, so every Sunday was a
+working day for payroll and attendance coverage; no kinds of staff leave, so
+nobody could apply; and no grading scheme, so results carried no grade. New
+colleges get them from `reference.*_defaults`; existing ones get the week
+backfilled, and the two that are policy are offered, not written.
+
 **And a subject teacher could not read the class they teach (`0304`).** The
 only teacher policy on `enrolments` is keyed on the class teacher. So
 `exams_mark_sheet`, an invoker, showed a subject teacher an empty sheet for
@@ -2028,6 +2035,16 @@ Two consequences worth knowing before you touch this module:
   current session, which would have hidden that receipt from the till it was
   taken at. Every function in the accounts module was already date-ranged and
   needed no change — which is the shape to copy.
+
+  **And eleven of them were in the interface (`0333`).** Swept every server
+  action for an import anywhere in `src/`: cancelling an invoice, ending a
+  hostel stay, the kinds of staff leave, a notice's attachments and seven more
+  had a working action and no button. Wiring them found what each had hidden.
+  An invoice with a concession could never be cancelled (`0334`), and a
+  one-time fee was billed again by every invoice raised without a period
+  (`0336`). `tests/app-shell/every-action-has-a-caller.test.ts` resolves each
+  import to its module, because a name match missed one. See
+  `docs/audit-2026-10.md`.
 
   And the third: **a correct write path nobody can call is not a fix.** The
   account page filtered invoices to the current session under a comment reading

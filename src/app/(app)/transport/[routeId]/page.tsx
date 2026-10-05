@@ -5,7 +5,8 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { hasPermission } from "@/lib/auth/permissions";
 import { directionLabel, seatsSentence } from "@/lib/validations/transport";
-import { getManifest, listRoutes, listStops } from "../actions";
+import { deleteRoute, getManifest, listRoutes, listStops } from "../actions";
+import { ConfirmDeleteButton } from "@/components/confirm-delete-button";
 import { RouteDetail } from "./route-detail";
 import { formatCurrency } from "@/lib/i18n/format";
 import { getLocale, getT } from "@/lib/i18n/server";
@@ -49,12 +50,25 @@ export default async function RoutePage({ params }: { params: Promise<{ routeId:
             <span>{formatCurrency(route.monthlyRevenue, locale)} a month in fares</span>
           </p>
         </div>
-        <Button asChild variant="outline">
-          <Link href="/transport">
-            <ArrowLeft className="size-4" aria-hidden="true" />
-            All routes
-          </Link>
-        </Button>
+        <div className="flex flex-wrap gap-2">
+          <Button asChild variant="outline">
+            <Link href="/transport">
+              <ArrowLeft className="size-4" aria-hidden="true" />
+              All routes
+            </Link>
+          </Button>
+          {canManage && (
+            <ConfirmDeleteButton
+              size="default"
+              label="Delete route"
+              title={`Delete route ${route.code}?`}
+              description="For a route entered by mistake. A route anybody has ever ridden cannot be deleted; mark it not running instead."
+              action={deleteRoute.bind(null, route.routeId)}
+              success={`Route ${route.code} was deleted.`}
+              afterDelete="/transport"
+            />
+          )}
+        </div>
       </div>
 
       <RouteDetail

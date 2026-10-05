@@ -395,6 +395,7 @@ function RowEditor({
         toast.error(result.error);
         return;
       }
+      toast.success(`Row ${row.lineNumber} saved and checked again.`);
       router.refresh();
     });
   }
@@ -441,7 +442,7 @@ function RowEditor({
           onValueChange={(next) => {
             setDraft((d) => ({ ...d, sectionId: next }));
             startTransition(async () => {
-              await saveRow(runId, {
+              const result = await saveRow(runId, {
                 id: row.id,
                 firstName: draft.firstName,
                 lastName: draft.lastName,
@@ -454,6 +455,11 @@ function RowEditor({
                 guardianPhone: row.guardianPhone ?? "",
                 skipped: row.skipped,
               });
+              if (!result.ok) {
+                toast.error(result.error);
+                return;
+              }
+              toast.success(`Row ${row.lineNumber}'s class saved.`);
               router.refresh();
             });
           }}

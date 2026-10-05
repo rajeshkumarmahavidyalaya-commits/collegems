@@ -669,7 +669,7 @@ function CellDialog({
   function onSubjectChange(subjectId: string) {
     const match = curriculum.find((c) => c.subjectId === subjectId);
     if (match?.defaultTeacherStaffId && !entry) {
-      form.setValue("teacherStaffId", match.defaultTeacherStaffId, { shouldDirty: true });
+      form.setValue("teacherStaffId", match.defaultTeacherStaffId, { shouldDirty: true, shouldValidate: true });
     }
   }
 

@@ -44,6 +44,7 @@ const ReverseEntryDialog = dynamic(() =>
   import("../../fee-dialogs").then((m) => m.ReverseEntryDialog),
 );
 import { createPaymentLink, queueInvoiceEmail, type StudentAccount } from "../../actions";
+import { RaiseInvoiceButton } from "../../invoice-controls";
 import { useI18n } from "@/components/providers/i18n-provider";
 
 /**
@@ -441,12 +442,19 @@ export function StudentAccountView({
         </TabsContent>
 
         <TabsContent value="invoices" className="mt-4 flex flex-col gap-3">
+          {canCollect && account.student && (
+            <div className="flex justify-end">
+              <RaiseInvoiceButton studentId={account.student.id} />
+            </div>
+          )}
           {account.invoices.length === 0 ? (
             <Alert>
               <FileText className="size-4" aria-hidden="true" />
               <AlertTitle>No invoices raised</AlertTitle>
               <AlertDescription>
-                Raise one from the fee setup screen, for this class or for the whole section.
+                {canCollect
+                  ? "Raise one for this student with Raise invoice, or for a whole class from the fee setup screen."
+                  : "The office raises invoices; they appear here when it does."}
               </AlertDescription>
             </Alert>
           ) : (

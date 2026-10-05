@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { formatDate } from "@/lib/i18n/format";
 import { getLocale } from "@/lib/i18n/server";
 import { Pencil } from "lucide-react";
+import { ConfirmDeleteButton } from "@/components/confirm-delete-button";
 import { createClient } from "@/lib/supabase/server";
 import { hasPermission } from "@/lib/auth/permissions";
 import { Badge } from "@/components/ui/badge";
@@ -17,6 +18,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { IssueBookDialog } from "../../issue-book-dialog";
+import { deleteBook } from "../../actions";
 
 export const metadata = { title: "Book" };
 
@@ -77,6 +79,16 @@ export default async function BookDetailPage({ params }: { params: Promise<{ id:
                 Edit
               </Link>
             </Button>
+          )}
+          {canManage && (
+            <ConfirmDeleteButton
+              label="Delete book"
+              title={`Delete "${book.title}"?`}
+              description="For a book entered by mistake. A book that has ever been lent cannot be deleted; its history stays."
+              action={deleteBook.bind(null, book.id)}
+              success={`"${book.title}" was deleted.`}
+              afterDelete="/library/books"
+            />
           )}
         </div>
       </div>

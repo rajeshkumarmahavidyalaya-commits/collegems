@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { methodLabel } from "@/lib/validations/fees-display";
 import type { InvoiceDocument } from "../../actions";
 import { useI18n } from "@/components/providers/i18n-provider";
+import { CancelInvoiceButton } from "../../invoice-controls";
 
 /**
  * One student's bill, laid out as a document rather than as a screen.
@@ -20,7 +21,7 @@ import { useI18n } from "@/components/providers/i18n-provider";
  * printed — the app's dark mode must not push a black rectangle through a
  * school's toner.
  */
-export function InvoiceSheet({ doc }: { doc: InvoiceDocument }) {
+export function InvoiceSheet({ doc, canCollect = false }: { doc: InvoiceDocument; canCollect?: boolean }) {
   const { t } = useI18n();
   const { formatCurrency } = useI18n();
   const { formatDate } = useI18n();
@@ -60,6 +61,9 @@ export function InvoiceSheet({ doc }: { doc: InvoiceDocument }) {
               PDF
             </a>
           </Button>
+          {canCollect && invoice.status === "issued" && (
+            <CancelInvoiceButton invoiceId={invoice.id} invoiceNumber={invoice.number} />
+          )}
           <Button size="sm" onClick={() => window.print()}>
             <Printer className="size-4" aria-hidden="true" />
             Print

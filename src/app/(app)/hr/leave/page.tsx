@@ -8,6 +8,7 @@ import {
   listStaffOptions,
 } from "../actions";
 import { LeaveBoard } from "./leave-board";
+import { LeaveTypesCard } from "./leave-types-card";
 
 export const metadata = { title: "Leave" };
 
@@ -47,6 +48,9 @@ export default async function LeavePage() {
         canApply={Boolean(ctx?.staffId) || canDecide}
         today={schoolToday()}
       />
+
+      {/* Mirrors "admins manage leave_types", the only write policy. */}
+      {ctx?.roleCode === "admin" && <LeaveTypesCard types={types} />}
     </div>
   );
 }

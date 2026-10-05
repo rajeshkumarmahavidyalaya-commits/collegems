@@ -166,6 +166,11 @@ export function FeeSetup({
   }
 
   const activeHeads = feeHeads.filter((h) => h.is_active);
+  // A head no class has an amount for is billed to nobody, silently. Bus and
+  // hostel heads are priced by their stop and room, not here.
+  const priced = new Set(structures.map((r) => r.feeHeadId));
+  const unpriced = (head: FeeHead) =>
+    head.is_active && !priced.has(head.id) && head.category !== "transport" && head.category !== "hostel";
   const [flipping, startFlip] = useTransition();
 
   function flipAdmission(head: FeeHead, on: boolean) {
@@ -359,6 +364,11 @@ export function FeeSetup({
                         {head.description && (
                           <span className="block text-xs text-muted-foreground">
                             {head.description}
+                          </span>
+                        )}
+                        {unpriced(head) && (
+                          <span className="mt-1 block text-xs text-warning">
+                            No amount for any class in {sessionName}, so nobody is billed it. Set one under Fees by class.
                           </span>
                         )}
                       </td>

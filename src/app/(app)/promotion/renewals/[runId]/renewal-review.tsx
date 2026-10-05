@@ -107,6 +107,7 @@ export function RenewalReview({ run, decisions, targets }: Props) {
         toast.error(result.error);
         return;
       }
+      toast.success(`${row.studentName} will not be carried into next year.`);
       router.refresh();
     });
   }
@@ -123,6 +124,7 @@ export function RenewalReview({ run, decisions, targets }: Props) {
         toast.error(result.error);
         return;
       }
+      toast.success(`Saved where ${editing.studentName} goes next year.`);
       setEditing(null);
       setChoice("");
       router.refresh();

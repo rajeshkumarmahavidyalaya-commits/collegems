@@ -7,6 +7,7 @@ import { hostelKindLabel } from "@/lib/validations/hostel";
 import { getRegister, listHostels } from "../actions";
 import { HostelRegister } from "./hostel-register";
 import { getT } from "@/lib/i18n/server";
+import { hasPermission } from "@/lib/auth/permissions";
 
 export const metadata = { title: "Hostel register" };
 
@@ -16,10 +17,11 @@ export default async function HostelRegisterPage({
   params: Promise<{ hostelId: string }>;
 }) {
   const { hostelId } = await params;
-  const [hostels, register, t] = await Promise.all([
+  const [hostels, register, t, canAllocate] = await Promise.all([
     listHostels(),
     getRegister(hostelId),
     getT(),
+    hasPermission("hostel.allocate"),
   ]);
 
   const hostel = hostels.find((h) => h.id === hostelId);
@@ -51,7 +53,7 @@ export default async function HostelRegisterPage({
         </Button>
       </div>
 
-      <HostelRegister hostelName={hostel.name} rows={register} />
+      <HostelRegister hostelName={hostel.name} rows={register} canAllocate={canAllocate} />
     </div>
   );
 }

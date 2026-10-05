@@ -44,7 +44,10 @@ import type { AccountInput } from "@/lib/validations/accounts";
 import { accountTypeLabel, accountTypeOptions, formatBalance, formatColumn } from "@/lib/validations/accounts-display";
 import { useI18n } from "@/components/providers/i18n-provider";
 import { startJob } from "../settings/jobs/actions";
+import { ConfirmDeleteButton } from "@/components/confirm-delete-button";
+import { PostingRuleDialog } from "./posting-rule-dialog";
 import {
+  deleteAccount,
   saveAccount,
   type ChartRow,
   type PostingRuleRow,
@@ -220,6 +223,7 @@ export function ChartView({
                     <TableHead>Debit</TableHead>
                     <TableHead>Credit</TableHead>
                     <TableHead>Active</TableHead>
+                    {canManage && <TableHead className="w-14" />}
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -233,6 +237,11 @@ export function ChartView({
                           {rule.isActive ? "Active" : "Off"}
                         </Badge>
                       </TableCell>
+                      {canManage && (
+                        <TableCell className="text-end">
+                          <PostingRuleDialog rule={rule} chart={chart} />
+                        </TableCell>
+                      )}
                     </TableRow>
                   ))}
                 </TableBody>
@@ -550,7 +559,19 @@ function AccountDialog({
 
             <TextareaField control={form.control} name="description" label="Note" rows={2} />
 
-            <DialogFooter>
+            <DialogFooter className="flex-wrap gap-2">
+              {account && (
+                <div className="me-auto">
+                  <ConfirmDeleteButton
+                    label="Delete account"
+                    title={`Delete ${account.code} · ${account.name}?`}
+                    description="For an account made by mistake. An account with entries, child accounts or a posting rule cannot be deleted; mark it inactive instead."
+                    action={deleteAccount.bind(null, account.id)}
+                    success={`${account.name} was deleted.`}
+                    onDeleted={() => onOpenChange(false)}
+                  />
+                </div>
+              )}
               <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
                 Cancel
               </Button>

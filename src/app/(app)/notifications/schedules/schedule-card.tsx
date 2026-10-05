@@ -9,6 +9,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import {
+  deleteSchedule,
   setScheduleEnabled,
   type RunRow,
   type SchedulableReport,
@@ -18,6 +19,7 @@ import {
 import { useI18n } from "@/components/providers/i18n-provider";
 import { graceSentence, kindLabel, runSentence, runStatusTone, RUN_STATUS_LABEL, reportKeyOf, scheduleSentence, kindDescription } from "@/lib/validations/schedules-display";
 import { type RunStatus } from "@/lib/validations/schedules";
+import { ConfirmDeleteButton } from "@/components/confirm-delete-button";
 
 export function ScheduleCard({
   schedule,
@@ -96,6 +98,16 @@ export function ScheduleCard({
           </div>
 
           <div className="flex items-center gap-2">
+            {canManage && runs.length === 0 && (
+              <ConfirmDeleteButton
+                iconOnly
+                label={`Delete ${schedule.name}`}
+                title={`Delete "${schedule.name}"?`}
+                description="It has never run, so nothing is lost. A schedule that has run keeps its register; switch it off instead."
+                action={deleteSchedule.bind(null, schedule.id)}
+                success={`"${schedule.name}" was deleted.`}
+              />
+            )}
             <Label htmlFor={`enabled-${schedule.id}`} className="text-sm">
               {schedule.isEnabled ? "On" : "Off"}
             </Label>

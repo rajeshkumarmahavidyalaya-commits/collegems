@@ -40,6 +40,7 @@ export function StudentForm({
   student,
   busStops = [],
   hostelRooms = [],
+  arrangementHints = [],
 }: {
   /** Classes with this year's sections, kinds of student, mediums, houses (0328). */
   options: AdmissionOptions;
@@ -57,6 +58,8 @@ export function StudentForm({
   /** Offered at admission only, and only to somebody who may assign (0296). */
   busStops?: { id: string; label: string; full?: boolean }[];
   hostelRooms?: { id: string; label: string; full?: boolean }[];
+  /** Why a bus or hostel field is absent when the module exists (no stops, no rooms). */
+  arrangementHints?: string[];
 }) {
   const router = useRouter();
   const { formatCurrency } = useI18n();
@@ -523,6 +526,13 @@ export function StudentForm({
                 ]}
               />
             )}
+            {!isEdit && panels?.transport !== false &&
+              arrangementHints.map((hint) => (
+                <p key={hint} className="flex items-start gap-2 text-sm text-muted-foreground sm:col-span-2">
+                  <TriangleAlert className="mt-0.5 size-4 shrink-0 text-warning" aria-hidden="true" />
+                  {hint}
+                </p>
+              ))}
             {isEdit && (
               <SelectField
                 control={form.control}

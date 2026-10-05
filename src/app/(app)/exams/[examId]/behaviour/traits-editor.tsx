@@ -46,8 +46,14 @@ export function TraitsEditor({ traits }: { traits: BehaviourTrait[] }) {
   function toggle(trait: BehaviourTrait) {
     startTransition(async () => {
       const result = await setTraitActive(trait.id, !trait.isActive);
-      if (result.ok) router.refresh();
-      else toast.error(result.error);
+      if (result.ok) {
+        toast.success(
+          trait.isActive
+            ? `${trait.name} is no longer on report cards.`
+            : `${trait.name} is back on report cards.`,
+        );
+        router.refresh();
+      } else toast.error(result.error);
     });
   }
 

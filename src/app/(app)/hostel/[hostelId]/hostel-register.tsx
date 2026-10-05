@@ -12,6 +12,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import type { RegisterRow } from "../actions";
+import { EndStayButton } from "./end-stay";
 
 /**
  * The warden's register: room by room, who is in it, and a number to ring.
@@ -21,9 +22,12 @@ import type { RegisterRow } from "../actions";
 export function HostelRegister({
   hostelName,
   rows,
+  canAllocate = false,
 }: {
   hostelName: string;
   rows: RegisterRow[];
+  /** hostel.allocate: draws End stay (the function is the gate). */
+  canAllocate?: boolean;
 }) {
   const boarders = rows.filter((r) => r.studentId !== null);
   const emptyRooms = rows.filter((r) => r.studentId === null);
@@ -74,6 +78,7 @@ export function HostelRegister({
                   <TableHead>Class</TableHead>
                   <TableHead>Since</TableHead>
                   <TableHead>Guardian</TableHead>
+                  {canAllocate && <TableHead data-print="hide" className="w-32" />}
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -118,6 +123,13 @@ export function HostelRegister({
                         <span className="text-muted-foreground">No number on file</span>
                       )}
                     </TableCell>
+                    {canAllocate && (
+                      <TableCell data-print="hide">
+                        {row.allocationId && (
+                          <EndStayButton allocationId={row.allocationId} studentName={row.studentName ?? "This boarder"} />
+                        )}
+                      </TableCell>
+                    )}
                   </TableRow>
                 ))}
               </TableBody>

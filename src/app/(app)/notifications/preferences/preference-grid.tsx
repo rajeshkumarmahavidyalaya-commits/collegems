@@ -49,6 +49,7 @@ export function PreferenceGrid({ eventTypes, preferences, channelStatus }: Props
       setOptimistic({ eventKey, channel, enabled });
       const result = await setPreference({ eventKey, channel, enabled });
       if (!result.ok) toast.error(result.error);
+      else toast.success(enabled ? "Saved. You will get these." : "Saved. You will not get these.");
     });
   }
 

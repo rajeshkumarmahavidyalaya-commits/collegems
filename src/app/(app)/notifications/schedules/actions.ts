@@ -198,8 +198,21 @@ export async function setScheduleEnabled(
 
 export async function deleteSchedule(id: string): Promise<ActionResult<{ id: string }>> {
   const supabase = await createClient();
-  const { error } = await supabase.from("schedules").delete().eq("id", id);
+  // Deleting cascades the run register, which is the only answer to "why did
+  // nothing go out on the 3rd". So only a schedule that has never run goes.
+  const { count } = await supabase
+    .from("schedule_runs")
+    .select("id", { count: "exact", head: true })
+    .eq("schedule_id", id);
+  if ((count ?? 0) > 0) {
+    return {
+      ok: false,
+      error: `This schedule has run ${count} ${count === 1 ? "time" : "times"}, and its register is the record of what went out. Switch it off instead.`,
+    };
+  }
+  const { data, error } = await supabase.from("schedules").delete().eq("id", id).select("id");
   if (error) return { ok: false, error: error.message };
+  if (!data?.length) return { ok: false, error: "Only somebody who manages schedules can delete one." };
 
   revalidatePath("/notifications/schedules");
   return { ok: true, data: { id } };

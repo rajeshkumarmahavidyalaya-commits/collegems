@@ -4,7 +4,6 @@ import { createClient } from "@/lib/supabase/server";
 import { getUserContext } from "@/lib/auth/context";
 import {
   cleanParams,
-  missingRequired,
   parseColumns,
   parseParameters,
   runReportSchema,
@@ -86,22 +85,6 @@ export async function runReport(input: unknown): Promise<ActionResult<ReportResu
     // reports itself as complete.
     data: { rows, totalCount, truncated: totalCount > offset + rows.length },
   };
-}
-
-/**
- * Which parameters are missing, checked server-side as well as in the form.
- * A report run with no class chosen is not dangerous — it just answers a
- * different question than the person meant to ask — so this is a guard against
- * a confusing result rather than against an attack.
- */
-export async function validateParams(
-  reportKey: string,
-  params: Record<string, string>,
-): Promise<string[]> {
-  const reports = await listReports();
-  const report = reports.find((r) => r.key === reportKey);
-  if (!report) return [];
-  return missingRequired(report.parameters, params);
 }
 
 /**

@@ -406,6 +406,11 @@ function ApplyDialog({
               name="leaveTypeId"
               label="Kind of leave"
               required
+              description={
+                types.some((t) => t.isActive)
+                  ? undefined
+                  : "There are no kinds of leave yet. An administrator adds them under Kinds of leave on this page."
+              }
               options={types
                 .filter((t) => t.isActive)
                 .map((t) => ({

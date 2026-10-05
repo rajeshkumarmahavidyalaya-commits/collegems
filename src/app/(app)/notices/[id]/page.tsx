@@ -7,6 +7,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { getUserContext } from "@/lib/auth/context";
 import { getNotice, listAttachments, markRead, readSummary } from "../actions";
 import { AttachmentLink } from "./attachment-link";
+import { AttachmentsEditor } from "./attachments-editor";
+import { hasPermission } from "@/lib/auth/permissions";
 import { getLocale, getT } from "@/lib/i18n/server";
 import { formatDate } from "@/lib/i18n/format";
 import {
@@ -35,11 +37,12 @@ export const metadata = { title: "Notice" };
 export default async function NoticePage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
 
-  const [notice, ctx, locale, t] = await Promise.all([
+  const [notice, ctx, locale, t, canWrite] = await Promise.all([
     getNotice(id),
     getUserContext(),
     getLocale(),
     getT(),
+    hasPermission("notices.manage"),
   ]);
   if (!notice) notFound();
 
@@ -99,7 +102,7 @@ export default async function NoticePage({ params }: { params: Promise<{ id: str
         </CardContent>
       </Card>
 
-      {attachments.length > 0 && (
+      {(attachments.length > 0 || canWrite) && (
         <Card>
           <CardHeader className="pb-3">
             <CardTitle className="flex items-center gap-2 text-base">
@@ -119,6 +122,10 @@ export default async function NoticePage({ params }: { params: Promise<{ id: str
                 sizeBytes={file.size_bytes}
               />
             ))}
+            {attachments.length === 0 && (
+              <p className="text-sm text-muted-foreground">No files attached.</p>
+            )}
+            {canWrite && <AttachmentsEditor noticeId={notice.id} files={attachments} />}
           </CardContent>
         </Card>
       )}
