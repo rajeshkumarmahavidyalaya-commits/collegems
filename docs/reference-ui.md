@@ -154,8 +154,9 @@ birthday list was checked with dates set inside a rolled-back transaction
   Inquiries. Where the reference has no column for something a person acts
   on (seats left on a bus, a room's fare, an item's stock level, a card's
   status), it stays, as a column or a line under the name.
-- **Still missing on those pages**: "Add New Books In Bulk" (there is no
-  book importer).
+- **"Add New Books In Bulk"** is `/library/books/import` (0339): a CSV,
+  an Excel sheet or pasted cells, checked as editable rows before anything is
+  written.
 - **Placement**: "Add New Route/Vehicle", "Add New Hostel/Room" and "Add New
   Item" sit on the tab row above the list, beside the tabs, rather than in
   each section's card.

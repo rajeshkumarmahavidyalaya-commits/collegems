@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { BookPlus } from "lucide-react";
+import { BookPlus, FileSpreadsheet } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { getUserContext } from "@/lib/auth/context";
 import { hasPermission } from "@/lib/auth/permissions";
@@ -40,6 +40,12 @@ export default async function BooksPage() {
                 remove={deleteBookCategory}
                 deleteNote="Its books stay, uncategorised."
               />
+              <Button asChild variant="outline">
+                <Link href="/library/books/import">
+                  <FileSpreadsheet className="size-4" aria-hidden="true" />
+                  Add New Books In Bulk
+                </Link>
+              </Button>
               <Button asChild>
                 <Link href="/library/books/new">
                   <BookPlus className="size-4" aria-hidden="true" />

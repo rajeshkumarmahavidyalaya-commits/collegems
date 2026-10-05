@@ -102,3 +102,21 @@ export function normaliseGender(value: string | undefined): string | null {
   if (["u", "undisclosed", "not stated", "na", "n/a"].includes(text)) return "undisclosed";
   return text;
 }
+
+/**
+ * Text pasted from a spreadsheet arrives tab-separated. Quote each cell rather
+ * than swapping tabs for commas, because "Sharma, Anita" is one cell. Shared
+ * by the staff and book importers.
+ */
+export function fromPaste(text: string): string {
+  if (!text.includes("\t")) return text;
+  return text
+    .split(/\r\n|\n|\r/)
+    .map((line) =>
+      line
+        .split("\t")
+        .map((cell) => `"${cell.replace(/"/g, '""')}"`)
+        .join(","),
+    )
+    .join("\n");
+}

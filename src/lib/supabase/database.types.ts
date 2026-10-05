@@ -10612,6 +10612,7 @@ export type Database = {
           total_copies: number
         }[]
       }
+      library_import_books: { Args: { p_rows: Json }; Returns: Json }
       library_issues_matching: {
         Args: { p_query?: string }
         Returns: Database["public"]["Tables"]["book_issues"]["Row"][]

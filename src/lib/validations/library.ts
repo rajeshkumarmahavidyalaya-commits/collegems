@@ -33,3 +33,20 @@ export const issueBookSchema = z.object({
 });
 
 export type IssueBookInput = z.infer<typeof issueBookSchema>;
+
+/** One spreadsheet row at the server boundary (the browser has judged it already; this is the gate). */
+export const bookImportRowSchema = z.object({
+  line: z.number().int().min(1),
+  title: z.string().trim().min(1, "The title is missing").max(300),
+  author: z.string().trim().min(1, "The author is missing").max(200),
+  subject: z.string().trim().max(100),
+  bookNumber: z.string().trim().max(50),
+  isbn: z.string().trim().max(32),
+  rack: z.string().trim().max(100),
+  price: z.number().min(0, "A price cannot be negative").max(10000000).nullable(),
+  quantity: z.number().int().min(1).max(1000),
+  publisher: z.string().trim().max(200),
+  edition: z.string().trim().max(50),
+});
+
+export type BookImportRowInput = z.infer<typeof bookImportRowSchema>;

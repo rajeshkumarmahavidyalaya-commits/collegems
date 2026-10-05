@@ -11,41 +11,44 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import {
-  MAX_STAFF_IMPORT_ROWS,
-  STAFF_IMPORT_COLUMNS,
-  STAFF_IMPORT_TEMPLATE,
-  judgeStaffRows,
-  parseStaffCsv,
-  toStaffPayload,
-  type StaffImportField,
-  type StaffImportRow,
-} from "@/lib/validations/staff-import";
+  BOOK_IMPORT_COLUMNS,
+  BOOK_IMPORT_TEMPLATE,
+  MAX_BOOK_IMPORT_ROWS,
+  judgeBookRows,
+  newSubjects,
+  parseBookCsv,
+  toBookPayload,
+  type BookImportField,
+  type BookImportRow,
+} from "@/lib/validations/book-import";
 import { fromPaste } from "@/lib/validations/csv";
-import { importStaffRows, type StaffImportOutcome } from "./actions";
+import { importBookRows, type BookImportOutcome } from "./actions";
 
 /**
- * Read a file (or pasted text), show every row as editable cells with what is
- * wrong beside it, and add the rows that are ready. Rows that fail -- here or
+ * The book importer's screen, the staff importer's shape (0339). Read a file
+ * (or pasted text), show every row as editable cells with what is wrong beside
+ * it, and add the rows that are ready. Rows that fail -- here or
  * in the database -- stay on the screen with their reason, so the office fixes
  * them and presses Add again rather than re-typing a spreadsheet (rule 13).
  */
-export function StaffImportView() {
-  const [rows, setRows] = useState<StaffImportRow[]>([]);
+export function BookImportView({ subjects }: { subjects: string[] }) {
+  const [rows, setRows] = useState<BookImportRow[]>([]);
   const [text, setText] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [serverErrors, setServerErrors] = useState<Map<string, string>>(new Map());
-  const [added, setAdded] = useState<StaffImportOutcome[]>([]);
+  const [added, setAdded] = useState<BookImportOutcome[]>([]);
   const [pending, startTransition] = useTransition();
 
-  const problems = useMemo(() => judgeStaffRows(rows), [rows]);
+  const problems = useMemo(() => judgeBookRows(rows), [rows]);
+  const created = useMemo(() => newSubjects(rows, subjects), [rows, subjects]);
   const ready = rows.filter((r) => (problems.get(r.key) ?? []).length === 0);
 
   function load(source: string) {
     setError(null);
     setNotice(null);
     setServerErrors(new Map());
-    const parsed = parseStaffCsv(source);
+    const parsed = parseBookCsv(source);
     if (!parsed.ok) {
       setError(parsed.error);
       return;
@@ -58,7 +61,7 @@ export function StaffImportView() {
     }
   }
 
-  function edit(key: string, field: StaffImportField, value: string) {
+  function edit(key: string, field: BookImportField, value: string) {
     setRows((current) => current.map((r) => (r.key === key ? { ...r, [field]: value } : r)));
     setServerErrors((current) => {
       if (!current.has(key)) return current;
@@ -75,9 +78,7 @@ export function StaffImportView() {
   function apply() {
     const batch = ready;
     startTransition(async () => {
-      const result = await importStaffRows(
-        batch.map((r) => ({ line: r.line, values: toStaffPayload(r) })),
-      );
+      const result = await importBookRows(batch.map(toBookPayload));
       if (!result.ok) {
         toast.error(result.error);
         return;
@@ -95,14 +96,14 @@ export function StaffImportView() {
       setAdded((current) => [...current, ...result.data.outcomes.filter((o) => o.ok)]);
       const left = failed.size;
       toast.success(
-        `${result.data.added === 1 ? "1 person" : `${result.data.added} people`} added.${
+        `${result.data.added === 1 ? "1 book" : `${result.data.added} books`} added.${
           left > 0 ? ` ${left === 1 ? "1 row was" : `${left} rows were`} not -- the reason is on each.` : ""
         }`,
       );
     });
   }
 
-  const templateHref = `data:text/csv;charset=utf-8,${encodeURIComponent(STAFF_IMPORT_TEMPLATE)}`;
+  const templateHref = `data:text/csv;charset=utf-8,${encodeURIComponent(BOOK_IMPORT_TEMPLATE)}`;
 
   return (
     <div className="flex flex-col gap-6">
@@ -111,19 +112,19 @@ export function StaffImportView() {
           <CardTitle>1. The file</CardTitle>
           <CardDescription className="max-w-2xl">
             A CSV with a heading row, or the same pasted from a spreadsheet. At most{" "}
-            {MAX_STAFF_IMPORT_ROWS} people -- a longer file is refused rather than cut short. Needed:{" "}
-            {STAFF_IMPORT_COLUMNS.filter((c) => c.required)
+            {MAX_BOOK_IMPORT_ROWS} books -- a longer file is refused rather than cut short. Needed:{" "}
+            {BOOK_IMPORT_COLUMNS.filter((c) => c.required)
               .map((c) => c.label.toLowerCase())
-              .join(", ")}
-            . Dates may be written 2024-06-12 or 12/06/2024 (day first).
+              .join(" and ")}
+            . A missing quantity means one copy; a price may be written 250, 250.50 or ₹1,250.
           </CardDescription>
         </CardHeader>
         <CardContent className="flex flex-col gap-4">
           <div className="flex flex-wrap items-end gap-3">
             <div className="flex flex-col gap-1.5">
-              <Label htmlFor="staff-import-file">File</Label>
+              <Label htmlFor="book-import-file">File</Label>
               <Input
-                id="staff-import-file"
+                id="book-import-file"
                 type="file"
                 accept={ROLL_FILE_ACCEPT}
                 className="max-w-xs cursor-pointer"
@@ -137,20 +138,20 @@ export function StaffImportView() {
               />
             </div>
             <Button asChild variant="outline">
-              <a href={templateHref} download="staff-import-template.csv">
+              <a href={templateHref} download="book-import-template.csv">
                 <Download className="size-4" aria-hidden="true" />
                 Template
               </a>
             </Button>
           </div>
           <div className="flex flex-col gap-1.5">
-            <Label htmlFor="staff-import-paste">…or paste it here</Label>
+            <Label htmlFor="book-import-paste">…or paste it here</Label>
             <Textarea
-              id="staff-import-paste"
+              id="book-import-paste"
               rows={4}
               value={text}
               onChange={(e) => setText(e.target.value)}
-              placeholder={STAFF_IMPORT_COLUMNS.map((c) => c.label).join(",")}
+              placeholder={BOOK_IMPORT_COLUMNS.map((c) => c.label).join(",")}
               className="font-mono text-xs"
             />
             <div>
@@ -186,14 +187,21 @@ export function StaffImportView() {
               {ready.length} of {rows.length} ready. Fix a cell in place, or remove a row that
               should not be here. Only the ready rows are added.
             </CardDescription>
+            {created.length > 0 && (
+              <p className="text-sm">
+                {created.length === 1 ? "A new subject" : `${created.length} new subjects`} will be
+                added to the catalogue: <span className="font-medium">{created.join(", ")}</span>.
+                If one is a misspelling of a subject you have, fix the cell.
+              </p>
+            )}
           </CardHeader>
           <CardContent className="flex flex-col gap-4">
             <div className="overflow-x-auto rounded-lg border">
-              <table className="w-full min-w-[1400px] text-sm">
+              <table className="w-full min-w-[1200px] text-sm">
                 <thead className="bg-muted/60 text-xs text-muted-foreground">
                   <tr>
                     <th scope="col" className="px-2 py-2 text-start font-medium">Line</th>
-                    {STAFF_IMPORT_COLUMNS.map((c) => (
+                    {BOOK_IMPORT_COLUMNS.map((c) => (
                       <th key={c.field} scope="col" className="px-2 py-2 text-start font-medium">
                         {c.label}
                         {c.required && <span aria-hidden="true"> *</span>}
@@ -211,7 +219,7 @@ export function StaffImportView() {
                         <td className="px-2 py-2 font-mono text-xs text-muted-foreground">
                           {r.line}
                         </td>
-                        {STAFF_IMPORT_COLUMNS.map((c) => (
+                        {BOOK_IMPORT_COLUMNS.map((c) => (
                           <td key={c.field} className="px-1 py-1">
                             <Input
                               value={r[c.field]}
@@ -260,7 +268,7 @@ export function StaffImportView() {
             <div>
               <Button type="button" disabled={pending || ready.length === 0} onClick={apply}>
                 {pending && <Loader2 className="size-4 animate-spin" aria-hidden="true" />}
-                Add {ready.length === 1 ? "1 person" : `${ready.length} people`}
+                Add {ready.length === 1 ? "1 book" : `${ready.length} books`}
               </Button>
             </div>
           </CardContent>
@@ -272,18 +280,17 @@ export function StaffImportView() {
           <CardHeader>
             <CardTitle>Added</CardTitle>
             <CardDescription>
-              {added.length === 1 ? "1 person is" : `${added.length} people are`} now on the staff.
-              A login is given from each record, or all at once from Settings, Team.
+              {added.length === 1 ? "1 book is" : `${added.length} books are`} now in the
+              catalogue, every copy on the shelf.
             </CardDescription>
           </CardHeader>
           <CardContent>
             <ul className="flex flex-col gap-1 text-sm">
               {added.map((o) => (
                 <li key={o.id}>
-                  <Link href={`/staff/${o.id}`} className="underline underline-offset-2">
-                    {o.name}
-                  </Link>{" "}
-                  <span className="font-mono text-xs text-muted-foreground">{o.employeeCode}</span>
+                  <Link href={`/library/books/${o.id}`} className="underline underline-offset-2">
+                    {o.title}
+                  </Link>
                 </li>
               ))}
             </ul>
