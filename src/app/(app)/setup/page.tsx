@@ -212,15 +212,24 @@ export default async function SetupWizardPage({
   );
 }
 
+/**
+ * The reference's tall banner. A <header>, not a <div>: the shell restyles a
+ * page's first <div> holding an <h1> into the module title bar, which drew
+ * this one as a thin bar with a second icon. The size is inline for the same
+ * reason -- `.reference-page h1` is unlayered and outranks a utility.
+ */
 function Banner() {
   return (
-    <div className="rounded-lg bg-primary px-6 py-6 text-center text-primary-foreground">
-      <h1 className="flex items-center justify-center gap-3 text-2xl font-bold sm:text-3xl">
-        <Wand2 className="size-8" aria-hidden="true" />
+    <header className="rounded-lg bg-primary px-6 py-7 text-center text-primary-foreground shadow-md">
+      <h1
+        className="flex items-center justify-center gap-3 font-bold"
+        style={{ fontSize: "clamp(1.5rem, 1.1rem + 1.6vw, 2rem)", lineHeight: 1.2 }}
+      >
+        <Wand2 className="size-8 shrink-0" aria-hidden="true" />
         School Setup Wizard
       </h1>
       <p className="mt-1 text-sm opacity-90">Configure your school in just a few simple steps</p>
-    </div>
+    </header>
   );
 }
 

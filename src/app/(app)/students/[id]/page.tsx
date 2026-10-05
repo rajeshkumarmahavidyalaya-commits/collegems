@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { hasPermission } from "@/lib/auth/permissions";
-import { deleteStudentRecord, getStudent } from "../actions";
+import { deleteStudentRecord, getStudent, studentProfileDetails } from "../actions";
 import { DeleteRecordControl } from "@/components/people/delete-record-control";
 import { ExitControl } from "./exit-control";
 import { GuardiansCard, type GuardianRow } from "./guardians-card";
@@ -50,7 +50,7 @@ export default async function StudentDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const [student, canManage, canManageGuardians, canCollectFees, t, ctx, subjects, canChooseFor, locale] = await Promise.all([
+  const [student, canManage, canManageGuardians, canCollectFees, t, ctx, subjects, canChooseFor, locale, profile] = await Promise.all([
     getStudent(id),
     hasPermission("students.manage"),
     hasPermission("guardians.manage"),
@@ -64,6 +64,7 @@ export default async function StudentDetailPage({
     // The gate the electives screen uses; `subject_choice_save` is the boundary.
     hasPermission("academics.manage"),
     getLocale(),
+    studentProfileDetails(id),
   ]);
 
   if (!student) notFound();
@@ -266,6 +267,20 @@ export default async function StudentDetailPage({
               <Fact label="City" value={person?.city} />
               <Fact label="State" value={person?.state} />
             </dl>
+            {profile && (
+              <>
+                <Separator className="my-4" />
+                {/* student_profiles (0331): readable by the administrator and
+                    the child's own family only, so a teacher never gets here. */}
+                <dl className="grid grid-cols-2 gap-4 sm:grid-cols-3">
+                  <Fact label="Religion" value={profile.religion || null} />
+                  <Fact label="Caste/Sub-caste" value={profile.caste || null} />
+                  <Fact label="ID number" value={profile.idNumber || null} />
+                  <Fact label="Medical complaint" value={profile.medicalNotes || null} />
+                  <Fact label="Heard about us from" value={profile.heardFrom || null} />
+                </dl>
+              </>
+            )}
           </CardContent>
         </Card>
 

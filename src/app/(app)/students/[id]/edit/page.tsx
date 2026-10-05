@@ -3,7 +3,7 @@ import { hasPermission } from "@/lib/auth/permissions";
 import type { StudentInput } from "@/lib/validations/students";
 import { getUserContext } from "@/lib/auth/context";
 import { STUDENT_TYPE_WRITERS } from "@/lib/validations/student-types";
-import { admissionOptions, currentStudentType, getStudent } from "../../actions";
+import { admissionOptions, currentStudentType, getStudent, studentProfileDetails } from "../../actions";
 import { StudentForm } from "../../student-form";
 
 export const metadata = { title: "Edit student" };
@@ -14,12 +14,13 @@ export default async function EditStudentPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const [student, options, canManage, ctx, studentTypeId] = await Promise.all([
+  const [student, options, canManage, ctx, studentTypeId, profile] = await Promise.all([
     getStudent(id),
     admissionOptions(),
     hasPermission("students.manage"),
     getUserContext(),
     currentStudentType(id),
+    studentProfileDetails(id),
   ]);
 
   if (!student) notFound();
@@ -58,6 +59,11 @@ export default async function EditStudentPage({
     studentTypeId,
     mediumId: student.medium_id ?? "",
     houseId: student.house_id ?? "",
+    religion: profile?.religion ?? "",
+    caste: profile?.caste ?? "",
+    idNumber: profile?.idNumber ?? "",
+    medicalNotes: profile?.medicalNotes ?? "",
+    heardFrom: profile?.heardFrom ?? "",
   };
 
   return (
@@ -72,6 +78,8 @@ export default async function EditStudentPage({
         options={options}
         canAddType={STUDENT_TYPE_WRITERS.includes(ctx?.roleCode ?? "")}
         student={defaults}
+        // Mirrors "admins manage student_profiles" (0331): the only write policy.
+        profileEditable={ctx?.roleCode === "admin"}
       />
     </div>
   );

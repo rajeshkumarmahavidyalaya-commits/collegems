@@ -129,12 +129,34 @@ describe("the public application form", () => {
   });
 
   describe("what an anonymous caller may learn", () => {
-    it("the form's projection is a name, a year, class levels and the college's own two sentences", () => {
+    it("the form's projection is a name, a year, class levels and the college's own words", () => {
       const built = form.slice(form.indexOf("return jsonb_build_object("));
       const keys = [...built.matchAll(/^\s*'(\w+)',/gm)].map((m) => m[1]);
       // success_message (0330) is the college's own words after applying, as
       // the note is before: nothing an applicant did not already need.
-      expect(keys.sort()).toEqual(["class_levels", "college", "note", "session", "slug", "success_message"]);
+      // form_title and redirect_url (0331) are the same: the college's heading
+      // and its own page to go on to. Never the notification addresses.
+      expect(keys.sort()).toEqual([
+        "class_levels",
+        "college",
+        "form_title",
+        "note",
+        "redirect_url",
+        "session",
+        "slug",
+        "success_message",
+      ]);
+      expect(built).not.toMatch(/notify_/);
+    });
+
+    it("an application is announced to the office, and an announcement that fails does not fail it", () => {
+      const tell = apply.slice(apply.indexOf("v_notify_email :="));
+      // Its own block, after the enquiry is saved, ending in a warning.
+      expect(apply.indexOf("insert into public.enquiries")).toBeLessThan(apply.indexOf("v_notify_email :="));
+      expect(tell).toMatch(/exception when others then\s+raise warning/);
+      // Through the dispatcher's tables, never a provider (rule 10).
+      expect(tell).toMatch(/insert into public\.notification_deliveries/);
+      expect(tell).not.toMatch(/net\.http_|http_post/);
     });
 
     it("one null for every reason, never a sentence that distinguishes them", () => {

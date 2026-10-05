@@ -6742,6 +6742,60 @@ export type Database = {
           },
         ]
       }
+      student_profiles: {
+        Row: {
+          caste: string | null
+          created_at: string
+          heard_from: string | null
+          id: string
+          id_number: string | null
+          medical_notes: string | null
+          religion: string | null
+          student_id: string
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          caste?: string | null
+          created_at?: string
+          heard_from?: string | null
+          id?: string
+          id_number?: string | null
+          medical_notes?: string | null
+          religion?: string | null
+          student_id: string
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          caste?: string | null
+          created_at?: string
+          heard_from?: string | null
+          id?: string
+          id_number?: string | null
+          medical_notes?: string | null
+          religion?: string | null
+          student_id?: string
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "student_profiles_student_fkey"
+            columns: ["tenant_id", "student_id"]
+            isOneToOne: true
+            referencedRelation: "students"
+            referencedColumns: ["tenant_id", "id"]
+          },
+          {
+            foreignKeyName: "student_profiles_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       student_subject_choices: {
         Row: {
           created_at: string
@@ -10758,6 +10812,8 @@ export type Database = {
         }
         Returns: number
       }
+      next_admission_number: { Args: never; Returns: string }
+      next_roll_number: { Args: { p_section_id: string }; Returns: string }
       my_school_figures: {
         Args: never
         Returns: {

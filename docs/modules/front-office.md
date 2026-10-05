@@ -330,6 +330,20 @@ email lowercased.
   which makes it a way to send mail to strangers from the college's name.
 
 
+## The form's title, its redirect, and telling the office (0331)
+
+`admission_form` also returns the college's own heading (`form_title`) and a
+`redirect_url`, which SQL returns only when it is an http(s) address. The success
+screen stays for 15 seconds, so the family can copy the reference, then goes on.
+
+`admission_apply` announces each new application to `admissions.online`'s
+`notify_email` and `notify_phone`: one `notifications` row (event
+`admissions.application`, stale after two days) and a delivery per address,
+drained by the dispatcher like any other (rule 10). The hourly limit already
+bounds how many it can send. The announcement is its own block after the enquiry
+is saved and ends in `raise warning`: **a failed announcement is not a failed
+application.** The notification addresses are never in the form's projection.
+
 ## A report (0297)
 
 **Admission enquiries** (`frontoffice.enquiries`) lists the pipeline since a

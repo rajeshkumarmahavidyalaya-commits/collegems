@@ -646,3 +646,13 @@ in the way on each row. Both go through one definer read model, so the number an
 the list cannot disagree — and writing it found the critic over-reporting to any
 non-administrator holding `users.manage`. That story is in
 [checks.md](./checks.md#a-number-is-not-a-list--and-the-third-not-exists-with-two-policies).
+
+## A new college's roles stand for someone (0332)
+
+`roles.subject` decides which record an invitation must name. The demo college
+had it from its seed; colleges made by `college_create` did not, so all six
+roles were `none` and a parent could not be invited. `reference.role_subject_defaults`
+(teacher, accountant, librarian → staff; student → student; parent → guardian)
+is applied by a BEFORE INSERT trigger on `roles`, and existing colleges were
+backfilled where a role was still `none`. The administrator stays `none`: a
+founder and an administrator added on the Schools screen have no staff record.

@@ -7,21 +7,30 @@ import {
   ArrowLeft,
   ArrowRight,
   Bed,
+  BookText,
   Briefcase,
+  Calculator,
   Bus,
   Check,
   CheckCheck,
+  CheckCircle2,
+  FlaskConical,
   Globe,
   GraduationCap,
   Info,
+  Languages,
   Laptop,
   Lightbulb,
   ListChecks,
   Loader2,
+  Palette,
+  PersonStanding,
   Plus,
   Settings,
   Sun,
+  ToggleRight,
   Trash2,
+  TriangleAlert,
   Trophy,
   User,
   UserPlus,
@@ -38,12 +47,13 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { useI18n } from "@/components/providers/i18n-provider";
+import { FORM_PANELS, type FormPanel, type RequiredFieldKey } from "@/lib/validations/admission-required";
 import {
   wizardAddClasses,
   wizardAddFeeTypes,
   wizardAddStudentTypes,
-  wizardAddSubject,
   wizardRemoveSubject,
+  wizardSaveSubjects,
   wizardSaveRegistration,
   type WizardState,
 } from "./actions";
@@ -151,42 +161,36 @@ export function ClassesStep({ classes, prev, next }: { classes: WizardState["cla
   const box = (name: string, opts: { checked: boolean; disabled?: boolean }) => (
     <label
       key={name}
-      className={`flex min-h-14 items-center gap-3 rounded-md border px-4 py-3 ${opts.disabled ? "bg-muted/40" : "cursor-pointer hover:bg-muted/30"}`}
+      title={opts.disabled ? "Already in your school" : undefined}
+      className={`flex min-h-14 items-center gap-3 rounded-md border px-4 py-3 ${opts.disabled ? "" : "cursor-pointer hover:bg-muted/30"}`}
     >
       <Checkbox
         checked={opts.checked}
         disabled={opts.disabled}
         onCheckedChange={(v) => toggle(name, v === true)}
-        aria-label={name}
+        aria-label={opts.disabled ? `${name}, already in your school` : name}
+        className="disabled:opacity-100"
       />
-      <span className="min-w-0">
-        <span className="block">{name}</span>
-        {opts.disabled && <span className="block text-xs text-muted-foreground">Already in your school</span>}
-      </span>
+      <span className="min-w-0">{name}</span>
     </label>
   );
 
   return (
     <>
       <div className="flex flex-col gap-5 p-6">
-        <SectionTitle icon={Laptop}>Select Classes for Your School</SectionTitle>
-        <p className="text-sm text-muted-foreground">
-          Choose which classes your school offers. Each is created with section A for this year; add
-          more sections later under Manage Classes.
-        </p>
-        {classes.length > 0 && (
-          <div>
-            <p className="mb-2 text-sm font-medium">Your classes</p>
-            <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-              {classes.map((c) => box(c.name, { checked: true, disabled: true }))}
-            </div>
-          </div>
-        )}
         <div>
-          <p className="mb-2 text-sm font-medium">Add classes</p>
-          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-            {offered.map((n) => box(n, { checked: chosen.has(n) }))}
-          </div>
+          <SectionTitle icon={Laptop}>Select Classes for Your School</SectionTitle>
+          <p className="mt-2 text-sm text-muted-foreground">
+            Choose which classes your school offers. You can modify this later from the settings.
+          </p>
+        </div>
+        {/* One grid, as the reference draws it: the school's own classes ticked,
+            the rest offered. A ticked class is not untickable here -- a class
+            with registers and fees is removed under Manage Classes, which
+            says what it holds. */}
+        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+          {classes.map((c) => box(c.name, { checked: true, disabled: true }))}
+          {offered.map((n) => box(n, { checked: chosen.has(n) }))}
         </div>
         <form
           className="flex flex-wrap items-end gap-2"
@@ -201,7 +205,7 @@ export function ClassesStep({ classes, prev, next }: { classes: WizardState["cla
           }}
         >
           <div className="flex min-w-0 flex-1 flex-col gap-1.5">
-            <Label htmlFor="wiz-class">Another class</Label>
+            <Label htmlFor="wiz-class">A class not listed</Label>
             <Input id="wiz-class" value={typed} onChange={(e) => setTyped(e.target.value)} maxLength={60} placeholder="e.g. BCA I Year" />
           </div>
           <Button type="submit" variant="outline">
@@ -211,7 +215,7 @@ export function ClassesStep({ classes, prev, next }: { classes: WizardState["cla
         </form>
         <div className="rounded-md bg-muted/40 p-4">
           <p className="mb-2">Quick Selection:</p>
-          <div className="inline-flex overflow-hidden rounded-md border">
+          <div className="inline-flex overflow-hidden rounded-md border bg-card">
             <button type="button" className="flex items-center gap-1.5 border-e px-4 py-2 text-sm text-brand-accent hover:bg-muted" onClick={() => setChosen(new Set(offered))}>
               <CheckCheck className="size-4" aria-hidden="true" /> Select All
             </button>
@@ -220,37 +224,80 @@ export function ClassesStep({ classes, prev, next }: { classes: WizardState["cla
             </button>
           </div>
           <p className="mt-2 text-sm text-muted-foreground" aria-live="polite">
-            {chosen.size} selected to add.
+            {chosen.size
+              ? `${chosen.size} new ${chosen.size === 1 ? "class" : "classes"} will be added with section A when you press Next.`
+              : `${classes.length} ${classes.length === 1 ? "class" : "classes"} in your school.`}
           </p>
         </div>
       </div>
-      <Footer prev={prev} next={next} onNext={save} nextLabel={chosen.size ? `Save ${chosen.size} and continue` : "Next"} />
+      <Footer prev={prev} next={next} onNext={save} />
     </>
   );
 }
 
 // ----------------------------------------------------------------- subjects
 
-const COMMON_SUBJECTS = ["Mathematics", "English", "Hindi", "Science", "Social Studies", "Physical Education", "Computer Science"];
-const MORE_SUBJECTS = [
-  "Sanskrit", "Physics", "Chemistry", "Biology", "History", "Geography", "Political Science",
-  "Economics", "Sociology", "Psychology", "Accountancy", "Business Studies", "Environmental Studies", "Art",
+/** The reference's six, added to every class at once. */
+const COMMON_SUBJECTS: [string, LucideIcon][] = [
+  ["Mathematics", Calculator],
+  ["English", Languages],
+  ["Science", FlaskConical],
+  ["Social Studies", Globe],
+  ["Physical Education", PersonStanding],
+  ["Art", Palette],
 ];
+/** The reference's five, under each class. */
+const CLASS_QUICK = ["Math", "English", "Science", "History", "Geography"];
+
+type SubjectRow = { name: string; code: string; kind: "theory" | "practical"; codeTouched: boolean };
+const emptyRow = (): SubjectRow => ({ name: "", code: "", kind: "theory", codeTouched: false });
+
+/** A code from the name, the way the server would choose one: "Social Studies" → SOCSTU. */
+function codeFor(name: string): string {
+  const words = name.toUpperCase().replace(/[^A-Z0-9 ]/g, " ").split(/\s+/).filter(Boolean);
+  return (words.length > 1 ? words.map((w) => w.slice(0, 3)).join("") : (words[0] ?? "")).slice(0, 8);
+}
 
 export function SubjectsStep({ classes, prev, next }: { classes: WizardState["classes"] } & Nav) {
   const router = useRouter();
   const [pending, start] = useTransition();
-  const [typed, setTyped] = useState<Record<string, string>>({});
   const taught = classes.filter((c) => c.sections > 0);
+  const [rows, setRows] = useState<Record<string, SubjectRow[]>>(() =>
+    Object.fromEntries(taught.map((c) => [c.id, [emptyRow()]])),
+  );
+  const filled = Object.entries(rows).flatMap(([classLevelId, list]) =>
+    list.filter((r) => r.name.trim()).map((r) => ({ classLevelId, ...r })),
+  );
 
-  function add(name: string, classIds: string[]) {
-    start(async () => {
-      const r = await wizardAddSubject(name, classIds);
-      if (!r.ok) return void toast.error(r.error);
-      toast.success(`${name} added to ${classIds.length === 1 ? "the class" : `${classIds.length} classes`}.`);
-      router.refresh();
+  function update(classId: string, i: number, patch: Partial<SubjectRow>) {
+    setRows((all) => ({
+      ...all,
+      [classId]: (all[classId] ?? []).map((r, j) => {
+        if (j !== i) return r;
+        const nextRow = { ...r, ...patch };
+        if (patch.name !== undefined && !nextRow.codeTouched) nextRow.code = codeFor(patch.name);
+        return nextRow;
+      }),
+    }));
+  }
+
+  /** A quick-add button fills the first empty row, or adds one; never a duplicate. */
+  function quickAdd(classIds: string[], name: string) {
+    setRows((all) => {
+      const out = { ...all };
+      for (const id of classIds) {
+        const cls = taught.find((c) => c.id === id);
+        const list = out[id] ?? [];
+        const has = (n: string) => n.trim().toLowerCase() === name.toLowerCase();
+        if (list.some((r) => has(r.name)) || cls?.subjects.some((x) => has(x.name))) continue;
+        const row = { name, code: codeFor(name), kind: "theory" as const, codeTouched: false };
+        const empty = list.findIndex((r) => !r.name.trim());
+        out[id] = empty >= 0 ? list.map((r, j) => (j === empty ? row : r)) : [...list, row];
+      }
+      return out;
     });
   }
+
   function remove(subjectId: string, name: string, classId: string) {
     start(async () => {
       const r = await wizardRemoveSubject(subjectId, classId);
@@ -260,12 +307,36 @@ export function SubjectsStep({ classes, prev, next }: { classes: WizardState["cl
     });
   }
 
-  async function check(): Promise<boolean> {
-    const empty = taught.filter((c) => c.subjects.length === 0);
-    if (taught.length && empty.length) {
-      toast.warning(`${empty.map((c) => c.name).join(", ")} ${empty.length === 1 ? "has" : "have"} no subject yet. You can add them later under Subjects.`);
+  async function save(): Promise<boolean> {
+    if (!filled.length) {
+      const empty = taught.filter((c) => c.subjects.length === 0);
+      if (empty.length) {
+        toast.warning(`${empty.map((c) => c.name).join(", ")} ${empty.length === 1 ? "has" : "have"} no subject yet. You can add them later under Subjects.`);
+      }
+      return true;
     }
-    return true;
+    const noCode = filled.find((r) => !r.code.trim());
+    if (noCode) {
+      toast.error(`Give ${noCode.name} a code.`);
+      return false;
+    }
+    const r = await wizardSaveSubjects(filled.map(({ classLevelId, name, code, kind }) => ({ classLevelId, name, code, kind })));
+    if (!r.ok) {
+      toast.error(r.error);
+      return false;
+    }
+    reportList(r.data.added, r.data.failed, ["subject", "subjects"]);
+    // Keep only the rows that failed, so the office fixes those and nothing else.
+    const failedNames = new Set(r.data.failed.map((f) => f.split(":")[0].trim().toLowerCase()));
+    setRows((all) =>
+      Object.fromEntries(
+        Object.entries(all).map(([id, list]) => {
+          const kept = list.filter((x) => x.name.trim() && failedNames.has(x.name.trim().toLowerCase()));
+          return [id, kept.length ? kept : [emptyRow()]];
+        }),
+      ),
+    );
+    return r.data.failed.length === 0;
   }
 
   if (!taught.length) {
@@ -282,25 +353,41 @@ export function SubjectsStep({ classes, prev, next }: { classes: WizardState["cl
   return (
     <>
       <div className="flex flex-col gap-5 p-6">
+        <div>
+          <SectionTitle icon={BookText}>Add Subjects for Your Classes</SectionTitle>
+          <p className="mt-2 text-sm text-muted-foreground">
+            Add subjects for each class. You can use quick-add buttons for common subjects or add custom ones. All
+            subjects can be modified later from the subjects management section.
+          </p>
+        </div>
+
         <div className="rounded-lg border bg-muted/30 p-4">
-          <SectionTitle icon={Wand2}>Quick Add Common Subjects</SectionTitle>
+          <h4 className="flex items-center gap-2 text-lg">
+            <Wand2 className="size-4 text-primary" aria-hidden="true" /> Quick Add Common Subjects
+          </h4>
           <p className="mb-3 mt-1 text-sm text-muted-foreground">Click to add common subjects to all classes at once:</p>
-          <div className="flex flex-wrap gap-2">
-            {COMMON_SUBJECTS.map((s) => (
-              <Button key={s} type="button" variant="outline" size="sm" className="border-brand-accent text-brand-accent" disabled={pending} onClick={() => add(s, taught.map((c) => c.id))}>
-                <Plus className="size-3.5" aria-hidden="true" /> {s}
+          <div className="flex flex-wrap gap-3">
+            {COMMON_SUBJECTS.map(([name, Icon]) => (
+              <Button
+                key={name}
+                type="button"
+                variant="outline"
+                className="border-brand-accent text-brand-accent"
+                onClick={() => quickAdd(taught.map((c) => c.id), name)}
+              >
+                <Icon className="size-4" aria-hidden="true" /> {name}
               </Button>
             ))}
           </div>
         </div>
+
         {taught.map((c) => {
-          const has = new Set(c.subjects.map((s) => s.name.toLowerCase()));
-          const quick = [...COMMON_SUBJECTS, ...MORE_SUBJECTS].filter((s) => !has.has(s.toLowerCase()));
+          const list = rows[c.id] ?? [emptyRow()];
           return (
-            <div key={c.id} className="rounded-lg border p-4">
-              <div className="mb-3 flex items-center justify-between gap-2">
-                <h4 className="flex items-center gap-2 font-semibold">
-                  <GraduationCap className="size-4 text-primary" aria-hidden="true" /> {c.name}
+            <section key={c.id} className="rounded-lg border p-4" aria-labelledby={`wiz-class-${c.id}`}>
+              <div className="mb-3 flex items-center justify-between gap-2 border-b pb-3">
+                <h4 id={`wiz-class-${c.id}`} className="flex items-center gap-2 text-lg">
+                  <Laptop className="size-5 text-brand-accent" aria-hidden="true" /> {c.name}
                 </h4>
                 <span className="rounded bg-muted px-2 py-0.5 text-xs font-semibold">
                   {c.subjects.length} {c.subjects.length === 1 ? "subject" : "subjects"}
@@ -308,51 +395,90 @@ export function SubjectsStep({ classes, prev, next }: { classes: WizardState["cl
               </div>
               {c.subjects.length > 0 && (
                 <ul className="mb-3 flex flex-wrap gap-2" aria-label={`Subjects of ${c.name}`}>
-                  {c.subjects.map((s) => (
-                    <li key={s.id} className="flex items-center gap-1 rounded-full bg-primary px-3 py-1 text-sm text-primary-foreground">
-                      {s.name}
-                      <button type="button" aria-label={`Take ${s.name} off ${c.name}`} className="rounded-full p-0.5 hover:bg-background/20" disabled={pending} onClick={() => remove(s.id, s.name, c.id)}>
+                  {c.subjects.map((x) => (
+                    <li key={x.id} className="flex items-center gap-1 rounded-full bg-primary px-3 py-1 text-sm text-primary-foreground">
+                      {x.name}
+                      <button
+                        type="button"
+                        aria-label={`Take ${x.name} off ${c.name}`}
+                        className="rounded-full p-0.5 hover:bg-background/20"
+                        disabled={pending}
+                        onClick={() => remove(x.id, x.name, c.id)}
+                      >
                         <X className="size-3.5" aria-hidden="true" />
                       </button>
                     </li>
                   ))}
                 </ul>
               )}
-              <p className="mb-2 text-sm text-muted-foreground">Quick add for this class:</p>
-              <div className="mb-3 flex flex-wrap gap-1.5">
-                {quick.map((s) => (
-                  <button key={s} type="button" disabled={pending} onClick={() => add(s, [c.id])} className="rounded border px-2 py-1 text-xs hover:border-brand-accent hover:text-brand-accent">
-                    {s}
-                  </button>
-                ))}
+              <div className="rounded-md bg-muted/40 p-3">
+                <p className="mb-2 text-sm text-muted-foreground">Quick add for this class:</p>
+                <div className="mb-3 flex flex-wrap gap-2">
+                  {CLASS_QUICK.map((name) => (
+                    <Button key={name} type="button" variant="outline" className="border-primary text-primary" onClick={() => quickAdd([c.id], name)}>
+                      {name}
+                    </Button>
+                  ))}
+                </div>
+                <ul className="flex flex-col gap-2">
+                  {list.map((r, i) => (
+                    <li key={i} className="grid gap-2 rounded-md border bg-card p-2 sm:grid-cols-[minmax(0,2fr)_minmax(0,1fr)_minmax(0,1fr)_auto]">
+                      <Input
+                        aria-label={`Subject name, ${c.name}, row ${i + 1}`}
+                        value={r.name}
+                        maxLength={100}
+                        placeholder="Subject name"
+                        onChange={(e) => update(c.id, i, { name: e.target.value })}
+                      />
+                      <Input
+                        aria-label={`Code, ${c.name}, row ${i + 1}`}
+                        value={r.code}
+                        maxLength={20}
+                        placeholder="Code *"
+                        required={Boolean(r.name.trim())}
+                        onChange={(e) => update(c.id, i, { code: e.target.value.toUpperCase(), codeTouched: true })}
+                      />
+                      <select
+                        aria-label={`Type, ${c.name}, row ${i + 1}`}
+                        value={r.kind}
+                        onChange={(e) => update(c.id, i, { kind: e.target.value === "practical" ? "practical" : "theory" })}
+                        className="h-9 rounded-md border border-input bg-transparent px-2 text-sm"
+                      >
+                        <option value="theory">Theory</option>
+                        <option value="practical">Practical</option>
+                      </select>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="icon"
+                        aria-label={`Remove row ${i + 1} of ${c.name}`}
+                        className="border-destructive text-destructive"
+                        onClick={() => setRows((all) => ({ ...all, [c.id]: list.length === 1 ? [emptyRow()] : list.filter((_, j) => j !== i) }))}
+                      >
+                        <X className="size-4" aria-hidden="true" />
+                      </Button>
+                    </li>
+                  ))}
+                </ul>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  <Button type="button" variant="outline" className="border-brand-accent text-brand-accent" onClick={() => setRows((all) => ({ ...all, [c.id]: [...list, emptyRow()] }))}>
+                    <Plus className="size-4" aria-hidden="true" /> Add Another Subject
+                  </Button>
+                  <Button type="button" variant="outline" className="border-warning text-warning" onClick={() => setRows((all) => ({ ...all, [c.id]: [emptyRow()] }))}>
+                    <Trash2 className="size-4" aria-hidden="true" /> Clear All
+                  </Button>
+                </div>
               </div>
-              <form
-                className="flex flex-wrap gap-2"
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  const name = (typed[c.id] ?? "").trim();
-                  if (!name) return;
-                  add(name, [c.id]);
-                  setTyped((t) => ({ ...t, [c.id]: "" }));
-                }}
-              >
-                <Input
-                  aria-label={`Another subject for ${c.name}`}
-                  value={typed[c.id] ?? ""}
-                  onChange={(e) => setTyped((t) => ({ ...t, [c.id]: e.target.value }))}
-                  placeholder="Enter subject name"
-                  maxLength={100}
-                  className="min-w-0 flex-1"
-                />
-                <Button type="submit" variant="outline" className="border-brand-accent text-brand-accent" disabled={pending}>
-                  <Plus className="size-4" aria-hidden="true" /> Add Another Subject
-                </Button>
-              </form>
-            </div>
+            </section>
           );
         })}
+        <p className="text-sm text-muted-foreground" aria-live="polite">
+          {filled.length
+            ? `${filled.length} ${filled.length === 1 ? "subject" : "subjects"} will be saved when you press Next.`
+            : "Nothing new to save."}
+        </p>
       </div>
-      <Footer prev={prev} next={next} onNext={check} pending={pending} />
+      <Footer prev={prev} next={next} onNext={save} pending={pending} />
     </>
   );
 }
@@ -681,10 +807,31 @@ export function FeeTypesStep({
 
 // ---------------------------------------------------- registration settings
 
-const REQUIRED_GROUPS: [string, [string, string][]][] = [
-  ["Personal Information", [["date_of_birth", "Date of Birth"], ["gender", "Gender"], ["blood_group", "Blood Group"]]],
-  ["Contact Information", [["phone", "Phone Number"], ["email", "Email"], ["address_line1", "Full Address"], ["city", "City"], ["state", "State"], ["postal_code", "PIN code"]]],
-  ["Additional Details", [["roll_number", "Roll Number"], ["medium", "Medium"], ["house", "House"]]],
+const PERSONAL: [RequiredFieldKey, string][] = [
+  ["last_name", "Mandatory Last Name"],
+  ["date_of_birth", "Date of Birth"],
+  ["religion", "Religion"],
+  ["caste", "Caste/Sub-caste"],
+  ["blood_group", "Blood Group"],
+  ["id_number", "ID Number/Proof"],
+  ["student_photo", "Student Photo"],
+  ["medical", "Medical Complaint"],
+];
+const CONTACT: [RequiredFieldKey, string][] = [
+  ["phone", "Phone Number"],
+  ["city", "City"],
+  ["state", "State"],
+  ["country", "Country"],
+  ["address_line1", "Full Address"],
+];
+/** Ours, beyond the reference's list: fields the admission form also has. */
+const MORE_REQUIRED: [RequiredFieldKey, string][] = [
+  ["gender", "Gender"],
+  ["email", "Email"],
+  ["postal_code", "PIN code"],
+  ["roll_number", "Roll Number"],
+  ["medium", "Medium"],
+  ["house", "House"],
 ];
 
 export function RegistrationStep({
@@ -694,14 +841,32 @@ export function RegistrationStep({
   next,
 }: { registration: WizardState["registration"]; heads: WizardState["feeHeads"] } & Nav) {
   const [online, setOnline] = useState(registration.online);
-  const [email, setEmail] = useState(registration.contactEmail);
-  const [phone, setPhone] = useState(registration.phone);
-  const [required, setRequired] = useState<Record<string, boolean>>(registration.required);
+  const [required, setRequired] = useState(registration.required);
+  const [panels, setPanels] = useState(registration.panels);
+  const [numbers, setNumbers] = useState(registration.numbering);
   const [bill, setBill] = useState<Record<string, boolean>>(Object.fromEntries(heads.map((h) => [h.id, h.billOnAdmission])));
+  const [autoInvoice, setAutoInvoice] = useState(heads.some((h) => h.billOnAdmission));
+
+  function switchInvoices(on: boolean) {
+    setAutoInvoice(on);
+    if (!on) setBill(Object.fromEntries(heads.map((h) => [h.id, false])));
+    else if (!heads.some((h) => bill[h.id])) {
+      // The fee most colleges mean: the one named for admission, if there is one.
+      const admission = heads.filter((h) => /admission/i.test(h.name));
+      if (admission.length) setBill((b) => ({ ...b, ...Object.fromEntries(admission.map((h) => [h.id, true])) }));
+    }
+  }
 
   async function save(): Promise<boolean> {
+    if (autoInvoice && heads.length && !heads.some((h) => bill[h.id])) {
+      toast.error("Tick the fees to bill when a student is admitted, or switch Auto-create Invoices off.");
+      return false;
+    }
     const changedBill = Object.fromEntries(Object.entries(bill).filter(([id, on]) => heads.find((h) => h.id === id)?.billOnAdmission !== on));
-    const r = await wizardSaveRegistration({ online, contactEmail: email, phone, required, billOnAdmission: changedBill });
+    const r = await wizardSaveRegistration({
+      settings: { online, required, panels, numbering: numbers },
+      billOnAdmission: changedBill,
+    });
     if (!r.ok) {
       toast.error(r.error);
       return false;
@@ -710,13 +875,42 @@ export function RegistrationStep({
     return true;
   }
 
-  const toggleRow = (id: string, checked: boolean, onChange: (v: boolean) => void, title: string, body: string) => (
+  const option = (
+    id: string,
+    checked: boolean,
+    onChange: ((v: boolean) => void) | null,
+    title: string,
+    body: string,
+    note?: string,
+  ) => (
     <div className="flex items-start gap-3">
-      <Switch id={id} checked={checked} onCheckedChange={onChange} className="mt-0.5" />
-      <Label htmlFor={id} className="flex flex-col items-start gap-0.5 font-normal">
-        <span className="font-semibold">{title}</span>
-        <span className="text-sm text-muted-foreground">{body}</span>
+      <Switch id={id} checked={checked} onCheckedChange={onChange ?? undefined} disabled={!onChange} className="mt-0.5" aria-describedby={`${id}-body`} />
+      <div className="flex flex-col gap-0.5">
+        <Label htmlFor={id} className="font-semibold">
+          {title}
+        </Label>
+        <span id={`${id}-body`} className="text-sm text-muted-foreground">
+          {body}
+          {note && <span className="mt-0.5 block text-xs">{note}</span>}
+        </span>
+      </div>
+    </div>
+  );
+
+  const tick = (key: RequiredFieldKey, label: string) => (
+    <li key={key} className="flex items-center gap-2">
+      <Checkbox id={`req-${key}`} checked={required[key] === true} onCheckedChange={(v) => setRequired((r) => ({ ...r, [key]: v === true }))} />
+      <Label htmlFor={`req-${key}`} className="font-normal">
+        {label}
       </Label>
+    </li>
+  );
+
+  const field = (id: string, label: string, help: string, input: React.ReactNode) => (
+    <div className="flex flex-col gap-1.5">
+      <Label htmlFor={id}>{label}</Label>
+      {input}
+      <p className="text-xs text-muted-foreground">{help}</p>
     </div>
   );
 
@@ -725,97 +919,198 @@ export function RegistrationStep({
       <div className="flex flex-col gap-6 p-6">
         <div className="flex flex-col items-center gap-2 text-center">
           <UserPlus className="size-12 text-brand-accent" aria-hidden="true" />
-          <h3 className="text-2xl text-brand-accent">Student Registration Settings</h3>
-          <p className="text-sm text-muted-foreground">Configure how students can register at your school and what information they need to provide.</p>
+          <h3 className="text-2xl text-brand-accent sm:text-3xl">Student Registration Settings</h3>
+          <p className="text-sm text-muted-foreground">
+            Configure how students can register at your school and what information they need to provide.
+          </p>
         </div>
 
-        <fieldset className="rounded-lg border p-5">
-          <legend className="sr-only">Basic Registration Settings</legend>
-          <SectionTitle icon={Settings}>Basic Registration Settings</SectionTitle>
+        <section className="rounded-lg border p-5" aria-labelledby="reg-basic">
+          <h3 id="reg-basic" className="flex items-center gap-2 text-xl text-brand-accent">
+            <Settings className="size-5" aria-hidden="true" /> Basic Registration Settings
+          </h3>
           <div className="mt-4 grid gap-4 sm:grid-cols-2">
-            <div className="flex flex-col gap-1.5">
-              <Label htmlFor="reg-note">Note at the top of the online form</Label>
-              <Input id="reg-note" value={online.note} maxLength={300} placeholder="Admissions open for 2026-27" onChange={(e) => setOnline({ ...online, note: e.target.value })} />
-              <p className="text-xs text-muted-foreground">This appears at the top of the registration form.</p>
+            {field(
+              "reg-title",
+              "Registration Form Title",
+              "This title will appear on the registration form.",
+              <Input id="reg-title" value={online.formTitle} maxLength={120} placeholder="e.g., Student Registration Form" onChange={(e) => setOnline({ ...online, formTitle: e.target.value })} />,
+            )}
+            {field(
+              "reg-email",
+              "Admin Email for Notifications",
+              "Email to receive registration notifications.",
+              <Input id="reg-email" type="email" value={online.notifyEmail} placeholder="admin@school.com" onChange={(e) => setOnline({ ...online, notifyEmail: e.target.value })} />,
+            )}
+            {field(
+              "reg-phone",
+              "Admin Phone for SMS Notifications",
+              "Phone number to receive SMS notifications.",
+              <Input id="reg-phone" type="tel" value={online.notifyPhone} placeholder="+91 98765 43210" onChange={(e) => setOnline({ ...online, notifyPhone: e.target.value })} />,
+            )}
+            {field(
+              "reg-redirect",
+              "Redirect URL After Registration",
+              "Where to redirect students after successful registration.",
+              <Input id="reg-redirect" type="url" value={online.redirectUrl} placeholder="https://school.com/thank-you" onChange={(e) => setOnline({ ...online, redirectUrl: e.target.value })} />,
+            )}
+          </div>
+        </section>
+
+        <section className="rounded-lg border p-5" aria-labelledby="reg-options">
+          <h3 id="reg-options" className="flex items-center gap-2 text-xl text-primary">
+            <ToggleRight className="size-5" aria-hidden="true" /> Registration Options
+          </h3>
+          <div className="mt-4 grid gap-5 sm:grid-cols-2">
+            <div className="flex flex-col gap-4">
+              {option(
+                "reg-autologin",
+                false,
+                null,
+                "Auto-login After Registration",
+                "Automatically log in students after they register.",
+                "Not offered: an online application is an enquiry, not a login. Invite the family from the admission form.",
+              )}
+              {option(
+                "reg-approval",
+                true,
+                null,
+                "Require Admin Approval",
+                "Students will be inactive until approved by admin.",
+                "Always on: an application waits in Inquiries until the office admits the child.",
+              )}
+              {option("reg-invoice", autoInvoice, switchInvoices, "Auto-create Invoices", "Automatically create invoices based on fee types.")}
+              {autoInvoice &&
+                (heads.length === 0 ? (
+                  <p className="ms-12 text-sm text-muted-foreground">Add a fee type (step 5) to bill it when a student is admitted.</p>
+                ) : (
+                  <fieldset className="ms-12 flex flex-col gap-2">
+                    <legend className="mb-1 text-sm">Billed when a student is admitted:</legend>
+                    {heads.map((h) => (
+                      <label key={h.id} className="flex items-center gap-2 text-sm">
+                        <Checkbox checked={bill[h.id] === true} onCheckedChange={(v) => setBill((b) => ({ ...b, [h.id]: v === true }))} />
+                        {h.name}
+                        {h.classesPriced === 0 && <span className="text-xs text-muted-foreground">(no amount yet)</span>}
+                      </label>
+                    ))}
+                  </fieldset>
+                ))}
             </div>
-            <div className="flex flex-col gap-1.5">
-              <Label htmlFor="reg-email">Admin Email for Notifications</Label>
-              <Input id="reg-email" type="email" value={email} placeholder="admin@school.com" onChange={(e) => setEmail(e.target.value)} />
-              <p className="text-xs text-muted-foreground">The college&apos;s main contact address.</p>
+            <div className="flex flex-col gap-4">
+              {option(
+                "reg-admno",
+                numbers.autoAdmissionNumber,
+                (v) => setNumbers({ ...numbers, autoAdmissionNumber: v }),
+                "Auto-generate Admission Numbers",
+                "Automatically generate admission numbers for new students.",
+              )}
+              {numbers.autoAdmissionNumber && (
+                <div className="ms-12 flex flex-col gap-1.5">
+                  <Label htmlFor="reg-prefix" className="text-sm">
+                    Prefix
+                  </Label>
+                  <Input id="reg-prefix" value={numbers.admissionPrefix} maxLength={12} placeholder="e.g. ADM-" className="max-w-48" onChange={(e) => setNumbers({ ...numbers, admissionPrefix: e.target.value })} />
+                  <p className="text-xs text-muted-foreground">The next number after the largest one with this prefix is filled in on the admission form.</p>
+                </div>
+              )}
+              {option(
+                "reg-roll",
+                numbers.autoRollNumber,
+                (v) => setNumbers({ ...numbers, autoRollNumber: v }),
+                "Auto-generate Roll Numbers",
+                "Automatically generate roll numbers for new students.",
+              )}
             </div>
-            <div className="flex flex-col gap-1.5">
-              <Label htmlFor="reg-phone">Admin Phone</Label>
-              <Input id="reg-phone" value={phone} placeholder="+91 98765 43210" onChange={(e) => setPhone(e.target.value)} />
-              <p className="text-xs text-muted-foreground">The college&apos;s phone number, printed on its documents.</p>
+          </div>
+        </section>
+
+        <section className="rounded-lg border bg-muted/30 p-5" aria-labelledby="reg-required">
+          <h3 id="reg-required" className="flex items-center gap-2 text-xl text-primary">
+            <ListChecks className="size-5" aria-hidden="true" /> Required Student Information
+          </h3>
+          <p className="mb-4 mt-1 text-sm text-muted-foreground">
+            Select which fields students must fill during registration. Class, section and student type are always
+            required.
+          </p>
+          <div className="grid gap-5 sm:grid-cols-3">
+            <div>
+              <p className="mb-2 text-brand-accent">Personal Information</p>
+              <ul className="flex flex-col gap-2">{PERSONAL.map(([k, l]) => tick(k, l))}</ul>
             </div>
-            <div className="flex flex-col gap-1.5">
-              <Label htmlFor="reg-hour">Applications accepted per hour</Label>
-              <Input id="reg-hour" inputMode="numeric" value={String(online.perHour)} onChange={(e) => setOnline({ ...online, perHour: Number(e.target.value.replace(/\D/g, "")) || 0 })} />
-              <p className="text-xs text-muted-foreground">Protects the enquiry board from a flood.</p>
+            <div>
+              <p className="mb-2 text-brand-accent">Contact Information</p>
+              <ul className="flex flex-col gap-2">{CONTACT.map(([k, l]) => tick(k, l))}</ul>
+            </div>
+            <div>
+              <p className="mb-2 text-brand-accent">Additional Panels</p>
+              <ul className="flex flex-col gap-2">
+                {(Object.keys(FORM_PANELS) as FormPanel[]).map((k) => (
+                  <li key={k} className="flex items-center gap-2">
+                    <Checkbox id={`panel-${k}`} checked={panels[k]} onCheckedChange={(v) => setPanels((p) => ({ ...p, [k]: v === true }))} />
+                    <Label htmlFor={`panel-${k}`} className="font-normal">
+                      {FORM_PANELS[k].label}
+                    </Label>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </div>
+        </section>
+
+        <section className="rounded-lg border p-5" aria-labelledby="reg-success-title">
+          <h3 id="reg-success-title" className="flex items-center gap-2 text-xl text-primary">
+            <CheckCircle2 className="size-5" aria-hidden="true" /> Registration Success Message
+          </h3>
+          <div className="mt-3 flex flex-col gap-1.5">
+            <Label htmlFor="reg-success">Success Message</Label>
+            <Textarea
+              id="reg-success"
+              rows={4}
+              maxLength={500}
+              value={online.successMessage}
+              placeholder="Thank you for registering! We will contact you soon..."
+              onChange={(e) => setOnline({ ...online, successMessage: e.target.value })}
+            />
+            <p className="text-xs text-muted-foreground">This message will be displayed to students after successful registration.</p>
+          </div>
+        </section>
+
+        <section className="rounded-lg border p-5" aria-labelledby="reg-online-form">
+          <h3 id="reg-online-form" className="flex items-center gap-2 text-xl text-brand-accent">
+            <Globe className="size-5" aria-hidden="true" /> Online Registration Form
+          </h3>
+          <p className="mb-4 mt-1 text-sm text-muted-foreground">
+            The public form families apply on. Each application arrives in Inquiries, and is announced to the admin email
+            and phone above.
+          </p>
+          <div className="grid gap-4 sm:grid-cols-2">
+            {option("reg-online", online.enabled, (v) => setOnline({ ...online, enabled: v }), "Accept Applications Online", "Show the form at the address below.")}
+            {field(
+              "reg-hour",
+              "Applications accepted per hour",
+              "Protects the enquiry board from a flood.",
+              <Input id="reg-hour" inputMode="numeric" value={String(online.perHour)} onChange={(e) => setOnline({ ...online, perHour: Number(e.target.value.replace(/\D/g, "")) || 0 })} />,
+            )}
+            <div className="sm:col-span-2">
+              {field(
+                "reg-note",
+                "Note at the top of the form",
+                "For example: Admissions open for 2026-27 until 30 June.",
+                <Input id="reg-note" value={online.note} maxLength={300} onChange={(e) => setOnline({ ...online, note: e.target.value })} />,
+              )}
             </div>
           </div>
           {registration.slug && (
             <p className="mt-4 text-sm">
-              Online form address:{" "}
+              Form address:{" "}
               <Link href={`/apply/${registration.slug}`} className="font-mono text-primary underline" target="_blank">
                 /apply/{registration.slug}
               </Link>
             </p>
           )}
-        </fieldset>
-
-        <fieldset className="rounded-lg border p-5">
-          <legend className="sr-only">Registration Options</legend>
-          <SectionTitle icon={ListChecks}>Registration Options</SectionTitle>
-          <div className="mt-4 grid gap-4 sm:grid-cols-2">
-            {toggleRow("reg-online", online.enabled, (v) => setOnline({ ...online, enabled: v }), "Accept Applications Online", "Families can apply from the public form; each application arrives in Inquiries.")}
-            {heads.length === 0 ? (
-              <p className="text-sm text-muted-foreground">Add a fee type (step 5) to bill it automatically when a student is admitted.</p>
-            ) : (
-              <div className="flex flex-col gap-3">
-                <p className="font-semibold">Auto-create Invoices at admission</p>
-                {heads.map((h) =>
-                  toggleRow(`reg-bill-${h.id}`, bill[h.id] === true, (v) => setBill((b) => ({ ...b, [h.id]: v })), h.name, "Billed automatically when a student is admitted."),
-                )}
-              </div>
-            )}
-          </div>
-        </fieldset>
-
-        <fieldset className="rounded-lg border bg-muted/30 p-5">
-          <legend className="sr-only">Required Student Information</legend>
-          <SectionTitle icon={ListChecks}>Required Student Information</SectionTitle>
-          <p className="mb-4 mt-1 text-sm text-muted-foreground">
-            Select which fields must be filled in to admit a student. Class, section and student type are always required.
-          </p>
-          <div className="grid gap-5 sm:grid-cols-3">
-            {REQUIRED_GROUPS.map(([group, fields]) => (
-              <div key={group}>
-                <p className="mb-2 text-brand-accent">{group}</p>
-                <ul className="flex flex-col gap-2">
-                  {fields.map(([key, label]) => (
-                    <li key={key} className="flex items-center gap-2">
-                      <Checkbox id={`req-${key}`} checked={required[key] === true} onCheckedChange={(v) => setRequired((r) => ({ ...r, [key]: v === true }))} />
-                      <Label htmlFor={`req-${key}`} className="font-normal">
-                        {label}
-                      </Label>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            ))}
-          </div>
-        </fieldset>
-
-        <fieldset className="rounded-lg border p-5">
-          <legend className="sr-only">Registration Success Message</legend>
-          <SectionTitle icon={Check}>Registration Success Message</SectionTitle>
-          <div className="mt-3 flex flex-col gap-1.5">
-            <Label htmlFor="reg-success">Success Message</Label>
-            <Textarea id="reg-success" rows={3} maxLength={500} value={online.successMessage} placeholder="Your registration has been submitted. We will call you within two working days." onChange={(e) => setOnline({ ...online, successMessage: e.target.value })} />
-            <p className="text-xs text-muted-foreground">This message will be displayed to families after they apply online.</p>
-          </div>
-        </fieldset>
+          <p className="mb-2 mt-5 text-brand-accent">Also required at admission</p>
+          <ul className="grid gap-2 sm:grid-cols-3">{MORE_REQUIRED.map(([k, l]) => tick(k, l))}</ul>
+        </section>
 
         <div className="rounded-lg border border-primary p-5">
           <p className="mb-3 flex items-center gap-2 rounded bg-primary px-3 py-2 text-primary-foreground">
@@ -823,24 +1118,30 @@ export function RegistrationStep({
           </p>
           <div className="grid gap-4 text-sm sm:grid-cols-2">
             <div>
-              <p className="mb-1 text-primary">✓ Enable These Fields:</p>
+              <p className="mb-1 flex items-center gap-1 text-primary">
+                <Check className="size-4" aria-hidden="true" /> Enable These Fields:
+              </p>
               <ul className="list-inside list-disc text-muted-foreground">
                 <li>Date of Birth</li>
                 <li>Phone Number</li>
-                <li>Gender</li>
+                <li>Parent Details Panel</li>
+                <li>Auto-generate Admission Numbers</li>
               </ul>
             </div>
             <div>
-              <p className="mb-1 font-medium">⚠ Consider Carefully:</p>
+              <p className="mb-1 flex items-center gap-1 text-warning">
+                <TriangleAlert className="size-4" aria-hidden="true" /> Consider Carefully:
+              </p>
               <ul className="list-inside list-disc text-muted-foreground">
-                <li>Too many required fields slow the admission desk</li>
-                <li>Auto-billing a fee nobody has priced bills nothing</li>
+                <li>Require Admin Approval (delays student access)</li>
+                <li>Too many required fields (complex forms)</li>
+                <li>Student Photo (may reduce registrations)</li>
               </ul>
             </div>
           </div>
         </div>
       </div>
-      <Footer prev={prev} next={next} onNext={save} nextLabel="Save and continue" />
+      <Footer prev={prev} next={next} onNext={save} />
     </>
   );
 }

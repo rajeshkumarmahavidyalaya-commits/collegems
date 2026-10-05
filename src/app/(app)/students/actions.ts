@@ -7,10 +7,20 @@ import { getUserContext } from "@/lib/auth/context";
 import { admissionSchema, studentSchema, type StudentInput } from "@/lib/validations/students";
 import { STUDENT_SEARCH_FIELDS, type StudentSearchField } from "@/lib/validations/students-display";
 import { admissionBillSentence, parseAdmissionBill } from "@/lib/validations/admission-bill";
-import { missingRequired, requiredFieldNames } from "@/lib/validations/admission-required";
+import {
+  formPanels,
+  missingRequired,
+  numbering,
+  requiredFieldNames,
+  type FormPanels,
+  type Numbering,
+} from "@/lib/validations/admission-required";
 import { formatCurrency } from "@/lib/i18n/format";
 import { getLocale } from "@/lib/i18n/server";
 import type { ActionResult, ListParams } from "../library/actions";
+import { invite } from "../settings/team/actions";
+import { addGuardian } from "./guardian-actions";
+import { setStudentPhoto } from "./photo-actions";
 
 export type StudentRow = {
   id: string;
@@ -227,6 +237,130 @@ export async function admissionRequiredFields(): Promise<string[]> {
   return requiredFieldNames(data);
 }
 
+export type AdmissionSettings = {
+  required: string[];
+  panels: FormPanels;
+  numbering: Numbering;
+  /** Offered in the admission number box when the college auto-generates them. */
+  nextAdmissionNumber: string | null;
+};
+
+/**
+ * Everything the setup wizard's Registration Settings decide about the
+ * admission form (0330, 0331), read once for the page and once more by the
+ * action, which is the gate.
+ */
+export async function admissionSettings(): Promise<AdmissionSettings> {
+  const supabase = await createClient();
+  const [required, panels, numbers] = await Promise.all([
+    supabase.rpc("setting_value", { p_key: "admissions.required_fields" }),
+    supabase.rpc("setting_value", { p_key: "admissions.form_panels" }),
+    supabase.rpc("setting_value", { p_key: "admissions.numbering" }),
+  ]);
+  const n = numbering(numbers.data);
+  let next: string | null = null;
+  if (n.autoAdmissionNumber) {
+    const { data } = await supabase.rpc("next_admission_number");
+    next = typeof data === "string" ? data : null;
+  }
+  return { required: requiredFieldNames(required.data), panels: formPanels(panels.data), numbering: n, nextAdmissionNumber: next };
+}
+
+/** The next admission number, for "Admit and add another" (0331). Null when not auto-generated. */
+export async function nextAdmissionNumber(): Promise<string | null> {
+  const supabase = await createClient();
+  const { data } = await supabase.rpc("setting_value", { p_key: "admissions.numbering" });
+  if (!numbering(data).autoAdmissionNumber) return null;
+  const next = await supabase.rpc("next_admission_number");
+  return typeof next.data === "string" ? next.data : null;
+}
+
+export type ClassFee = { head: string; amount: number; frequency: string; forType: string | null };
+
+/** The Fees panel (0331): what the chosen class pays this year, as fee_structures says. */
+export async function classFees(classLevelId: string): Promise<ClassFee[]> {
+  if (!/^[0-9a-f-]{36}$/i.test(classLevelId)) return [];
+  const ctx = await getUserContext();
+  if (!ctx?.currentSessionId) return [];
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("fee_structures")
+    .select("amount, frequency, fee_heads ( name ), student_types ( name )")
+    .eq("session_id", ctx.currentSessionId)
+    .eq("class_level_id", classLevelId)
+    .order("amount", { ascending: false });
+  return (data ?? []).map((r) => ({
+    head: r.fee_heads?.name ?? "—",
+    amount: Number(r.amount),
+    frequency: r.frequency,
+    forType: r.student_types?.name ?? null,
+  }));
+}
+
+export type StudentProfileDetails = {
+  religion: string;
+  caste: string;
+  idNumber: string;
+  medicalNotes: string;
+  heardFrom: string;
+};
+
+/** The sensitive half of a record (0331); empty for anybody the policy does not answer. */
+export async function studentProfileDetails(studentId: string): Promise<StudentProfileDetails | null> {
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("student_profiles")
+    .select("religion, caste, id_number, medical_notes, heard_from")
+    .eq("student_id", studentId)
+    .maybeSingle();
+  if (!data) return null;
+  return {
+    religion: data.religion ?? "",
+    caste: data.caste ?? "",
+    idNumber: data.id_number ?? "",
+    medicalNotes: data.medical_notes ?? "",
+    heardFrom: data.heard_from ?? "",
+  };
+}
+
+/**
+ * Write the sensitive half (0331). Null when saved or when there was nothing
+ * to save; otherwise the sentence to show. Only an administrator has a write
+ * policy, so a refusal is a count of zero, said in words (rule 6).
+ */
+async function saveStudentProfile(
+  studentId: string,
+  v: Pick<StudentInput, "religion" | "caste" | "idNumber" | "medicalNotes" | "heardFrom">,
+  tenantId: string,
+): Promise<string | null> {
+  const row = {
+    religion: v.religion?.trim() || null,
+    caste: v.caste?.trim() || null,
+    id_number: v.idNumber?.trim() || null,
+    medical_notes: v.medicalNotes?.trim() || null,
+    heard_from: v.heardFrom?.trim() || null,
+  };
+  const supabase = await createClient();
+  const { data: existing } = await supabase.from("student_profiles").select("id").eq("student_id", studentId).maybeSingle();
+  if (!existing && Object.values(row).every((x) => x === null)) return null;
+  const { data, error } = await supabase
+    .from("student_profiles")
+    .upsert({ tenant_id: tenantId, student_id: studentId, ...row }, { onConflict: "tenant_id,student_id" })
+    .select("id");
+  if (error) return error.code === "42501" ? "Religion, caste, ID and medical details: only an administrator can record them." : error.message;
+  if (!data?.length) return "Religion, caste, ID and medical details: only an administrator can record them.";
+  return null;
+}
+
+/** The role a login of this kind is made with: the one standing for that record, the shipped one first. */
+async function roleFor(subject: "guardian" | "student"): Promise<string | null> {
+  const supabase = await createClient();
+  const { data } = await supabase.from("roles").select("id, code, subject").eq("subject", subject);
+  const shipped = subject === "guardian" ? "parent" : "student";
+  const rows = (data ?? []).slice().sort((a, b) => Number(b.code === shipped) - Number(a.code === shipped));
+  return rows[0]?.id ?? null;
+}
+
 /** The kind of student a child is this year, or "" (0281). Finance roles and the administrator read it. */
 export async function currentStudentType(studentId: string): Promise<string> {
   const ctx = await getUserContext();
@@ -280,6 +414,9 @@ function toPersonPayload(v: StudentInput) {
     city: v.city ?? "",
     state: v.state ?? "",
     postal_code: v.postalCode ?? "",
+    // admit_student coalesces a blank to the column's default (India);
+    // update_student does not take it.
+    country: v.country ?? "",
   };
 }
 
@@ -316,6 +453,8 @@ async function saveMediumAndHouse(
  */
 export async function admitStudent(
   input: unknown,
+  /** The photograph, when one was chosen (0331): a FormData with "photo". */
+  photo?: FormData | null,
 ): Promise<
   ActionResult<{
     id: string;
@@ -334,12 +473,38 @@ export async function admitStudent(
   if (!ctx) return { ok: false, error: "Not signed in." };
 
   const supabase = await createClient();
-  // The fields this college requires at admission (0330), checked here
+  const settings = await admissionSettings();
+  const photoFile = photo?.get("photo");
+  const hasPhoto = photoFile instanceof File && photoFile.size > 0;
+
+  // A blank roll number becomes the next one in the section when the college
+  // asked for that (0331) -- before the required check, which it satisfies.
+  if (!parsed.data.rollNumber?.trim() && settings.numbering.autoRollNumber && parsed.data.sectionId) {
+    const { data: roll } = await supabase.rpc("next_roll_number", { p_section_id: parsed.data.sectionId });
+    if (typeof roll === "string") parsed.data.rollNumber = roll;
+  }
+
+  // The fields this college requires at admission (0330, 0331), checked here
   // whatever the form already did.
-  const required = await admissionRequiredFields();
-  const missing = missingRequired(parsed.data, required);
+  const missing = missingRequired({ ...parsed.data, photo: hasPhoto }, settings.required);
   if (Object.keys(missing).length) {
     return { ok: false, error: "Fill in the fields your college requires at admission.", fieldErrors: missing };
+  }
+
+  // The parent panel: a name is the one thing a guardian cannot be made
+  // without, and an invitation needs somewhere to send it. Checked before the
+  // admission so the office fixes it once rather than after the fact.
+  const parentGiven = settings.panels.parent_details && Boolean(parsed.data.parentFirstName?.trim());
+  if (settings.panels.parent_login && parsed.data.inviteParent) {
+    if (!parentGiven) {
+      return { ok: false, error: "Enter the parent's details to invite them to sign in.", fieldErrors: { parentFirstName: ["Needed for the parent's login"] } };
+    }
+    if (!parsed.data.parentEmail?.trim()) {
+      return { ok: false, error: "A parent login is sent to an email address.", fieldErrors: { parentEmail: ["Needed for the parent's login"] } };
+    }
+  }
+  if (settings.panels.student_login && parsed.data.inviteStudent && !parsed.data.email?.trim()) {
+    return { ok: false, error: "A student login is sent to the student's email address.", fieldErrors: { email: ["Needed for the student's login"] } };
   }
 
   const { data, error } = await supabase.rpc("admit_student", {
@@ -414,6 +579,59 @@ export async function admitStudent(
   const details = await saveMediumAndHouse(id, parsed.data);
   if (details) arrangements.push(details);
 
+  // The rest of the admission form (0331), each after the admission has
+  // committed and each a sentence beside "admitted" rather than a failure of it.
+  const profile = await saveStudentProfile(id, parsed.data, ctx.tenantId);
+  if (profile) arrangements.push({ ok: false, message: profile });
+
+  if (hasPhoto) {
+    const saved = await setStudentPhoto(id, photo as FormData);
+    arrangements.push(saved.ok ? { ok: true, message: "Photograph saved." } : { ok: false, message: `Photograph not saved: ${saved.error}` });
+  }
+
+  let guardianId: string | null = null;
+  if (parentGiven) {
+    const g = await addGuardian(id, {
+      firstName: parsed.data.parentFirstName?.trim() ?? "",
+      lastName: parsed.data.parentLastName?.trim() ?? "",
+      phone: parsed.data.parentPhone?.trim() ?? "",
+      email: parsed.data.parentEmail?.trim() ?? "",
+      occupation: parsed.data.parentOccupation?.trim() ?? "",
+      addressLine1: parsed.data.addressLine1 ?? "",
+      city: parsed.data.city ?? "",
+      state: parsed.data.state ?? "",
+      relationship: parsed.data.parentRelationship ?? "guardian",
+      isPrimary: true,
+      canPickup: true,
+    });
+    if (g.ok) {
+      guardianId = g.data.id;
+      arrangements.push({ ok: true, message: "Parent added." });
+    } else arrangements.push({ ok: false, message: `Parent not added: ${g.error}` });
+  }
+
+  const invitations: [boolean, "guardian" | "student", string | null, string | undefined, string][] = [
+    [settings.panels.parent_login && parsed.data.inviteParent === true, "guardian", guardianId, parsed.data.parentEmail, "parent"],
+    [settings.panels.student_login && parsed.data.inviteStudent === true, "student", id, parsed.data.email, "student"],
+  ];
+  for (const [wanted, subject, subjectId, email, who] of invitations) {
+    if (!wanted) continue;
+    const roleId = await roleFor(subject);
+    if (!subjectId || !roleId || !email) {
+      arrangements.push({ ok: false, message: `The ${who} was not invited: ${!roleId ? `this college has no role for a ${who} login` : "the record was not made"}.` });
+      continue;
+    }
+    const sent = await invite({ email: email.trim(), roleId, subjectId });
+    if (!sent.ok) arrangements.push({ ok: false, message: `The ${who} was not invited: ${sent.error}` });
+    else
+      arrangements.push({
+        ok: true,
+        message: sent.data.announced.length
+          ? `The ${who} was invited at ${email.trim()}.`
+          : `The ${who} was invited at ${email.trim()}; tell them to sign up with that address${sent.data.announceError ? ` (${sent.data.announceError})` : ""}.`,
+      });
+  }
+
   revalidatePath("/students");
   revalidatePath("/students/types");
   return { ok: true, data: { id, billing, arrangements } };
@@ -446,6 +664,12 @@ export async function updateStudent(id: string, input: unknown): Promise<ActionR
 
   const details = await saveMediumAndHouse(id, parsed.data);
   if (details) return { ok: false, error: details.message };
+
+  const ctx = await getUserContext();
+  if (ctx) {
+    const profile = await saveStudentProfile(id, parsed.data, ctx.tenantId);
+    if (profile) return { ok: false, error: `Saved, except: ${profile}` };
+  }
 
   // The kind of student this year, only when it changed: the edit form shows
   // the current one, and "" means none.

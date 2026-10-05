@@ -35,6 +35,8 @@ export type ApplyLabels = {
   doneDuplicate: string;
   doneReference: string;
   doneAnother: string;
+  redirecting: string;
+  continue: string;
 };
 
 type Props = {
@@ -42,6 +44,8 @@ type Props = {
   college: string;
   /** The college's own words after an application is accepted (0330). */
   successMessage: string | null;
+  /** The college's page to go on to after applying (0331). */
+  redirectUrl: string | null;
   classLevels: { id: string; name: string }[];
   labels: ApplyLabels;
   genders: { value: string; label: string }[];
@@ -58,6 +62,8 @@ export function ApplyForm(props: Props) {
 }
 
 const initialState: ApplyState = { error: null };
+/** Seconds the success screen stays before the college's redirect. */
+const REDIRECT_AFTER = 15;
 
 /** The look of `Input`, for a native `<select>` that submits with the form. */
 const selectClass =
@@ -66,6 +72,7 @@ const selectClass =
 function OneApplication({
   slug,
   successMessage,
+  redirectUrl,
   classLevels,
   labels,
   genders,
@@ -80,6 +87,24 @@ function OneApplication({
   useEffect(() => {
     if (state.error || state.done) summaryRef.current?.focus();
   }, [state]);
+
+  // The college's redirect (0331), after long enough to copy the reference,
+  // which is the one thing on this screen the family needs to keep.
+  const [left, setLeft] = useState(REDIRECT_AFTER);
+  useEffect(() => {
+    if (!state.done || !redirectUrl) return;
+    const timer = window.setInterval(() => {
+      setLeft((n) => {
+        if (n <= 1) {
+          window.clearInterval(timer);
+          window.location.assign(redirectUrl);
+          return 0;
+        }
+        return n - 1;
+      });
+    }, 1000);
+    return () => window.clearInterval(timer);
+  }, [state.done, redirectUrl]);
 
   if (state.done) {
     return (
@@ -109,7 +134,17 @@ function OneApplication({
         {state.done.duplicate ? (
           <p className="text-sm text-muted-foreground">{labels.doneDuplicate}</p>
         ) : null}
-        <div>
+        {redirectUrl ? (
+          <p className="text-sm text-muted-foreground" aria-live="off">
+            {labels.redirecting.replace("{seconds}", String(left))}
+          </p>
+        ) : null}
+        <div className="flex flex-wrap gap-2">
+          {redirectUrl ? (
+            <Button asChild>
+              <a href={redirectUrl}>{labels.continue}</a>
+            </Button>
+          ) : null}
           <Button type="button" variant="outline" onClick={onAnother}>
             {labels.doneAnother}
           </Button>

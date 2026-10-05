@@ -1151,6 +1151,16 @@ AFTER INSERT trigger on `tenants`. The behaviour traits (`0303`) followed the
 same shape from the start. **A default seeded by a migration is a default for
 yesterday's colleges.**
 
+**And the roles themselves (`0332`).** `college_create` makes six roles from a
+literal list that never set `roles.subject` (`0224`), so in every college founded
+through the product a parent's login stood for nobody: "invite the parent" found
+no role for a guardian, and a login made anyway would match no family policy.
+Found by the setup wizard's walkthrough, in the Annex. The subject is now
+`reference.role_subject_defaults`, applied by a BEFORE INSERT trigger on
+`roles`. The administrator is left at `none` on purpose, because a founder has
+no staff record. `tests/auth/role-subject-defaults.test.ts` fails when a shipped
+role is added without one.
+
 **And a subject teacher could not read the class they teach (`0304`).** The
 only teacher policy on `enrolments` is keyed on the class teacher. So
 `exams_mark_sheet`, an invoker, showed a subject teacher an empty sheet for

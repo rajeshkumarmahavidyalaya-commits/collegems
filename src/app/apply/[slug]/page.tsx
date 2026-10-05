@@ -20,6 +20,10 @@ type AdmissionForm = {
   session: string | null;
   note: string | null;
   successMessage: string | null;
+  /** The college's own heading for the form (0331), else ours. */
+  formTitle: string | null;
+  /** Where to send the family after applying (0331); http(s) only, checked in SQL. */
+  redirectUrl: string | null;
   classLevels: { id: string; name: string }[];
 };
 
@@ -38,6 +42,8 @@ function readForm(data: unknown): AdmissionForm | null {
     session: typeof d.session === "string" ? d.session : null,
     note: typeof d.note === "string" ? d.note : null,
     successMessage: typeof d.success_message === "string" ? d.success_message : null,
+    formTitle: typeof d.form_title === "string" ? d.form_title : null,
+    redirectUrl: typeof d.redirect_url === "string" && /^https?:\/\/\S+$/.test(d.redirect_url) ? d.redirect_url : null,
     classLevels: levels.flatMap((l) =>
       l && typeof l === "object" && typeof (l as { id?: unknown }).id === "string"
         ? [{ id: (l as { id: string }).id, name: String((l as { name?: unknown }).name ?? "") }]
@@ -79,7 +85,7 @@ export default async function ApplyPage({ params }: { params: Promise<{ slug: st
           <>
             <header className="flex flex-col gap-2">
               <h1 className="text-2xl font-semibold text-foreground">
-                {t("apply.title", { college: form.college })}
+                {form.formTitle ?? t("apply.title", { college: form.college })}
               </h1>
               <p className="text-sm text-muted-foreground">
                 {t("apply.subtitle", { session: form.session ?? "" })}
@@ -97,6 +103,7 @@ export default async function ApplyPage({ params }: { params: Promise<{ slug: st
               slug={slug}
               college={form.college}
               successMessage={form.successMessage}
+              redirectUrl={form.redirectUrl}
               classLevels={form.classLevels}
               labels={labelsFor(t, form.college)}
               genders={ADMISSION_GENDERS.map((g) => ({ value: g, label: t(`apply.gender.${g}` as MessageKey) }))}
@@ -138,6 +145,8 @@ function labelsFor(t: Translator, college: string): ApplyLabels {
     submit: t("apply.submit"),
     submitting: t("apply.submitting"),
     privacy: t("apply.privacy", { college }),
+    redirecting: t("apply.redirecting"),
+    continue: t("apply.continue"),
     doneTitle: t("apply.done.title"),
     doneBody: t("apply.done.body", { college }),
     doneDuplicate: t("apply.done.duplicate"),

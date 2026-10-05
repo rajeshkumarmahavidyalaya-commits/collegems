@@ -4,7 +4,14 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { getUserContext } from "@/lib/auth/context";
 import { studentTypeCode } from "@/lib/validations/student-types";
-import { schoolProfile } from "@/lib/school/identity";
+import {
+  formPanels,
+  numbering,
+  requiredSwitches,
+  type FormPanels,
+  type Numbering,
+  type RequiredFieldKey,
+} from "@/lib/validations/admission-required";
 import type { ActionResult } from "../library/actions";
 import { saveStudentType } from "../fees/setup/student-type-actions";
 
@@ -18,22 +25,37 @@ import { saveStudentType } from "../fees/setup/student-type-actions";
  * module's own screen.
  */
 
+/** Step 6, as the reference lays it out (0330, 0331). */
+export type RegistrationSettings = {
+  online: {
+    enabled: boolean;
+    perHour: number;
+    note: string;
+    successMessage: string;
+    formTitle: string;
+    notifyEmail: string;
+    notifyPhone: string;
+    redirectUrl: string;
+  };
+  required: Record<RequiredFieldKey, boolean>;
+  panels: FormPanels;
+  numbering: Numbering;
+};
+
 export type WizardState = {
   sessionName: string | null;
   classes: { id: string; name: string; sections: number; subjects: { id: string; name: string }[] }[];
   subjects: { id: string; name: string }[];
   studentTypes: { id: string; name: string; isActive: boolean }[];
   feeHeads: { id: string; name: string; billOnAdmission: boolean; classesPriced: number }[];
-  registration: {
-    online: { enabled: boolean; perHour: number; note: string; successMessage: string };
-    contactEmail: string;
-    phone: string;
-    required: Record<string, boolean>;
-    slug: string | null;
-  };
+  registration: RegistrationSettings & { slug: string | null };
   /** Whether anybody has saved the registration settings yet. */
   registrationSaved: boolean;
 };
+
+function text(v: unknown): string {
+  return typeof v === "string" ? v : "";
+}
 
 async function settingValue(key: string): Promise<Record<string, unknown>> {
   const supabase = await createClient();
@@ -45,7 +67,7 @@ export async function wizardState(): Promise<WizardState> {
   const ctx = await getUserContext();
   const supabase = await createClient();
   const session = ctx?.currentSessionId ?? null;
-  const [levels, sections, taught, subjects, types, heads, prices, online, required, profile, email, tenant] = await Promise.all([
+  const [levels, sections, taught, subjects, types, heads, prices, online, required, panels, numbers, tenant] = await Promise.all([
     supabase.from("class_levels").select("id, name, sequence").order("sequence").order("name"),
     session
       ? supabase.from("sections").select("id, class_level_id").eq("session_id", session)
@@ -61,14 +83,14 @@ export async function wizardState(): Promise<WizardState> {
       : Promise.resolve({ data: [] as { fee_head_id: string; class_level_id: string }[] }),
     settingValue("admissions.online"),
     settingValue("admissions.required_fields"),
-    schoolProfile(),
-    supabase.rpc("setting_value", { p_key: "contact_email" }),
+    settingValue("admissions.form_panels"),
+    settingValue("admissions.numbering"),
     ctx ? supabase.from("tenants").select("slug").eq("id", ctx.tenantId).maybeSingle() : Promise.resolve({ data: null }),
   ]);
   const { data: saved } = await supabase
     .from("settings")
     .select("key")
-    .in("key", ["admissions.online", "admissions.required_fields"]);
+    .in("key", ["admissions.online", "admissions.required_fields", "admissions.form_panels", "admissions.numbering"]);
 
   const sectionClass = new Map((sections.data ?? []).map((s) => [s.id, s.class_level_id]));
   const subjectsByClass = new Map<string, Map<string, string>>();
@@ -108,12 +130,16 @@ export async function wizardState(): Promise<WizardState> {
       online: {
         enabled: online.enabled === true,
         perHour: typeof online.per_hour === "number" ? online.per_hour : 30,
-        note: typeof online.note === "string" ? online.note : "",
-        successMessage: typeof online.success_message === "string" ? online.success_message : "",
+        note: text(online.note),
+        successMessage: text(online.success_message),
+        formTitle: text(online.form_title),
+        notifyEmail: text(online.notify_email),
+        notifyPhone: text(online.notify_phone),
+        redirectUrl: text(online.redirect_url),
       },
-      contactEmail: typeof email.data === "string" ? email.data : "",
-      phone: typeof profile.phone === "string" ? profile.phone : "",
-      required: Object.fromEntries(Object.entries(required).filter(([, v]) => typeof v === "boolean")) as Record<string, boolean>,
+      required: requiredSwitches(required),
+      panels: formPanels(panels),
+      numbering: numbering(numbers),
       slug: (tenant.data as { slug?: string } | null)?.slug ?? null,
     },
     registrationSaved: (saved ?? []).length > 0,
@@ -161,9 +187,15 @@ function subjectCode(name: string, taken: Set<string>): string {
 export async function wizardAddSubject(
   name: string,
   classLevelIds: string[],
+  opts: { code?: string; kind?: string } = {},
 ): Promise<ActionResult<{ classes: number }>> {
   const clean = String(name ?? "").trim().replace(/\s+/g, " ");
   if (clean.length < 1 || clean.length > 100) return { ok: false, error: "Give the subject a name." };
+  const askedCode = String(opts.code ?? "").trim().toUpperCase();
+  if (askedCode && !/^[A-Z0-9_-]{1,20}$/.test(askedCode)) {
+    return { ok: false, error: `${clean}: a code is up to 20 letters, digits, - or _.` };
+  }
+  const kind = opts.kind === "practical" ? "practical" : "theory";
   const ctx = await getUserContext();
   if (!ctx?.currentSessionId) return { ok: false, error: "There is no current academic year. Set one under Academic years first." };
   const ids = (Array.isArray(classLevelIds) ? classLevelIds : []).filter((x) => /^[0-9a-f-]{36}$/i.test(x));
@@ -179,11 +211,15 @@ export async function wizardAddSubject(
   const { data: all } = await supabase.from("subjects").select("id, name, code");
   const existing = (all ?? []).find((s) => s.name.toLowerCase() === clean.toLowerCase());
   if (!existing) {
-    const code = subjectCode(clean, new Set((all ?? []).map((s) => s.code.toUpperCase())));
+    const taken = new Set((all ?? []).map((s) => s.code.toUpperCase()));
+    if (askedCode && taken.has(askedCode)) {
+      return { ok: false, error: `${clean}: the code ${askedCode} is already used by another subject.` };
+    }
+    const code = askedCode || subjectCode(clean, taken);
     const { error } = await supabase.rpc("academics_add_subject", {
       p_name: clean,
       p_code: code,
-      p_kind: "theory",
+      p_kind: kind,
       p_is_active: true,
       p_section_ids: sectionIds,
     });
@@ -214,6 +250,34 @@ export async function wizardAddSubject(
   if (!data?.length) return { ok: false, error: "Only an administrator can set what a class studies." };
   refresh();
   return { ok: true, data: { classes: ids.length } };
+}
+
+/**
+ * Step 3's Next: every row the office filled in, as the reference saves them.
+ * Rows naming the same subject are one subject taught in several classes, so
+ * they go through wizardAddSubject together.
+ */
+export async function wizardSaveSubjects(
+  rows: { classLevelId: string; name: string; code: string; kind: string }[],
+): Promise<ActionResult<{ added: string[]; failed: string[] }>> {
+  const groups = new Map<string, { name: string; code: string; kind: string; classes: string[] }>();
+  for (const r of (Array.isArray(rows) ? rows : []).slice(0, 500)) {
+    const name = String(r?.name ?? "").trim().replace(/\s+/g, " ");
+    if (!name || !/^[0-9a-f-]{36}$/i.test(String(r?.classLevelId ?? ""))) continue;
+    const g = groups.get(name.toLowerCase()) ?? { name, code: String(r.code ?? "").trim(), kind: String(r.kind ?? "theory"), classes: [] };
+    if (!g.classes.includes(r.classLevelId)) g.classes.push(r.classLevelId);
+    if (!g.code) g.code = String(r.code ?? "").trim();
+    groups.set(name.toLowerCase(), g);
+  }
+  if (!groups.size) return { ok: false, error: "Type a subject name, or pick one of the quick-add buttons." };
+  const added: string[] = [];
+  const failed: string[] = [];
+  for (const g of groups.values()) {
+    const r = await wizardAddSubject(g.name, g.classes, { code: g.code, kind: g.kind });
+    if (r.ok) added.push(g.name);
+    else failed.push(r.error.startsWith(g.name) ? r.error : `${g.name}: ${r.error}`);
+  }
+  return { ok: true, data: { added, failed } };
 }
 
 /** Step 3: take a subject off one class this year. Refused once it has marks or a timetable. */
@@ -343,12 +407,14 @@ export async function wizardAddFeeTypes(
   return { ok: true, data: { added, failed } };
 }
 
-/** Step 6: registration settings, each through setting_set or the fee head's own switch. */
+/**
+ * Step 6: Registration Settings, each group through setting_set (0330,
+ * 0331), and "Auto-create invoices" through each fee head's own
+ * bill-on-admission switch (0286).
+ */
 export async function wizardSaveRegistration(input: {
-  online: { enabled: boolean; perHour: number; note: string; successMessage: string };
-  contactEmail: string;
-  phone: string;
-  required: Record<string, boolean>;
+  settings: RegistrationSettings;
+  /** Fee head id → billed at admission; only the ones that changed. */
   billOnAdmission: Record<string, boolean>;
 }): Promise<ActionResult> {
   const supabase = await createClient();
@@ -357,23 +423,41 @@ export async function wizardSaveRegistration(input: {
     const { error } = await supabase.rpc("setting_set", { p_key: key, p_value: value as never });
     if (error) problems.push(error.message);
   };
+  const { online, required, panels, numbering: numbers } = input.settings;
 
-  const perHour = Math.max(1, Math.min(1000, Math.round(Number(input.online.perHour) || 30)));
+  const notifyEmail = online.notifyEmail.trim().toLowerCase();
+  if (notifyEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(notifyEmail)) {
+    return { ok: false, error: "The admin email for notifications does not look like an address." };
+  }
+  const notifyPhone = online.notifyPhone.trim();
+  if (notifyPhone && !/^[0-9+() -]{6,20}$/.test(notifyPhone)) {
+    return { ok: false, error: "The admin phone for SMS should be digits, spaces and + only." };
+  }
+  const redirectUrl = online.redirectUrl.trim();
+  if (redirectUrl && !/^https?:\/\/\S+$/.test(redirectUrl)) {
+    return { ok: false, error: "The redirect URL should start with https://" };
+  }
+  const prefix = numbers.admissionPrefix.trim();
+  if (prefix.length > 12) return { ok: false, error: "Keep the admission number prefix to 12 characters." };
+
+  const perHour = Math.max(1, Math.min(500, Math.round(Number(online.perHour) || 30)));
   await set("admissions.online", {
-    enabled: input.online.enabled === true,
+    enabled: online.enabled === true,
     per_hour: perHour,
-    note: input.online.note.trim() || null,
-    success_message: input.online.successMessage.trim() || null,
+    note: online.note.trim() || null,
+    success_message: online.successMessage.trim() || null,
+    form_title: online.formTitle.trim() || null,
+    notify_email: notifyEmail || null,
+    notify_phone: notifyPhone || null,
+    redirect_url: redirectUrl || null,
   });
-  const required = Object.fromEntries(Object.entries(input.required ?? {}).map(([k, v]) => [k, v === true]));
-  await set("admissions.required_fields", required);
-  const email = input.contactEmail.trim();
-  if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) problems.push("The notification email does not look like an address.");
-  else if (email) await set("contact_email", email);
-
-  // The phone lives in the school profile; keep its other lines as they are.
-  const current = await schoolProfile();
-  await set("school.profile", { ...current, phone: input.phone.trim() || null });
+  await set("admissions.required_fields", Object.fromEntries(Object.entries(required ?? {}).map(([k, v]) => [k, v === true])));
+  await set("admissions.form_panels", Object.fromEntries(Object.entries(panels ?? {}).map(([k, v]) => [k, v === true])));
+  await set("admissions.numbering", {
+    auto_admission_number: numbers.autoAdmissionNumber === true,
+    admission_prefix: prefix || null,
+    auto_roll_number: numbers.autoRollNumber === true,
+  });
 
   for (const [id, on] of Object.entries(input.billOnAdmission ?? {})) {
     if (!/^[0-9a-f-]{36}$/i.test(id)) continue;
@@ -383,7 +467,7 @@ export async function wizardSaveRegistration(input: {
   }
 
   refresh();
-  revalidatePath("/settings/school");
+  revalidatePath("/settings");
   if (problems.length) return { ok: false, error: [...new Set(problems)].join(" ") };
   return { ok: true, data: undefined };
 }

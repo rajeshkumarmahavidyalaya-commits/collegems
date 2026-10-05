@@ -5,21 +5,21 @@ import { Button } from "@/components/ui/button";
 import { getUserContext } from "@/lib/auth/context";
 import { STUDENT_TYPE_WRITERS } from "@/lib/validations/student-types";
 import { hasPermission } from "@/lib/auth/permissions";
-import { admissionOptions, admissionRequiredFields } from "../actions";
+import { admissionOptions, admissionSettings } from "../actions";
 import { bedOptions, busStopOptions } from "../arrangement-actions";
 import { StudentForm } from "../student-form";
 
 export const metadata = { title: "Admit student" };
 
 export default async function NewStudentPage() {
-  const [options, canManage, canAssignBus, canAllocateBed, ctx, canImport, required] = await Promise.all([
+  const [options, canManage, canAssignBus, canAllocateBed, ctx, canImport, settings] = await Promise.all([
     admissionOptions(),
     hasPermission("students.manage"),
     hasPermission("transport.assign"),
     hasPermission("hostel.allocate"),
     getUserContext(),
     hasPermission("import.view"),
-    admissionRequiredFields(),
+    admissionSettings(),
   ]);
   // Offered only to somebody who may assign them: a field whose write will be
   // refused is a control that costs the person the work of trying.
@@ -66,10 +66,12 @@ export default async function NewStudentPage() {
       </div>
       <StudentForm
         options={options}
-        required={required}
+        settings={settings}
         // Mirrors "finance roles manage student_types": the button is drawn for
         // the two roles whose write the policy accepts.
         canAddType={STUDENT_TYPE_WRITERS.includes(ctx?.roleCode ?? "")}
+        // Mirrors "admins manage student_profiles" (0331): the only write policy.
+        profileEditable={ctx?.roleCode === "admin"}
         busStops={busStops}
         hostelRooms={hostelRooms}
       />

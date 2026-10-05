@@ -758,6 +758,8 @@ export const en = {
   "apply.done.duplicate": "This application had already reached the college today, so it was not sent twice. The reference number is the same.",
   "apply.done.reference": "Reference number",
   "apply.done.another": "Apply for another child",
+  "apply.redirecting": "Taking you to the college's website in {seconds} seconds.",
+  "apply.continue": "Continue",
   "apply.error.fields": "Check the highlighted fields.",
   "apply.error.busy": "The college has received a lot of applications in the last hour. Please try again later, or contact the college directly.",
   "apply.error.generic": "Your application could not be sent. Please try again.",

@@ -11,7 +11,9 @@ export { STUDENT_STATUSES, GENDERS } from "./students-display";
 export const studentSchema = z.object({
   firstName: z.string().min(1, "First name is required").max(100),
   middleName: z.string().max(100).optional(),
-  lastName: z.string().min(1, "Last name is required").max(100),
+  // Required unless the college has switched "Mandatory last name" off
+  // (0331); `missingRequired` asks, at admission.
+  lastName: z.string().max(100),
   dateOfBirth: z.string().optional(),
   gender: z.enum(["male", "female", "other", "undisclosed"]).optional(),
   bloodGroup: z.string().max(8).optional(),
@@ -22,6 +24,16 @@ export const studentSchema = z.object({
   city: z.string().max(100).optional(),
   state: z.string().max(100).optional(),
   postalCode: z.string().max(20).optional(),
+  /** At admission only: `update_student` does not take it. */
+  country: z.string().max(100).optional(),
+
+  // The sensitive half of a child's record (0331, `student_profiles`):
+  // readable by the administrator and the family only.
+  religion: z.string().max(60).optional(),
+  caste: z.string().max(80).optional(),
+  idNumber: z.string().max(40).optional(),
+  medicalNotes: z.string().max(1000).optional(),
+  heardFrom: z.string().max(80).optional(),
 
   admissionNumber: z.string().min(1, "Admission number is required").max(50),
   admissionDate: z.string().min(1, "Admission date is required"),
@@ -48,13 +60,32 @@ export const studentSchema = z.object({
 export type StudentInput = z.infer<typeof studentSchema>;
 
 /**
+ * The admission form's optional panels (0331): a parent made with the child,
+ * and an invitation for the parent or the child to sign in. Admission only.
+ */
+export const admissionExtrasSchema = z.object({
+  parentFirstName: z.string().max(100).optional(),
+  parentLastName: z.string().max(100).optional(),
+  parentRelationship: z.enum(["father", "mother", "guardian", "other"]).optional(),
+  parentPhone: z.string().max(20).optional(),
+  parentEmail: z.union([z.string().email("Enter a valid email address"), z.literal("")]).optional(),
+  parentOccupation: z.string().max(100).optional(),
+  inviteParent: z.boolean().optional(),
+  inviteStudent: z.boolean().optional(),
+});
+
+export type AdmissionExtras = z.infer<typeof admissionExtrasSchema>;
+/** What the student form holds: the record, and at admission the panels. */
+export type StudentFormValues = StudentInput & AdmissionExtras;
+
+/**
  * Admitting a child names their class and their kind. A child admitted with
  * no section is on no register, no timetable and no invoice run -- invisible
  * to every screen that lists a class -- and a college asked that it be
  * impossible. Editing keeps both optional, because an alumnus has no class
  * this year.
  */
-export const admissionSchema = studentSchema.extend({
+export const admissionSchema = studentSchema.merge(admissionExtrasSchema).extend({
   sectionId: z.string().uuid("Choose the class and section the student joins"),
   studentTypeId: z.string().uuid("Choose the kind of student"),
 });

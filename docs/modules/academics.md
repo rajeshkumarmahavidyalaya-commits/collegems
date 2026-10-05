@@ -176,4 +176,34 @@ Probed in a rolled-back transaction on the demo college:
 - **`admissions.required_fields`** (0330) lets a college require more of the
   form: date of birth, phone, address, medium, house and so on. The form marks
   them and the action refuses without them. Every switch defaults to off,
-  which is the form as it was.
+  which is the form as it was, except the last name (0331), which was required
+  before it had a switch and stays required until a college says otherwise.
+
+### The setup wizard's Registration Settings (0331)
+
+The sixth step of `/setup` follows the reference group for group, and every
+control on it has a reader:
+
+| Reference control | Stored in | Read by |
+|---|---|---|
+| Registration form title | `admissions.online.form_title` | `admission_form` → the public form's heading |
+| Admin email / phone for notifications | `admissions.online.notify_email`, `notify_phone` | `admission_apply` queues an email and an SMS (`admissions.application`) through the dispatcher |
+| Redirect URL after registration | `admissions.online.redirect_url` (http(s) only, checked in SQL) | the public form, 15 seconds after the success screen |
+| Auto-create invoices | each fee head's `bill_on_admission` (0286) | `fees_bill_on_admission` after an admission |
+| Auto-generate admission numbers (+ prefix) | `admissions.numbering` | `next_admission_number()` fills the admission form's box |
+| Auto-generate roll numbers | `admissions.numbering` | `admitStudent` asks `next_roll_number(section)` when the box is blank |
+| Required student information | `admissions.required_fields` | `missingRequired` in the form and in the action |
+| Additional panels | `admissions.form_panels` | the admission form: parent details (`guardian_add`), parent and student logins (`invite`), transport, fees, survey |
+| Success message | `admissions.online.success_message` | the public form |
+
+Two of the reference's switches are drawn and cannot be changed, each with the
+reason on the screen. **Auto-login after registration** is off because an online
+application here is an enquiry, not a login; a family is invited from the
+admission form. **Require admin approval** is on because every application waits
+in Inquiries until the office admits the child; there is no path by which an
+anonymous form creates a student.
+
+Religion, caste, an ID number, a medical note and "how did you hear about us"
+live in `student_profiles`, not on `people`. Every staff role reads `people`; this
+table is readable by the administrator and the child's own family and written by
+the administrator only. A teacher reads 0 rows (probed).
