@@ -378,7 +378,7 @@ export function IssuesTable({ canManage }: { canManage: boolean }) {
             setSearch(v);
             setPageIndex(0);
           }}
-          searchPlaceholder="Search book or member…"
+          searchPlaceholder="Search title, book number, card, name or admission number…"
           loadAll={() => loadAllPages(readPage)}
           exportName="library-issues"
         >

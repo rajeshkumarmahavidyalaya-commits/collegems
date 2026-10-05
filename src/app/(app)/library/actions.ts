@@ -450,8 +450,12 @@ export async function listIssues(params: ListParams): Promise<{ rows: IssueRow[]
 
   const finePerDay = await getFinePerDay();
 
+  // The search runs in Postgres over every issue (0338), and the status
+  // filter, order and range apply on top: the page and the total are of what
+  // matched. It used to filter the 25 rows already read, in TypeScript, so a
+  // title on page 2 could not be found from page 1.
   let query = supabase
-    .from("book_issues")
+    .rpc("library_issues_matching", { p_query: search?.trim() || "" }, { count: "exact" })
     .select(
       `id, status, issued_at, due_at, returned_at, fine_amount,
        staff_fine_payslip_id, staff_fine_waived_at,
@@ -459,7 +463,6 @@ export async function listIssues(params: ListParams): Promise<{ rows: IssueRow[]
        members ( membership_number, student_id, staff_id,
                  students ( admission_number, people:person_id ( first_name, last_name ) ),
                  staff ( employee_code, people:person_id ( first_name, last_name ) ) )`,
-      { count: "exact" },
     );
 
   const today = new Date().toISOString().slice(0, 10);
@@ -503,7 +506,7 @@ export async function listIssues(params: ListParams): Promise<{ rows: IssueRow[]
     [...new Set((data ?? []).map((i) => i.members?.student_id).filter((id): id is string => !!id))],
   );
 
-  let rows = (data ?? []).map((i) => {
+  const rows = (data ?? []).map((i) => {
     const person = i.members?.students?.people ?? i.members?.staff?.people;
     const where = i.members?.student_id ? placed.get(i.members.student_id) : undefined;
     const isOverdue = i.status === "issued" && i.due_at < today;
@@ -543,16 +546,6 @@ export async function listIssues(params: ListParams): Promise<{ rows: IssueRow[]
       staffFineWaived: i.staff_fine_waived_at != null,
     };
   });
-
-  if (search && search.trim()) {
-    const needle = search.trim().toLowerCase();
-    rows = rows.filter(
-      (r) =>
-        r.bookTitle.toLowerCase().includes(needle) ||
-        r.memberName.toLowerCase().includes(needle) ||
-        r.membershipNumber.toLowerCase().includes(needle),
-    );
-  }
 
   return { rows, total: count ?? 0 };
 }

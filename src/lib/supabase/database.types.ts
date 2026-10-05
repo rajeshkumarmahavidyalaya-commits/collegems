@@ -10612,6 +10612,16 @@ export type Database = {
           total_copies: number
         }[]
       }
+      library_issues_matching: {
+        Args: { p_query?: string }
+        Returns: Database["public"]["Tables"]["book_issues"]["Row"][]
+        SetofOptions: {
+          from: "*"
+          to: "book_issues"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
       library_issue_book: {
         Args: { p_book_id: string; p_due_at?: string; p_member_id: string }
         Returns: {
