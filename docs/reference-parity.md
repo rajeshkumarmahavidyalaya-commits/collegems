@@ -47,7 +47,7 @@ child, the defect `docs/modules/reports.md` describes for reports. Built on
 | Fee Structure (fee type, amount, period, occurrences, session total) | `/family/fee-structure` | **Have** |
 | Payment History (receipt, print) | `/family/payments` | **Have** |
 | Study Materials | `/study-material` | **Have** |
-| Lessons (by subject, searchable) | none | **Missing** (see 5) |
+| Lessons (by subject, searchable) | `/lessons` (0347) | **Have** |
 | Homework | `/homework` | **Have** |
 | Noticeboard, Calendar, Events | `/notices`, `/calendar`, `/events` | **Have** |
 | Class Time Table | `/timetable` | **Have** |
@@ -88,7 +88,7 @@ Partial inside them:
 
 | Reference function | Status |
 |---|---|
-| Subjects: Subject Types, subject image, Assign Subject in Bulk | **Missing**: types are theory/practical only |
+| Subjects: Subject Types, subject image, Assign Subject in Bulk | **Have** (0347), except the subject image |
 | Pre-Admissions list | **Have** as online applications on `/front-office` |
 | Attendance: QR Attendance | **Missing**: `/scan` opens a record, it does not mark a register |
 | Attendance: Webcam (face) Attendance | **Not adopted**: face recognition is biometric data of children; readers (0273) cover the device case |
@@ -111,7 +111,7 @@ Partial inside them:
 | Reference module | Columns and form | Status |
 |---|---|---|
 | Activities | Name, Class, Fee, Description, Status | **Missing** |
-| Lessons and Chapters | Chapter: Title, Class, Subject. Lesson: Title, Class, Subject, Chapter, link (none, attachment, URL), Description | **Missing** |
+| Lessons and Chapters | Chapter: Title, Class, Subject. Lesson: Title, Class, Subject, Chapter, link (none, attachment, URL), Description | **Have** (0347): a chapter is a syllabus unit, a lesson is study material in one |
 | Tickets | Title, Priority, Status, Subject, Student, Class, Role, Assigned To, Due Date | **Missing** |
 | Chat | direct or named group by class and section; a student messages a teacher | **Missing** |
 
@@ -126,7 +126,7 @@ therefore not a row; it needs every policy that names a role reviewed.
 ## Order of work
 
 1. ~~Family dashboard and portal pages~~ (0346, 6 Oct 2026).
-2. Lessons and chapters; subject types and bulk assignment.
+2. ~~Lessons and chapters; subject types and bulk assignment~~ (0347).
 3. Tickets; activities.
 4. Chat.
 5. Fees: verify payments, payment methods for families, transport invoices,

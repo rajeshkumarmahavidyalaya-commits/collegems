@@ -45,7 +45,9 @@ describe("the daily menu and the setup menu", () => {
     // cannot fold into Setup (the next test forbids it).
     // 50 (0344): Staff Rating, where a student rates their teachers -- a
     // family-side screen, so it cannot fold into Setup either.
-    expect(everyday).toBeLessThanOrEqual(50);
+    // 51 (0347): Lessons, which a student opens to study and a teacher adds to
+    // as the chapter is taught -- a family-side screen, like Events.
+    expect(everyday).toBeLessThanOrEqual(51);
   });
 
   it("never marks a screen a family uses as setup", () => {

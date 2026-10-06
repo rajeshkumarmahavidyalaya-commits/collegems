@@ -687,6 +687,9 @@ export async function saveStudyMaterial(formData: FormData): Promise<ActionResul
 
   const file = formData.get("file");
   const hasFile = file instanceof File && file.size > 0;
+  // A lesson is study material in a chapter (0347).
+  const unitIdRaw = String(formData.get("unitId") ?? "");
+  const unitId = /^[0-9a-f-]{36}$/i.test(unitIdRaw) ? unitIdRaw : null;
 
   // The half of `study_material_source_chk` the schema cannot see. Saying it
   // here means a person gets a sentence about the field they left empty rather
@@ -739,6 +742,7 @@ export async function saveStudyMaterial(formData: FormData): Promise<ActionResul
       size_bytes: uploadedSize,
       external_url: parsed.data.externalUrl || null,
       is_published: parsed.data.isPublished,
+      unit_id: unitId,
       uploaded_by_staff_id: ctx.staffId,
       created_by: ctx.userId,
     })
@@ -747,10 +751,13 @@ export async function saveStudyMaterial(formData: FormData): Promise<ActionResul
 
   if (error) {
     if (uploadedPath) await removeFile(BUCKETS.studyMaterial, uploadedPath);
+    // The key that holds a lesson's chapter to its subject (0347).
+    if (error.code === "23503" && unitId) return fail("That chapter is in a different subject. Choose one of this subject's chapters.");
     return fail(error.message);
   }
 
   revalidatePath("/study-material");
+  revalidatePath("/lessons");
   return { ok: true, data: { id: data.id } };
 }
 

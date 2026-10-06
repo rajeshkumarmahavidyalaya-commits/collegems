@@ -288,17 +288,35 @@ export function MaterialList({ material, sections, subjects, canManage }: Props)
  * cannot see it. The action completes the check the schema cannot — see
  * `study_material_source_chk`.
  */
-function MaterialDialog({
+export type ChapterOption = { id: string; title: string; classLevelId: string; subjectId: string };
+
+export function MaterialDialog({
   open,
   onOpenChange,
   sections,
   subjects,
+  chapters,
+  sectionLevels,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   sections: Option[];
   subjects: Option[];
+  /**
+   * Given, the dialog adds a lesson: study material placed in a chapter of the
+   * class's syllabus (0347). The chapter list follows the class and subject
+   * chosen, because the database refuses any other chapter.
+   */
+  chapters?: ChapterOption[];
+  /** Each class's class level, to match chapters. */
+  sectionLevels?: Record<string, string>;
 }) {
+  const lesson = chapters !== undefined;
+  const [sectionId, setSectionId] = useState("");
+  const [subjectId, setSubjectId] = useState("");
+  const [unitId, setUnitId] = useState("");
+  const level = sectionId ? sectionLevels?.[sectionId] : undefined;
+  const fitting = (chapters ?? []).filter((c) => c.classLevelId === level && c.subjectId === subjectId);
   const t = useT();
   const router = useRouter();
   const formRef = useRef<HTMLFormElement>(null);
@@ -311,6 +329,14 @@ function MaterialDialog({
     event.preventDefault();
     const data = new FormData(event.currentTarget);
     data.set("kind", kind);
+    if (lesson) {
+      if (!sectionId || !subjectId || !unitId) {
+        setErrors({ unitId: ["Choose the class, the subject and the chapter."] });
+        toast.error("A lesson needs a class, a subject and a chapter.");
+        return;
+      }
+      data.set("unitId", unitId);
+    }
 
     startTransition(async () => {
       const result = await saveStudyMaterial(data);
@@ -320,7 +346,7 @@ function MaterialDialog({
         return;
       }
       setErrors({});
-      toast.success("Added.");
+      toast.success(lesson ? "Lesson added." : "Added.");
       formRef.current?.reset();
       onOpenChange(false);
       router.refresh();
@@ -331,7 +357,7 @@ function MaterialDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-h-[90svh] overflow-y-auto sm:max-w-lg">
         <DialogHeader>
-          <DialogTitle>Add study material</DialogTitle>
+          <DialogTitle>{lesson ? "Add New Lesson" : "Add study material"}</DialogTitle>
           <DialogDescription>
             A file or a link, never both. Leave it unpublished while you are still deciding.
           </DialogDescription>
@@ -387,8 +413,12 @@ function MaterialDialog({
               <SelectWithHidden
                 id="material-section"
                 name="sectionId"
-                placeholder="Whole school"
+                placeholder={lesson ? "Choose a class" : "Whole school"}
                 options={sections}
+                onChange={(v) => {
+                  setSectionId(v);
+                  setUnitId("");
+                }}
               />
             </div>
           </div>
@@ -398,10 +428,48 @@ function MaterialDialog({
             <SelectWithHidden
               id="material-subject"
               name="subjectId"
-              placeholder="General"
+              placeholder={lesson ? "Choose a subject" : "General"}
               options={subjects}
+              onChange={(v) => {
+                setSubjectId(v);
+                setUnitId("");
+              }}
             />
           </div>
+
+          {lesson && (
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="material-chapter">
+                Chapter
+                <span aria-hidden="true" className="text-destructive"> *</span>
+              </Label>
+              <Select value={unitId} onValueChange={setUnitId} disabled={fitting.length === 0}>
+                <SelectTrigger
+                  id="material-chapter"
+                  className="w-full"
+                  aria-invalid={errors.unitId ? true : undefined}
+                  aria-describedby="material-chapter-hint"
+                >
+                  <SelectValue placeholder="Choose a chapter" />
+                </SelectTrigger>
+                <SelectContent>
+                  {fitting.map((c) => (
+                    <SelectItem key={c.id} value={c.id}>
+                      {c.title}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <p id="material-chapter-hint" className="text-xs text-muted-foreground">
+                {errors.unitId?.[0] ??
+                  (!sectionId || !subjectId
+                    ? "Choose the class and subject first."
+                    : fitting.length === 0
+                      ? "This class has no chapters in this subject yet. Add them on the syllabus."
+                      : "The chapters of this class's syllabus in this subject.")}
+              </p>
+            </div>
+          )}
 
           {kind === "document" ? (
             <div className="flex flex-col gap-1.5">
@@ -478,13 +546,19 @@ function SelectWithHidden({
   name,
   placeholder,
   options,
+  onChange,
 }: {
   id: string;
   name: string;
   placeholder: string;
   options: Option[];
+  onChange?: (value: string) => void;
 }) {
-  const [value, setValue] = useState("");
+  const [value, setValueState] = useState("");
+  const setValue = (v: string) => {
+    setValueState(v);
+    onChange?.(v);
+  };
 
   return (
     <>

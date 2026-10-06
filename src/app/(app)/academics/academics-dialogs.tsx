@@ -40,6 +40,7 @@ import {
   saveClassRoom,
   saveHoliday,
   saveSubject,
+  assignSubjectsInBulk,
   saveTimeSlot,
   type AssignmentRow,
   type ClassRoomRow,
@@ -75,6 +76,7 @@ export function SubjectDialog({
   open,
   subject,
   sections,
+  subjectTypes,
   onOpenChange,
   onDone,
 }: {
@@ -82,6 +84,8 @@ export function SubjectDialog({
   subject: SubjectRow | null;
   /** This year's classes; a new subject must be taught to at least one. */
   sections: { id: string; label: string }[];
+  /** The college's own subject types (0347). */
+  subjectTypes: { id: string; name: string }[];
   onOpenChange: (open: boolean) => void;
   onDone: () => void;
 }) {
@@ -95,6 +99,7 @@ export function SubjectDialog({
       name: subject?.name ?? "",
       code: subject?.code ?? "",
       kind: (subject?.kind as "theory" | "practical") ?? "theory",
+      subjectTypeId: subject?.subjectTypeId ?? "",
       isActive: subject?.isActive ?? true,
       sectionIds: [],
     },
@@ -162,12 +167,19 @@ export function SubjectDialog({
               <SelectField
                 control={form.control}
                 name="kind"
-                label="Type"
+                label="Theory or practical"
                 required
                 options={SUBJECT_KINDS.map((k) => ({
                   value: k.value,
                   label: k.label,
                 }))}
+              />
+              <SelectField
+                control={form.control}
+                name="subjectTypeId"
+                label="Subject Type"
+                placeholder={subjectTypes.length ? "No type" : "Add types on Subject Types first"}
+                options={subjectTypes.map((t) => ({ value: t.id, label: t.name }))}
               />
             </div>
             {!subject && (
@@ -692,6 +704,120 @@ export function HolidayDialog({
             </DialogFooter>
           </form>
         </Form>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+/**
+ * The reference's Assign Subject in Bulk: tick subjects and classes, and every
+ * chosen subject is given to every chosen class this year in one transaction
+ * (`academics_assign_subjects`, 0347). Assignments that exist keep their
+ * teacher; the toast says how many were new.
+ */
+export function BulkAssignDialog({
+  open,
+  subjects,
+  sections,
+  onOpenChange,
+  onDone,
+}: {
+  open: boolean;
+  subjects: { id: string; label: string }[];
+  sections: { id: string; label: string }[];
+  onOpenChange: (open: boolean) => void;
+  onDone: () => void;
+}) {
+  const [chosenSubjects, setChosenSubjects] = useState<string[]>([]);
+  const [chosenSections, setChosenSections] = useState<string[]>([]);
+  const [serverError, setServerError] = useState<string | null>(null);
+  const [pending, setPending] = useState(false);
+
+  async function submit() {
+    setServerError(null);
+    if (chosenSubjects.length === 0 || chosenSections.length === 0) {
+      setServerError("Choose at least one subject and at least one class.");
+      return;
+    }
+    setPending(true);
+    const result = await assignSubjectsInBulk(chosenSubjects, chosenSections);
+    setPending(false);
+    if (!result.ok) {
+      setServerError(result.error);
+      return;
+    }
+    const { created, already } = result.data;
+    toast.success(
+      `${created} ${created === 1 ? "assignment" : "assignments"} added` +
+        (already ? `; ${already} ${already === 1 ? "was" : "were"} already there.` : "."),
+    );
+    setChosenSubjects([]);
+    setChosenSections([]);
+    onOpenChange(false);
+    onDone();
+  }
+
+  const list = (
+    legend: string,
+    items: { id: string; label: string }[],
+    chosen: string[],
+    set: (v: string[]) => void,
+  ) => {
+    const all = items.length > 0 && chosen.length === items.length;
+    return (
+      <fieldset className="flex flex-col gap-2">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <legend className="text-sm font-medium">
+            {legend} <span className="text-destructive">*</span>
+          </legend>
+          {items.length > 1 && (
+            <Button type="button" variant="ghost" size="sm" onClick={() => set(all ? [] : items.map((i) => i.id))}>
+              {all ? "Clear all" : "Select all"}
+            </Button>
+          )}
+        </div>
+        <div className="grid max-h-48 gap-1 overflow-y-auto rounded-md border border-border p-2 sm:grid-cols-2">
+          {items.map((i) => (
+            <label key={i.id} className="flex cursor-pointer items-center gap-2 rounded px-2 py-1.5 text-sm hover:bg-accent">
+              <Checkbox
+                checked={chosen.includes(i.id)}
+                onCheckedChange={(on) => set(on ? [...chosen, i.id] : chosen.filter((v) => v !== i.id))}
+              />
+              <span className="min-w-0 break-words">{i.label}</span>
+            </label>
+          ))}
+        </div>
+      </fieldset>
+    );
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-h-[90svh] overflow-y-auto sm:max-w-2xl">
+        <DialogHeader>
+          <DialogTitle>Assign Subject in Bulk</DialogTitle>
+          <DialogDescription>
+            Every subject you tick is given to every class you tick, this year. A class that already has a subject keeps
+            its teacher.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="flex flex-col gap-4">
+          <ServerError message={serverError} />
+          {list("Subjects", subjects, chosenSubjects, setChosenSubjects)}
+          {list("Classes", sections, chosenSections, setChosenSections)}
+          <p className="text-sm text-muted-foreground" aria-live="polite">
+            {chosenSubjects.length * chosenSections.length} {chosenSubjects.length * chosenSections.length === 1 ? "assignment" : "assignments"} chosen.
+          </p>
+        </div>
+        <DialogFooter>
+          <Button type="button" variant="ghost" onClick={() => onOpenChange(false)}>
+            Cancel
+          </Button>
+          <Button type="button" onClick={submit} disabled={pending}>
+            {pending && <Loader2 className="size-4 animate-spin" aria-hidden="true" />}
+            Assign
+          </Button>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   );

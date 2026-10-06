@@ -14,6 +14,7 @@ import {
   listWeekdays,
 } from "./actions";
 import { AcademicsSettings } from "./academics-settings";
+import { listNamed } from "./named-list-actions";
 import { listClassStructure } from "./class-actions";
 import { ModuleCards } from "@/components/module-cards";
 
@@ -38,6 +39,7 @@ export default async function AcademicsPage({
     canManage,
     canSeeSyllabus,
     classLevels,
+    subjectTypes,
   ] = await Promise.all([
     getUserContext(),
     listSubjects(),
@@ -54,6 +56,7 @@ export default async function AcademicsPage({
     // will refuse you is the same defect one click along.
     hasPermission("academics.view"),
     listClassStructure(),
+    listNamed("subject_types"),
   ]);
 
   return (
@@ -92,6 +95,7 @@ export default async function AcademicsPage({
         teachers={teachers}
         canManage={canManage}
         classLevels={classLevels}
+        subjectTypes={subjectTypes.map((t) => ({ id: t.id, name: t.name }))}
         sessionName={ctx?.currentSessionName ?? null}
         initialTab={tab}
       />

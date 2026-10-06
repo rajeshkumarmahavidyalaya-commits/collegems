@@ -73,6 +73,7 @@ import {
   Award,
   ShoppingBag,
   UserCog,
+  BookMarked,
 } from "lucide-react";
 
 export type NavItem = {
@@ -261,6 +262,14 @@ export const NAV_GROUPS: NavGroup[] = [
         href: "/academics/mediums",
         setup: true,
         icon: Languages,
+        roles: ["admin", "teacher", "accountant"],
+      },
+      {
+        title: "Subject Types",
+        messageKey: "nav.subjectTypes",
+        href: "/academics/subject-types",
+        setup: true,
+        icon: Tags,
         roles: ["admin", "teacher", "accountant"],
       },
       {
@@ -494,6 +503,17 @@ export const NAV_GROUPS: NavGroup[] = [
         messageKey: "nav.studyMaterial",
         href: "/study-material",
         icon: FolderOpen,
+      },
+      // Study material placed in a chapter of a class's syllabus (0347). Who
+      // writes one is the study-material policy (administrator, teacher); a
+      // family reads their own class's published ones. An accountant or a
+      // librarian has no class and would see an empty page.
+      {
+        title: "Lessons",
+        messageKey: "nav.lessons",
+        href: "/lessons",
+        icon: BookMarked,
+        roles: ["admin", "teacher", "parent", "student"],
       },
       // The family's own cards. Staff reach a class's cards from the exam
       // itself, because printing is something you do to a class, not to the

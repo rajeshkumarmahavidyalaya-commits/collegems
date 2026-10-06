@@ -7314,6 +7314,7 @@ export type Database = {
       }
       study_material: {
         Row: {
+          unit_id: string | null
           bucket_id: string | null
           content_type: string | null
           created_at: string
@@ -7335,6 +7336,7 @@ export type Database = {
           uploaded_by_staff_id: string | null
         }
         Insert: {
+          unit_id?: string | null
           bucket_id?: string | null
           content_type?: string | null
           created_at?: string
@@ -7356,6 +7358,7 @@ export type Database = {
           uploaded_by_staff_id?: string | null
         }
         Update: {
+          unit_id?: string | null
           bucket_id?: string | null
           content_type?: string | null
           created_at?: string
@@ -7530,8 +7533,33 @@ export type Database = {
           },
         ]
       }
+      subject_types: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       subjects: {
         Row: {
+          subject_type_id: string | null
           code: string
           created_at: string
           id: string
@@ -7542,6 +7570,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          subject_type_id?: string | null
           code: string
           created_at?: string
           id?: string
@@ -7552,6 +7581,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          subject_type_id?: string | null
           code?: string
           created_at?: string
           id?: string
@@ -8732,6 +8762,7 @@ export type Database = {
         }
         Returns: string
       }
+      academics_assign_subjects: { Args: { p_subject_ids: string[]; p_section_ids: string[] }; Returns: Json }
       academics_filing_problems: {
         Args: never
         Returns: {

@@ -44,6 +44,8 @@ export type SubjectRow = {
   name: string;
   code: string;
   kind: string;
+  subjectTypeId: string | null;
+  subjectTypeName: string | null;
   isActive: boolean;
   /** How many class-section slots reference it, so deletion can be honest. */
   assignmentCount: number;
@@ -52,13 +54,20 @@ export type SubjectRow = {
 export async function listSubjects(): Promise<SubjectRow[]> {
   const supabase = await createClient();
 
-  const [subjectsRes, assignmentsRes] = await Promise.all([
-    supabase.from("subjects").select("id, name, code, kind, is_active").order("name"),
-    supabase.from("section_subjects").select("subject_id"),
+  const ctx = await getUserContext();
+  let assignments = supabase.from("section_subjects").select("subject_id");
+  // How many classes study it *this year*: last year's rows are history, not
+  // the class list the reference's column means.
+  if (ctx?.currentSessionId) assignments = assignments.eq("session_id", ctx.currentSessionId);
+  const [subjectsRes, assignmentsRes, typesRes] = await Promise.all([
+    supabase.from("subjects").select("id, name, code, kind, is_active, subject_type_id").order("name").order("id"),
+    assignments,
+    supabase.from("subject_types").select("id, name"),
   ]);
 
   if (subjectsRes.error) throw new Error(subjectsRes.error.message);
 
+  const types = new Map((typesRes.data ?? []).map((t) => [t.id, t.name]));
   const counts = new Map<string, number>();
   for (const row of assignmentsRes.data ?? []) {
     counts.set(row.subject_id, (counts.get(row.subject_id) ?? 0) + 1);
@@ -69,6 +78,8 @@ export async function listSubjects(): Promise<SubjectRow[]> {
     name: s.name,
     code: s.code,
     kind: s.kind,
+    subjectTypeId: s.subject_type_id,
+    subjectTypeName: s.subject_type_id ? (types.get(s.subject_type_id) ?? null) : null,
     isActive: s.is_active,
     assignmentCount: counts.get(s.id) ?? 0,
   }));
@@ -102,6 +113,11 @@ export async function saveSubject(input: unknown, id?: string): Promise<ActionRe
       }
       return fail(error.message);
     }
+    // The type is a label, not a rule, so it is set after the subject and
+    // its classes exist rather than widening 0275's function.
+    if (parsed.data.subjectTypeId) {
+      await supabase.from("subjects").update({ subject_type_id: parsed.data.subjectTypeId }).eq("id", data);
+    }
     revalidatePath("/academics");
     return { ok: true, data: { id: data } };
   }
@@ -111,6 +127,7 @@ export async function saveSubject(input: unknown, id?: string): Promise<ActionRe
     name: parsed.data.name,
     code: parsed.data.code.toUpperCase(),
     kind: parsed.data.kind,
+    subject_type_id: parsed.data.subjectTypeId || null,
     is_active: parsed.data.isActive,
   };
 
@@ -519,6 +536,30 @@ export async function deleteAssignment(id: string): Promise<ActionResult> {
   if (error) return fail(error.message);
   revalidatePath("/academics");
   return { ok: true, data: undefined };
+}
+
+/**
+ * The reference's Assign Subject in Bulk: every chosen subject to every chosen
+ * class this year, in one transaction (0347). An existing assignment keeps its
+ * teacher, and the answer says how many were already there.
+ */
+export async function assignSubjectsInBulk(
+  subjectIds: string[],
+  sectionIds: string[],
+): Promise<ActionResult<{ created: number; already: number }>> {
+  const uuid = /^[0-9a-f-]{36}$/i;
+  if (!subjectIds.every((v) => uuid.test(v)) || !sectionIds.every((v) => uuid.test(v))) {
+    return fail("Reload the page and choose again.");
+  }
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("academics_assign_subjects", {
+    p_subject_ids: subjectIds,
+    p_section_ids: sectionIds,
+  });
+  if (error) return fail(error.message);
+  const r = (data ?? {}) as { created?: number; already?: number };
+  revalidatePath("/academics");
+  return { ok: true, data: { created: r.created ?? 0, already: r.already ?? 0 } };
 }
 
 export async function listTeachers() {

@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useState } from "react";
 
 import { useRouter } from "next/navigation";
@@ -89,6 +90,9 @@ const SubjectDialog = dynamic(() =>
 const AssignmentDialog = dynamic(() =>
   import("./academics-dialogs").then((m) => m.AssignmentDialog),
 );
+const BulkAssignDialog = dynamic(() =>
+  import("./academics-dialogs").then((m) => m.BulkAssignDialog),
+);
 const TimeSlotDialog = dynamic(() =>
   import("./academics-dialogs").then((m) => m.TimeSlotDialog),
 );
@@ -110,6 +114,8 @@ type Props = {
   teachers: { id: string; label: string }[];
   canManage: boolean;
   classLevels: ClassLevelRow[];
+  /** The college's own subject types (0347). */
+  subjectTypes: { id: string; name: string }[];
   sessionName: string | null;
   /** `?tab=` from the URL, so the setup checklist can land on the right one. */
   initialTab?: string;
@@ -155,7 +161,12 @@ export function AcademicsSettings(props: Props) {
         />
       </TabsContent>
       <TabsContent value="subjects" className="mt-4">
-        <SubjectsTab subjects={props.subjects} sections={props.sections} canManage={canManage} />
+        <SubjectsTab
+          subjects={props.subjects}
+          sections={props.sections}
+          subjectTypes={props.subjectTypes}
+          canManage={canManage}
+        />
       </TabsContent>
       <TabsContent value="assignments" className="mt-4">
         <AssignmentsTab
@@ -252,15 +263,18 @@ function ConfirmDelete({
 function SubjectsTab({
   subjects,
   sections,
+  subjectTypes,
   canManage,
 }: {
   subjects: SubjectRow[];
   sections: { id: string; label: string }[];
+  subjectTypes: { id: string; name: string }[];
   canManage: boolean;
 }) {
   const router = useRouter();
   const [editing, setEditing] = useState<SubjectRow | null>(null);
   const [creating, setCreating] = useState(false);
+  const [bulk, setBulk] = useState(false);
   const [removing, setRemoving] = useState<SubjectRow | null>(null);
 
   return (
@@ -271,10 +285,18 @@ function SubjectsTab({
           it is not re-created each year — so this list is not session-scoped.
         </p>
         {canManage && (
-          <Button size="sm" onClick={() => setCreating(true)}>
-            <Plus className="size-4" aria-hidden="true" />
-            Add New Subject
-          </Button>
+          <span className="flex flex-wrap gap-2">
+            <Button size="sm" variant="outline" asChild>
+              <Link href="/academics/subject-types">Add New Subject Types</Link>
+            </Button>
+            <Button size="sm" onClick={() => setCreating(true)}>
+              <Plus className="size-4" aria-hidden="true" />
+              Add New Subject
+            </Button>
+            <Button size="sm" variant="outline" onClick={() => setBulk(true)} disabled={subjects.length === 0 || sections.length === 0}>
+              Assign Subject in Bulk
+            </Button>
+          </span>
         )}
       </div>
 
@@ -296,7 +318,7 @@ function SubjectsTab({
                   Subject
                 </th>
                 <th scope="col" className="px-3 py-2 text-start font-medium">
-                  Type
+                  Subject Type
                 </th>
                 <th scope="col" className="px-3 py-2 text-start font-medium">
                   Classes
@@ -318,6 +340,7 @@ function SubjectsTab({
                   <td className="px-3 py-2 font-mono text-xs">{s.code}</td>
                   <td className="px-3 py-2 font-medium">{s.name}</td>
                   <td className="px-3 py-2">
+                    {s.subjectTypeName && <span className="me-1.5">{s.subjectTypeName}</span>}
                     <Badge
                       variant={s.kind === "practical" ? "secondary" : "outline"}
                     >
@@ -365,6 +388,7 @@ function SubjectsTab({
           open={creating || editing !== null}
           subject={editing}
           sections={sections}
+          subjectTypes={subjectTypes}
           onOpenChange={(open) => {
             if (!open) {
               setCreating(false);
@@ -374,6 +398,16 @@ function SubjectsTab({
           onDone={() => router.refresh()}
         />
       ) : null}
+
+      {bulk && (
+        <BulkAssignDialog
+          open={bulk}
+          subjects={subjects.filter((s) => s.isActive).map((s) => ({ id: s.id, label: `${s.name} (${s.code})` }))}
+          sections={sections}
+          onOpenChange={setBulk}
+          onDone={() => router.refresh()}
+        />
+      )}
 
       <ConfirmDelete
         open={removing !== null}

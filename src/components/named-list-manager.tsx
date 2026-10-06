@@ -21,6 +21,8 @@ type Words = {
   one: string;
   /** "Enter medium" */
   placeholder: string;
+  /** What uses one, for the count column: "Students" (the default) or "Subjects". */
+  usedBy?: string;
 };
 
 /**
@@ -101,7 +103,7 @@ export function NamedListManager({
           </h2>
           <div className="ms-auto flex flex-wrap items-center gap-2">
             <ExportRowsButton
-              rows={[["#", words.one, "Students"], ...rows.map((r, i) => [String(i + 1), r.name, String(r.students)])]}
+              rows={[["#", words.one, words.usedBy ?? "Students"], ...rows.map((r, i) => [String(i + 1), r.name, String(r.students)])]}
               fileName={`${words.title.toLowerCase()}.csv`}
             />
             <Label htmlFor={`${inputId}-search`} className="text-sm font-normal">
@@ -131,7 +133,7 @@ export function NamedListManager({
                 <TableRow>
                   <TableHead className="w-12">#</TableHead>
                   <TableHead>{words.one}</TableHead>
-                  <TableHead className="text-end">Students</TableHead>
+                  <TableHead className="text-end">{words.usedBy ?? "Students"}</TableHead>
                   <TableHead className="w-32">Action</TableHead>
                 </TableRow>
               </TableHeader>

@@ -41,6 +41,7 @@ const MODULES: { title: string; messageKey: MessageKey; icon: NavGroup["icon"]; 
       "/timetable", "/timetable/me", "/timetable/substitutions", "/attendance", "/attendance/subject", "/attendance/report",
       "/attendance/leave", "/study-material", "/homework", "/notices", "/calendar", "/events", "/live-classes",
       "/academics/electives", "/my-subjects", "/academics/mediums", "/academics/houses", "/academics/class-groups",
+      "/academics/subject-types",
     ],
   },
   {
@@ -65,6 +66,7 @@ const MODULES: { title: string; messageKey: MessageKey; icon: NavGroup["icon"]; 
     ],
   },
   { title: "SM Examination", messageKey: "nav.module.examination", icon: FileSpreadsheet, paths: ["/exams", "/exams/groups", "/exams/admit-cards", "/class-tests", "/online-tests", "/report-card"] },
+  { title: "SM Lessons", messageKey: "nav.module.lessons", icon: BookOpen, paths: ["/lessons"] },
   { title: "SM Library", messageKey: "nav.module.library", icon: Library, paths: ["/library/books", "/library/issues", "/library/members"] },
   { title: "SM Transport", messageKey: "nav.module.transport", icon: Bus, paths: ["/transport", "/transport/assignments", "/arrangements"] },
   { title: "SM Hostel", messageKey: "nav.module.hostel", icon: BedDouble, paths: ["/hostel"] },
@@ -139,6 +141,7 @@ const FAMILY_MENU: { path: string; title?: string; messageKey?: MessageKey }[] =
   { path: "/family/fee-structure" },
   { path: "/family/payments" },
   { path: "/study-material", title: "Study Materials", messageKey: "nav.ref.studyMaterials" },
+  { path: "/lessons" },
   { path: "/homework" },
   { path: "/notices", title: "Noticeboard", messageKey: "nav.ref.noticeboard" },
   { path: "/calendar", title: "Calendar", messageKey: "nav.ref.calendar" },

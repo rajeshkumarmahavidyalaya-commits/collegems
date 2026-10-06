@@ -13,15 +13,17 @@ import type { ActionResult } from "../library/actions";
  */
 
 const KINDS = {
-  mediums: { column: "medium_id", path: "/academics/mediums", one: "medium" },
-  houses: { column: "house_id", path: "/academics/houses", one: "house" },
+  mediums: { column: "medium_id", countFrom: "students", path: "/academics/mediums", one: "medium", inUse: "Some students are still in this medium. Move them first, or rename it instead." },
+  houses: { column: "house_id", countFrom: "students", path: "/academics/houses", one: "house", inUse: "Some students are still in this house. Move them first, or rename it instead." },
+  // A college's own labels for its subjects (0347); what uses one is a subject.
+  subject_types: { column: "subject_type_id", countFrom: "subjects", path: "/academics/subject-types", one: "subject type", inUse: "Some subjects still have this type. Change their type first, or rename it instead." },
 } as const;
 type Kind = keyof typeof KINDS;
 
 export type NamedRow = { id: string; name: string; students: number };
 
 function kindOf(kind: string): Kind | null {
-  return kind === "mediums" || kind === "houses" ? kind : null;
+  return kind === "mediums" || kind === "houses" || kind === "subject_types" ? kind : null;
 }
 
 export async function listNamed(kind: Kind): Promise<NamedRow[]> {
@@ -33,11 +35,11 @@ export async function listNamed(kind: Kind): Promise<NamedRow[]> {
     supabase.from(k).select("id, name").order("name").order("id"),
     // How many children carry each, so a row in use says why it cannot be
     // removed. Bounded by the size of the roll.
-    supabase.from("students").select(column).not(column, "is", null),
+    supabase.from(KINDS[k].countFrom).select(column).not(column, "is", null),
   ]);
   if (error) throw new Error(error.message);
   const counts = new Map<string, number>();
-  for (const row of (used.data ?? []) as Record<string, string | null>[]) {
+  for (const row of (used.data ?? []) as unknown as Record<string, string | null>[]) {
     const id = row[column];
     if (id) counts.set(id, (counts.get(id) ?? 0) + 1);
   }
@@ -62,10 +64,10 @@ export async function saveNamed(kind: Kind, name: string, id?: string): Promise<
     if (error.code === "23505") {
       return { ok: false, error: `There is already a ${KINDS[k].one} called "${clean}".`, fieldErrors: { name: ["Already used"] } };
     }
-    if (error.code === "42501") return { ok: false, error: `Only an administrator can change the ${k}.` };
+    if (error.code === "42501") return { ok: false, error: `Only an administrator can change the ${KINDS[k].one}s.` };
     return { ok: false, error: error.message };
   }
-  if (!data?.length) return { ok: false, error: `Only an administrator can change the ${k}.` };
+  if (!data?.length) return { ok: false, error: `Only an administrator can change the ${KINDS[k].one}s.` };
   revalidatePath(KINDS[k].path);
   revalidatePath("/students/new");
   return { ok: true, data: { id: data[0].id } };
@@ -79,7 +81,7 @@ export async function removeNamed(kind: Kind, id: string): Promise<ActionResult>
   if (error) {
     // The foreign key from students keeps a value that is still in use.
     if (error.code === "23503") {
-      return { ok: false, error: `Some students are still in this ${KINDS[k].one}. Move them first, or rename it instead.` };
+      return { ok: false, error: KINDS[k].inUse };
     }
     return { ok: false, error: error.message };
   }
