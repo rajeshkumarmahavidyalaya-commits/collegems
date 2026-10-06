@@ -22,7 +22,7 @@ export const subjectSchema = z.object({
     .regex(/^[A-Za-z0-9_-]+$/, "Letters, numbers, dashes and underscores only"),
   kind: z.enum(["theory", "practical"]),
   /** The college's own label (0347); empty means none. */
-  subjectTypeId: z.union([z.string().uuid(), z.literal("")]),
+  subjectTypeId: z.union([z.string().uuid(), z.literal("")]).optional(),
   isActive: z.boolean(),
   /**
    * The classes that study it. Asked only when the subject is new: after that,
