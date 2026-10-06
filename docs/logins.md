@@ -52,6 +52,19 @@ Demo logins for the live college were created directly in the database for
 first use. **Their passwords are not in this repository** and were handed over
 once; change each one after the first sign-in.
 
+### Test logins in Northgate Test Annex
+
+The Annex is the college writes are tested in, so nothing in a real college is
+touched to show a feature works. The teacher and student logins were made
+through the invitation path: an invitation row, then a signup the `handle_new_auth_user` trigger
+resolved. Their passwords are not in this repository.
+
+| Email | Role | Stands for |
+|---|---|---|
+| `ui-test.admin@northgate.test` | Super admin | nobody (a founder has no staff record) |
+| `ui-test.teacher@annex.test` | Teacher | staff ANX-T01, *Annex Test Teacher*, who teaches English in B.A. I Year A |
+| `ui-test.student@annex.test` | Student | ANX-0001, enrolled in B.A. I Year A |
+
 ## Before a college goes live
 
 A new college's super admin sees a **Get your college ready** checklist on the
