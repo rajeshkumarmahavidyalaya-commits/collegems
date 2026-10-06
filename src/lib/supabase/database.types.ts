@@ -1471,6 +1471,72 @@ export type Database = {
           },
         ]
       }
+      event_participants: {
+        Row: {
+          added_by: string | null
+          created_at: string
+          event_id: string
+          id: string
+          student_id: string
+          tenant_id: string
+        }
+        Insert: {
+          added_by?: string | null
+          created_at?: string
+          event_id: string
+          id?: string
+          student_id: string
+          tenant_id: string
+        }
+        Update: {
+          added_by?: string | null
+          created_at?: string
+          event_id?: string
+          id?: string
+          student_id?: string
+          tenant_id?: string
+        }
+        Relationships: []
+      }
+      events: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          description: string | null
+          event_date: string
+          id: string
+          is_active: boolean
+          session_id: string
+          tenant_id: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          event_date: string
+          id?: string
+          is_active?: boolean
+          session_id: string
+          tenant_id: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          event_date?: string
+          id?: string
+          is_active?: boolean
+          session_id?: string
+          tenant_id?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       exam_components: {
         Row: {
           code: string
@@ -8398,6 +8464,8 @@ export type Database = {
       }
       visitors: {
         Row: {
+          authorized_by: string | null
+          relation_to_student: string | null
           checked_in_at: string
           checked_in_by: string | null
           checked_out_at: string | null
@@ -8420,6 +8488,8 @@ export type Database = {
           visitor_name: string
         }
         Insert: {
+          authorized_by?: string | null
+          relation_to_student?: string | null
           checked_in_at?: string
           checked_in_by?: string | null
           checked_out_at?: string | null
@@ -8442,6 +8512,8 @@ export type Database = {
           visitor_name: string
         }
         Update: {
+          authorized_by?: string | null
+          relation_to_student?: string | null
           checked_in_at?: string
           checked_in_by?: string | null
           checked_out_at?: string | null
@@ -9323,6 +9395,10 @@ export type Database = {
         }
         Returns: string
       }
+      event_family_may_act: { Args: { p_student_id: string }; Returns: boolean }
+      event_join: { Args: { p_event_id: string; p_student_id: string }; Returns: Json }
+      event_leave: { Args: { p_event_id: string; p_student_id: string }; Returns: Json }
+      event_save: { Args: { p_id: string | null; p_title: string; p_event_date: string; p_description: string; p_is_active: boolean }; Returns: string }
       exam_seat_candidates: {
         Args: { p_exam_id: string; p_sits_on: string; p_time_slot_id?: string }
         Returns: {
@@ -10036,6 +10112,8 @@ export type Database = {
         Returns: string
       }
       front_office_next_number: { Args: { p_kind: string }; Returns: string }
+      gate_pass_issue: { Args: { p_student_id: string; p_visitor_name: string; p_phone: string; p_relation: string; p_authorized_by: string; p_reason?: string }; Returns: Database["public"]["Tables"]["visitors"]["Row"] }
+      gate_pass_register: { Args: { p_limit?: number }; Returns: { id: string; pass_number: string; visitor_name: string; phone: string | null; relation_to_student: string | null; student_id: string | null; student_name: string | null; admission_number: string | null; class_name: string | null; section_name: string | null; purpose: string; authorized_by: string | null; checked_in_at: string; checked_out_at: string | null }[] }
       global_search: {
         Args: { p_limit?: number; p_query: string }
         Returns: {

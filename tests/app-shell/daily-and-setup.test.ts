@@ -39,7 +39,11 @@ describe("the daily menu and the setup menu", () => {
     // 47 (0329): Subject Attendance, where the teacher of a subject takes its
     // register every day it is taught -- an everyday screen beside the daily
     // register, not a set-up one.
-    expect(everyday).toBeLessThanOrEqual(47);
+    // 48 (0342): Gate Passes, written at the gate every time somebody comes
+    // for a child -- the visitor log's everyday half, not a set-up screen.
+    // 49 (0343): Events, which a family opens to put its child on one, so it
+    // cannot fold into Setup (the next test forbids it).
+    expect(everyday).toBeLessThanOrEqual(49);
   });
 
   it("never marks a screen a family uses as setup", () => {

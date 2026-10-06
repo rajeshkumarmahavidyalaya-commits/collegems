@@ -66,6 +66,7 @@ import {
   Users,
   Video,
   Wallet,
+  PartyPopper,
 } from "lucide-react";
 
 export type NavItem = {
@@ -169,6 +170,15 @@ export const NAV_GROUPS: NavGroup[] = [
         title: "Front office",
         messageKey: "nav.frontOffice",
         href: "/front-office",
+        icon: DoorOpen,
+        roles: ["admin", "accountant"],
+      },
+      // The reference's SM Gate Pass (0342): visits that name a student, on
+      // the same visitor log and so for the same two seats.
+      {
+        title: "Gate Passes",
+        messageKey: "nav.gatePasses",
+        href: "/front-office/gate-passes",
         icon: DoorOpen,
         roles: ["admin", "accountant"],
       },
@@ -824,6 +834,14 @@ export const NAV_GROUPS: NavGroup[] = [
         messageKey: "nav.calendar",
         href: "/calendar",
         icon: CalendarDays,
+      },
+      // The reference's Events (0343). Every seat: the office runs them, and a
+      // family puts its own child on one through event_join.
+      {
+        title: "Events",
+        messageKey: "nav.events",
+        href: "/events",
+        icon: PartyPopper,
       },
     ],
   },

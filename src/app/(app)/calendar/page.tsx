@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { CalendarDays, GraduationCap, IndianRupee, Megaphone, Palmtree } from "lucide-react";
+import { CalendarDays, GraduationCap, IndianRupee, Megaphone, PartyPopper, Palmtree } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { MonthCalendar } from "@/components/calendar/month-calendar";
@@ -11,7 +11,7 @@ import { groupByDay, kindLabel, monthWindow, type CalendarEntry } from "@/lib/va
 
 export const metadata = { title: "School calendar" };
 
-const ICONS = { holiday: Palmtree, exam: GraduationCap, fee_due: IndianRupee, notice: Megaphone } as const;
+const ICONS = { holiday: Palmtree, exam: GraduationCap, fee_due: IndianRupee, notice: Megaphone, event: PartyPopper } as const;
 
 /**
  * The school's month (0297): holidays, exams, fee due dates and notices, the

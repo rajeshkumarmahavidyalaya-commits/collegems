@@ -40,6 +40,7 @@ const EVERY_ROLE_ON_PURPOSE = new Map<string, string>([
   ["/notifications", "Every account has an inbox."],
   ["/notices", "The board is the point; notice_matches_me(audience) decides who sees what."],
   ["/calendar", "school_calendar() reads each source through its own policies, so a seat sees its own dates."],
+  ["/events", "The office runs events and a family puts its own child on one: event_join checks the child is theirs."],
   ["/library/books", "The catalogue is a catalogue."],
   ["/settings/language", "Somebody who cannot read the page needs this most."],
   ["/settings/appearance", "A palette and light or dark are the reader's own, kept in their own cookie."],

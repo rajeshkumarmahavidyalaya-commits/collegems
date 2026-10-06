@@ -10,9 +10,9 @@ import type { MessageKey } from "@/lib/i18n/messages/en";
  * timezone can move a holiday by a day (the arrangements.ts rule).
  */
 
-export type CalendarKind = "holiday" | "exam" | "fee_due" | "notice";
+export type CalendarKind = "holiday" | "exam" | "fee_due" | "notice" | "event";
 
-export const CALENDAR_KINDS: CalendarKind[] = ["holiday", "exam", "fee_due", "notice"];
+export const CALENDAR_KINDS: CalendarKind[] = ["holiday", "exam", "fee_due", "notice", "event"];
 
 /**
  * A kind the server sent that this build does not know is shown as itself,

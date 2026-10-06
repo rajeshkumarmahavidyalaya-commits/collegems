@@ -749,7 +749,8 @@
 .reference-calendar-event { display: block; margin-top: 4px; padding: 3px 5px; border-radius: 3px; color: var(--foreground); background: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; border-inline-start: 3px solid var(--primary); }
 .reference-calendar-event[data-kind="exam"] { border-inline-start-color: var(--calendar-exam); }
 .reference-calendar-event[data-kind="holiday"] { border-inline-start-color: var(--calendar-holiday); }
-.reference-calendar-event[data-kind="notice"] { border-inline-start-color: var(--calendar-notice); }
+.reference-calendar-event[data-kind="notice"],
+.reference-calendar-event[data-kind="event"] { border-inline-start-color: var(--calendar-notice); }
 .reference-calendar-event[data-kind="fee_due"] { border-inline-start-color: var(--calendar-fee); }
 .reference-calendar-controls { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: space-between; padding: 16px 0; }
 .reference-calendar-legend { display: flex; flex-wrap: wrap; gap: 12px; color: var(--muted-foreground); font-size: 12px; list-style: none; margin: 0; padding: 0; }

@@ -1,4 +1,5 @@
 import {
+  DoorOpen,
   BedDouble,
   Bell,
   BookOpen,
@@ -38,7 +39,7 @@ const MODULES: { title: string; messageKey: MessageKey; icon: NavGroup["icon"]; 
     icon: BookOpen,
     paths: [
       "/timetable", "/timetable/me", "/timetable/substitutions", "/attendance", "/attendance/subject", "/attendance/report",
-      "/attendance/leave", "/study-material", "/homework", "/notices", "/calendar", "/live-classes",
+      "/attendance/leave", "/study-material", "/homework", "/notices", "/calendar", "/events", "/live-classes",
       "/academics/electives", "/my-subjects", "/academics/mediums", "/academics/houses", "/academics/class-groups",
     ],
   },
@@ -68,6 +69,7 @@ const MODULES: { title: string; messageKey: MessageKey; icon: NavGroup["icon"]; 
   { title: "SM Transport", messageKey: "nav.module.transport", icon: Bus, paths: ["/transport", "/transport/assignments", "/arrangements"] },
   { title: "SM Hostel", messageKey: "nav.module.hostel", icon: BedDouble, paths: ["/hostel"] },
   { title: "SM Stationary", messageKey: "nav.module.stationary", icon: Boxes, paths: ["/inventory"] },
+  { title: "SM Gate Pass", messageKey: "nav.module.gatePass", icon: DoorOpen, paths: ["/front-office/gate-passes"] },
   { title: "SM Reports", messageKey: "nav.module.reports", icon: FileSpreadsheet, paths: ["/reports"] },
   {
     title: "SM Communication",
