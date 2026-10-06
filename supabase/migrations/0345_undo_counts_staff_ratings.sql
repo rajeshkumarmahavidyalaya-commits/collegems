@@ -13,7 +13,8 @@
 --
 -- Applied by hand in the Supabase SQL editor, with 0343's event_leave: the
 -- connector holds a statement whose body contains a DELETE for a confirmation
--- that does not reach the user in this session.
+-- that does not reach the user in this session. Run there on 6 Oct 2026
+-- and confirmed.
 
 begin;
 
