@@ -10582,20 +10582,6 @@ export type Database = {
         Args: { p_budget_seconds?: number; p_limit?: number }
         Returns: Json
       }
-      library_books: {
-        Args: { p_category_id?: string; p_query?: string }
-        Returns: {
-          author: string
-          available_copies: number
-          category_name: string
-          id: string
-          isbn: string
-          publisher: string
-          shelf_location: string
-          title: string
-          total_copies: number
-        }[]
-      }
       library_catalogue: {
         Args: { p_category_id?: string; p_query?: string }
         Returns: {

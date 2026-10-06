@@ -275,8 +275,7 @@ ledger nets to zero. The ledger is the authority.
 - **Book number and price** are stored (0337). A book number is unique in a
   college when given and is searchable; a price is never negative, and empty
   means not recorded. `library_catalogue` is the catalogue's read and the
-  issue picker's search; `library_books` has no caller since and is to be
-  dropped.
+  issue picker's search; `library_books` was dropped in 0340.
 - **Books Issued is searched in Postgres** (0338): `library_issues_matching`
   returns `book_issues` rows matching a title, author, book number, card,
   admission number, employee code or name, and the screen pages on top.
