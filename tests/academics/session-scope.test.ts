@@ -21,6 +21,8 @@ import { describe, expect, it } from "vitest";
  * **is this list "now", or is it "ever"?**
  */
 const CROSS_YEAR_ON_PURPOSE: Record<string, string> = {
+  "src/app/(app)/exams/group-actions.ts:exams":
+    "How many exams each group holds, so a group in use says why it cannot be removed. A group filed under last year's exams is in use: an 'is this safe to delete' count, where crossing years is the conservative direction.",
   "src/app/(app)/accounts/actions.ts:journal_vouchers":
     "Rule 6: the accounts module is date-ranged, never session-filtered. A voucher book that hid last March would not reconcile.",
   "src/app/(app)/certificates/actions.ts:certificates":
