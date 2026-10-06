@@ -54,11 +54,14 @@ export function ExamDialog({
   onOpenChange,
   exam,
   schemes,
+  groups,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   exam: ExamRow | null;
   schemes: SchemeRow[];
+  /** Exam groups (0341): the active ones, and the exam's own even if inactive. */
+  groups: { id: string; name: string; isActive: boolean }[];
 }) {
   const { t } = useI18n();
   const router = useRouter();
@@ -73,6 +76,7 @@ export function ExamDialog({
       endsOn: exam?.endsOn ?? "",
       gradingSchemeId: exam?.gradingSchemeId ?? "",
       centre: exam?.centre ?? "",
+      examGroupId: exam?.examGroupId ?? "",
     },
   });
 
@@ -129,6 +133,19 @@ export function ExamDialog({
               name="centre"
               label="Exam centre"
               description="Where the papers are sat. Printed on every admit card."
+            />
+
+            <SelectField
+              control={form.control}
+              name="examGroupId"
+              label="Exam group"
+              description="The group this exam is filed under. Groups are kept on the Exam Groups screen."
+              options={[
+                { value: "", label: "None" },
+                ...groups
+                  .filter((g) => g.isActive || g.id === exam?.examGroupId)
+                  .map((g) => ({ value: g.id, label: g.isActive ? g.name : `${g.name} (inactive)` })),
+              ]}
             />
 
             <div className="grid gap-4 sm:grid-cols-2">

@@ -898,8 +898,36 @@ export type Database = {
           },
         ]
       }
+      class_groups: {
+        Row: {
+          created_at: string
+          head_staff_id: string | null
+          id: string
+          name: string
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          head_staff_id?: string | null
+          id?: string
+          name: string
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          head_staff_id?: string | null
+          id?: string
+          name?: string
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       class_levels: {
         Row: {
+          class_group_id: string | null
           created_at: string
           id: string
           name: string
@@ -907,6 +935,7 @@ export type Database = {
           tenant_id: string
         }
         Insert: {
+          class_group_id?: string | null
           created_at?: string
           id?: string
           name: string
@@ -914,6 +943,7 @@ export type Database = {
           tenant_id: string
         }
         Update: {
+          class_group_id?: string | null
           created_at?: string
           id?: string
           name?: string
@@ -1505,6 +1535,33 @@ export type Database = {
           },
         ]
       }
+      exam_groups: {
+        Row: {
+          created_at: string
+          id: string
+          is_active: boolean
+          name: string
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          name: string
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          name?: string
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       exam_remarks: {
         Row: {
           authored_by: string | null
@@ -1932,6 +1989,7 @@ export type Database = {
       }
       exams: {
         Row: {
+          exam_group_id: string | null
           centre: string | null
           created_at: string
           ends_on: string | null
@@ -1948,6 +2006,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          exam_group_id?: string | null
           centre?: string | null
           created_at?: string
           ends_on?: string | null
@@ -1964,6 +2023,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          exam_group_id?: string | null
           centre?: string | null
           created_at?: string
           ends_on?: string | null
@@ -9020,6 +9080,7 @@ export type Database = {
           status: string
         }[]
       }
+      class_group_save: { Args: { p_id: string | null; p_name: string; p_head_staff_id: string | null; p_class_level_ids: string[] }; Returns: string }
       class_test_create: {
         Args: {
           p_held_on: string

@@ -61,6 +61,8 @@ export const examSchema = z
     gradingSchemeId: z.union([z.string().uuid(), z.literal("")]).optional(),
     /** Where the papers are sat; printed on the admit card (0337). */
     centre: z.string().max(200).optional(),
+    /** The exam group it is filed under (0341); "" for none. */
+    examGroupId: z.union([z.string().uuid(), z.literal("")]).optional(),
   })
   .refine((v) => !v.startsOn || !v.endsOn || v.endsOn >= v.startsOn, {
     message: "The last day cannot be before the first",

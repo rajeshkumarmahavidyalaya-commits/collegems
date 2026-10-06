@@ -45,6 +45,9 @@ export type ExamRow = {
   centre: string | null;
   /** The classes this exam has papers for, in class order. */
   classNames: string[];
+  /** The exam group it is filed under (0341). */
+  examGroupId: string | null;
+  examGroupName: string | null;
 };
 
 /**
@@ -69,21 +72,23 @@ export async function listExams(): Promise<ExamRow[]> {
   // composite key is not something this project has been able to verify.
   let examsQuery = supabase
     .from("exams")
-    .select("id, name, kind, starts_on, ends_on, status, published_at, grading_scheme_id, centre")
+    .select("id, name, kind, starts_on, ends_on, status, published_at, grading_scheme_id, centre, exam_group_id")
     .order("starts_on", { ascending: false, nullsFirst: false });
   if (ctx?.currentSessionId) examsQuery = examsQuery.eq("session_id", ctx.currentSessionId);
 
-  const [examsRes, schemesRes, papersRes, sectionsRes, levelsRes] = await Promise.all([
+  const [examsRes, schemesRes, papersRes, sectionsRes, levelsRes, groupsRes] = await Promise.all([
     examsQuery,
     supabase.from("grading_schemes").select("id, name"),
     supabase.from("exam_subjects").select("exam_id, section_id"),
     supabase.from("sections").select("id, class_level_id"),
     supabase.from("class_levels").select("id, name, sequence"),
+    supabase.from("exam_groups").select("id, name"),
   ]);
 
   if (examsRes.error) throw new Error(examsRes.error.message);
 
   const schemeName = new Map((schemesRes.data ?? []).map((s) => [s.id, s.name]));
+  const groupName = new Map((groupsRes.data ?? []).map((g) => [g.id, g.name]));
   const levelOf = new Map((sectionsRes.data ?? []).map((s) => [s.id, s.class_level_id]));
   const level = new Map((levelsRes.data ?? []).map((l) => [l.id, l]));
   const papers = new Map<string, number>();
@@ -116,6 +121,8 @@ export async function listExams(): Promise<ExamRow[]> {
     paperCount: papers.get(e.id) ?? 0,
     centre: e.centre,
     classNames: classNames(e.id),
+    examGroupId: e.exam_group_id,
+    examGroupName: e.exam_group_id ? (groupName.get(e.exam_group_id) ?? null) : null,
   }));
 }
 
@@ -135,7 +142,7 @@ export async function getExam(examId: string): Promise<ExamRow | null> {
   const [examRes, schemesRes, papersRes] = await Promise.all([
     supabase
       .from("exams")
-      .select("id, name, kind, starts_on, ends_on, status, published_at, grading_scheme_id, centre")
+      .select("id, name, kind, starts_on, ends_on, status, published_at, grading_scheme_id, centre, exam_group_id")
       .eq("id", examId)
       .maybeSingle(),
     supabase.from("grading_schemes").select("id, name"),
@@ -161,6 +168,8 @@ export async function getExam(examId: string): Promise<ExamRow | null> {
     paperCount: (papersRes.data ?? []).length,
     centre: e.centre,
     classNames: [],
+    examGroupId: e.exam_group_id,
+    examGroupName: null,
   };
 }
 
@@ -182,6 +191,7 @@ export async function saveExam(input: unknown, id?: string): Promise<ActionResul
     ends_on: parsed.data.endsOn || null,
     grading_scheme_id: parsed.data.gradingSchemeId || null,
     centre: parsed.data.centre?.trim() || null,
+    exam_group_id: parsed.data.examGroupId || null,
   };
 
   const { data, error } = id

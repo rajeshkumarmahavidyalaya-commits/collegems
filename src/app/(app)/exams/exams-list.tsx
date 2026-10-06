@@ -67,10 +67,11 @@ const SchemeDialog = dynamic(() =>
 type Props = {
   exams: ExamRow[];
   schemes: SchemeRow[];
+  groups: { id: string; name: string; isActive: boolean }[];
   canManage: boolean;
 };
 
-export function ExamsList({ exams, schemes, canManage }: Props) {
+export function ExamsList({ exams, schemes, groups, canManage }: Props) {
   const [examOpen, setExamOpen] = useState(false);
   const [editingExam, setEditingExam] = useState<ExamRow | null>(null);
   const [schemeOpen, setSchemeOpen] = useState(false);
@@ -119,6 +120,7 @@ export function ExamsList({ exams, schemes, canManage }: Props) {
           onOpenChange={setExamOpen}
           exam={editingExam}
           schemes={schemes}
+          groups={groups}
         />
       ) : null}
       {schemeOpen ? (
@@ -235,6 +237,7 @@ function ExamsTab({
                         {exam.name}
                       </Link>
                       <p className="text-xs text-muted-foreground">
+                        {exam.examGroupName ? `${exam.examGroupName} · ` : ""}
                         {examKindLabel(exam.kind, t)} · {exam.gradingSchemeName ?? "School default scheme"}
                       </p>
                     </TableCell>

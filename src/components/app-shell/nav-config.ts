@@ -30,6 +30,7 @@ import {
   FileUp,
   Fingerprint,
   Flag,
+  FolderTree,
   FolderOpen,
   GraduationCap,
   HandCoins,
@@ -39,6 +40,7 @@ import {
   KeyRound,
   Landmark,
   Languages,
+  Layers,
   LayoutDashboard,
   Library,
   ListChecks,
@@ -234,6 +236,15 @@ export const NAV_GROUPS: NavGroup[] = [
         icon: Flag,
         roles: ["admin", "teacher", "accountant"],
       },
+      // The reference's Class Groups (0341): classes grouped under a head.
+      {
+        title: "Class Groups",
+        messageKey: "nav.classGroups",
+        href: "/academics/class-groups",
+        setup: true,
+        icon: FolderTree,
+        roles: ["admin", "teacher", "accountant"],
+      },
       // The year everything is filed under, and the only place the flag that
       // decides it can be moved. Its own entry rather than a card on
       // /academics: `reference.checks` links straight here, and a critic whose
@@ -360,6 +371,16 @@ export const NAV_GROUPS: NavGroup[] = [
         href: "/exams/admit-cards",
         setup: true,
         icon: IdCard,
+        roles: ["admin", "teacher"],
+      },
+      // The reference's Exam Groups (0341), set up once a year like admit
+      // cards, for the same two seats as the exams screen.
+      {
+        title: "Exam Groups",
+        messageKey: "nav.examGroups",
+        href: "/exams/groups",
+        setup: true,
+        icon: Layers,
         roles: ["admin", "teacher"],
       },
       {
