@@ -98,6 +98,7 @@ export const hi: Messages = {
   "nav.studentTypes": "विद्यार्थी के प्रकार",
   "nav.mediums": "माध्यम",
   "nav.houses": "सदन",
+  "nav.staffRatings": "स्टाफ़ रेटिंग",
   "nav.events": "कार्यक्रम",
   "nav.gatePasses": "गेट पास",
   "nav.classGroups": "कक्षा समूह",

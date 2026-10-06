@@ -163,8 +163,16 @@ birthday list was checked with dates set inside a rolled-back transaction
 - **Our extras stay** under the reference dashboard: the setup checklist,
   the module grid, the two registers and the charts.
 - **Modules this backend does not have**: Activities, Lessons
-  and Chapters, Tickets, Gate Pass, Chat, Staff Rating, ID card layouts,
-  transfer between schools, webcam and QR attendance.
+  and Chapters, Tickets, Chat, ID card layouts, transfer between schools,
+  webcam and QR attendance.
+- **Added 6 Oct 2026 (0341-0345)**: Exam Groups (`/exams/groups`), Class
+  Groups (`/academics/class-groups`), Gate Passes
+  (`/front-office/gate-passes`, on the visitor log), Events (`/events`, with
+  participants and a family's own Join) and Staff Rating (`/staff/ratings`).
+  Not built from them: an event image and a visitor photo (no upload), typed
+  in and out times on a gate pass (the log's own times are used), and a
+  teacher's view of their own ratings (a privacy decision, see
+  `docs/audit-2026-10.md`).
 - **No pixel comparison.** Layout and structure were matched against
   screenshots side by side. The reference's own CSS and images were not
   copied.

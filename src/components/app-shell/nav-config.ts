@@ -67,6 +67,7 @@ import {
   Video,
   Wallet,
   PartyPopper,
+  Star,
 } from "lucide-react";
 
 export type NavItem = {
@@ -544,6 +545,16 @@ export const NAV_GROUPS: NavGroup[] = [
         href: "/staff",
         icon: Users,
         roles: ["admin"],
+      },
+      // The reference's Staff Rating (0344): a student rates their own
+      // teachers and the administrator reads the summary. A teacher reads no
+      // ratings, their own included, so the entry is for these two seats.
+      {
+        title: "Staff Rating",
+        messageKey: "nav.staffRatings",
+        href: "/staff/ratings",
+        icon: Star,
+        roles: ["admin", "student"],
       },
       // Mirrors the roster entry above rather than widening it. The *gate* is
       // `staff.view`, checked inside `getStaffCards` because RLS on `staff` is

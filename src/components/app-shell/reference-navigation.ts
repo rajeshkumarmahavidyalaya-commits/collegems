@@ -53,7 +53,7 @@ const MODULES: { title: string; messageKey: MessageKey; icon: NavGroup["icon"]; 
     title: "SM Administrator",
     messageKey: "nav.module.administrator",
     icon: Users,
-    paths: ["/settings/team", "/settings/permissions", "/staff", "/staff/id-cards", "/hr", "/hr/leave", "/hr/biometric", "/hr/salary", "/payroll"],
+    paths: ["/settings/team", "/settings/permissions", "/staff", "/staff/ratings", "/staff/id-cards", "/hr", "/hr/leave", "/hr/biometric", "/hr/salary", "/payroll"],
   },
   {
     title: "SM Accounting",

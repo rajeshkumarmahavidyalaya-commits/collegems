@@ -6545,6 +6545,48 @@ export type Database = {
           },
         ]
       }
+      staff_ratings: {
+        Row: {
+          created_at: string
+          feedback: string | null
+          id: string
+          rating: number
+          section_id: string
+          session_id: string
+          staff_id: string
+          student_id: string
+          subject_id: string
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          feedback?: string | null
+          id?: string
+          rating: number
+          section_id: string
+          session_id: string
+          staff_id: string
+          student_id: string
+          subject_id: string
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          feedback?: string | null
+          id?: string
+          rating?: number
+          section_id?: string
+          session_id?: string
+          staff_id?: string
+          student_id?: string
+          subject_id?: string
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       staff_salary_assignments: {
         Row: {
           created_at: string
@@ -11022,6 +11064,9 @@ export type Database = {
         }
         Returns: Json
       }
+      staff_rate: { Args: { p_section_subject_id: string; p_rating: number; p_feedback: string }; Returns: Json }
+      staff_rating_my_teachers: { Args: never; Returns: { section_subject_id: string; subject_name: string; teacher_name: string | null; rating: number | null; feedback: string | null; rated_at: string | null }[] }
+      staff_rating_summary: { Args: never; Returns: { section_id: string; subject_id: string; staff_id: string; class_name: string; section_name: string; subject_name: string; teacher_name: string | null; ratings: number; with_feedback: number; average_rating: number }[] }
       subject_register: {
         Args: { p_date: string; p_section_id: string; p_subject_id: string }
         Returns: {

@@ -43,7 +43,9 @@ describe("the daily menu and the setup menu", () => {
     // for a child -- the visitor log's everyday half, not a set-up screen.
     // 49 (0343): Events, which a family opens to put its child on one, so it
     // cannot fold into Setup (the next test forbids it).
-    expect(everyday).toBeLessThanOrEqual(49);
+    // 50 (0344): Staff Rating, where a student rates their teachers -- a
+    // family-side screen, so it cannot fold into Setup either.
+    expect(everyday).toBeLessThanOrEqual(50);
   });
 
   it("never marks a screen a family uses as setup", () => {

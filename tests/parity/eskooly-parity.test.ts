@@ -192,7 +192,8 @@ describe("class tests", () => {
 
   it("an undo counts behaviour grades and class test marks (0306)", () => {
     const { file, body } = latest("promotion_undo");
-    expect(file).toMatch(/^0306_/);
+    // 0306 or a later redefinition (0345 added staff ratings) -- the rows are the point.
+    expect(Number(file.slice(0, 4))).toBeGreaterThanOrEqual(306);
     expect(body).toMatch(/\('behaviour_ratings', 'created_at'/);
     expect(body).toMatch(/\('class_test_marks', 'created_at'/);
   });

@@ -98,6 +98,7 @@ export const ur: Messages = {
   "nav.studentTypes": "طالب علم کی اقسام",
   "nav.mediums": "ذریعۂ تعلیم",
   "nav.houses": "ہاؤس",
+  "nav.staffRatings": "اسٹاف کی درجہ بندی",
   "nav.events": "تقریبات",
   "nav.gatePasses": "گیٹ پاس",
   "nav.classGroups": "جماعتوں کے گروپ",

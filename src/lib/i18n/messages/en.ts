@@ -115,6 +115,7 @@ export const en = {
   "nav.studentTypes": "Student Types",
   "nav.mediums": "Mediums",
   "nav.houses": "Houses",
+  "nav.staffRatings": "Staff Rating",
   "nav.events": "Events",
   "nav.gatePasses": "Gate Passes",
   "nav.classGroups": "Class Groups",
