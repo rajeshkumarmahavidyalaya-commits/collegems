@@ -67,6 +67,8 @@ const MODULES: { title: string; messageKey: MessageKey; icon: NavGroup["icon"]; 
   },
   { title: "SM Examination", messageKey: "nav.module.examination", icon: FileSpreadsheet, paths: ["/exams", "/exams/groups", "/exams/admit-cards", "/class-tests", "/online-tests", "/report-card"] },
   { title: "SM Lessons", messageKey: "nav.module.lessons", icon: BookOpen, paths: ["/lessons"] },
+  { title: "SM Activities", messageKey: "nav.module.activities", icon: Sparkles, paths: ["/activities"] },
+  { title: "SM Tickets", messageKey: "nav.module.tickets", icon: Bell, paths: ["/tickets"] },
   { title: "SM Library", messageKey: "nav.module.library", icon: Library, paths: ["/library/books", "/library/issues", "/library/members"] },
   { title: "SM Transport", messageKey: "nav.module.transport", icon: Bus, paths: ["/transport", "/transport/assignments", "/arrangements"] },
   { title: "SM Hostel", messageKey: "nav.module.hostel", icon: BedDouble, paths: ["/hostel"] },
@@ -155,6 +157,7 @@ const FAMILY_MENU: { path: string; title?: string; messageKey?: MessageKey }[] =
   { path: "/family/certificates" },
   { path: "/family/attendance" },
   { path: "/attendance/leave", title: "Leave Request", messageKey: "nav.family.leave" },
+  { path: "/tickets" },
   { path: "/family/stationery" },
   { path: "/family/profile" },
 ];

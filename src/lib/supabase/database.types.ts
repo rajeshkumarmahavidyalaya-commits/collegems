@@ -118,6 +118,87 @@ export type Database = {
           },
         ]
       }
+      activities: {
+        Row: {
+          class_level_id: string | null
+          created_at: string
+          description: string | null
+          fee: number
+          fee_head_id: string | null
+          id: string
+          is_active: boolean
+          name: string
+          session_id: string
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          class_level_id?: string | null
+          created_at?: string
+          description?: string | null
+          fee?: number
+          fee_head_id?: string | null
+          id?: string
+          is_active?: boolean
+          name: string
+          session_id: string
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          class_level_id?: string | null
+          created_at?: string
+          description?: string | null
+          fee?: number
+          fee_head_id?: string | null
+          id?: string
+          is_active?: boolean
+          name?: string
+          session_id?: string
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      activity_participants: {
+        Row: {
+          activity_id: string
+          created_at: string
+          id: string
+          invoice_id: string | null
+          joined_on: string
+          status: string
+          student_id: string
+          tenant_id: string
+          updated_at: string
+          withdrawn_on: string | null
+        }
+        Insert: {
+          activity_id: string
+          created_at?: string
+          id?: string
+          invoice_id?: string | null
+          joined_on?: string
+          status?: string
+          student_id: string
+          tenant_id: string
+          updated_at?: string
+          withdrawn_on?: string | null
+        }
+        Update: {
+          activity_id?: string
+          created_at?: string
+          id?: string
+          invoice_id?: string | null
+          joined_on?: string
+          status?: string
+          student_id?: string
+          tenant_id?: string
+          updated_at?: string
+          withdrawn_on?: string | null
+        }
+        Relationships: []
+      }
       assistant_messages: {
         Row: {
           created_at: string
@@ -8037,6 +8118,72 @@ export type Database = {
         }
         Relationships: []
       }
+      tickets: {
+        Row: {
+          assigned_to_staff_id: string | null
+          assignee_role: string | null
+          created_at: string
+          description: string | null
+          due_on: string | null
+          id: string
+          priority: string
+          raised_by: string
+          raised_by_family: boolean
+          resolution_note: string | null
+          resolved_at: string | null
+          section_id: string | null
+          session_id: string
+          status: string
+          student_id: string
+          subject_id: string | null
+          tenant_id: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          assigned_to_staff_id?: string | null
+          assignee_role?: string | null
+          created_at?: string
+          description?: string | null
+          due_on?: string | null
+          id?: string
+          priority?: string
+          raised_by?: string
+          raised_by_family?: boolean
+          resolution_note?: string | null
+          resolved_at?: string | null
+          section_id?: string | null
+          session_id: string
+          status?: string
+          student_id: string
+          subject_id?: string | null
+          tenant_id: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          assigned_to_staff_id?: string | null
+          assignee_role?: string | null
+          created_at?: string
+          description?: string | null
+          due_on?: string | null
+          id?: string
+          priority?: string
+          raised_by?: string
+          raised_by_family?: boolean
+          resolution_note?: string | null
+          resolved_at?: string | null
+          section_id?: string | null
+          session_id?: string
+          status?: string
+          student_id?: string
+          subject_id?: string | null
+          tenant_id?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       time_slots: {
         Row: {
           created_at: string
@@ -8994,6 +9141,8 @@ export type Database = {
         }[]
       }
       accounts_year_start: { Args: { p_on: string }; Returns: string }
+      activity_join: { Args: { p_activity_id: string; p_student_id: string; p_due_date?: string | null }; Returns: Json }
+      activity_withdraw: { Args: { p_participant_id: string }; Returns: Json }
       admission_apply: {
         Args: { p_application: Json; p_slug: string }
         Returns: Json
@@ -12758,6 +12907,8 @@ export type Database = {
           user_id: string
         }[]
       }
+      ticket_raise: { Args: { p_student_id: string; p_title: string; p_description: string | null; p_subject_id: string | null }; Returns: string }
+      ticket_set_status: { Args: { p_ticket_id: string; p_status: string; p_note: string | null }; Returns: undefined }
       timetable_busy_in_slot: {
         Args: { p_entry_id?: string; p_time_slot_id: string; p_weekday: number }
         Returns: {

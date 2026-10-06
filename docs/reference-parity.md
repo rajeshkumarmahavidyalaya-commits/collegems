@@ -57,7 +57,7 @@ child, the defect `docs/modules/reports.md` describes for reports. Built on
 | Certificates | `/family/certificates` | **Have** |
 | Attendance (month, subject; totals) | `/family/attendance` | **Partial**: by month; not yet by subject |
 | Leave Request | `/attendance/leave` | **Have** |
-| Tickets | none | **Missing** (see 5) |
+| Tickets | `/tickets` (0348): their child's tickets, and raise one | **Have** |
 | Stationary Issued | `/family/stationery` | **Have** |
 | Chat (message a teacher) | none | **Missing** (see 5) |
 | Account Settings (contact details, password) | `/family/profile` | **Have**: phone and address, a parent's own phone and occupation, password; not the name or email |
@@ -110,9 +110,9 @@ Partial inside them:
 
 | Reference module | Columns and form | Status |
 |---|---|---|
-| Activities | Name, Class, Fee, Description, Status | **Missing** |
+| Activities | Name, Class, Fee, Description, Status | **Have** (0348): joining raises the fee as an invoice, withdrawing cancels it |
 | Lessons and Chapters | Chapter: Title, Class, Subject. Lesson: Title, Class, Subject, Chapter, link (none, attachment, URL), Description | **Have** (0347): a chapter is a syllabus unit, a lesson is study material in one |
-| Tickets | Title, Priority, Status, Subject, Student, Class, Role, Assigned To, Due Date | **Missing** |
+| Tickets | Title, Priority, Status, Subject, Student, Class, Role, Assigned To, Due Date | **Have** (0348) |
 | Chat | direct or named group by class and section; a student messages a teacher | **Missing** |
 
 ## 6. Roles
@@ -127,7 +127,7 @@ therefore not a row; it needs every policy that names a role reviewed.
 
 1. ~~Family dashboard and portal pages~~ (0346, 6 Oct 2026).
 2. ~~Lessons and chapters; subject types and bulk assignment~~ (0347).
-3. Tickets; activities.
+3. ~~Tickets; activities~~ (0348, 0349).
 4. Chat.
 5. Fees: verify payments, payment methods for families, transport invoices,
    bulk invoice print.

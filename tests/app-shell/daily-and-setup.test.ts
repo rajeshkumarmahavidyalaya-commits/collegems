@@ -47,7 +47,10 @@ describe("the daily menu and the setup menu", () => {
     // family-side screen, so it cannot fold into Setup either.
     // 51 (0347): Lessons, which a student opens to study and a teacher adds to
     // as the chapter is taught -- a family-side screen, like Events.
-    expect(everyday).toBeLessThanOrEqual(51);
+    // 53 (0348): Tickets, which a family raises and staff work every day, and
+    // Activities, where a club's students are added and taken off as they
+    // join -- the reference's SM Tickets and SM Activities, neither set-up.
+    expect(everyday).toBeLessThanOrEqual(53);
   });
 
   it("never marks a screen a family uses as setup", () => {

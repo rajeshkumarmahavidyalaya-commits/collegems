@@ -74,6 +74,8 @@ import {
   ShoppingBag,
   UserCog,
   BookMarked,
+  Ticket as TicketIcon,
+  Trophy,
 } from "lucide-react";
 
 export type NavItem = {
@@ -508,6 +510,26 @@ export const NAV_GROUPS: NavGroup[] = [
       // writes one is the study-material policy (administrator, teacher); a
       // family reads their own class's published ones. An accountant or a
       // librarian has no class and would see an empty page.
+      // The reference's SM Tickets (0348): something to be done about a
+      // student. Every seat has a use for it -- the administrator manages,
+      // staff work the tickets assigned to them, a family raises and follows
+      // their child's -- and the policies decide which rows each reads.
+      {
+        title: "Tickets",
+        messageKey: "nav.tickets",
+        href: "/tickets",
+        icon: TicketIcon,
+        roles: ["admin", "teacher", "accountant", "librarian", "parent", "student"],
+      },
+      // The reference's SM Activities (0348). Written by the administrator;
+      // staff read who is on what. A family sees the fee on its account.
+      {
+        title: "Activities",
+        messageKey: "nav.activities",
+        href: "/activities",
+        icon: Trophy,
+        roles: ["admin", "teacher", "accountant"],
+      },
       {
         title: "Lessons",
         messageKey: "nav.lessons",
