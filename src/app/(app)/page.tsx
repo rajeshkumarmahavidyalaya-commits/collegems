@@ -5,6 +5,9 @@ import { getLocale, getT } from "@/lib/i18n/server";
 import { hasPermission } from "@/lib/auth/permissions";
 import { Button } from "@/components/ui/button";
 import { PageToolbar } from "@/components/page-toolbar";
+import { createClient } from "@/lib/supabase/server";
+import { FamilyHome } from "./family/family-home";
+import { pickChild } from "./family/actions";
 import {
   CalendarSkeleton,
   DashboardCalendar,
@@ -48,11 +51,11 @@ export const metadata = { title: "Dashboard" };
 export default async function DashboardPage({
   searchParams,
 }: {
-  searchParams: Promise<{ month?: string }>;
+  searchParams: Promise<{ month?: string; child?: string }>;
 }) {
   // The buttons are drawn on the permissions their screens check; the screens
   // remain the gate (rule 4).
-  const [{ month }, ctx, locale, t, canConfigure, canInvite] = await Promise.all([
+  const [{ month, child: requested }, ctx, locale, t, canConfigure, canInvite] = await Promise.all([
     searchParams,
     getUserContext(),
     getLocale(),
@@ -60,6 +63,32 @@ export default async function DashboardPage({
     hasPermission("academics.manage"),
     hasPermission("users.manage"),
   ]);
+  // A family gets the reference's Student or Parent Dashboard rather than the
+  // college's cards with their own rows in them ("Students with Dues: 1" was
+  // their own child). The tier decides what is shown (0208); what they may
+  // read is still decided row by row in Postgres.
+  if (ctx?.roleTier === "student") {
+    const supabase = await createClient();
+    const [{ children, child }, { data: tenant }] = await Promise.all([
+      pickChild(requested),
+      supabase.from("tenants").select("timezone").limit(1).maybeSingle(),
+    ]);
+    // The school's own date, never the server's (Vercel runs in UTC).
+    const today = new Intl.DateTimeFormat("en-CA", { timeZone: tenant?.timezone ?? "Asia/Kolkata" }).format(new Date());
+    return (
+      <FamilyHome
+        childList={children}
+        child={child}
+        sessionId={ctx.currentSessionId}
+        sessionName={ctx.currentSessionName}
+        today={today}
+        month={month}
+        locale={locale}
+        isParent={ctx.roleSubject === "guardian"}
+      />
+    );
+  }
+
   const scope = {
     sessionId: ctx?.currentSessionId ?? null,
     sessionName: ctx?.currentSessionName ?? null,

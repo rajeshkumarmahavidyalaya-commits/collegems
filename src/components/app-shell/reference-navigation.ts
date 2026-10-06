@@ -128,10 +128,49 @@ const LABELS: Record<string, { title: string; messageKey: MessageKey }> = {
 /** The entries the reference has that the source tree does not. */
 export const REFERENCE_EXTRA_HREFS = ["/setup", "/academics?tab=subjects", "/academics?tab=holidays"] as const;
 
+/**
+ * The reference's Student and Parent Dashboard menu, in its order. Built only
+ * when the tree already holds the family pages, which `navForRole` offers to
+ * a family alone, so it rearranges what a family was allowed and adds nothing.
+ */
+const FAMILY_MENU: { path: string; title?: string; messageKey?: MessageKey }[] = [
+  { path: "/", title: "Dashboard", messageKey: "nav.dashboard" },
+  { path: "/fees/family", title: "Fee Invoices", messageKey: "nav.family.invoices" },
+  { path: "/family/fee-structure" },
+  { path: "/family/payments" },
+  { path: "/study-material", title: "Study Materials", messageKey: "nav.ref.studyMaterials" },
+  { path: "/homework" },
+  { path: "/notices", title: "Noticeboard", messageKey: "nav.ref.noticeboard" },
+  { path: "/calendar", title: "Calendar", messageKey: "nav.ref.calendar" },
+  { path: "/events" },
+  { path: "/timetable", title: "Class Time Table", messageKey: "nav.family.timetable" },
+  { path: "/live-classes" },
+  { path: "/family/books" },
+  { path: "/family/exams" },
+  { path: "/family/admit-card" },
+  { path: "/report-card", title: "Exam Results", messageKey: "nav.family.results" },
+  { path: "/family/certificates" },
+  { path: "/family/attendance" },
+  { path: "/attendance/leave", title: "Leave Request", messageKey: "nav.family.leave" },
+  { path: "/family/stationery" },
+  { path: "/family/profile" },
+];
+
 export function referenceNavigation(groups: NavGroup[]): NavGroup[] {
   const available = new Map(groups.flatMap((g) => g.items).map((item) => [item.href, item]));
   const used = new Set<string>();
   const result: NavGroup[] = [];
+
+  if (available.has("/family/fee-structure")) {
+    const items: NavItem[] = [];
+    for (const entry of FAMILY_MENU) {
+      const item = available.get(entry.path);
+      if (!item) continue;
+      used.add(entry.path);
+      items.push(entry.title ? { ...item, title: entry.title, messageKey: entry.messageKey } : item);
+    }
+    result.push({ title: "Student Dashboard", messageKey: "nav.module.family", icon: GraduationCap, items });
+  }
 
   const relabel = (item: NavItem): NavItem => {
     const label = LABELS[item.href];
@@ -142,7 +181,7 @@ export function referenceNavigation(groups: NavGroup[]): NavGroup[] {
     const items: NavItem[] = [];
     for (const path of group.paths) {
       const item = available.get(path);
-      if (!item) continue;
+      if (!item || used.has(path)) continue;
       used.add(path);
       items.push(relabel(item));
     }

@@ -247,3 +247,70 @@ Three decisions worth keeping:
 - **Finished arrangements are shown, not dropped.** A family checking an old
   invoice needs to see the seat ran until March. A screen that hides them is how
   somebody concludes the school lost the record.
+
+## The Student and Parent Dashboard (0346, 6 Oct 2026)
+
+The reference gives a family its own dashboard and menu. Here a family signed
+in to the staff dashboard with their own rows in it, so *"Students with Dues:
+1"* was their own child: the report defect in `docs/modules/reports.md`,
+on the home page. `/` now draws the family dashboard for a family login. It
+shows the profile card, the session fee summary, attendance by status, the
+bus, the latest notices and the calendar. The menu is the reference's
+**Student Dashboard** list in its order.
+
+| Page | Reads |
+|---|---|
+| `/` (family) | `mobile_student` (balance, register), `family_fee_structure`, `family_guardians`, `transport_for_student`, notices through RLS |
+| `/family/fee-structure` | `family_fee_structure` |
+| `/family/payments` | `ledger_entries` payments and refunds, through RLS |
+| `/family/books` | `members` and `book_issues`, through RLS |
+| `/family/exams`, `/family/admit-card` | `family_exam_papers` |
+| `/family/certificates` | `certificates`, through RLS |
+| `/family/attendance` | `attendance_records` for the child's enrolment this year |
+| `/family/stationery` | `stock_movements` sales to the child |
+| `/family/profile` | `family_update_contact`, `family_update_my_contact`, password |
+
+Decisions worth keeping:
+
+- **What is shown is the tier; what may be read is Postgres.** The branch on
+  `/` is `roleTier === "student"`, which decides only which screen is drawn
+  (0208). Every read is row-owned by the family or goes through a definer that
+  calls `family_owns_student` first. The child picker changes the address,
+  and another child's id answers nothing or a sentence.
+- **One definition of "my child".** `family_owns_student` is the test, and
+  `event_family_may_act` (0343) now calls it rather than keeping its own copy.
+- **A year total is counted, never assumed.** `family_fee_structure` counts
+  the billing periods that collect a frequency. A monthly fee no period
+  collects yet has no year total, and the page says how many are left out
+  rather than multiplying by twelve (rule 6, *ten-month years are real*).
+- **The concession is this year's**, because the balance beside it is
+  (`fees_student_balances` is per session).
+- **A family corrects a phone and an address, not a name or an email.** The
+  name is the college's record. The email is what a login is matched by
+  (rule 3). `people` still has no family write policy, and the definer is
+  the only way in.
+
+Two read gaps the walk found, both closed in 0346:
+
+- **Every family could read every stock sale.** `stock_movements` had one
+  policy, readable by every member, and since 0261 it carries
+  `sold_to_student_id`. Staff keep the table; a family reads only its own
+  child's sales. Probed: an administrator reads 15 of 15 rows, a parent seat
+  0.
+- **A parent could not see their child's library card or loans.** Both
+  policies keyed on the login's own record. Guardian policies now sit beside
+  them. Probed as a parent: 1 card, 1 loan.
+
+And one found by measuring the new page at 375 px: **every page with a
+calendar scrolled sideways by 53 px**, the staff dashboard and `/calendar`
+included. A cell's `sr-only` label was positioned against an ancestor
+outside the calendar's scroll container, so it escaped the clip. The
+container is now `relative`.
+
+Walked as the Annex student (`ui-test.student@annex.test`): every page
+renders the child's own data (fee structure ₹1,000, an English paper on 20
+Oct with "no seat yet", October at 66.7% over 3 marked days, one loan). The
+phone and city saved and survived a reload, and a bad phone number was
+refused in a sentence. At 375 px nothing scrolls sideways. As the Annex
+teacher, each family page says it is for families, and the menu has none of
+them. The administrator still lands on the school dashboard.

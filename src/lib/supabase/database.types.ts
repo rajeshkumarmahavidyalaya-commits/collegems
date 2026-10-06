@@ -9664,6 +9664,9 @@ export type Database = {
         }[]
       }
       exams_unpublish: { Args: { p_exam_id: string }; Returns: number }
+      family_exam_papers: { Args: { p_student_id: string }; Returns: { exam_id: string; exam_name: string; exam_status: string; centre: string | null; starts_on: string | null; ends_on: string | null; exam_subject_id: string; subject: string; code: string | null; exam_date: string | null; starts_at: string | null; ends_at: string | null; slot: string | null; max_marks: number; room: string | null; seat_no: number | null }[] }
+      family_fee_structure: { Args: { p_student_id: string }; Returns: { fee_head_id: string; fee_head: string; amount: number; frequency: string; occurrences: number | null; session_total: number | null }[] }
+      family_guardians: { Args: { p_student_id: string }; Returns: { relationship: string; full_name: string | null; phone: string | null; occupation: string | null; is_primary: boolean }[] }
       family_login_problems: {
         Args: never
         Returns: {
@@ -9700,6 +9703,9 @@ export type Database = {
           student_id: string
         }[]
       }
+      family_owns_student: { Args: { p_student_id: string }; Returns: boolean }
+      family_update_contact: { Args: { p_student_id: string; p_phone: string | null; p_address_line1: string | null; p_address_line2: string | null; p_city: string | null; p_state: string | null; p_postal_code: string | null; p_country: string | null }; Returns: undefined }
+      family_update_my_contact: { Args: { p_phone: string | null; p_occupation: string | null }; Returns: undefined }
       fees_announce_invoice: { Args: { p_invoice_id: string }; Returns: Json }
       fees_announce_payment: {
         Args: { p_ledger_entry_id: string }

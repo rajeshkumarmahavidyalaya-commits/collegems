@@ -35,31 +35,32 @@ difference, with the reason.
 ## 2. Student and parent portal
 
 The reference gives a family a separate Student or Parent Dashboard, with a
-child picker for a parent. Here a family signed in to the staff dashboard
-with their own rows in it. "Students with Dues: 1" was their own child, the
-same defect `docs/modules/reports.md` describes for reports.
+child picker for a parent. Until 0346 a family signed in to the staff
+dashboard with their own rows in it: "Students with Dues: 1" was their own
+child, the defect `docs/modules/reports.md` describes for reports. Built on
+6 Oct 2026; see `docs/modules/family.md`.
 
 | Reference section | Here | Status |
 |---|---|---|
-| Dashboard: profile card, session fee summary, attendance by status, transport, latest notices, calendar | `/` (staff dashboard) | **Missing**: a family dashboard |
+| Dashboard: profile card, session fee summary, attendance by status, transport, latest notices, calendar | `/` for a family login (0346) | **Have** |
 | Fee Invoices (select and Pay Selected) | `/fees/family`, `/fees/students/[id]` | **Have** (pay one link at a time) |
-| Fee Structure (fee type, amount, period, occurrences, session total) | none | **Missing** |
-| Payment History (receipt, print) | account page | **Have** |
+| Fee Structure (fee type, amount, period, occurrences, session total) | `/family/fee-structure` | **Have** |
+| Payment History (receipt, print) | `/family/payments` | **Have** |
 | Study Materials | `/study-material` | **Have** |
 | Lessons (by subject, searchable) | none | **Missing** (see 5) |
 | Homework | `/homework` | **Have** |
 | Noticeboard, Calendar, Events | `/notices`, `/calendar`, `/events` | **Have** |
 | Class Time Table | `/timetable` | **Have** |
 | Live Classes | `/live-classes` | **Have** |
-| Books Issued | none for a family | **Missing**: a child's own loans |
-| Exams Time Table, Admit Card, Exam Results | `/report-card`; admit cards office-only | **Partial**: no family exam timetable or admit card |
-| Certificates | none for a family | **Missing**: a child's own issued certificates |
-| Attendance (month, subject; totals) | none for a family | **Missing**: a child's own register |
+| Books Issued | `/family/books` | **Have** (a parent could not read the loans before 0346) |
+| Exams Time Table, Admit Card, Exam Results | `/family/exams`, `/family/admit-card`, `/report-card` | **Have** |
+| Certificates | `/family/certificates` | **Have** |
+| Attendance (month, subject; totals) | `/family/attendance` | **Partial**: by month; not yet by subject |
 | Leave Request | `/attendance/leave` | **Have** |
 | Tickets | none | **Missing** (see 5) |
-| Stationary Issued | none for a family | **Missing**: what was bought from the store |
+| Stationary Issued | `/family/stationery` | **Have** |
 | Chat (message a teacher) | none | **Missing** (see 5) |
-| Account Settings (contact details, password) | `/account` (password, language) | **Partial**: a family cannot correct their own phone or address |
+| Account Settings (contact details, password) | `/family/profile` | **Have**: phone and address, a parent's own phone and occupation, password; not the name or email |
 
 ## 3. Staff portal (teacher, accountant, receptionist, librarian)
 
@@ -124,9 +125,7 @@ therefore not a row; it needs every policy that names a role reviewed.
 
 ## Order of work
 
-1. Family dashboard and portal pages: dashboard, fee structure, attendance,
-   books, certificates, admit card, exam timetable, stationery, contact
-   details.
+1. ~~Family dashboard and portal pages~~ (0346, 6 Oct 2026).
 2. Lessons and chapters; subject types and bulk assignment.
 3. Tickets; activities.
 4. Chat.

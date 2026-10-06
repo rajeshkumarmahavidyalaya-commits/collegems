@@ -68,6 +68,11 @@ import {
   Wallet,
   PartyPopper,
   Star,
+  ListOrdered,
+  History,
+  Award,
+  ShoppingBag,
+  UserCog,
 } from "lucide-react";
 
 export type NavItem = {
@@ -130,6 +135,25 @@ export const NAV_GROUPS: NavGroup[] = [
       // with the asker's token, so RLS and the matrix decide what each seat's
       // assistant can answer (0283). The menu has nothing to narrow.
       { title: "Ask SchoolOS", messageKey: "nav.assistant", href: "/assistant", icon: Sparkles },
+    ],
+  },
+  // A family's own pages, the reference's Student and Parent Dashboard menu
+  // (0346). Each is about one child the login is a family member of, read
+  // through RLS or `family_owns_student`; a member of staff is offered none
+  // of them, and each page tells a member of staff it is for families.
+  {
+    title: "My child",
+    messageKey: "nav.family",
+    items: [
+      { title: "Fee Structure", messageKey: "nav.family.feeStructure", href: "/family/fee-structure", icon: ListOrdered, roles: ["parent", "student"] },
+      { title: "Payment History", messageKey: "nav.family.payments", href: "/family/payments", icon: History, roles: ["parent", "student"] },
+      { title: "Books Issued", messageKey: "nav.family.books", href: "/family/books", icon: BookOpen, roles: ["parent", "student"] },
+      { title: "Exams Time Table", messageKey: "nav.family.exams", href: "/family/exams", icon: CalendarClock, roles: ["parent", "student"] },
+      { title: "Exam Admit Card", messageKey: "nav.family.admitCard", href: "/family/admit-card", icon: IdCard, roles: ["parent", "student"] },
+      { title: "Certificates", messageKey: "nav.family.certificates", href: "/family/certificates", icon: Award, roles: ["parent", "student"] },
+      { title: "Attendance", messageKey: "nav.family.attendance", href: "/family/attendance", icon: CalendarCheck, roles: ["parent", "student"] },
+      { title: "Stationary Issued", messageKey: "nav.family.stationery", href: "/family/stationery", icon: ShoppingBag, roles: ["parent", "student"] },
+      { title: "Account Settings", messageKey: "nav.family.profile", href: "/family/profile", icon: UserCog, roles: ["parent", "student"] },
     ],
   },
   {

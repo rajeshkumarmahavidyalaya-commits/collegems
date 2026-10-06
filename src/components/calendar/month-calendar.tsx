@@ -67,7 +67,11 @@ export async function MonthCalendar({
           <li data-kind="fee_due">{kindLabel("fee_due", t)}</li>
         </ul>
       </div>
-      <div className="overflow-x-auto">
+      {/* `relative` makes the scroller the containing block for the cells'
+          sr-only labels: absolutely positioned against an ancestor outside it,
+          they escaped the clip and widened every page with a calendar by 53px
+          at 375px (6 Oct 2026). */}
+      <div className="relative overflow-x-auto">
         <table className="reference-calendar" aria-label={title}>
           <thead>
             <tr>
