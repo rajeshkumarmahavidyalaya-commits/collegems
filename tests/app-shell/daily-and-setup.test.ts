@@ -52,7 +52,9 @@ describe("the daily menu and the setup menu", () => {
     // join -- the reference's SM Tickets and SM Activities, neither set-up.
     // 54 (0350): Chat, where a teacher and a family write to each other --
     // the reference's SM Chat, read and answered daily.
-    expect(everyday).toBeLessThanOrEqual(54);
+    // 55 (0353): Verify Payments, where the office approves the bank and UPI
+    // payments families send in -- checked against each day's statement.
+    expect(everyday).toBeLessThanOrEqual(55);
   });
 
   it("never marks a screen a family uses as setup", () => {

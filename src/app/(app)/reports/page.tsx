@@ -4,7 +4,8 @@ import { ReportRunner } from "./report-runner";
 
 export const metadata = { title: "Reports" };
 
-export default async function ReportsPage() {
+export default async function ReportsPage({ searchParams }: { searchParams: Promise<{ report?: string }> }) {
+  const { report } = await searchParams;
   const [ctx, reports, options] = await Promise.all([
     getUserContext(),
     listReports(),
@@ -22,7 +23,9 @@ export default async function ReportsPage() {
         </p>
       </div>
 
-      <ReportRunner reports={reports} options={options} />
+      {/* A module links straight to its own report with ?report=<key>; an
+          unknown or withheld key falls back to the first, as before. */}
+      <ReportRunner reports={reports} options={options} initialKey={report} />
     </div>
   );
 }

@@ -1,4 +1,6 @@
-import { Bus } from "lucide-react";
+import Link from "next/link";
+import { Bus, ReceiptText } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { getUserContext } from "@/lib/auth/context";
 import { hasPermission } from "@/lib/auth/permissions";
 import { listStaffOptions } from "../hr/actions";
@@ -14,10 +16,11 @@ import { ModuleCards } from "@/components/module-cards";
 export const metadata = { title: "Transport" };
 
 export default async function TransportPage() {
-  const [ctx, canView, canManage] = await Promise.all([
+  const [ctx, canView, canManage, canCollect] = await Promise.all([
     getUserContext(),
     hasPermission("transport.view"),
     hasPermission("transport.manage"),
+    hasPermission("fees.collect"),
   ]);
 
   if (!canView) {
@@ -53,13 +56,25 @@ export default async function TransportPage() {
             afternoon run has its seats twice, so each route counts its own.
           </p>
         </div>
-        <div className="flex items-center gap-2 rounded-lg border border-border bg-card px-4 py-2">
-          <Bus className="size-5 text-muted-foreground" aria-hidden="true" />
-          <div>
-            <p className="font-mono text-lg font-semibold tabular-nums">
-              {routes.reduce((sum, r) => sum + r.assigned, 0)}
-            </p>
-            <p className="text-xs text-muted-foreground">children on a bus</p>
+        <div className="flex flex-wrap items-center gap-3">
+          {/* The reference's Transport Invoices, which is a catalogue report
+              (0353) gated where the report is: on the permission that takes fees. */}
+          {canCollect && (
+            <Button asChild variant="outline">
+              <Link href="/reports?report=transport.invoices">
+                <ReceiptText className="size-4" aria-hidden="true" />
+                Transport Invoices
+              </Link>
+            </Button>
+          )}
+          <div className="flex items-center gap-2 rounded-lg border border-border bg-card px-4 py-2">
+            <Bus className="size-5 text-muted-foreground" aria-hidden="true" />
+            <div>
+              <p className="font-mono text-lg font-semibold tabular-nums">
+                {routes.reduce((sum, r) => sum + r.assigned, 0)}
+              </p>
+              <p className="text-xs text-muted-foreground">children on a bus</p>
+            </div>
           </div>
         </div>
       </div>

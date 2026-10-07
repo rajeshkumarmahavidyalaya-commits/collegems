@@ -43,7 +43,7 @@ child, the defect `docs/modules/reports.md` describes for reports. Built on
 | Reference section | Here | Status |
 |---|---|---|
 | Dashboard: profile card, session fee summary, attendance by status, transport, latest notices, calendar | `/` for a family login (0346) | **Have** |
-| Fee Invoices (select and Pay Selected) | `/fees/family`, `/fees/students/[id]` | **Have** (pay one link at a time) |
+| Fee Invoices (select and Pay Selected) | `/fees/family`, `/fees/students/[id]`, `/family/pay` | **Have** (pay one invoice at a time, by gateway link or by bank or UPI) |
 | Fee Structure (fee type, amount, period, occurrences, session total) | `/family/fee-structure` | **Have** |
 | Payment History (receipt, print) | `/family/payments` | **Have** |
 | Study Materials | `/study-material` | **Have** |
@@ -94,10 +94,10 @@ Partial inside them:
 | Attendance: Webcam (face) Attendance | **Not adopted**: face recognition is biometric data of children; readers (0273) cover the device case |
 | ID Card Layouts (name, orientation, background, visible fields) | **Missing** |
 | Transfer Student to another school | **Missing**: memberships (0323) make it possible |
-| Verify Payments (a family's bank or UPI payment with a proof, approved by the office) | **Missing** |
-| Payment methods shown to families (bank details, UPI ID and QR) | **Missing** |
-| Transport Invoices (per child: route, fare a month, paid, unpaid, not generated) | **Missing** as a screen; billing exists |
-| Print Invoices in Bulk (class, section, status) | **Missing**: one invoice at a time |
+| Verify Payments (a family's bank or UPI payment with a proof, approved by the office) | **Have** (0353): `/family/pay` and `/fees/verify`; approval writes an ordinary receipt |
+| Payment methods shown to families (bank details, UPI ID and QR) | **Have** (0353): the `fees.payment_methods` setting, with a UPI QR per invoice |
+| Transport Invoices (per child: route, fare a month, paid, unpaid, not generated) | **Have** (0353, 0354) as a catalogue report linked from Transport |
+| Print Invoices in Bulk (class, section, status) | **Have**: `/fees/invoices/print`, one bill a sheet, up to 200 |
 | Academic Reports and Multi Group Reports (consolidated across exams) | **Missing** (backlog #10) |
 | Reports: Enrollment (gender, admission date range) | **Partial**: Class roster lacks those filters |
 | Admission form: category, mother tongue, birth place, PEN, APAAR, previous school, parents' occupation and ID | **Partial**: occupation is stored on the guardian; the rest is missing |
@@ -129,8 +129,8 @@ therefore not a row; it needs every policy that names a role reviewed.
 2. ~~Lessons and chapters; subject types and bulk assignment~~ (0347).
 3. ~~Tickets; activities~~ (0348, 0349).
 4. ~~Chat~~ (0350-0352).
-5. Fees: verify payments, payment methods for families, transport invoices,
-   bulk invoice print.
+5. ~~Fees: verify payments, payment methods for families, transport invoices,
+   bulk invoice print~~ (0353, 0354).
 6. Public pages: enquiry, certificate verification, exam timetable, staff
    application, result and admit card lookup.
 7. ID card layouts, QR attendance, staff clock-in, transfer between schools.

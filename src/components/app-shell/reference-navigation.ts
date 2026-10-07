@@ -63,7 +63,7 @@ const MODULES: { title: string; messageKey: MessageKey; icon: NavGroup["icon"]; 
     icon: Wallet,
     paths: [
       "/fees/setup", "/fees/instalments", "/fees/concessions", "/fees/invoices", "/fees/counter", "/fees",
-      "/fees/daybook", "/fees/family", "/accounts", "/accounts/vouchers", "/accounts/expenses", "/accounts/donations",
+      "/fees/daybook", "/fees/verify", "/fees/family", "/accounts", "/accounts/vouchers", "/accounts/expenses", "/accounts/donations",
     ],
   },
   { title: "SM Examination", messageKey: "nav.module.examination", icon: FileSpreadsheet, paths: ["/exams", "/exams/groups", "/exams/admit-cards", "/class-tests", "/online-tests", "/report-card"] },
@@ -144,6 +144,7 @@ const FAMILY_MENU: { path: string; title?: string; messageKey?: MessageKey }[] =
   { path: "/fees/family", title: "Fee Invoices", messageKey: "nav.family.invoices" },
   { path: "/family/fee-structure" },
   { path: "/family/payments" },
+  { path: "/family/pay" },
   { path: "/study-material", title: "Study Materials", messageKey: "nav.ref.studyMaterials" },
   { path: "/lessons" },
   { path: "/homework" },

@@ -64,7 +64,7 @@ function SettingCard({ setting, canManage }: { setting: SettingRow; canManage: b
   }
 
   return (
-    <Card>
+    <Card id={`setting-${setting.key}`} className="scroll-mt-20">
       <CardHeader className="pb-3">
         <CardTitle className="flex flex-wrap items-center gap-2 text-base">
           {setting.label}

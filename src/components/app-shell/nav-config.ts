@@ -66,6 +66,7 @@ import {
   Users,
   Video,
   Wallet,
+  BadgeCheck,
   PartyPopper,
   Star,
   ListOrdered,
@@ -151,6 +152,8 @@ export const NAV_GROUPS: NavGroup[] = [
     items: [
       { title: "Fee Structure", messageKey: "nav.family.feeStructure", href: "/family/fee-structure", icon: ListOrdered, roles: ["parent", "student"] },
       { title: "Payment History", messageKey: "nav.family.payments", href: "/family/payments", icon: History, roles: ["parent", "student"] },
+      // Pay by bank or UPI and tell the office (0353); nothing is paid until they approve it.
+      { title: "Pay Online", messageKey: "nav.family.pay", href: "/family/pay", icon: Wallet, roles: ["parent", "student"] },
       { title: "Books Issued", messageKey: "nav.family.books", href: "/family/books", icon: BookOpen, roles: ["parent", "student"] },
       { title: "Exams Time Table", messageKey: "nav.family.exams", href: "/family/exams", icon: CalendarClock, roles: ["parent", "student"] },
       { title: "Exam Admit Card", messageKey: "nav.family.admitCard", href: "/family/admit-card", icon: IdCard, roles: ["parent", "student"] },
@@ -739,6 +742,16 @@ export const NAV_GROUPS: NavGroup[] = [
         messageKey: "nav.invoices",
         href: "/fees/invoices",
         icon: FileText,
+        roles: ["admin", "accountant"],
+      },
+      // The reference's Verify Payments (0353): a family's bank or UPI payment,
+      // approved into a receipt. The roles that read and write the ledger,
+      // which is exactly who the claim policies admit.
+      {
+        title: "Verify Payments",
+        messageKey: "nav.verifyPayments",
+        href: "/fees/verify",
+        icon: BadgeCheck,
         roles: ["admin", "accountant"],
       },
       {

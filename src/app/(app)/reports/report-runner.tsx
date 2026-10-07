@@ -59,12 +59,14 @@ type Props = {
  * database grows without being edited — which is the whole reason the kernel
  * stores that description as data rather than as forty React components.
  */
-export function ReportRunner({ reports, options }: Props) {
+export function ReportRunner({ reports, options, initialKey }: Props & { initialKey?: string }) {
   // The reader's locale, resolved server-side and provided by the shell. Every
   // number and date below goes through it rather than through a hardcoded tag
   // — rule 15.
   const { formatNumber, locale } = useI18n();
-  const [selectedKey, setSelectedKey] = useState(reports[0]?.key ?? "");
+  const [selectedKey, setSelectedKey] = useState(
+    reports.find((r) => r.key === initialKey)?.key ?? reports[0]?.key ?? "",
+  );
   const [params, setParams] = useState<Record<string, string>>({});
   const [touched, setTouched] = useState(false);
   const [result, setResult] = useState<ReportResult | null>(null);

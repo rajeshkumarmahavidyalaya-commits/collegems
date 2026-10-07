@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useT } from "@/components/providers/i18n-provider";
 import type { SettingRow } from "./actions";
@@ -14,9 +15,21 @@ import { SettingsList } from "./settings-list";
 export function SettingsTabs({ settings, canManage }: { settings: SettingRow[]; canManage: boolean }) {
   const t = useT();
   const modules = [...new Set(settings.map((s) => s.module))];
+  const [tab, setTab] = useState(modules[0] ?? "");
+
+  // Another screen links to one setting as #setting-<key> (Verify Payments to
+  // the bank details): open the tab it is on, then bring the card into view.
+  useEffect(() => {
+    const key = decodeURIComponent(window.location.hash.replace(/^#setting-/, ""));
+    const target = settings.find((s) => s.key === key);
+    if (!target) return;
+    setTab(target.module);
+    window.requestAnimationFrame(() => document.getElementById(`setting-${target.key}`)?.scrollIntoView({ block: "start" }));
+  }, [settings]);
+
   if (!modules.length) return <p className="text-muted-foreground">{t("settings.none")}</p>;
   return (
-    <Tabs defaultValue={modules[0]}>
+    <Tabs value={tab} onValueChange={setTab}>
       <TabsList>
         {modules.map((module) => (
           <TabsTrigger key={module} value={module}>

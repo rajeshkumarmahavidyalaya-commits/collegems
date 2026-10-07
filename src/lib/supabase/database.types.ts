@@ -5213,6 +5213,69 @@ export type Database = {
           },
         ]
       }
+      payment_claims: {
+        Row: {
+          amount: number
+          created_at: string
+          decided_at: string | null
+          decided_by: string | null
+          decision_note: string | null
+          id: string
+          invoice_id: string | null
+          ledger_entry_id: string | null
+          method: string
+          note: string | null
+          paid_on: string
+          proof_path: string | null
+          reference: string
+          status: string
+          student_id: string
+          submitted_by: string
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          decided_at?: string | null
+          decided_by?: string | null
+          decision_note?: string | null
+          id?: string
+          invoice_id?: string | null
+          ledger_entry_id?: string | null
+          method: string
+          note?: string | null
+          paid_on: string
+          proof_path?: string | null
+          reference: string
+          status?: string
+          student_id: string
+          submitted_by?: string
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          decided_at?: string | null
+          decided_by?: string | null
+          decision_note?: string | null
+          id?: string
+          invoice_id?: string | null
+          ledger_entry_id?: string | null
+          method?: string
+          note?: string | null
+          paid_on?: string
+          proof_path?: string | null
+          reference?: string
+          status?: string
+          student_id?: string
+          submitted_by?: string
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       payment_intents: {
         Row: {
           amount: number
@@ -11317,6 +11380,10 @@ export type Database = {
           tenant_id: string
         }[]
       }
+      payment_claim_approve: { Args: { p_claim_id: string }; Returns: Database["public"]["Tables"]["ledger_entries"]["Row"] }
+      payment_claim_reject: { Args: { p_claim_id: string; p_reason: string }; Returns: undefined }
+      payment_claim_submit: { Args: { p_student_id: string; p_invoice_id: string | null; p_amount: number; p_method: string; p_reference: string; p_paid_on: string; p_proof_path?: string | null; p_note?: string | null }; Returns: string }
+      report_transport_invoices: { Args: { p_params: Json }; Returns: { row_data: Json }[] }
       school_admins: {
         Args: { p_tenant: string }
         Returns: {

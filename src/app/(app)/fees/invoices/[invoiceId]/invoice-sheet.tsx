@@ -21,7 +21,16 @@ import { CancelInvoiceButton } from "../../invoice-controls";
  * printed — the app's dark mode must not push a black rectangle through a
  * school's toner.
  */
-export function InvoiceSheet({ doc, canCollect = false }: { doc: InvoiceDocument; canCollect?: boolean }) {
+export function InvoiceSheet({
+  doc,
+  canCollect = false,
+  bare = false,
+}: {
+  doc: InvoiceDocument;
+  canCollect?: boolean;
+  /** One of many on a bulk print: no toolbar of its own. */
+  bare?: boolean;
+}) {
   const { t } = useI18n();
   const { formatCurrency } = useI18n();
   const { formatDate } = useI18n();
@@ -39,37 +48,39 @@ export function InvoiceSheet({ doc, canCollect = false }: { doc: InvoiceDocument
 
   return (
     <div className="flex flex-col gap-4">
-      <div data-print="hide" className="flex flex-wrap items-center justify-between gap-2">
-        <Button asChild variant="ghost" size="sm">
-          <Link href="/fees/invoices">
-            <ArrowLeft className="size-4" aria-hidden="true" />
-            All invoices
-          </Link>
-        </Button>
-        <div className="flex flex-wrap gap-2">
-          {student && (
+      {!bare && (
+        <div data-print="hide" className="flex flex-wrap items-center justify-between gap-2">
+          <Button asChild variant="ghost" size="sm">
+            <Link href="/fees/invoices">
+              <ArrowLeft className="size-4" aria-hidden="true" />
+              All invoices
+            </Link>
+          </Button>
+          <div className="flex flex-wrap gap-2">
+            {student && (
+              <Button asChild variant="outline" size="sm">
+                <Link href={`/fees/students/${student.id}`}>Fee account</Link>
+              </Button>
+            )}
+            {/* A link, not an action: the bytes come from a route handler, so
+                there is nothing to do but follow it. `download` names the file
+                even where a browser previews the PDF inline. */}
             <Button asChild variant="outline" size="sm">
-              <Link href={`/fees/students/${student.id}`}>Fee account</Link>
+              <a href={`/fees/invoices/${invoice.id}/pdf`} download>
+                <Download className="size-4" aria-hidden="true" />
+                PDF
+              </a>
             </Button>
-          )}
-          {/* A link, not an action: the bytes come from a route handler, so
-              there is nothing to do but follow it. `download` names the file
-              even where a browser previews the PDF inline. */}
-          <Button asChild variant="outline" size="sm">
-            <a href={`/fees/invoices/${invoice.id}/pdf`} download>
-              <Download className="size-4" aria-hidden="true" />
-              PDF
-            </a>
-          </Button>
-          {canCollect && invoice.status === "issued" && (
-            <CancelInvoiceButton invoiceId={invoice.id} invoiceNumber={invoice.number} />
-          )}
-          <Button size="sm" onClick={() => window.print()}>
-            <Printer className="size-4" aria-hidden="true" />
-            Print
-          </Button>
+            {canCollect && invoice.status === "issued" && (
+              <CancelInvoiceButton invoiceId={invoice.id} invoiceNumber={invoice.number} />
+            )}
+            <Button size="sm" onClick={() => window.print()}>
+              <Printer className="size-4" aria-hidden="true" />
+              Print
+            </Button>
+          </div>
         </div>
-      </div>
+      )}
 
       <article
         data-print="sheet"

@@ -1226,77 +1226,96 @@ export type InvoiceDocument = {
  * counter to argue about.
  */
 export async function getInvoiceDocument(invoiceId: string): Promise<InvoiceDocument | null> {
+  const [doc] = await getInvoiceDocuments([invoiceId]);
+  return doc ?? null;
+}
+
+/**
+ * Several invoices as documents, in the order asked for: one query per table
+ * rather than four per invoice, so a class's bills print in one request. The
+ * single-invoice page goes through here too, so a bill printed alone and a
+ * bill printed with its class cannot differ.
+ */
+export async function getInvoiceDocuments(invoiceIds: string[]): Promise<InvoiceDocument[]> {
+  if (invoiceIds.length === 0) return [];
   const ctx = await getUserContext();
   const supabase = await createClient();
 
-  const { data: invoice, error } = await supabase
+  const { data: found, error } = await supabase
     .from("invoices")
     .select("id, invoice_number, issue_date, due_date, status, notes, cancel_reason, student_id")
-    .eq("id", invoiceId)
-    .maybeSingle();
+    .in("id", invoiceIds);
 
   if (error) throw new Error(error.message);
-  if (!invoice) return null;
+  const byId = new Map((found ?? []).map((i) => [i.id, i]));
+  const invoices = invoiceIds.map((id) => byId.get(id)).filter((i): i is NonNullable<typeof i> => !!i);
+  if (invoices.length === 0) return [];
+  const ids = invoices.map((i) => i.id);
 
   // Single-column keys only -- see the note in getStudentAccount about not
   // embedding across the composite foreign keys added in 0024.
   const [linesRes, paymentsRes, parties] = await Promise.all([
     supabase
       .from("invoice_lines")
-      .select("id, description, amount")
-      .eq("invoice_id", invoiceId)
-      .order("created_at"),
+      .select("id, invoice_id, description, amount")
+      .in("invoice_id", ids)
+      .order("created_at")
+      .order("id"),
     supabase
       .from("ledger_entries")
-      .select("id, occurred_at, receipt_number, method, amount, entry_type, reverses_entry_id")
-      .eq("invoice_id", invoiceId)
+      .select("id, invoice_id, occurred_at, receipt_number, method, amount, entry_type, reverses_entry_id")
+      .in("invoice_id", ids)
       .eq("entry_type", "payment")
-      .order("occurred_at"),
-    documentParties(supabase, invoice.student_id, ctx?.tenantName ?? ""),
+      .order("occurred_at")
+      .order("id"),
+    documentPartiesMany(supabase, [...new Set(invoices.map((i) => i.student_id))], ctx?.tenantName ?? ""),
   ]);
 
   if (linesRes.error) throw new Error(linesRes.error.message);
   if (paymentsRes.error) throw new Error(paymentsRes.error.message);
 
-  const lines = (linesRes.data ?? []).map((l) => ({
-    id: l.id,
-    description: l.description,
-    amount: Number(l.amount),
-  }));
+  return invoices.map((invoice) => {
+    const lines = (linesRes.data ?? [])
+      .filter((l) => l.invoice_id === invoice.id)
+      .map((l) => ({ id: l.id, description: l.description, amount: Number(l.amount) }));
 
-  const payments = (paymentsRes.data ?? []).map((p) => ({
-    id: p.id,
-    occurredAt: p.occurred_at,
-    receiptNumber: p.receipt_number,
-    method: p.method,
-    // Stored negative; a bill reads better with positive figures in a
-    // "payments received" column.
-    amount: -Number(p.amount),
-    isReversal: p.reverses_entry_id !== null,
-  }));
+    const payments = (paymentsRes.data ?? [])
+      .filter((p) => p.invoice_id === invoice.id)
+      .map((p) => ({
+        id: p.id,
+        occurredAt: p.occurred_at,
+        receiptNumber: p.receipt_number,
+        method: p.method,
+        // Stored negative; a bill reads better with positive figures in a
+        // "payments received" column.
+        amount: -Number(p.amount),
+        isReversal: p.reverses_entry_id !== null,
+      }));
 
-  const total = lines.reduce((sum, l) => sum + l.amount, 0);
-  // A reversed payment nets itself out, because both rows are here.
-  const paid = payments.reduce((sum, p) => sum + p.amount, 0);
+    const total = lines.reduce((sum, l) => sum + l.amount, 0);
+    // A reversed payment nets itself out, because both rows are here.
+    const paid = payments.reduce((sum, p) => sum + p.amount, 0);
 
-  return {
-    invoice: {
-      id: invoice.id,
-      number: invoice.invoice_number,
-      issueDate: invoice.issue_date,
-      dueDate: invoice.due_date,
-      status: invoice.status,
-      notes: invoice.notes,
-      cancelReason: invoice.cancel_reason,
-    },
-    ...parties,
-    lines,
-    payments,
-    total,
-    paid,
-    outstanding: total - paid,
-    sessionName: ctx?.currentSessionName ?? null,
-  };
+    return {
+      invoice: {
+        id: invoice.id,
+        number: invoice.invoice_number,
+        issueDate: invoice.issue_date,
+        dueDate: invoice.due_date,
+        status: invoice.status,
+        notes: invoice.notes,
+        cancelReason: invoice.cancel_reason,
+      },
+      school: parties.school,
+      student: parties.students.get(invoice.student_id) ?? null,
+      lines,
+      payments,
+      total,
+      paid,
+      outstanding: total - paid,
+      sessionName: ctx?.currentSessionName ?? null,
+    };
+  });
 }
 
 /**
@@ -1309,6 +1328,15 @@ async function documentParties(
   studentId: string,
   schoolName: string,
 ): Promise<{ school: InvoiceDocument["school"]; student: InvoiceDocument["student"] }> {
+  const many = await documentPartiesMany(supabase, [studentId], schoolName);
+  return { school: many.school, student: many.students.get(studentId) ?? null };
+}
+
+async function documentPartiesMany(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  studentIds: string[],
+  schoolName: string,
+): Promise<{ school: InvoiceDocument["school"]; students: Map<string, NonNullable<InvoiceDocument["student"]>> }> {
   const [studentRes, profileRes] = await Promise.all([
     supabase
       .from("students")
@@ -1318,19 +1346,31 @@ async function documentParties(
          enrolments ( roll_number, sections ( name, class_levels ( name ) ) ),
          guardian_student ( is_primary, guardians ( people:person_id ( first_name, last_name, phone ) ) )`,
       )
-      .eq("id", studentId)
-      .maybeSingle(),
+      .in("id", studentIds),
     supabase.from("settings").select("value").eq("key", "school.profile").maybeSingle(),
   ]);
 
-  const s = studentRes.data;
-  const person = s?.people;
-  const enrolment = Array.isArray(s?.enrolments) ? s.enrolments[0] : s?.enrolments;
-  const links = Array.isArray(s?.guardian_student) ? s.guardian_student : [];
-  const primary = links.find((l) => l.is_primary) ?? links[0];
-  const guardianPerson = primary?.guardians?.people;
-
   const profile = (profileRes.data?.value ?? {}) as Record<string, string | null>;
+  const students = new Map<string, NonNullable<InvoiceDocument["student"]>>();
+  for (const s of studentRes.data ?? []) {
+    const person = s.people;
+    const enrolment = Array.isArray(s.enrolments) ? s.enrolments[0] : s.enrolments;
+    const links = Array.isArray(s.guardian_student) ? s.guardian_student : [];
+    const primary = links.find((l) => l.is_primary) ?? links[0];
+    const guardianPerson = primary?.guardians?.people;
+    students.set(s.id, {
+      id: s.id,
+      fullName: person ? `${person.first_name} ${person.last_name}` : "Unknown",
+      admissionNumber: s.admission_number,
+      sectionLabel:
+        enrolment?.sections && enrolment.sections.class_levels
+          ? `${enrolment.sections.class_levels.name} · ${enrolment.sections.name}`
+          : null,
+      rollNumber: enrolment?.roll_number ?? null,
+      guardianName: guardianPerson ? `${guardianPerson.first_name} ${guardianPerson.last_name}` : null,
+      guardianPhone: guardianPerson?.phone ?? null,
+    });
+  }
 
   return {
     school: {
@@ -1344,22 +1384,7 @@ async function documentParties(
       email: profile.email ?? null,
       website: profile.website ?? null,
     },
-    student: s
-      ? {
-          id: s.id,
-          fullName: person ? `${person.first_name} ${person.last_name}` : "Unknown",
-          admissionNumber: s.admission_number,
-          sectionLabel:
-            enrolment?.sections && enrolment.sections.class_levels
-              ? `${enrolment.sections.class_levels.name} · ${enrolment.sections.name}`
-              : null,
-          rollNumber: enrolment?.roll_number ?? null,
-          guardianName: guardianPerson
-            ? `${guardianPerson.first_name} ${guardianPerson.last_name}`
-            : null,
-          guardianPhone: guardianPerson?.phone ?? null,
-        }
-      : null,
+    students,
   };
 }
 

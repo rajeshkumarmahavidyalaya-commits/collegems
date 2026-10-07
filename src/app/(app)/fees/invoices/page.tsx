@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { FilePlus2, History, IndianRupee } from "lucide-react";
+import { FilePlus2, History, IndianRupee, Printer } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { getUserContext } from "@/lib/auth/context";
 import { hasPermission } from "@/lib/auth/permissions";
@@ -28,6 +28,14 @@ export default async function InvoicesPage() {
               <Link href="/fees/daybook">
                 <History className="size-4" aria-hidden="true" />
                 Payment History
+              </Link>
+            </Button>
+          )}
+          {canCollect && (
+            <Button asChild variant="outline">
+              <Link href="/fees/invoices/print">
+                <Printer className="size-4" aria-hidden="true" />
+                Print in Bulk
               </Link>
             </Button>
           )}
