@@ -111,6 +111,8 @@ export const hi: Messages = {
   "nav.activities": "गतिविधियाँ",
   "nav.module.activities": "SM गतिविधियाँ",
   "nav.module.tickets": "SM टिकट",
+  "nav.chat": "चैट",
+  "nav.module.chat": "SM चैट",
   "nav.lessons": "पाठ",
   "nav.subjectTypes": "विषय के प्रकार",
   "nav.module.lessons": "SM पाठ",

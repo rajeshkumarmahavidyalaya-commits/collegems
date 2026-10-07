@@ -979,6 +979,99 @@ export type Database = {
           },
         ]
       }
+      chat_conversations: {
+        Row: {
+          created_at: string
+          created_by: string
+          id: string
+          kind: string
+          last_message_at: string | null
+          name: string | null
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          id?: string
+          kind: string
+          last_message_at?: string | null
+          name?: string | null
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          id?: string
+          kind?: string
+          last_message_at?: string | null
+          name?: string | null
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      chat_members: {
+        Row: {
+          conversation_id: string
+          created_at: string
+          id: string
+          last_read_at: string | null
+          side: string
+          tenant_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          conversation_id: string
+          created_at?: string
+          id?: string
+          last_read_at?: string | null
+          side: string
+          tenant_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          conversation_id?: string
+          created_at?: string
+          id?: string
+          last_read_at?: string | null
+          side?: string
+          tenant_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      chat_messages: {
+        Row: {
+          body: string
+          conversation_id: string
+          created_at: string
+          id: string
+          sender_id: string
+          tenant_id: string
+        }
+        Insert: {
+          body: string
+          conversation_id: string
+          created_at?: string
+          id?: string
+          sender_id: string
+          tenant_id: string
+        }
+        Update: {
+          body?: string
+          conversation_id?: string
+          created_at?: string
+          id?: string
+          sender_id?: string
+          tenant_id?: string
+        }
+        Relationships: []
+      }
       class_groups: {
         Row: {
           created_at: string
@@ -9361,6 +9454,14 @@ export type Database = {
           severity: string
         }[]
       }
+      chat_mark_read: { Args: { p_conversation_id: string }; Returns: undefined }
+      chat_members_of: { Args: { p_conversation_id: string }; Returns: { user_id: string; display_name: string; side: string; is_me: boolean }[] }
+      chat_my_conversations: { Args: never; Returns: { conversation_id: string; kind: string; title: string; last_message: string | null; last_message_at: string | null; unread: number; members: number }[] }
+      chat_my_teachers: { Args: never; Returns: { staff_id: string; full_name: string | null; designation: string | null; subjects: string | null; has_login: boolean }[] }
+      chat_reachable_in_section: { Args: { p_section_id: string }; Returns: { student_id: string; full_name: string | null; admission_number: string; has_login: boolean }[] }
+      chat_send: { Args: { p_conversation_id: string; p_body: string }; Returns: string }
+      chat_start: { Args: { p_name: string | null; p_student_ids: string[] }; Returns: Json }
+      chat_start_with_teacher: { Args: { p_staff_id: string }; Returns: string }
       checks_run: {
         Args: never
         Returns: {

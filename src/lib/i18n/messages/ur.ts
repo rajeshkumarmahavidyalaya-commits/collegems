@@ -111,6 +111,8 @@ export const ur: Messages = {
   "nav.activities": "سرگرمیاں",
   "nav.module.activities": "SM سرگرمیاں",
   "nav.module.tickets": "SM ٹکٹ",
+  "nav.chat": "چیٹ",
+  "nav.module.chat": "SM چیٹ",
   "nav.lessons": "اسباق",
   "nav.subjectTypes": "مضمون کی اقسام",
   "nav.module.lessons": "SM اسباق",

@@ -38,6 +38,12 @@ const MIRRORS_A_POLICY = new Map<string, string>([
     "notice_reads' `staff view notice reads` policy is admin + teacher; an " +
       "accountant would be shown a read rate computed from their own receipt.",
   ],
+  [
+    "src/app/(app)/chat/page.tsx",
+    "chat_start and chat_reachable_in_section (0350, 0351) refuse every role " +
+      "but admin and teacher; a New Chat button for an accountant would open " +
+      "a form that refuses them.",
+  ],
 ]);
 
 const ROOT = process.cwd();

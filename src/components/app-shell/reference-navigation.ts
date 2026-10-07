@@ -14,6 +14,7 @@ import {
   Sparkles,
   Users,
   Wallet,
+  MessagesSquare,
 } from "lucide-react";
 import type { MessageKey } from "@/lib/i18n/messages/en";
 import type { NavGroup, NavItem } from "./nav-config";
@@ -69,6 +70,7 @@ const MODULES: { title: string; messageKey: MessageKey; icon: NavGroup["icon"]; 
   { title: "SM Lessons", messageKey: "nav.module.lessons", icon: BookOpen, paths: ["/lessons"] },
   { title: "SM Activities", messageKey: "nav.module.activities", icon: Sparkles, paths: ["/activities"] },
   { title: "SM Tickets", messageKey: "nav.module.tickets", icon: Bell, paths: ["/tickets"] },
+  { title: "SM Chat", messageKey: "nav.module.chat", icon: MessagesSquare, paths: ["/chat"] },
   { title: "SM Library", messageKey: "nav.module.library", icon: Library, paths: ["/library/books", "/library/issues", "/library/members"] },
   { title: "SM Transport", messageKey: "nav.module.transport", icon: Bus, paths: ["/transport", "/transport/assignments", "/arrangements"] },
   { title: "SM Hostel", messageKey: "nav.module.hostel", icon: BedDouble, paths: ["/hostel"] },
@@ -159,6 +161,7 @@ const FAMILY_MENU: { path: string; title?: string; messageKey?: MessageKey }[] =
   { path: "/attendance/leave", title: "Leave Request", messageKey: "nav.family.leave" },
   { path: "/tickets" },
   { path: "/family/stationery" },
+  { path: "/chat" },
   { path: "/family/profile" },
 ];
 

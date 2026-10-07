@@ -59,7 +59,7 @@ child, the defect `docs/modules/reports.md` describes for reports. Built on
 | Leave Request | `/attendance/leave` | **Have** |
 | Tickets | `/tickets` (0348): their child's tickets, and raise one | **Have** |
 | Stationary Issued | `/family/stationery` | **Have** |
-| Chat (message a teacher) | none | **Missing** (see 5) |
+| Chat (message a teacher) | `/chat` (0350) | **Have** |
 | Account Settings (contact details, password) | `/family/profile` | **Have**: phone and address, a parent's own phone and occupation, password; not the name or email |
 
 ## 3. Staff portal (teacher, accountant, receptionist, librarian)
@@ -113,7 +113,7 @@ Partial inside them:
 | Activities | Name, Class, Fee, Description, Status | **Have** (0348): joining raises the fee as an invoice, withdrawing cancels it |
 | Lessons and Chapters | Chapter: Title, Class, Subject. Lesson: Title, Class, Subject, Chapter, link (none, attachment, URL), Description | **Have** (0347): a chapter is a syllabus unit, a lesson is study material in one |
 | Tickets | Title, Priority, Status, Subject, Student, Class, Role, Assigned To, Due Date | **Have** (0348) |
-| Chat | direct or named group by class and section; a student messages a teacher | **Missing** |
+| Chat | direct or named group by class and section; a student messages a teacher | **Have** (0350-0352): messages cannot be edited or deleted; students without a login are left out and counted |
 
 ## 6. Roles
 
@@ -128,7 +128,7 @@ therefore not a row; it needs every policy that names a role reviewed.
 1. ~~Family dashboard and portal pages~~ (0346, 6 Oct 2026).
 2. ~~Lessons and chapters; subject types and bulk assignment~~ (0347).
 3. ~~Tickets; activities~~ (0348, 0349).
-4. Chat.
+4. ~~Chat~~ (0350-0352).
 5. Fees: verify payments, payment methods for families, transport invoices,
    bulk invoice print.
 6. Public pages: enquiry, certificate verification, exam timetable, staff

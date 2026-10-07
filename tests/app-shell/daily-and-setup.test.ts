@@ -50,7 +50,9 @@ describe("the daily menu and the setup menu", () => {
     // 53 (0348): Tickets, which a family raises and staff work every day, and
     // Activities, where a club's students are added and taken off as they
     // join -- the reference's SM Tickets and SM Activities, neither set-up.
-    expect(everyday).toBeLessThanOrEqual(53);
+    // 54 (0350): Chat, where a teacher and a family write to each other --
+    // the reference's SM Chat, read and answered daily.
+    expect(everyday).toBeLessThanOrEqual(54);
   });
 
   it("never marks a screen a family uses as setup", () => {

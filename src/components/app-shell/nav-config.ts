@@ -76,6 +76,7 @@ import {
   BookMarked,
   Ticket as TicketIcon,
   Trophy,
+  MessagesSquare,
 } from "lucide-react";
 
 export type NavItem = {
@@ -520,6 +521,17 @@ export const NAV_GROUPS: NavGroup[] = [
         href: "/tickets",
         icon: TicketIcon,
         roles: ["admin", "teacher", "accountant", "librarian", "parent", "student"],
+      },
+      // The reference's SM Chat (0350): a teacher or the office starts a
+      // conversation with students they may reach, a family messages their
+      // child's teachers. An accountant or a librarian teaches nobody and is
+      // reached by nobody, so the page would only ever be empty for them.
+      {
+        title: "Chat",
+        messageKey: "nav.chat",
+        href: "/chat",
+        icon: MessagesSquare,
+        roles: ["admin", "teacher", "parent", "student"],
       },
       // The reference's SM Activities (0348). Written by the administrator;
       // staff read who is on what. A family sees the fee on its account.

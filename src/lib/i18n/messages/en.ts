@@ -128,6 +128,8 @@ export const en = {
   "nav.activities": "Activities",
   "nav.module.activities": "SM Activities",
   "nav.module.tickets": "SM Tickets",
+  "nav.chat": "Chat",
+  "nav.module.chat": "SM Chat",
   "nav.lessons": "Lessons",
   "nav.subjectTypes": "Subject Types",
   "nav.module.lessons": "SM Lessons",
