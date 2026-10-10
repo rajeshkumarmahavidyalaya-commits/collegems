@@ -1,7 +1,6 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import { supabasePublishableKey, supabaseUrl } from "@/lib/supabase/env";
-import { SITE_PATHS } from "@/lib/site/content";
 
 // /api/health must stay reachable without a session -- it exists to diagnose
 // deployments that cannot authenticate in the first place.
@@ -12,16 +11,6 @@ import { SITE_PATHS } from "@/lib/site/content";
 // anon on purpose and named in `definer_guard_violations()`, so listing it here
 // opens a route, not a table.
 const PUBLIC_PATHS = ["/login", "/signup", "/auth", "/api/health", "/apply"];
-
-// The college's public website (`src/app/(site)`) is the other public surface,
-// and it is a different kind of public: nothing under it reads a tenant or a
-// table, because its content is a file (`lib/site/content`). So it is its own
-// list rather than five more entries in the one above, whose guard
-// (`tests/admissions/public-form.test.ts`) says nothing *application* was made
-// public alongside the form. Its addresses come from `SITE_PATHS`, so a page
-// cannot be added to the site and left behind the login; `/programmes` covers
-// `/programmes/<slug>` by the prefix rule in `isPublicPath`.
-const SITE_PUBLIC_PATHS = [...SITE_PATHS, "/programmes"];
 
 /**
  * Signed in, but belonging to no school yet.
@@ -59,7 +48,7 @@ const OPERATOR_PATH = "/platform";
 class SignedOut extends Error {}
 
 function isPublicPath(pathname: string) {
-  return [...PUBLIC_PATHS, ...SITE_PUBLIC_PATHS].some((p) => pathname === p || pathname.startsWith(`${p}/`));
+  return PUBLIC_PATHS.some((p) => pathname === p || pathname.startsWith(`${p}/`));
 }
 
 /**
@@ -146,13 +135,6 @@ export async function middleware(request: NextRequest) {
       console.error("[middleware] auth check failed, treating request as signed out:", error);
     }
     user = null;
-  }
-
-  // `/` is two pages: the dashboard for somebody signed in, and the college's
-  // website for everybody else. A rewrite, not a redirect, so the address a
-  // visitor sees and shares stays the college's front door.
-  if (!user && pathname === "/") {
-    return NextResponse.rewrite(new URL("/home", request.url));
   }
 
   if (!user && !isPublicPath(pathname)) {
