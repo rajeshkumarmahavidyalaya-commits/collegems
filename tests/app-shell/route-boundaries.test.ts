@@ -66,9 +66,21 @@ describe("every route has a boundary under it", () => {
     // A `notFound()` thrown from a route outside `(app)` would fall through to
     // the root page, which has no shell — so the boundary would exist and not
     // cover the thing it was built for.
+    //
+    // The message below offers two ways out, and the first draft of this check
+    // only honoured one: a route that is not in `(app)` is covered when a
+    // segment *above it* has its own `not-found.tsx`. The public website
+    // `(site)` is that case: it has no signed-in shell to put the 404 in.
+    const hasOwnBoundary = (file: string) => {
+      for (let dir = join(file, ".."); dir.startsWith(APP) && dir !== APP; dir = join(dir, "..")) {
+        if (existsSync(join(dir, "not-found.tsx"))) return true;
+      }
+      return false;
+    };
     const strays = tsxFiles(APP)
       .filter((f) => /\bnotFound\(\)/.test(withoutComments(readFileSync(f, "utf8"))))
       .filter((f) => !f.startsWith(GROUP))
+      .filter((f) => !hasOwnBoundary(f))
       .map((f) => f.replace(APP, "src/app"));
 
     expect(
