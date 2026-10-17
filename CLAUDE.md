@@ -213,6 +213,12 @@ Three things it taught:
   hook on *or off*: that is this sandbox's distance from the database. API
   medians differed by noise.
 
+**And a dated roster needs the year's own day (0358-0360).** Transport and
+hostel decided who was on a bus or in a bed by `current_date`, and every seat
+in a closed year ended before today. `screen_day_or(today)` is today in the
+working year and the open year's last day otherwise. *A screen about a year
+asks about a day in it.*
+
 `tests/academics/earlier-year.test.ts` pins all of it. See
 `docs/modules/academic-years.md`.
 

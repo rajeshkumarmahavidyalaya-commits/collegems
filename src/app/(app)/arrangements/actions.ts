@@ -91,7 +91,10 @@ export async function listMyChildrensArrangements(): Promise<ChildArrangements[]
   // Bounded by the relationship rather than by a page size: `family_my_students()`
   // returns the children this login is a family member of, and a member of staff
   // gets none. Two round trips per child, and a parent is not a roster.
-  const today = new Date().toISOString().slice(0, 10);
+  // The school's today, or the open year's last day (0360), never the
+  // server's UTC date.
+  const { data: day } = await supabase.rpc("screen_day");
+  const today = (day as string | null) ?? new Date().toISOString().slice(0, 10);
 
   return Promise.all(
     children.map(async (child) => {

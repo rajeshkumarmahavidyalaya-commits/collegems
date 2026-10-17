@@ -62,7 +62,10 @@ export async function getFamilyHome(
   session: { id: string | null; name: string | null },
 ): Promise<FamilyHome> {
   const supabase = await createClient();
-  const today = new Date().toISOString().slice(0, 10);
+  // The school's today, or the open year's last day (0360), never the
+  // server's UTC date.
+  const { data: day } = await supabase.rpc("screen_day");
+  const today = (day as string | null) ?? new Date().toISOString().slice(0, 10);
 
   // Rule 11: the published contract already knows the balance and the
   // register; read it rather than computing either a second time.

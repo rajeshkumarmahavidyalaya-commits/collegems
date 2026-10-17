@@ -70,7 +70,7 @@ export default async function AdmittedPage({ params }: { params: Promise<{ id: s
     supabase.rpc("fees_student_balances", { p_student_ids: [id] }),
     supabase.rpc("transport_for_student", { p_student_id: id }),
     supabase.rpc("hostel_for_student", { p_student_id: id }),
-    supabase.rpc("mobile_today"),
+    supabase.rpc("screen_day"),
   ]);
 
   const person = student.people;

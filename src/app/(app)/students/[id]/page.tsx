@@ -76,7 +76,7 @@ export default async function StudentDetailPage({
   const [busRes, bedRes, todayRes, canAssignBus, canAllocateBed, canGiveCard, canIssueLetter, letter] = await Promise.all([
     supabase0.rpc("transport_for_student", { p_student_id: id }),
     supabase0.rpc("hostel_for_student", { p_student_id: id }),
-    supabase0.rpc("mobile_today"),
+    supabase0.rpc("screen_day"),
     hasPermission("transport.assign"),
     hasPermission("hostel.allocate"),
     hasPermission("library.manage"),

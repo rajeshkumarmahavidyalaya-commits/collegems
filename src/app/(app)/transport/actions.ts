@@ -11,6 +11,7 @@ import {
 } from "@/lib/validations/transport";
 import type { ActionResult } from "../library/actions";
 import { isCurrentArrangement } from "@/lib/validations/arrangements";
+import { ON_ROLL } from "@/lib/enrolment";
 
 function fail(message: string): ActionResult<never> {
   return { ok: false, error: message };
@@ -522,7 +523,10 @@ export async function listAssignments(routeId?: string): Promise<AssignmentRow[]
       .from("enrolments")
       .select("student_id, sections ( name, class_levels ( name ) )")
       .in("student_id", studentIds)
-      .eq("status", "active"),
+      // The class in the year on screen, not whichever active enrolment came
+      // back: with an earlier year open that was next year's (0355, 0356).
+      .eq("session_id", ctx?.currentSessionId ?? "")
+      .in("status", ON_ROLL),
     // A staff rider (0293), named from `staff` through its own policy -- the
     // same read the rest of this screen's office users already make.
     staffIds.length > 0
@@ -655,7 +659,7 @@ export async function currentStaffSeat(staffId: string): Promise<StaffSeat | nul
   const supabase = await createClient();
   const [{ data }, { data: today }] = await Promise.all([
     supabase.rpc("transport_for_staff", { p_staff_id: staffId }),
-    supabase.rpc("mobile_today"),
+    supabase.rpc("screen_day"),
   ]);
   const day = (today as string | null) ?? new Date().toISOString().slice(0, 10);
   // One definition of "current" (arrangements.ts), shared with the family's
@@ -850,7 +854,10 @@ export async function searchStudentsForTransport(query: string): Promise<Student
       .from("enrolments")
       .select("student_id, sections ( name, class_levels ( name ) )")
       .in("student_id", studentIds)
-      .eq("status", "active"),
+      // The class in the year on screen, not whichever active enrolment came
+      // back: with an earlier year open that was next year's (0355, 0356).
+      .eq("session_id", ctx?.currentSessionId ?? "")
+      .in("status", ON_ROLL),
     supabase
       .from("transport_assignments")
       .select("student_id, route_id, stop_id")

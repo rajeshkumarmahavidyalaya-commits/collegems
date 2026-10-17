@@ -104,3 +104,37 @@ describe("a closed year keeps its roll", () => {
     expect(ON_ROLL).not.toContain("transferred_out");
   });
 });
+
+describe("transport and hostel show a year as it stood on its last day (0358-0360)", () => {
+  it("the rosters ask the screen day, not today, and count the open year's roll", () => {
+    const sql = stripSql(read("supabase/migrations/0358_a_closed_year_is_shown_as_it_ended.sql"));
+    for (const fn of ["transport_route_load", "hostel_occupancy", "hostel_register", "transport_manifest"]) {
+      expect(sql, fn).toContain(`('${fn}',`);
+    }
+    expect(sql).toContain("screen_day_or(current_date)");
+    expect(sql).toContain("screen_day_or(public.mobile_today())");
+  });
+
+  it("with a year open, the hostel counts only that year's beds", () => {
+    const sql = stripSql(read("supabase/migrations/0359_a_year_open_counts_its_own_beds.sql"));
+    expect(sql).toContain("a.session_id = coalesce((select public.viewing_session_id(public.current_tenant_id())), a.session_id)");
+  });
+
+  it("every screen that picks the current seat or bed takes its day from screen_day", () => {
+    const offenders: string[] = [];
+    const walk = (dir: string) => {
+      for (const name of readdirSync(dir)) {
+        const path = join(dir, name);
+        if (statSync(path).isDirectory()) walk(path);
+        else if (/\.(ts|tsx)$/.test(name)) {
+          const rel = path.slice(ROOT.length + 1);
+          const src = read(rel);
+          if (rel === "src/lib/validations/arrangements.ts" || !src.includes("isCurrentArrangement(")) continue;
+          if (!src.includes('rpc("screen_day")')) offenders.push(rel);
+        }
+      }
+    };
+    walk(join(ROOT, "src"));
+    expect(offenders).toEqual([]);
+  });
+});

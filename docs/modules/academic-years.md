@@ -513,3 +513,34 @@ The working year is unchanged at 252 accounts.
 - that the guard never raises;
 - that both year functions stay plain SQL;
 - that the app's `ON_ROLL` matches 0356's.
+
+### Transport, hostel and ID cards (0358-0360)
+
+Opening 2025-2026 still showed an empty bus list and hostel. They decide who
+is on a bus or in a bed by today's date, and every seat in that year ended on
+31 March. The college has 46 seats and 13 beds there, all intact.
+
+- **The day a screen is about.** `screen_day_or(today)` returns today in the
+  working year, which is exactly what each function asked before. For an
+  earlier year it returns that year's last day; for a later one, its first
+  day. `transport_route_load`, `transport_manifest`, `hostel_occupancy` and
+  `hostel_register` ask it, and so does `screen_day()` (0360), which the
+  student record, the family pages and a staff seat use to pick "the current
+  seat and bed". Two of those had been using the server's UTC date.
+- **A year's own beds.** Rooms are not kept per year, so a 2026-2027 booking
+  also counted on 31 March 2026: 14 boarders for a year that had 13. While a
+  year is open, the hostel counts only beds booked in it (0359).
+- **The class beside a name comes from the year on screen.** The transport
+  list and both student searches took any `active` enrolment. With an earlier
+  year open that is next year's class. ID cards counted only `active`, so a
+  closed year's classes had no cards.
+
+**Measured in the reporting college** (read-only, 2025-2026 opened): 46 bus
+riders, all 46 with their 2025-2026 class; 13 boarders, all 13 with theirs.
+The working year is unchanged.
+
+**Walked in the Annex** (2027 made the working year, 2026-2026 opened):
+- the transport rider and the seat list with its class;
+- the hostel at 1 of 2 beds, and its register;
+- the student record's bus and bed;
+- that class's ID card.

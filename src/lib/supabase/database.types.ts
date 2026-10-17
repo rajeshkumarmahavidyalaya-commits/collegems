@@ -11418,6 +11418,8 @@ export type Database = {
         }
         Returns: Json
       }
+      screen_day: { Args: never; Returns: string }
+      screen_day_or: { Args: { p_today: string }; Returns: string }
       staff_rate: { Args: { p_section_subject_id: string; p_rating: number; p_feedback: string }; Returns: Json }
       staff_rating_my_teachers: { Args: never; Returns: { section_subject_id: string; subject_name: string; teacher_name: string | null; rating: number | null; feedback: string | null; rated_at: string | null }[] }
       staff_rating_summary: { Args: never; Returns: { section_id: string; subject_id: string; staff_id: string; class_name: string; section_name: string; subject_name: string; teacher_name: string | null; ratings: number; with_feedback: number; average_rating: number }[] }
@@ -13378,6 +13380,7 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      viewing_session_id: { Args: { p_tenant_id: string }; Returns: string }
       visitor_check_in: {
         Args: {
           p_host_note?: string

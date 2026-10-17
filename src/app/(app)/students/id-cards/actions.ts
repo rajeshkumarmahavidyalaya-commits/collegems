@@ -7,6 +7,7 @@ import { photoUrl, photoUrls } from "@/lib/storage/photos";
 import { MAX_CARDS_PER_RUN, type IdCard, type SchoolIdentity,
   type TooMany,
 } from "@/lib/validations/id-card";
+import { ON_ROLL } from "@/lib/enrolment";
 
 export type CardSet =
   | { ok: true; cards: IdCard[]; school: SchoolIdentity }
@@ -91,7 +92,7 @@ export async function getIdCards(sectionId: string): Promise<CardSet> {
     .from("enrolments")
     .select("id", { count: "exact", head: true })
     .eq("section_id", sectionId)
-    .eq("status", "active");
+    .in("status", ON_ROLL);
   if (sessionId) countQuery = countQuery.eq("session_id", sessionId);
   const { count } = await countQuery;
 
@@ -113,7 +114,7 @@ export async function getIdCards(sectionId: string): Promise<CardSet> {
        )`,
     )
     .eq("section_id", sectionId)
-    .eq("status", "active")
+    .in("status", ON_ROLL)
     .limit(MAX_CARDS_PER_RUN);
 
   if (sessionId) query = query.eq("session_id", sessionId);

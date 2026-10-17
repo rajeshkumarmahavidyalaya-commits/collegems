@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 import { getUserContext } from "@/lib/auth/context";
 import { allocationSchema, hostelSchema, roomSchema } from "@/lib/validations/hostel";
 import type { ActionResult } from "../library/actions";
+import { ON_ROLL } from "@/lib/enrolment";
 
 function fail(message: string): ActionResult<never> {
   return { ok: false, error: message };
@@ -318,6 +319,7 @@ export async function searchStudentsForHostel(query: string): Promise<BoarderHit
   const needle = query.trim();
   if (needle.length < 2) return [];
 
+  const ctx = await getUserContext();
   const supabase = await createClient();
 
   // `student_search` (migration `0259`) is the one definition of "find a
@@ -342,7 +344,10 @@ export async function searchStudentsForHostel(query: string): Promise<BoarderHit
       .from("enrolments")
       .select("student_id, sections ( name, class_levels ( name ) )")
       .in("student_id", studentIds)
-      .eq("status", "active"),
+      // The class in the year on screen, not whichever active enrolment came
+      // back: with an earlier year open that was next year's (0355, 0356).
+      .eq("session_id", ctx?.currentSessionId ?? "")
+      .in("status", ON_ROLL),
     supabase
       .from("hostel_allocations")
       .select("student_id, room_id, hostel_id")
