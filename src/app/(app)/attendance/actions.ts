@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 import { getUserContext } from "@/lib/auth/context";
 import { markAttendanceSchema } from "@/lib/validations/attendance";
 import type { ActionResult } from "../library/actions";
+import { ON_ROLL } from "@/lib/enrolment";
 
 export type SectionOption = {
   id: string;
@@ -156,7 +157,7 @@ export async function getRegister(
        students ( id, admission_number, people:person_id ( first_name, last_name ) )`,
     )
     .eq("section_id", sectionId)
-    .eq("status", "active");
+    .in("status", ON_ROLL);
 
   // A section belongs to exactly one session, so this filter is redundant
   // today -- but rule 2 says every transactional query names the session, and
@@ -333,7 +334,7 @@ export async function getAttendanceSummary(params: {
        students ( id, admission_number, people:person_id ( first_name, last_name ) )`,
     )
     .eq("section_id", sectionId)
-    .eq("status", "active");
+    .in("status", ON_ROLL);
 
   if (ctx?.currentSessionId) {
     enrolmentQuery = enrolmentQuery.eq("session_id", ctx.currentSessionId);
@@ -408,7 +409,7 @@ export async function getMarkedDates(params: {
     .from("enrolments")
     .select("id")
     .eq("section_id", params.sectionId)
-    .eq("status", "active");
+    .in("status", ON_ROLL);
 
   const ids = (enrolments ?? []).map((e) => e.id);
   if (ids.length === 0) return [];

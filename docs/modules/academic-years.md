@@ -443,3 +443,73 @@ against the demo college's real document. It also reads the migrations:
 Three plants were each caught: a writer without the check, an invoice in apply,
 and the old default in the planner.
 
+
+## Opening an earlier year (0355-0357)
+
+A college reported that after promoting its students, "the previous data
+vanished". Measured on 17 Oct 2026, nothing had. 2025-2026 still held:
+
+- 302 enrolments and 6,000 register rows;
+- 2,683 marks and 301 results;
+- 344 invoices and 327 ledger entries;
+- its timetable, homework, bus seats and library loans.
+
+Two things hid all of it:
+
+1. **The screens asked only for the working year.** Promotion's last step
+   makes the new year current, and every list asks `current_session_id()`.
+2. **A closed year's roll read as empty.** Promotion marks the year it closes
+   `promoted` or `repeated`, and read models counted only `active`. Opening
+   2025-2026, fee balances answered 0 rows.
+
+### How it works
+
+- **The band lists the college's years.** Choosing one other than the
+  working year opens it, a banner says so on every page, and one button goes
+  back. The choice lasts a day.
+- **Every read follows the year on screen.** The server client sends it as
+  the `x-schoolos-year` header, and `current_session_id()` answers with it
+  when it is a year of the caller's own college. The 114 SQL read models and
+  the app's own reads follow without each being edited.
+- **Nothing can be written into a year that is not the working year.**
+  `request_year_guard`, PostgREST's pre-request hook, makes such a request's
+  transaction read-only. A save fails with 25006 and the screen says *"You are
+  looking at a year that is not the working year, and it is kept as it was."*
+  Background work never sends the header and always uses the working year:
+  pg_cron, the job worker, Edge Functions and webhooks.
+- **A closed year keeps its roll.** An enrolment counts for its year when it
+  is active, promoted or repeated (`ON_ROLL`, 0356). 0356 rewrote 17 read
+  models, refusing any whose body had changed. Withdrawn and transferred
+  children are still left out.
+
+### Measured
+
+**In the reporting college** (read-only, as its administrator, with
+2025-2026 opened), by the read models directly:
+- 302 fee accounts with ₹13,24,329 still owed;
+- 302 attendance rows;
+- 12 classes;
+- 96 exam-subject rows.
+
+The working year is unchanged at 252 accounts.
+
+**In Northgate Test Annex**, through the browser:
+- a 2027 year was added and made the working year with the app's own
+  buttons;
+- with 2027 working, fees, invoices and exams were empty, which is what the
+  college saw;
+- opened from the band, 2026-2026 showed its two invoices, its fee account,
+  Walk37 Exam and its library loan;
+- a settings save while 2026 was open was refused with the sentence;
+- *Back to 2027* cleared the banner and the cookie;
+- the Annex was then switched back to 2026-2026 (the empty 2027 year
+  remains).
+
+**Cost:** API medians with the hook on and off differ by noise (about
+270–560 ms, mostly the round trip from the test machine).
+
+`tests/academics/earlier-year.test.ts` pins:
+- the header path and that only the server sends it;
+- that the guard never raises;
+- that both year functions stay plain SQL;
+- that the app's `ON_ROLL` matches 0356's.

@@ -22,6 +22,8 @@ export function AppShell({
   roleCode,
   tenantName,
   currentSessionName,
+  currentSessionId = null,
+  years = [],
   displayName,
   roleName,
   unreadCount,
@@ -38,6 +40,9 @@ export function AppShell({
   roleCode: string;
   tenantName: string;
   currentSessionName: string | null;
+  /** The year on screen, and the college's years for the switcher (0355). */
+  currentSessionId?: string | null;
+  years?: { id: string; name: string; isCurrent: boolean }[];
   displayName: string;
   roleName: string;
   /** Unread in-app messages, resolved server-side in the layout. */
@@ -160,6 +165,8 @@ export function AppShell({
             <SchoolContext
               tenantName={tenantName}
               currentSessionName={currentSessionName}
+              currentSessionId={currentSessionId}
+              years={years}
               canManageSessions={canManageSessions}
               canChooseSchool={canChooseSchool}
             />

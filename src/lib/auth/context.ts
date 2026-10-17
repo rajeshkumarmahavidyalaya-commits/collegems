@@ -1,4 +1,5 @@
 import { cache } from "react";
+import { chosenYear } from "@/lib/academic-year";
 import { createClient } from "@/lib/supabase/server";
 import type { RoleSubject } from "@/lib/validations/invitations-display";
 
@@ -41,15 +42,28 @@ export type UserContext = {
   staffId: string | null;
   studentId: string | null;
   guardianId: string | null;
+  /**
+   * The year on screen: the one this person chose to look at, else the working
+   * year. Every read follows it, here and in Postgres (0355).
+   */
   currentSessionId: string | null;
   currentSessionName: string | null;
+  /** The year the college is working in, which is the only year anything is written to. */
+  workingSessionId: string | null;
+  workingSessionName: string | null;
+  /** True while an earlier (or a later) year is open: everything is read-only. */
+  viewingOtherYear: boolean;
+  /** This college's years, oldest first, for the year switcher. */
+  years: { id: string; name: string; isCurrent: boolean }[];
 };
 
 /**
  * The authenticated user's tenant, role, and current academic session,
  * resolved server-side. `cache()` de-dupes this across every Server
  * Component that calls it within one request. Never accept tenant_id or
- * session_id from client input -- this is the only source of truth.
+ * session_id from client input for a write -- this is the only source of
+ * truth. The one year a person may choose is the year they read (0355), and
+ * Postgres keeps every other year read-only.
  */
 export const getUserContext = cache(async (): Promise<UserContext | null> => {
   const supabase = await createClient();
@@ -82,12 +96,21 @@ export const getUserContext = cache(async (): Promise<UserContext | null> => {
 
   if (!profile) return null;
 
-  const { data: currentSession } = await supabase
-    .from("academic_sessions")
-    .select("id, name")
-    .eq("tenant_id", profile.tenant_id)
-    .eq("is_current", true)
-    .maybeSingle();
+  const [{ data: sessions }, chosen] = await Promise.all([
+    supabase
+      .from("academic_sessions")
+      .select("id, name, is_current, start_date")
+      .eq("tenant_id", profile.tenant_id)
+      .order("start_date")
+      .order("id"),
+    chosenYear(),
+  ]);
+  const years = (sessions ?? []).map((y) => ({ id: y.id, name: y.name, isCurrent: y.is_current }));
+  const working = years.find((y) => y.isCurrent) ?? null;
+  // A chosen year counts only if it is one of this college's: a cookie left
+  // from another college, or a year since deleted, falls back to the working
+  // year, exactly as Postgres does with the header.
+  const onScreen = years.find((y) => y.id === chosen) ?? working;
 
   const person = profile.people;
   const role = profile.roles;
@@ -112,7 +135,11 @@ export const getUserContext = cache(async (): Promise<UserContext | null> => {
     staffId: profile.staff_id,
     studentId: profile.student_id,
     guardianId: profile.guardian_id,
-    currentSessionId: currentSession?.id ?? null,
-    currentSessionName: currentSession?.name ?? null,
+    currentSessionId: onScreen?.id ?? null,
+    currentSessionName: onScreen?.name ?? null,
+    workingSessionId: working?.id ?? null,
+    workingSessionName: working?.name ?? null,
+    viewingOtherYear: !!onScreen && onScreen.id !== working?.id,
+    years,
   };
 });

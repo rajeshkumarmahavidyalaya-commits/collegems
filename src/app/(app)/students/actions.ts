@@ -60,7 +60,9 @@ export async function listStudents(
   // and those in other classes simply showed no class; `!inner` makes the
   // enrolment a condition of the row (found by the reference's "Search By
   // Class", which is nothing else).
-  const enrolments = sectionId
+  // With an earlier year open (0355) the roll is that year's: a child admitted
+  // since, or who left before it, was not in the college that year.
+  const enrolments = sectionId || ctx?.viewingOtherYear
     ? "enrolments!inner ( roll_number, section_id, session_id, sections ( name, class_levels ( name, sequence ) ) )"
     : "enrolments ( roll_number, section_id, session_id, sections ( name, class_levels ( name, sequence ) ) )";
   // A person-column search makes the person a condition of the row, for the

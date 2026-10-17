@@ -4,6 +4,7 @@ import { getUserContext } from "@/lib/auth/context";
 import { hasPermission } from "@/lib/auth/permissions";
 import { createClient } from "@/lib/supabase/server";
 import { AppShell } from "@/components/app-shell/shell";
+import { YearBanner } from "@/components/app-shell/year-banner";
 import { MODULE_PREFIXES } from "@/components/app-shell/nav-config";
 import { getUnreadCount } from "./notifications/actions";
 
@@ -48,11 +49,25 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     </div>
   );
 
+  // A year other than the working one is open (0355): said above every page,
+  // because Postgres refuses every write in it and nobody should find that
+  // out by pressing Save.
+  const yearBanner =
+    ctx.viewingOtherYear && ctx.workingSessionId ? (
+      <YearBanner
+        viewing={ctx.currentSessionName ?? ""}
+        working={ctx.workingSessionName ?? ""}
+        workingId={ctx.workingSessionId}
+      />
+    ) : null;
+
   return (
     <AppShell
       roleCode={ctx.roleCode}
       tenantName={ctx.tenantName}
       currentSessionName={ctx.currentSessionName}
+      currentSessionId={ctx.currentSessionId}
+      years={ctx.years}
       displayName={ctx.displayName}
       roleName={ctx.roleName}
       unreadCount={unreadCount}
@@ -62,13 +77,17 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         canManageSchool ? (
           <>
             {pausedNotice}
+            {yearBanner}
             {children}
           </>
         ) : (
           pausedNotice
         )
       ) : (
-        children
+        <>
+          {yearBanner}
+          {children}
+        </>
       )}
     </AppShell>
   );

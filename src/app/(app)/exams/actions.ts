@@ -13,6 +13,7 @@ import {
 } from "@/lib/validations/exams";
 import type { ActionResult } from "../library/actions";
 import { deleteErrorSentence, nothingDeletedSentence } from "@/lib/validations/errors";
+import { ON_ROLL } from "@/lib/enrolment";
 
 function fail(message: string): ActionResult<never> {
   return { ok: false, error: message };
@@ -271,7 +272,7 @@ export async function listPapers(examId: string): Promise<PaperRow[]> {
       .from("marks")
       .select("exam_subject_id, exam_component_id, student_id, marks_obtained, is_absent")
       .in("exam_subject_id", papers.map((p) => p.id)),
-    supabase.from("enrolments").select("section_id").eq("status", "active"),
+    supabase.from("enrolments").select("section_id").in("status", ON_ROLL),
     supabase
       .from("exam_components")
       .select("id, exam_subject_id, code, name, max_marks, pass_marks, position")

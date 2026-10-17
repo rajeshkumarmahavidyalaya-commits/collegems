@@ -166,7 +166,55 @@ function reads exactly the keys the action sends. See
   join — so every query can filter on it without one.
 - **The current session resolves server-side.** Use
   `public.current_session_id(tenant_id)` in SQL or `getUserContext()` in the
-  app. Never accept `session_id` from client input.
+  app. Never accept `session_id` from client input **for a write**. Reading an
+  earlier year is the one exception, and Postgres enforces it (below).
+
+### …and an earlier year can be opened, and is never written (0355-0357)
+
+Reported by the college: *"after promotion, the previous data vanished."*
+Measured, nothing had: 2025-2026 still held 302 enrolments, 6,000 register
+rows, 2,683 marks, 344 invoices. Two things hid it.
+
+- **Every screen asked only for the working year.** The rollover's last step
+  makes the new year current, and 114 read models plus 141 app reads asked
+  `current_session_id()`. The data was filed by year and nothing could open
+  the year it was filed under.
+- **A closed year's roll read as empty.** Promotion marks every enrolment of
+  the year it closes `promoted` or `repeated`, and the read models counted
+  only `active`. Opening 2025-2026, fee balances returned **0 rows** for a
+  year with 344 invoices.
+
+So `current_session_id()` now means **the year on screen**. A person chooses
+it from the band (a cookie). The server client sends it as `x-schoolos-year`.
+`viewing_session_id()` ignores it unless it is a year of the caller's own
+college. And `request_year_guard`, PostgREST's pre-request hook, makes any
+request looking at a year other than the working one **read-only**.
+
+> **A year is filed into only while it is the working year.** Every write
+> while another year is open fails with 25006, through any screen, policy,
+> definer or trigger, and the server client turns that into one sentence.
+> That is what answers the band rule's old worry, *"a picker would show one
+> year while every write filed into another"*: it cannot write at all.
+
+An enrolment is **on its year's roll** when it is active, promoted or
+repeated (`ON_ROLL`, 0356). 0356 rewrote 17 read models from their live
+bodies, refusing any whose count of `active` tests had drifted.
+
+Three things it taught:
+
+- **A pre-request hook runs before every request, so it must never raise.**
+  It fails open, to "no year chosen".
+- **`set search_path` on a function stops Postgres inlining it.** 0355's
+  PL/pgSQL year lookup ran per row and the students page hit the 8 s
+  statement timeout. 0357 made it plain SQL wrapped in scalar subqueries. A
+  probe without `request.headers` set measured nothing: PostgREST sets that
+  JSON on every request, and parsing it is the cost.
+- **Measure with the instrument off, too.** Pages here take 6–14 s with the
+  hook on *or off*: that is this sandbox's distance from the database. API
+  medians differed by noise.
+
+`tests/academics/earlier-year.test.ts` pins all of it. See
+`docs/modules/academic-years.md`.
 
 ### …and a row that carries a session must end with it
 
@@ -4473,9 +4521,10 @@ columns). Three things about it are load-bearing:
 - **An export is the filtered set, not the page.** Every server-paged list
   passes `loadAll`, which reads every page as the signed-in person, so RLS is
   still the gate. Past 10,000 rows it refuses and gives the number.
-- **The session in the band is a link, not a filter.** The current year is
-  school-wide (rule 2). A browser-side session picker would show one year
-  while every write filed into another.
+- **The session in the band opens a year to read, never to write.** The
+  working year is school-wide and changed only on the Academic years screen
+  (rule 2). The band's picker opens another year read-only, enforced by
+  Postgres (0355), with a banner on every page until the person goes back.
 
 ### Amber is not a hover colour
 

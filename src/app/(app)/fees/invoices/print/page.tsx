@@ -9,6 +9,7 @@ import { getInvoiceDocuments } from "../../actions";
 import { InvoiceSheet } from "../[invoiceId]/invoice-sheet";
 import { PrintControls } from "./print-controls";
 import { PRINT_STATUSES, type PrintStatus } from "./print-status";
+import { ON_ROLL } from "@/lib/enrolment";
 
 export const metadata = { title: "Print Invoices" };
 
@@ -60,7 +61,7 @@ export default async function PrintInvoicesPage({
     .select("student_id")
     .eq("section_id", sectionId)
     .eq("session_id", ctx?.currentSessionId ?? "")
-    .eq("status", "active");
+    .in("status", ON_ROLL);
   const studentIds = [...new Set((enrolled ?? []).map((e) => e.student_id))];
 
   let ids: string[] = [];
