@@ -23,14 +23,14 @@ difference, with the reason.
 | Reference page | Here | Status |
 |---|---|---|
 | Online Admission (school pick, personal, previous school, admission, parents, logins, transport, survey, fees) | `/apply/[slug]` (`admission_apply`, 0268), off by default per college | **Partial**: no previous school, mother tongue, birth place, PEN/APAAR, category or document uploads; no logins made from the public form (an invitation follows approval) |
-| Staff Registration | none | **Missing**: a public application, approved into staff by the office |
-| Student Certificate (school, certificate, enrollment number) | none | **Missing**: public verification of an issued certificate |
+| Staff Registration | `/college/[slug]/jobs` (`public_staff_apply`, 0361), decided at `/staff/applications` | **Have**: off by default; hiring opens the add-staff form filled in from the application and links the two |
+| Student Certificate (school, certificate, enrollment number) | `/college/[slug]/verify` (`public_certificate_check`, 0361) | **Have**, by certificate number **and the holder's date of birth**: a serial alone is sequential, so it would list every certificate |
 | Fee Submission (find a student, pay) | family login, `/fees/family`, Razorpay link | **Not adopted** as an anonymous page: a fee balance found by admission number tells anybody what a family owes. A family pays signed in |
 | Student Invoice | family login | **Not adopted**, for the same reason |
-| Admission Inquiry | `/front-office` (office enters it) | **Missing**: a public enquiry form |
-| Exam Time Table | `/exams/[id]` (signed in) | **Missing**: a public timetable for a published exam |
-| Exam Admit Cards (exam, roll number) | `/exams/admit-cards` (office), family view | **Partial**: no public lookup |
-| Exam Results (exam, roll number) | `/report-card` (family) | **Partial**: no public lookup |
+| Admission Inquiry | `/college/[slug]/enquiry` (`public_enquiry`, 0361), lands on `/front-office` as Website | **Have**: off by default, hourly limit, same-day duplicates folded |
+| Exam Time Table | `/college/[slug]/exams` (`public_exam_timetable`, 0361) | **Have**: the page is switched on in settings and each exam marked public on its own page |
+| Exam Admit Cards (exam, roll number) | `/college/[slug]/admit-card` (`public_admit_card`, 0361, 0363), office and family views | **Have**, by admission number and date of birth rather than roll number alone; papers follow the child's electives; seats only from a published plan |
+| Exam Results (exam, roll number) | `/college/[slug]/results` (`public_results`, 0361, 0362), `/report-card` (family) | **Have**, by admission number and date of birth; every year's published results, newest first, so a promotion does not hide them |
 
 ## 2. Student and parent portal
 
@@ -131,8 +131,8 @@ therefore not a row; it needs every policy that names a role reviewed.
 4. ~~Chat~~ (0350-0352).
 5. ~~Fees: verify payments, payment methods for families, transport invoices,
    bulk invoice print~~ (0353, 0354).
-6. Public pages: enquiry, certificate verification, exam timetable, staff
-   application, result and admit card lookup.
+6. ~~Public pages: enquiry, certificate verification, exam timetable, staff
+   application, result and admit card lookup~~ (0361-0363).
 7. ID card layouts, QR attendance, staff clock-in, transfer between schools.
 8. Admission fields; enrollment report filters; consolidated academic
    reports.

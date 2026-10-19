@@ -53,11 +53,26 @@ describe("an elective paper is sat only by those who chose it", () => {
   });
 
   it("answers from a definer that filters by tenant and returns a boolean", () => {
+    // Since 0361 the body takes the college as a parameter, so the public
+    // admit card (an anonymous caller, with no tenant in a token) can ask it,
+    // and the old name passes the caller's own college. Both filters moved
+    // with the body; the property pinned here did not change.
     const sql = readFileSync(join(DIR, latestBody("student_takes_subject").file), "utf8");
     const { body } = latestBody("student_takes_subject");
     expect(sql).toMatch(/function public\.student_takes_subject[\s\S]*?returns boolean[\s\S]*?security definer/);
-    expect(body.match(/tenant_id = public\.current_tenant_id\(\)/g)?.length).toBe(2);
-    expect(sql).toMatch(/revoke all on function public\.student_takes_subject\(uuid, uuid, uuid, uuid\) from public, anon;/);
+    expect(body).toMatch(/public\.student_takes_subject_for\(public\.current_tenant_id\(\), p_student_id/);
+    const inner = latestBody("student_takes_subject_for");
+    expect(inner.body.match(/tenant_id = p_tenant_id/g)?.length).toBe(2);
+    const all = readdirSync(DIR)
+      .filter((f) => f.endsWith(".sql"))
+      .map((f) => readFileSync(join(DIR, f), "utf8"))
+      .join("\n");
+    expect(all).toMatch(/revoke all on function public\.student_takes_subject\(uuid, uuid, uuid, uuid\) from public, anon;/);
+    // The parameterised body is a definer taking any college: nobody holding
+    // a JWT may call it directly, or it would answer about another college.
+    expect(all).toMatch(
+      /revoke all on function public\.student_takes_subject_for\(uuid, uuid, uuid, uuid, uuid\) from public, anon, authenticated;/,
+    );
   });
 
   it("keeps the shared subject screens free of any one caller's action", () => {

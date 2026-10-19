@@ -49,6 +49,8 @@ export type ExamRow = {
   /** The exam group it is filed under (0341). */
   examGroupId: string | null;
   examGroupName: string | null;
+  /** Shown on the college's public exam timetable and admit cards (0361). */
+  publicTimetable: boolean;
 };
 
 /**
@@ -73,7 +75,7 @@ export async function listExams(): Promise<ExamRow[]> {
   // composite key is not something this project has been able to verify.
   let examsQuery = supabase
     .from("exams")
-    .select("id, name, kind, starts_on, ends_on, status, published_at, grading_scheme_id, centre, exam_group_id")
+    .select("id, name, kind, starts_on, ends_on, status, published_at, grading_scheme_id, centre, exam_group_id, public_timetable")
     .order("starts_on", { ascending: false, nullsFirst: false });
   if (ctx?.currentSessionId) examsQuery = examsQuery.eq("session_id", ctx.currentSessionId);
 
@@ -124,6 +126,7 @@ export async function listExams(): Promise<ExamRow[]> {
     classNames: classNames(e.id),
     examGroupId: e.exam_group_id,
     examGroupName: e.exam_group_id ? (groupName.get(e.exam_group_id) ?? null) : null,
+    publicTimetable: e.public_timetable,
   }));
 }
 
@@ -143,7 +146,7 @@ export async function getExam(examId: string): Promise<ExamRow | null> {
   const [examRes, schemesRes, papersRes] = await Promise.all([
     supabase
       .from("exams")
-      .select("id, name, kind, starts_on, ends_on, status, published_at, grading_scheme_id, centre, exam_group_id")
+      .select("id, name, kind, starts_on, ends_on, status, published_at, grading_scheme_id, centre, exam_group_id, public_timetable")
       .eq("id", examId)
       .maybeSingle(),
     supabase.from("grading_schemes").select("id, name"),
@@ -171,6 +174,7 @@ export async function getExam(examId: string): Promise<ExamRow | null> {
     classNames: [],
     examGroupId: e.exam_group_id,
     examGroupName: null,
+    publicTimetable: e.public_timetable,
   };
 }
 
@@ -212,6 +216,21 @@ export async function saveExam(input: unknown, id?: string): Promise<ActionResul
 
   revalidatePath("/exams");
   return { ok: true, data: { id: data.id } };
+}
+
+/**
+ * Show or hide an exam on the college's public timetable and admit card
+ * lookup (0361). Those pages also need switching on in settings; this only
+ * says which exams they show. `exams` is written through its policy, so the
+ * row count is the refusal (rule 6).
+ */
+export async function setExamPublic(examId: string, on: boolean): Promise<ActionResult> {
+  const supabase = await createClient();
+  const { data, error } = await supabase.from("exams").update({ public_timetable: on }).eq("id", examId).select("id");
+  if (error) return fail(error.message);
+  if (!data || data.length !== 1) return fail("Your role cannot change this exam.");
+  revalidatePath(`/exams/${examId}`);
+  return { ok: true, data: undefined };
 }
 
 export async function deleteExam(id: string): Promise<ActionResult> {

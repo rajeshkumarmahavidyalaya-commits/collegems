@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { headers } from "next/headers";
+import { PUBLIC_PAGES } from "@/lib/validations/public-pages";
 import { createClient } from "@/lib/supabase/server";
 import { getUserContext } from "@/lib/auth/context";
 import {
@@ -297,6 +298,8 @@ export type OnlineApplications = {
   url: string | null;
   path: string;
   perHour: number;
+  /** The college's other public pages (0361): its address, and which are switched on. */
+  pages: { url: string | null; path: string; open: string[] };
 };
 
 /**
@@ -314,9 +317,10 @@ export async function getOnlineApplications(): Promise<OnlineApplications | null
   const ctx = await getUserContext();
   if (!ctx) return null;
   const supabase = await createClient();
-  const [{ data: tenant }, { data: setting }] = await Promise.all([
+  const [{ data: tenant }, { data: setting }, { data: pagesSetting }] = await Promise.all([
     supabase.from("tenants").select("slug").eq("id", ctx.tenantId).maybeSingle(),
     supabase.rpc("setting_value", { p_key: "admissions.online" }),
+    supabase.rpc("setting_value", { p_key: "public.pages" }),
   ]);
   if (!tenant?.slug) return null;
 
@@ -326,10 +330,17 @@ export async function getOnlineApplications(): Promise<OnlineApplications | null
   const host = h.get("x-forwarded-host") ?? h.get("host");
   const proto = h.get("x-forwarded-proto") ?? (host?.startsWith("localhost") ? "http" : "https");
 
+  const pages = (pagesSetting ?? {}) as Record<string, unknown>;
+  const pagesPath = `/college/${tenant.slug}`;
   return {
     enabled: value.enabled === true,
     url: host ? `${proto}://${host}${path}` : null,
     path,
     perHour: typeof value.per_hour === "number" ? value.per_hour : 30,
+    pages: {
+      url: host ? `${proto}://${host}${pagesPath}` : null,
+      path: pagesPath,
+      open: PUBLIC_PAGES.filter((p) => p !== "apply" && pages[p] === true),
+    },
   };
 }

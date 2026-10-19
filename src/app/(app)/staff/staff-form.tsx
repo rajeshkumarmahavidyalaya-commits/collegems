@@ -25,7 +25,16 @@ import { admitStaff, updateStaff } from "./actions";
  * and goes through `staff_exit`. A dropdown here would be a second way to write
  * the same flag, and the one that does nothing else.
  */
-export function StaffForm({ staff }: { staff?: StaffInput & { id: string } }) {
+export function StaffForm({
+  staff,
+  prefill,
+  applicationId,
+}: {
+  staff?: StaffInput & { id: string };
+  /** Filled in from a public staff application (0361); the office checks and completes it. */
+  prefill?: Partial<StaffInput>;
+  applicationId?: string;
+}) {
   const router = useRouter();
   const isEdit = !!staff;
 
@@ -53,13 +62,13 @@ export function StaffForm({ staff }: { staff?: StaffInput & { id: string } }) {
 
   const form = useForm<StaffInput>({
     resolver: lazyZodResolver<StaffInput>(() => import("@/lib/validations/staff").then((m) => m.staffSchema)),
-    defaultValues: staff ?? blank,
+    defaultValues: staff ?? { ...blank, ...prefill },
   });
 
   useUnsavedChangesGuard(form.formState.isDirty && !form.formState.isSubmitSuccessful);
 
   async function onSubmit(values: StaffInput) {
-    const result = isEdit ? await updateStaff(staff.id, values) : await admitStaff(values);
+    const result = isEdit ? await updateStaff(staff.id, values) : await admitStaff(values, applicationId);
 
     if (!result.ok) {
       if (result.fieldErrors) {
@@ -72,6 +81,8 @@ export function StaffForm({ staff }: { staff?: StaffInput & { id: string } }) {
     }
 
     const id = result.data.id;
+    const linkError = (result.data as { linkError?: string }).linkError;
+    if (linkError) toast.warning(linkError);
     if (!isEdit && another.current) {
       toast.success(`${values.firstName} ${values.lastName} added to the staff list`, {
         action: { label: "Open", onClick: () => router.push(`/staff/${id}`) },
@@ -182,7 +193,8 @@ export function StaffForm({ staff }: { staff?: StaffInput & { id: string } }) {
             )}
             {isEdit ? "Save changes" : "Add to staff"}
           </Button>
-          {!isEdit && (
+          {/* One application is one person: "another" would hire them twice. */}
+          {!isEdit && !applicationId && (
             <Button
               type="submit"
               variant="outline"

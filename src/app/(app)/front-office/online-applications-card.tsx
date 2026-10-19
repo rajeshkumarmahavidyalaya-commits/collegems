@@ -92,3 +92,71 @@ export function OnlineApplicationsCard({
     </section>
   );
 }
+
+const PAGE_NAMES: Record<string, string> = {
+  enquiry: "admission enquiry",
+  staff_application: "staff applications",
+  certificate_check: "certificate verification",
+  exam_timetable: "exam timetable",
+  admit_cards: "admit cards",
+  results: "results",
+};
+
+/**
+ * The college's other public pages (0361): which are open and where they are.
+ * Each is off until switched on under *Front office* in school settings.
+ */
+export function PublicPagesCard({ online, canChange }: { online: OnlineApplications; canChange: boolean }) {
+  const open = online.pages.open;
+  const address = online.pages.url ?? online.pages.path;
+  return (
+    <section
+      aria-labelledby="public-pages-heading"
+      className="flex flex-col gap-3 rounded-lg border border-border bg-card px-4 py-4 sm:flex-row sm:items-center sm:justify-between"
+    >
+      <div className="flex min-w-0 items-start gap-3">
+        <Globe className="mt-0.5 size-5 shrink-0 text-muted-foreground" aria-hidden="true" />
+        <div className="flex min-w-0 flex-col gap-1">
+          <h2 id="public-pages-heading" className="text-sm font-semibold">
+            {open.length === 0
+              ? "No other public pages are open"
+              : open.length === 1
+                ? "1 other public page is open"
+                : `${open.length} other public pages are open`}
+          </h2>
+          {open.length > 0 ? (
+            <>
+              <p className="text-sm text-muted-foreground">
+                {open.map((p) => PAGE_NAMES[p] ?? p).join(", ")}. Enquiries land on this board as{" "}
+                <span className="font-medium text-foreground">Website</span>; staff applications
+                under Staff → Applications.
+              </p>
+              <bdi className="font-mono text-sm break-all text-foreground select-all">{address}</bdi>
+            </>
+          ) : (
+            <p className="text-sm text-muted-foreground">
+              An enquiry form, staff applications, certificate verification, the exam timetable,
+              admit cards and results can each be opened to the public
+              {canChange ? " under Public pages in school settings." : " by an administrator."}
+            </p>
+          )}
+        </div>
+      </div>
+      <div className="flex shrink-0 gap-2">
+        {open.length > 0 ? (
+          <Button asChild variant="outline" size="sm">
+            <a href={online.pages.path} target="_blank" rel="noopener noreferrer">
+              <ExternalLink aria-hidden="true" />
+              Open the pages
+            </a>
+          </Button>
+        ) : null}
+        {canChange ? (
+          <Button asChild variant="outline" size="sm">
+            <Link href="/settings/school#setting-public.pages">Settings</Link>
+          </Button>
+        ) : null}
+      </div>
+    </section>
+  );
+}

@@ -2229,6 +2229,7 @@ export type Database = {
       }
       exams: {
         Row: {
+          public_timetable: boolean
           exam_group_id: string | null
           centre: string | null
           created_at: string
@@ -2246,6 +2247,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          public_timetable?: boolean
           exam_group_id?: string | null
           centre?: string | null
           created_at?: string
@@ -2263,6 +2265,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          public_timetable?: boolean
           exam_group_id?: string | null
           centre?: string | null
           created_at?: string
@@ -5943,6 +5946,27 @@ export type Database = {
           },
         ]
       }
+      public_page_hits: {
+        Row: {
+          created_at: string
+          id: string
+          kind: string
+          tenant_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          kind: string
+          tenant_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          kind?: string
+          tenant_id?: string
+        }
+        Relationships: []
+      }
       renewal_decisions: {
         Row: {
           applied_id: string | null
@@ -6701,6 +6725,75 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      staff_applications: {
+        Row: {
+          city: string | null
+          created_at: string
+          date_of_birth: string | null
+          decided_at: string | null
+          decided_by: string | null
+          decision_note: string | null
+          email: string | null
+          experience_years: number | null
+          first_name: string
+          gender: string | null
+          id: string
+          last_name: string
+          message: string | null
+          phone: string | null
+          position: string
+          qualification: string | null
+          staff_id: string | null
+          status: string
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          city?: string | null
+          created_at?: string
+          date_of_birth?: string | null
+          decided_at?: string | null
+          decided_by?: string | null
+          decision_note?: string | null
+          email?: string | null
+          experience_years?: number | null
+          first_name: string
+          gender?: string | null
+          id?: string
+          last_name?: string
+          message?: string | null
+          phone?: string | null
+          position: string
+          qualification?: string | null
+          staff_id?: string | null
+          status?: string
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          city?: string | null
+          created_at?: string
+          date_of_birth?: string | null
+          decided_at?: string | null
+          decided_by?: string | null
+          decision_note?: string | null
+          email?: string | null
+          experience_years?: number | null
+          first_name?: string
+          gender?: string | null
+          id?: string
+          last_name?: string
+          message?: string | null
+          phone?: string | null
+          position?: string
+          qualification?: string | null
+          staff_id?: string | null
+          status?: string
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
       staff_attendance: {
         Row: {
@@ -11383,6 +11476,13 @@ export type Database = {
       payment_claim_approve: { Args: { p_claim_id: string }; Returns: Database["public"]["Tables"]["ledger_entries"]["Row"] }
       payment_claim_reject: { Args: { p_claim_id: string; p_reason: string }; Returns: undefined }
       payment_claim_submit: { Args: { p_student_id: string; p_invoice_id: string | null; p_amount: number; p_method: string; p_reference: string; p_paid_on: string; p_proof_path?: string | null; p_note?: string | null }; Returns: string }
+      public_admit_card: { Args: { p_slug: string; p_exam_id: string; p_admission_number: string; p_date_of_birth: string }; Returns: Json }
+      public_certificate_check: { Args: { p_slug: string; p_serial: string; p_date_of_birth: string }; Returns: Json }
+      public_college: { Args: { p_slug: string }; Returns: Json }
+      public_enquiry: { Args: { p_slug: string; p_enquiry: Json }; Returns: Json }
+      public_exam_timetable: { Args: { p_slug: string }; Returns: Json }
+      public_results: { Args: { p_slug: string; p_admission_number: string; p_date_of_birth: string }; Returns: Json }
+      public_staff_apply: { Args: { p_slug: string; p_application: Json }; Returns: Json }
       report_transport_invoices: { Args: { p_params: Json }; Returns: { row_data: Json }[] }
       school_admins: {
         Args: { p_tenant: string }

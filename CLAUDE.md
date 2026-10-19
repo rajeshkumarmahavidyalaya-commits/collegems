@@ -159,6 +159,17 @@ cannot show a form with **one** null (`0209`'s *the refusal says nothing*).
 function reads exactly the keys the action sends. See
 `docs/modules/front-office.md`.
 
+**`0361`-`0363` added six more on the same terms**: an enquiry, a staff
+application, certificate verification, the exam timetable, admit cards and
+results, under `/college/[slug]`. Each is off until switched on (`public.pages`),
+counted per college per hour, and answers every refusal with one null. **A
+lookup needs two facts the person holds, never one a stranger can step
+through**: admission numbers and certificate serials are sequential, so each
+lookup also needs the date of birth on record. And a public caller has no
+tenant in a token, so `student_takes_subject` became a wrapper over
+`student_takes_subject_for(tenant, …)`, revoked from every JWT role. See
+`docs/modules/public-pages.md`.
+
 ## 2. Sessions (academic years) scope every transactional table
 
 - Fees, marks, attendance, enrolments, payroll, timetable and library issues

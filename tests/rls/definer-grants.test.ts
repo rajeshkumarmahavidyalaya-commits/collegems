@@ -129,7 +129,13 @@ function anonymousOnPurpose(): { name: string; why: string }[] {
   }
   const list = body.match(/anonymous_on_purpose\s*\(name, why\)\s*as\s*\(\s*values([\s\S]*?)\n\s*\)/);
   return list
-    ? [...list[1].matchAll(/\(\s*'(\w+)',\s*'([^']*)'\s*\)/g)].map((m) => ({ name: m[1], why: m[2] }))
+    ? // A reason is a SQL literal, so `child''s` is one apostrophe, not the end
+      // of it. The first draft read `'([^']*)'` and dropped every entry whose
+      // reason had an apostrophe -- three of 0361's ten -- as if never listed.
+      [...list[1].matchAll(/\(\s*'(\w+)',\s*'((?:[^']|'')*)'\s*\)/g)].map((m) => ({
+        name: m[1],
+        why: m[2].replace(/''/g, "'"),
+      }))
     : [];
 }
 

@@ -9,7 +9,7 @@ import {
   listEnquiries,
   listVisitors,
 } from "./actions";
-import { OnlineApplicationsCard } from "./online-applications-card";
+import { OnlineApplicationsCard, PublicPagesCard } from "./online-applications-card";
 import { canChangeSettings } from "../settings/school/actions";
 import { FrontOfficeView } from "./front-office-view";
 import { ModuleCards } from "@/components/module-cards";
@@ -71,6 +71,7 @@ export default async function FrontOfficePage({
       <ModuleCards module="front_office" />
 
       {online ? <OnlineApplicationsCard online={online} canChange={mayChangeSettings} /> : null}
+      {online ? <PublicPagesCard online={online} canChange={mayChangeSettings} /> : null}
 
       <FrontOfficeView
         enquiries={enquiries}

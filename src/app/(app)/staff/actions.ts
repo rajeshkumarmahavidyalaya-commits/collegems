@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { getUserContext } from "@/lib/auth/context";
 import { createClient } from "@/lib/supabase/server";
 import { deletePhotoObject } from "@/lib/storage/photos";
 import { staffSchema, type StaffInput } from "@/lib/validations/staff";
@@ -134,7 +135,10 @@ function personPayload(input: StaffInput) {
   };
 }
 
-export async function admitStaff(input: unknown): Promise<ActionResult<{ id: string }>> {
+export async function admitStaff(
+  input: unknown,
+  applicationId?: string,
+): Promise<ActionResult<{ id: string; linkError?: string }>> {
   const parsed = staffSchema.safeParse(input);
   if (!parsed.success) {
     return {
@@ -155,8 +159,35 @@ export async function admitStaff(input: unknown): Promise<ActionResult<{ id: str
 
   if (error) return duplicateOr(error.message, parsed.data.employeeCode);
 
+  const id = (data as { id: string }).id;
   revalidatePath("/staff");
-  return { ok: true, data: { id: (data as { id: string }).id } };
+  // Hired from a public application (0361): link it to the record just made.
+  // A failure here is not a failed hire -- the person is on the staff -- so it
+  // comes back beside the success rather than instead of it.
+  if (applicationId) {
+    const linkError = await linkApplication(supabase, applicationId, id);
+    revalidatePath("/staff/applications");
+    if (linkError) return { ok: true, data: { id, linkError } };
+  }
+  return { ok: true, data: { id } };
+}
+
+async function linkApplication(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  applicationId: string,
+  staffId: string,
+): Promise<string | null> {
+  const ctx = await getUserContext();
+  const { data, error } = await supabase
+    .from("staff_applications")
+    .update({ status: "hired", staff_id: staffId, decided_by: ctx?.userId ?? null, decided_at: new Date().toISOString() })
+    .eq("id", applicationId)
+    .in("status", ["new", "shortlisted"])
+    .select("id");
+  if (error) return error.message;
+  // An update no policy matches writes nothing and raises nothing (rule 6).
+  if (!data || data.length !== 1) return "The application was not marked hired: it had already been decided.";
+  return null;
 }
 
 export async function updateStaff(

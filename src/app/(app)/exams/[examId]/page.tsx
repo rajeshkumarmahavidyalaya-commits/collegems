@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { PublicTimetableToggle } from "./public-toggle";
 import { notFound } from "next/navigation";
 import { ArrowLeft, CalendarDays, LayoutGrid, MessageSquare, ScrollText, Scale, Star } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -83,6 +84,7 @@ export default async function ExamPage({
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
+          {canManage && <PublicTimetableToggle examId={exam.id} initial={exam.publicTimetable} />}
           {canSeeSeating && (
             <Button asChild variant="outline">
               <Link href={`/exams/${examId}/seating`}>

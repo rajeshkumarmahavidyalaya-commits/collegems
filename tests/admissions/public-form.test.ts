@@ -192,7 +192,9 @@ describe("the route", () => {
   it("is public in the middleware, and nothing else was made public with it", () => {
     const middleware = read("src", "middleware.ts");
     expect(middleware).toMatch(
-      /const PUBLIC_PATHS = \["\/login", "\/signup", "\/auth", "\/api\/health", "\/apply"\];/,
+      // "/college" is the college's other public pages (0361), each its own
+      // anonymous definer named in definer_guard_violations().
+      /const PUBLIC_PATHS = \["\/login", "\/signup", "\/auth", "\/api\/health", "\/apply", "\/college"\];/,
     );
   });
 
