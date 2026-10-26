@@ -2,31 +2,8 @@ import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 import { READ_ONLY_YEAR_MESSAGE, YEAR_HEADER, chosenYear } from "@/lib/academic-year";
 import type { Database } from "./database.types";
+import { serverFetch } from "./fetch";
 import { supabasePublishableKey, supabaseUrl } from "./env";
-
-/**
- * A write in a year that is not the working year is refused by Postgres with
- * 25006 ("cannot execute UPDATE in a read-only transaction", 0355). Every
- * screen shows `error.message`, so the sentence is put there once, here,
- * rather than in each of a hundred server actions.
- */
-async function yearAwareFetch(input: RequestInfo | URL, init?: RequestInit): Promise<Response> {
-  const res = await fetch(input, init);
-  if (res.status < 400 || !(res.headers.get("content-type") ?? "").includes("json")) return res;
-  try {
-    const body = JSON.parse(await res.clone().text());
-    if (body && body.code === "25006") {
-      return new Response(JSON.stringify({ ...body, message: READ_ONLY_YEAR_MESSAGE }), {
-        status: res.status,
-        statusText: res.statusText,
-        headers: res.headers,
-      });
-    }
-  } catch {
-    // Not a PostgREST error body: pass it on unchanged.
-  }
-  return res;
-}
 
 /**
  * Server-side Supabase client for Server Components, Server Actions, and
@@ -59,7 +36,10 @@ export async function createClient() {
           }
         },
       },
-      global: year ? { headers: { [YEAR_HEADER]: year }, fetch: yearAwareFetch } : undefined,
+      // Every request goes through serverFetch (see fetch.ts): one retry for a
+      // freshly issued token refused by the gateway, and a sentence for a write
+      // in a year that is not the working year.
+      global: { headers: year ? { [YEAR_HEADER]: year } : {}, fetch: serverFetch(READ_ONLY_YEAR_MESSAGE) },
     },
   );
 }

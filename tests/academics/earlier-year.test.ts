@@ -73,7 +73,10 @@ describe("only the server carries the year", () => {
     const server = read("src/lib/supabase/server.ts");
     expect(server).toContain("chosenYear()");
     expect(server).toMatch(/\[YEAR_HEADER\]: year/);
-    expect(server).toContain('body.code === "25006"');
+    // The 25006 sentence moved into serverFetch (src/lib/supabase/fetch.ts),
+    // which tests/supabase/server-fetch.test.ts drives with a fake fetch.
+    expect(server).toContain("fetch: serverFetch(READ_ONLY_YEAR_MESSAGE)");
+    expect(read("src/lib/supabase/fetch.ts")).toContain('code === "25006"');
   });
 
   it("nothing else names the header: a browser-side picker would be a second answer", () => {
